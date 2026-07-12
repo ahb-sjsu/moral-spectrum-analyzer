@@ -150,23 +150,27 @@ its own coverage limits in every report.
   validation record.
 
 **[committed] (development phase, with success metrics):**
-- **Invariance realized in the verdict — mechanism *selected* (θ_d 0.42, leave-scenario-out proxy; at-scale committed).**
+- **Invariance realized in the verdict — mechanism selected *and* at-scale θ_d met on natural paraphrases (0.219 ≤ 0.5).**
   The feeders consume BGE-M3 yet their scores deviate 0.24 while the embedding sits at 0.925: the
   trained axes *amplify* the residual drift. This was a **mechanism decision** among three candidates,
-  resolved **by measurement** (`scripts/measure_theta_d.py`, leave-scenario-out): **equivalence-class
-  averaging** — average per-dimension scores over the input's paraphrase class, then decide — reaches
-  **θ_d = 0.42** (reframe) / 0.39 (euphemism); **drift-subspace projection was tried and rejected**
-  (failed even in-sample, 0.52). **Two-number honesty:** the pre-registered bar θ_d ≤ 0.5 was
-  *calibrated from* these smoke scenarios, so 0.42 measured on the same scenarios' re-descriptions
-  (even leave-scenario-out) is **mechanism-selection evidence, not bar-meeting evidence** — the bar is
-  met only by the **at-scale run on generated classes**, which is why this item stays [committed]. The
-  mechanism is built and unit-tested (`gtc.invariance_mechanism.average_perceptions`). *Remaining
-  [committed]:* the **generate-the-class-at-inference** wiring and **at-scale θ_d** — and that
-  generator is itself a new trust-boundary + cost surface (spec'd in `docs/INVARIANCE_FINDINGS.md`:
-  attack-or-starve the class generator → singleton class → raw score; k× inference cost measured
-  *with* averaging on; audit proof records the class). Then **cross-lingual at scale** (dedicated MT — LLM translators *refuse* harmful
-  content) and the **like-for-like baseline contrast**, sequenced *after* θ_d (decision-vs-decision,
-  not scores-vs-scores). θ: canonical index ≥ 0.5 on the full multilingual measurement, tighten-only.
+  resolved **by measurement**: **equivalence-class averaging** — average per-dimension scores over the
+  input's paraphrase class, then decide — was *selected* on the 8 smoke scenarios (θ_d 0.42,
+  leave-scenario-out; **drift-subspace projection tried and rejected**, failed even in-sample 0.52).
+  **[demonstrated] the bar is now met at scale:** the generate-the-class-at-inference form is wired
+  (`gtc.pipeline.moderate_invariant` — generate class, average, decide; audit proof records the class),
+  and re-measured on **60 held-out `civil_comments` items with LLM-generated classes** (disjoint from
+  the feeder train set) it reaches **θ_d = 0.219**, roughly **halving** the raw drift (0.407 → 0.219) —
+  moving off the calibration scenarios, this is bar-*meeting*, not selection. **Two honest caveats
+  travel with it:** (1) **24% of sampled items (19/79) were *refused* by the generator** — toxic
+  content it won't paraphrase → singleton class → raw score; the pipeline routes those to **escalate**,
+  so they are safe but not invariance-protected (the "attack-or-starve" hole, quantified — an
+  uncensored red-team paraphraser stays [committed]); (2) these are **natural** paraphrases — the
+  at-scale raw drift (0.407) is well below the demo's *adversarial* raw (0.67–0.85), so **adversarial-
+  reframe robustness at scale is the separate containment item**, still [committed]. *Remaining
+  [committed]:* the refused-class red-team paraphraser; **cross-lingual at scale** (dedicated MT — LLM
+  translators *refuse* harmful content) and the **like-for-like baseline contrast**, sequenced *after*
+  θ_d (decision-vs-decision, not scores-vs-scores). θ: canonical index ≥ 0.5 on the full multilingual
+  measurement, tighten-only.
 - **Containment** — per-instance **attack-detection AUROC** (canonical distance as a detector):
   **0.768 [0.65, 0.87]** on 64 generated variants (euphemism mean distance 0.090 vs reframe 0.053) —
   above the pre-registered θ ≥ 0.70 as a point estimate, but the CI dips to 0.65 (**directional**), and

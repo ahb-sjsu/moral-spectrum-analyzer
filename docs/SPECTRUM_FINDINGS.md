@@ -109,10 +109,11 @@ Sequence:
 3. **(done)** assessed `sexual_explicit` → **DECLINED as a moral axis; it is a policy-norms signal**
    (`docs/SEXUAL_CONTENT_ADMISSION.md`).
 4. **(done)** learned contraction for covered categories → shipped + wired, leakage-controlled
-   (Band 1 above). **(mechanism selected; bar committed)** decision-layer invariance → equivalence-class
-   averaging, **θ_d 0.42 (leave-scenario-out proxy; at-scale on generated classes committed)** —
-   0.42 is selection evidence, not bar-meeting evidence, because θ_d ≤ 0.5 was calibrated from these
-   same smoke scenarios (`docs/INVARIANCE_FINDINGS.md`).
+   (Band 1 above). **(mechanism selected; bar MET at scale)** decision-layer invariance → equivalence-class
+   averaging: selected at **θ_d 0.42** on the 8 smoke scenarios (leave-scenario-out), then **met at
+   scale on 60 held-out items with LLM-generated classes at θ_d 0.219 ≤ 0.5** (raw 0.407 → 0.219).
+   Caveats: 24% generator-refusal hole (→ escalate) and natural-not-adversarial paraphrases
+   (`docs/INVARIANCE_FINDINGS.md`).
 5. the spectrogram — with `threat` shown as *covered* and `identity_attack` as a lit 10th band — is
    the demo centerpiece. **Fine-print discipline (train-on-eval guard):** the Band-3 confirmation
    sample and the `identity_attack` feeder's civil_comments training rows share a corpus; when the

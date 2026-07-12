@@ -1,0 +1,19 @@
+{
+  "n_items_total": 79,
+  "n_used": 60,
+  "n_refused": 19,
+  "n_dropped_leak": 0,
+  "refusal_rate": 0.2405,
+  "m": 6,
+  "split_half": 3,
+  "seed": 0,
+  "n_unrelated_pairs": 196,
+  "theta_d_raw": 0.4071,
+  "theta_d_mechanism": 0.2187,
+  "reframe_dev_raw": 0.0791,
+  "reframe_dev_mech": 0.0436,
+  "unrelated_dev": 0.1992,
+  "meets_target": true,
+  "target": 0.5,
+  "class_generator": "nrp:gpt-oss:reframe:k=9"
+}
