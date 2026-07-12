@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# Tooling
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Outputs / artifacts (regenerable)
+out/
+*.log
+
+# Secrets — never commit
+.secrets/
+*.token
+nrp_token.txt
+
+# Internal working notes — external reviews, strategy discussion, onboarding.
+# These are NOT for the public repo; kept local only.
+/review-*.txt
+/spectrum-review-*.txt
+/discuss-*.txt
+/blind-rediscovery*.txt
+/GTC Prototype Phase Onboarding.txt
+
+# OS
+.DS_Store
+Thumbs.db

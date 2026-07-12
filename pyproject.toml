@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gtc-prototype"
+version = "0.1.0"
+description = "Geometric Ethics for Trustworthy AI — Global Trust Challenge prototype (multilingual content moderation)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Andrew H. Bond", email = "andrew.bond@sjsu.edu" }]
+keywords = ["ai-ethics", "trust", "content-moderation", "geometric-ethics", "deme", "invariance"]
+
+dependencies = [
+  "erisml-compiler>=0.9.0",
+  "numpy>=1.24",
+  "click>=8.1",
+]
+
+[project.optional-dependencies]
+# Real perception + GPU work (heavy; runs on Atlas / a GPU host).
+perception = ["xbse", "torch>=2.2", "sentence-transformers>=2.7"]
+# Scalar toxicity baseline (Phase 2/3).
+baselines = ["detoxify>=0.5"]
+# Black-box target-AI clients + Atlas driver.
+remote = ["openai>=1.0", "paramiko>=3.0"]
+# Moral Spectrum Analyzer (local analysis + viz; theory-radar added via path or PyPI).
+spectrum = ["scikit-learn>=1.3", "matplotlib>=3.7", "numpy>=1.24"]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[project.scripts]
+gtc = "gtc.cli:cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

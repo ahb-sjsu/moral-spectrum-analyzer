@@ -1,0 +1,41 @@
+{
+  "feature_order": [
+    "physical_harm",
+    "fairness_equity",
+    "autonomy_respect",
+    "privacy_protection",
+    "societal_environmental",
+    "virtue_care",
+    "legitimacy_trust",
+    "epistemic_quality",
+    "identity_attack"
+  ],
+  "coef": [
+    0.49817751451116205,
+    0.7598317617480387,
+    -0.8862977027054024,
+    -0.6364245408474043,
+    -0.3987994082024472,
+    -0.34694295949409715,
+    -0.9460706280761703,
+    -0.13272670221388858,
+    -2.6891548412009314
+  ],
+  "intercept": 0.9402875266120395,
+  "p_remove": 0.5,
+  "p_allow": 0.1,
+  "validation": {
+    "label": "toxicity",
+    "corpus": "civil_comments Spectrum Band-1 corpus, N=1523 disjoint (77 feeder-train rows excluded)",
+    "oof_auroc": 0.8626,
+    "oof_f1": 0.7624,
+    "n": 1523,
+    "folds": 5,
+    "fitted": "2026-07-12",
+    "moderate_rate": 0.5102,
+    "remove_precision": 0.8035,
+    "allow_precision": 0.95,
+    "baseline_auroc": 0.779,
+    "leakage_controlled": true
+  }
+}
