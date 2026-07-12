@@ -20,7 +20,7 @@ tensor type. Everything here runs offline against the stub backend; real percept
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 
 from erisml_compiler.ir.v3 import DimensionMetadata, MoralTensorV3
 
@@ -143,4 +143,77 @@ def moderate(
 
     return ModerationResult(
         text=text, perception=perception, tensor=tensor, decision=decision, proof=proof
+    )
+
+
+def moderate_invariant(
+    text: str,
+    backend: str = "stub",
+    class_generator=None,
+    hard_flags: list[str] | None = None,
+    chain: ProofChain | None = None,
+    contraction=None,
+) -> ModerationResult:
+    """Moderate under the decision-layer invariance mechanism (the generate-the-class-at-inference form).
+
+    Generate the input's paraphrase **equivalence class**, perceive every member, average the
+    perceptions (`gtc.invariance_mechanism.average_perceptions`), and decide on the average — so a
+    reworded input reaches the same verdict (docs/INVARIANCE_FINDINGS.md). Two disciplines from the
+    committed spec are enforced here, not just documented:
+
+    - **Refuse-to-paraphrase → singleton → escalate.** If the generator produced no class (refusal /
+      empty), there was no averaging and the invariance guarantee does not hold, so a graded
+      allow/remove is overridden to **escalate** (a hard-constraint veto still stands — it is
+      rule-based, not encoder-fed).
+    - **Auditability.** The proof records the class (member hashes, size, refused flag).
+    """
+    from gtc.classgen import StubClassGenerator
+    from gtc.contraction import load_default
+    from gtc.invariance_mechanism import average_perceptions
+
+    if contraction is None:
+        contraction = load_default()
+    elif contraction is False:
+        contraction = None
+    if class_generator is None:
+        class_generator = StubClassGenerator()
+
+    eq = class_generator.generate(text)
+    backend_obj = get_backend(backend)
+    perceptions = [backend_obj.perceive(m) for m in eq.members]
+    averaged = average_perceptions(perceptions)
+    decision = decide(averaged, hard_flags, contraction=contraction)
+
+    # Singleton / refused class ⇒ no invariance was applied; do not trust a graded auto-decision.
+    if (eq.singleton or eq.refused) and decision.fired_channel is None and decision.action != "escalate":
+        decision = replace(
+            decision,
+            action="escalate",
+            requires_human_review=True,
+            rationale=(
+                "Class generator produced no paraphrases (refused/empty) — invariance mechanism could "
+                f"not be applied to a singleton class, so the graded '{decision.action}' is withheld "
+                "and routed to human review (attack-or-starve the class generator; "
+                "docs/INVARIANCE_FINDINGS.md)."
+            ),
+        )
+
+    tensor = build_tensor(averaged, hard_flags)
+    proof = DecisionProof(
+        source_text_sha256=sha256_text(text),
+        perception_backend=averaged.backend,
+        all_validated=graded_validated(averaged),
+        moral_vector=[round(v, 6) for v in averaged.vector()],
+        validation=[asdict(v) for v in averaged.validation],
+        decision=decision.as_dict(),
+        tensor_sha256=_sha256_json(tensor.model_dump(mode="json")),
+        equivalence_class=eq.audit_record(),
+    )
+    if chain is not None:
+        chain.append(proof)
+    else:
+        proof.finalize()
+
+    return ModerationResult(
+        text=text, perception=averaged, tensor=tensor, decision=decision, proof=proof
     )

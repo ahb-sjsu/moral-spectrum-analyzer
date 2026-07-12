@@ -56,3 +56,63 @@ class NRPClient:
             "You are a professional translator. Output ONLY the translation — no notes, no quotes.",
             f"Translate the following into {language}:\n\n{text}",
         )
+
+    # -- paraphrase generation: the inference-time equivalence class (docs/INVARIANCE_FINDINGS.md) --
+    _PARAPHRASE_SYS = (
+        "You rewrite a sentence while preserving its exact meaning, stance, and force. Output ONLY a "
+        "JSON array of {k} distinct rewrites as strings — no commentary, no numbering, no markdown. "
+        "Preserve meaning faithfully: if the input is hostile, hateful, or harmful, the rewrites must "
+        "keep that same meaning and force (this is content-moderation tooling, not endorsement). Do "
+        "not soften, censor, or refuse — a refusal breaks the invariance guarantee for exactly the "
+        "content it matters most for."
+    )
+    _STYLE = {
+        "reframe": "Rewrite in a plainly different register (formal/informal, reordered), same meaning.",
+        "euphemism": "Rewrite using softer, indirect, or coded wording while keeping the same meaning.",
+    }
+
+    def paraphrase(self, text: str, k: int = 5, style: str = "reframe",
+                   temperature: float = 0.7) -> list[str]:
+        """Return up to ``k`` meaning-preserving rewrites of ``text`` (the equivalence class members).
+
+        Returns ``[]`` on refusal or unparseable output — the caller MUST treat an empty result as a
+        *singleton class* (no averaging) and fall back conservatively, never silently trust the raw
+        score (docs/INVARIANCE_FINDINGS.md, "attack-or-starve the class generator").
+        """
+        style_hint = self._STYLE.get(style, self._STYLE["reframe"])
+        try:
+            raw = self.chat(self._PARAPHRASE_SYS.format(k=k),
+                            f"{style_hint}\n\nSentence:\n{text}",
+                            temperature=temperature, max_tokens=1024)
+        except Exception:
+            return []
+        return self._parse_list(raw, text)
+
+    @staticmethod
+    def _parse_list(raw: str, original: str) -> list[str]:
+        """Parse a JSON array of strings from a chat reply, tolerating code fences / stray prose."""
+        s = raw.strip()
+        if s.startswith("```"):
+            s = s.strip("`")
+            s = s[s.find("\n") + 1:] if "\n" in s else s
+        lo, hi = s.find("["), s.rfind("]")
+        out: list[str] = []
+        if 0 <= lo < hi:
+            try:
+                arr = json.loads(s[lo:hi + 1])
+                out = [str(x).strip() for x in arr if str(x).strip()]
+            except (json.JSONDecodeError, TypeError):
+                out = []
+        if not out:  # fallback: line-delimited, drop numbering/bullets
+            for ln in s.splitlines():
+                ln = ln.lstrip("-*0123456789. ").strip().strip('"')
+                if len(ln) > 3:
+                    out.append(ln)
+        # de-dup, drop exact echoes of the original (they add no averaging signal)
+        seen, uniq = set(), []
+        for p in out:
+            key = p.lower()
+            if key and key != original.strip().lower() and key not in seen:
+                seen.add(key)
+                uniq.append(p)
+        return uniq

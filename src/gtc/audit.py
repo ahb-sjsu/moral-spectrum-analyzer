@@ -39,6 +39,10 @@ class DecisionProof:
     tensor_sha256: str
     prev_hash: str = GENESIS
     proof_hash: str = ""
+    # Present only for decisions made under the invariance mechanism: the generated equivalence class
+    # (hashes + size + refused flag) that the perception was averaged over. Records the
+    # canonicalisation step so it is not a silent, unauditable transform (docs/INVARIANCE_FINDINGS.md).
+    equivalence_class: dict | None = None
 
     # Fields that are part of the signed payload (everything except proof_hash itself).
     _PAYLOAD = (
@@ -53,7 +57,11 @@ class DecisionProof:
     )
 
     def _payload(self) -> dict:
-        return {k: getattr(self, k) for k in self._PAYLOAD}
+        payload = {k: getattr(self, k) for k in self._PAYLOAD}
+        # Included only when set, so non-invariance proofs keep their exact prior hash.
+        if self.equivalence_class is not None:
+            payload["equivalence_class"] = self.equivalence_class
+        return payload
 
     def compute_hash(self) -> str:
         return _sha256_json(self._payload())
