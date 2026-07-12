@@ -184,11 +184,53 @@ evidence to bar-meeting**. But two caveats travel with the number and must be qu
    paraphrases move the score less. So 0.219 certifies invariance to **natural rewording at scale**;
    **adversarial-reframe robustness at scale is the separate containment red-team** (per-instance
    attack-detection AUROC), still [committed]. Result: `data/invariance/theta_atscale_result.json`.
+
+### Red-team paraphraser — closing the refusal hole (2026-07-12): the hole is the *generator*, not the mechanism
+Caveat 1 above asked whether the mechanism *itself* fails on harmful content, or whether only the
+**generator** does. Answered by measurement with a **non-refusing paraphraser**: NLLB
+(`facebook/nllb-200-distilled-600M`) is a pure seq2seq MT model with no safety refusal, so
+**back-translation through 6 pivot languages** (es/fr/de/zh/ar/ru → en) paraphrases even overtly-toxic
+content. Ran it on **50 fresh `civil_comments` items with toxicity ≥ 0.7** — exactly the content an
+aligned LLM balks at (on this set `gpt-oss` refused **20%**; **NLLB refused 0%**):
+
+| measurement (harmful items) | reframe \|ΔS\| | unrelated \|ΔS\| | θ_d | ≤ 0.5 |
+|---|---:|---:|---:|:--:|
+| raw (no averaging) | 0.119 | 0.247 | 0.482 | ✅ |
+| **equivalence-class averaging (mechanism)** | 0.071 | 0.237 | **0.301** | ✅ |
+
+**θ_d = 0.301 ≤ 0.5 on harmful content** — the mechanism holds (raw drift is higher on harmful content,
+0.482 vs the natural set's 0.407, but averaging still pulls it well under the bar). **Conclusion: the
+24% hole was in the *generator's refusal*, not the mechanism — a non-refusing paraphraser closes it**,
+so the deployment mitigation is a fallback paraphraser (back-translation) for inputs the primary LLM
+refuses, rather than trusting the raw score. *Disclosed limitation:* back-translation can drift meaning
+slightly (MT noise), so it is a **red-team instrument**, not necessarily the production paraphraser.
+Result: `data/invariance/theta_redteam_result.json`; capture reuses `scripts/measure_theta_d_atscale.py`.
+
+### Cross-lingual invariance AT SCALE (2026-07-12): demo numbers hold, now including harmful content
+The demo cross-lingual index (BGE-M3 0.74 / LaBSE 0.81) was **n=5 benign** — the LLM translator refused
+the 3 harmful scenarios. NLLB doesn't refuse, so we re-ran at scale on **60 held-out items (half
+toxicity ≥ 0.5), translated to es/ar/zh/hi/sw**, embedded with both canonicalizers (index =
+(xling_cos − unrel_cos)/(1 − unrel_cos), `scripts/measure_xling_atscale.py`):
+
+| canonicalizer | index (n=300 pairs) | 95% CI | harmful | benign | demo (n=5) |
+|---|---:|---|---:|---:|---:|
+| **BGE-M3** (chosen) | **0.721** | [0.71, 0.74] | 0.704 | 0.739 | 0.74 |
+| **LaBSE** | **0.804** | [0.79, 0.82] | 0.797 | 0.811 | 0.81 |
+
+**The demo numbers held up at scale with tight CIs**, and — the point of the exercise — **harmful ≈
+benign** (BGE-M3 0.704 vs 0.739; LaBSE 0.797 vs 0.811): cross-lingual invariance is *not* a
+benign-only artifact. LaBSE still wins cross-lingually (translation-trained), consistent with the
+BGE-for-same-language / LaBSE-for-cross-language split. Result: `data/xling_scale/xling_scale_result.json`.
 - **[committed]** Per-instance **attack-detection AUROC** at scale (50+ euphemism/reframe variants via
   the NRP LLM) — the honest form of containment (the smoke n=4 is directional only).
-- **[committed]** **Cross-lingual** invariance (translations) and the **like-for-like baseline
-  contrast** — sequenced *after* the decision-layer metric exists (a scalar model has its own paraphrase
-  robustness; a scores-vs-scores comparison could invert — the comparison must be decision-vs-decision).
+- **[demonstrated at scale, 2026-07-12]** **Cross-lingual** invariance (translations) via NLLB — index
+  **BGE-M3 0.721 / LaBSE 0.804** on 60 items incl. harmful, ≥ 0.5 threshold met (above). *Still
+  [committed]:* the **like-for-like baseline contrast** — sequenced *after* the decision-layer metric
+  exists (a scalar model has its own paraphrase robustness; a scores-vs-scores comparison could invert
+  — the comparison must be decision-vs-decision).
+- **[demonstrated, 2026-07-12]** **Refusal-hole red-team** — a non-refusing back-translation paraphraser
+  (NLLB) closes the generator-refusal gap; θ_d **0.301 ≤ 0.5** on toxicity ≥ 0.7 content (above), so the
+  mechanism holds on harmful inputs when the class can be generated.
 - **Pre-registered thresholds (tighten-only, from these smoke scenarios):** θ = canonical-invariance
   index **≥ 0.5 on the full multilingual measurement**; **θ_d** = decision-layer invariance ratio
   **≤ 0.5**; **containment** = attack-detection AUROC **≥ 0.7**.

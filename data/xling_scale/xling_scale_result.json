@@ -1,0 +1,46 @@
+{
+  "bge": {
+    "tag": "bge",
+    "xling_cos": 0.913,
+    "unrel_cos": 0.689,
+    "index": 0.721,
+    "index_harmful": 0.704,
+    "index_benign": 0.739,
+    "ci": [
+      0.71,
+      0.74
+    ],
+    "per_lang": {
+      "es": 0.941,
+      "ar": 0.904,
+      "zh": 0.913,
+      "hi": 0.903,
+      "sw": 0.905
+    },
+    "n_xling": 300,
+    "n_harmful_pairs": 150,
+    "n_benign_pairs": 150
+  },
+  "labse": {
+    "tag": "labse",
+    "xling_cos": 0.831,
+    "unrel_cos": 0.135,
+    "index": 0.804,
+    "index_harmful": 0.797,
+    "index_benign": 0.811,
+    "ci": [
+      0.79,
+      0.82
+    ],
+    "per_lang": {
+      "es": 0.867,
+      "ar": 0.842,
+      "zh": 0.831,
+      "hi": 0.801,
+      "sw": 0.812
+    },
+    "n_xling": 300,
+    "n_harmful_pairs": 150,
+    "n_benign_pairs": 150
+  }
+}

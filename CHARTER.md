@@ -142,9 +142,11 @@ its own coverage limits in every report.
   measured 2026-07-11; **BGE-M3 chosen over LaBSE by a same-language A/B** (0.75 vs 0.49). Per-dimension
   fuzz-ratios (**1.1–2.8; four feeders ≥ 1.8, two near drift**) show invariance is **dissociated from
   validation margin** — legitimacy has the *weakest* margin yet high fuzz (1.99), environmental the
-  reverse — so the scorecard reports both axes per feeder. *Cross-lingual (preliminary pilot):* a claim
-  maps ~identically to its translation across es/ar/zh/hi/sw (index 0.74/0.81), **n=5 benign scenarios
-  — the 3 overtly-harmful ones were refused by the LLM translator; harmful + at-scale is committed.**
+  reverse — so the scorecard reports both axes per feeder. *Cross-lingual — now at scale:* a claim maps
+  ~identically to its translation across es/ar/zh/hi/sw — canonical index **BGE-M3 0.721 [0.71,0.74] /
+  LaBSE 0.804 [0.79,0.82]** on **60 held-out items including harmful** (translated by NLLB, which — unlike
+  the demo's LLM translator — does not refuse), with **harmful ≈ benign** (0.704/0.739; 0.797/0.811).
+  The n=5 demo pilot (0.74/0.81) is confirmed at scale with tight CIs.
   *(Euphemism-as-attack-detector is committed — below.)*
 - **Auditability** — every decision emits a re-verifiable hash-chained proof carrying each encoder's
   validation record.
@@ -166,10 +168,15 @@ its own coverage limits in every report.
   so they are safe but not invariance-protected (the "attack-or-starve" hole, quantified — an
   uncensored red-team paraphraser stays [committed]); (2) these are **natural** paraphrases — the
   at-scale raw drift (0.407) is well below the demo's *adversarial* raw (0.67–0.85), so **adversarial-
-  reframe robustness at scale is the separate containment item**, still [committed]. *Remaining
-  [committed]:* the refused-class red-team paraphraser; **cross-lingual at scale** (dedicated MT — LLM
-  translators *refuse* harmful content) and the **like-for-like baseline contrast**, sequenced *after*
-  θ_d (decision-vs-decision, not scores-vs-scores). θ: canonical index ≥ 0.5 on the full multilingual
+  reframe robustness at scale is the separate containment item**, still [committed]. **Both caveats now
+  have [demonstrated] follow-ups:** (1) the refusal hole is the *generator's*, not the mechanism's — a
+  **non-refusing back-translation paraphraser (NLLB)** reaches **θ_d 0.301 ≤ 0.5 on toxicity ≥ 0.7
+  content** (`gpt-oss` refused 20% of it, NLLB 0%), so the mechanism holds on harmful inputs when the
+  class can be generated; and **cross-lingual invariance at scale** via NLLB (which doesn't refuse) is
+  now measured on 60 items **including harmful** — canonical index **BGE-M3 0.721 / LaBSE 0.804**, with
+  harmful ≈ benign (0.704/0.739 and 0.797/0.811), the demo's 0.74/0.81 confirmed at scale with tight
+  CIs. *Remaining [committed]:* the **like-for-like baseline contrast** (decision-vs-decision) and
+  adversarial-reframe robustness at scale. θ: canonical index ≥ 0.5 on the full multilingual
   measurement, tighten-only.
 - **Containment** — per-instance **attack-detection AUROC** (canonical distance as a detector):
   **0.768 [0.65, 0.87]** on 64 generated variants (euphemism mean distance 0.090 vs reframe 0.053) —
@@ -188,10 +195,11 @@ its own coverage limits in every report.
   elsewhere — not claiming blanket coverage.
 - **`rights` does not transfer** (framework-relative) and is handled as a hand-specified rule, not a
   learned score.
-- **Cross-lingual — split.** Canonical-layer cross-lingual invariance is *measured* (index 0.74–0.81,
-  n=5 benign scenarios; scaling + harmful content via dedicated MT committed). The **feeders' own
-  cross-lingual *scoring* is not yet validated** — the valence axes were fit on English pairs; whether
-  a Spanish threat *scores* like its English original is untested.
+- **Cross-lingual — split.** Canonical-layer cross-lingual invariance is *measured at scale* (index
+  BGE-M3 0.721 / LaBSE 0.804, 60 items incl. harmful, via NLLB). The **feeders' own cross-lingual
+  *scoring* is not yet validated** — the valence axes were fit on English pairs; whether a Spanish
+  threat *scores* like its English original is untested (this is the decision-level cross-lingual leg,
+  distinct from the canonical-layer index above).
 - **The silicon interlock is cycle-simulated** (deterministic 12 cycles, II=1); **post-route timing
   closure and on-card measurement are committed deliverables**, not current claims.
 - **The multi-attribute *labels* are not the novelty — the instrument is.** Multi-attribute moderation

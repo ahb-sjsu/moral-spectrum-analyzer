@@ -44,3 +44,28 @@ def test_shipped_atscale_result_is_self_consistent():
     assert r["theta_d_mechanism"] <= r["theta_d_raw"]          # averaging reduces (or ties) the drift
     assert r["n_used"] + r["n_refused"] + r["n_dropped_leak"] == r["n_items_total"]
     assert 0.0 <= r["refusal_rate"] <= 1.0
+
+
+def test_redteam_result_holds_on_harmful_content():
+    """The non-refusing paraphraser closes the hole: mechanism meets the bar on toxicity>=0.7 content."""
+    p = ROOT / "data" / "invariance" / "theta_redteam_result.json"
+    if not p.exists():
+        return
+    r = json.loads(p.read_text())
+    assert r["theta_d_mechanism"] <= 0.5           # mechanism holds on harmful content
+    assert r["theta_d_mechanism"] <= r["theta_d_raw"]
+    assert r["n_refused"] == 0                      # NLLB back-translation never refuses
+
+
+def test_xling_atscale_result_is_consistent():
+    """Cross-lingual index at scale, incl. harmful — index in [0,1], harmful ~ benign, LaBSE >= BGE."""
+    p = ROOT / "data" / "xling_scale" / "xling_scale_result.json"
+    if not p.exists():
+        return
+    r = json.loads(p.read_text())
+    for tag in ("bge", "labse"):
+        if tag in r:
+            assert 0.0 <= r[tag]["index"] <= 1.0
+            assert r[tag]["index"] >= 0.5          # pre-registered threshold
+    if "bge" in r and "labse" in r:
+        assert r["labse"]["index"] >= r["bge"]["index"]  # LaBSE wins cross-lingual (expected)

@@ -1,0 +1,19 @@
+{
+  "n_items_total": 50,
+  "n_used": 50,
+  "n_refused": 0,
+  "n_dropped_leak": 0,
+  "refusal_rate": 0.0,
+  "m": 6,
+  "split_half": 3,
+  "seed": 0,
+  "n_unrelated_pairs": 196,
+  "theta_d_raw": 0.4824,
+  "theta_d_mechanism": 0.3008,
+  "reframe_dev_raw": 0.1193,
+  "reframe_dev_mech": 0.0712,
+  "unrelated_dev": 0.2368,
+  "meets_target": true,
+  "target": 0.5,
+  "class_generator": "nllb-600M-backtranslation-6pivots"
+}

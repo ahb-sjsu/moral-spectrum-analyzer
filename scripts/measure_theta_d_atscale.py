@@ -19,6 +19,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -46,7 +47,10 @@ def _norm(t: str) -> str:
 
 
 def main() -> None:
-    data = json.loads((ROOT / "data" / "invariance" / "theta_atscale.json").read_text(encoding="utf-8"))
+    # optional: measure_theta_d_atscale.py <input.json> <output.json>
+    inp = sys.argv[1] if len(sys.argv) > 1 else "theta_atscale.json"
+    outp_name = sys.argv[2] if len(sys.argv) > 2 else "theta_atscale_result.json"
+    data = json.loads((ROOT / "data" / "invariance" / inp).read_text(encoding="utf-8"))
     m = data.get("m", 6)
     items = data["items"]
 
@@ -106,7 +110,7 @@ def main() -> None:
         "unrelated_dev": round(den, 4), "meets_target": bool(th <= 0.5),
         "target": 0.5, "class_generator": data.get("generator", "nrp-llm"),
     }
-    outp = ROOT / "data" / "invariance" / "theta_atscale_result.json"
+    outp = ROOT / "data" / "invariance" / outp_name
     outp.write_text(json.dumps(out, indent=2), encoding="utf-8")
     print(f"\nwrote {outp}")
 
