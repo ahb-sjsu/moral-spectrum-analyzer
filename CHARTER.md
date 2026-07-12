@@ -106,8 +106,8 @@ its own coverage limits in every report.
   **shipped as a frozen, OOF-validated artifact the decision layer consumes**: it now returns real
   **allow / remove** on covered categories where confident (e.g. `hate_incitement → remove`, p 0.75),
   and escalates the ~49% it isn't confident about. The discovered `identity_attack` feeder carries the
-  **largest weight** (−2.69) and lifts the contraction **+0.084** (0.779 → 0.863 AUROC) — the new axis
-  measurably improves moderation. **Leakage-controlled (this is the axis's own strongest objection,
+  **largest weight** (−2.69) and lifts the contraction **+0.084** (0.779 → 0.863 AUROC, **both
+  measured on the identical 1523-row disjoint sample**) — the new axis measurably improves moderation. **Leakage-controlled (this is the axis's own strongest objection,
   and it survives):** because the `identity_attack` feeder trained on civil_comments rows and is the
   contraction's dominant feature, we found the overlap with the fit corpus (77 of 1600 rows, 4.8%) and
   **refit on the 1523 disjoint rows** — AUROC moved only 0.872 → 0.863 and the lift only +0.089 →
@@ -150,17 +150,21 @@ its own coverage limits in every report.
   validation record.
 
 **[committed] (development phase, with success metrics):**
-- **Invariance realized in the verdict — mechanism decided (θ_d 0.42 ≤ 0.5).** The feeders consume
-  BGE-M3 yet their scores deviate 0.24 while the embedding sits at 0.925: the trained axes *amplify*
-  the residual drift. This was a **mechanism decision** among three candidates, resolved **by
-  measurement** (`scripts/measure_theta_d.py`, leave-scenario-out): **equivalence-class averaging** —
-  average per-dimension scores over the input's paraphrase class, then decide — reaches the
-  pre-registered **θ_d = 0.42** (reframe) / 0.39 (euphemism); **drift-subspace projection was tried and
-  rejected** (failed even in-sample, 0.52). The mechanism is built and unit-tested
-  (`gtc.invariance_mechanism.average_perceptions`). *Remaining [committed]:* the θ_d measurement uses
-  the demo re-descriptions as the class (a leave-self-out proxy) — the **generate-the-class-at-
-  inference** wiring and **at-scale θ_d** remain to do (generation faces the LLM-refusal limit on
-  harmful content). Then **cross-lingual at scale** (dedicated MT — LLM translators *refuse* harmful
+- **Invariance realized in the verdict — mechanism *selected* (θ_d 0.42, leave-scenario-out proxy; at-scale committed).**
+  The feeders consume BGE-M3 yet their scores deviate 0.24 while the embedding sits at 0.925: the
+  trained axes *amplify* the residual drift. This was a **mechanism decision** among three candidates,
+  resolved **by measurement** (`scripts/measure_theta_d.py`, leave-scenario-out): **equivalence-class
+  averaging** — average per-dimension scores over the input's paraphrase class, then decide — reaches
+  **θ_d = 0.42** (reframe) / 0.39 (euphemism); **drift-subspace projection was tried and rejected**
+  (failed even in-sample, 0.52). **Two-number honesty:** the pre-registered bar θ_d ≤ 0.5 was
+  *calibrated from* these smoke scenarios, so 0.42 measured on the same scenarios' re-descriptions
+  (even leave-scenario-out) is **mechanism-selection evidence, not bar-meeting evidence** — the bar is
+  met only by the **at-scale run on generated classes**, which is why this item stays [committed]. The
+  mechanism is built and unit-tested (`gtc.invariance_mechanism.average_perceptions`). *Remaining
+  [committed]:* the **generate-the-class-at-inference** wiring and **at-scale θ_d** — and that
+  generator is itself a new trust-boundary + cost surface (spec'd in `docs/INVARIANCE_FINDINGS.md`:
+  attack-or-starve the class generator → singleton class → raw score; k× inference cost measured
+  *with* averaging on; audit proof records the class). Then **cross-lingual at scale** (dedicated MT — LLM translators *refuse* harmful
   content) and the **like-for-like baseline contrast**, sequenced *after* θ_d (decision-vs-decision,
   not scores-vs-scores). θ: canonical index ≥ 0.5 on the full multilingual measurement, tighten-only.
 - **Containment** — per-instance **attack-detection AUROC** (canonical distance as a detector):

@@ -69,8 +69,8 @@ model over the axes reaches **F1 ≈ 0.72 on toxicity** — *out-of-fold 5-fold 
 have coverage, the near-zero *equal-weight average* was the problem, not the features: a **learned
 contraction** recovers usable signal. **Now shipped + wired (2026-07-12):** the 9-feeder learned
 contraction (adding the validated `identity_attack` feeder) reaches **OOF AUROC 0.863 / F1 0.76** —
-a **+0.084 lift** over the 8-feeder baseline (0.779), because `identity_attack` carries the **largest
-weight** (−2.69). It is frozen to `data/contraction/toxicity_contraction.json` with its OOF validation
+a **+0.084 lift** over the 8-feeder baseline (0.779) — **both measured on the identical 1523-row
+disjoint sample** — because `identity_attack` carries the **largest weight** (−2.69). It is frozen to `data/contraction/toxicity_contraction.json` with its OOF validation
 record and consumed by `gtc.decision.decide`, so the pipeline now **moderates** covered categories
 (allow/remove where confident) instead of escalating everything. Fit: `scripts/fit_contraction.py`.
 
@@ -109,8 +109,10 @@ Sequence:
 3. **(done)** assessed `sexual_explicit` → **DECLINED as a moral axis; it is a policy-norms signal**
    (`docs/SEXUAL_CONTENT_ADMISSION.md`).
 4. **(done)** learned contraction for covered categories → shipped + wired, leakage-controlled
-   (Band 1 above). **(done)** decision-layer invariance mechanism → equivalence-class averaging,
-   θ_d 0.42 (`docs/INVARIANCE_FINDINGS.md`).
+   (Band 1 above). **(mechanism selected; bar committed)** decision-layer invariance → equivalence-class
+   averaging, **θ_d 0.42 (leave-scenario-out proxy; at-scale on generated classes committed)** —
+   0.42 is selection evidence, not bar-meeting evidence, because θ_d ≤ 0.5 was calibrated from these
+   same smoke scenarios (`docs/INVARIANCE_FINDINGS.md`).
 5. the spectrogram — with `threat` shown as *covered* and `identity_attack` as a lit 10th band — is
    the demo centerpiece. **Fine-print discipline (train-on-eval guard):** the Band-3 confirmation
    sample and the `identity_attack` feeder's civil_comments training rows share a corpus; when the

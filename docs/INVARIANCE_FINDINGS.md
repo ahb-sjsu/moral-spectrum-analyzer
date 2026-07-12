@@ -104,10 +104,31 @@ LLM, for the very content it must handle. Scaling (more scenarios + harmful cont
   the euphemism dodge (0.39). **Drift-subspace projection was tried and rejected** — it failed *even
   in-sample* (0.515, barely below raw), because the score-moving component is not the principal
   direction of the embedding-space paraphrase differences (a genuine negative, not a fit bug: verified
-  with a raw, non-centered SVD). *Honest scope:* the θ_d measurement uses the demo re-descriptions as
-  the equivalence class (a leave-**self**-out proxy); in deployment the class is **generated** at
-  inference, which faces the same LLM-refusal limit on overtly-harmful content — so the generate-at-
+  with a raw, non-centered SVD). *Honest scope — the two-number rule:* the pre-registered bar
+  θ_d ≤ 0.5 was **calibrated from** these same smoke scenarios, so **0.42 is mechanism-*selection*
+  evidence, not bar-*meeting* evidence**. The measurement uses the demo re-descriptions as the
+  equivalence class (a leave-**self**-out proxy); in deployment the class is **generated** at
+  inference. **The bar is met only by the at-scale run on generated classes** — so the generate-at-
   inference wiring + at-scale θ_d stay **[committed]**. n=8 scenarios; threshold tighten-only.
+
+  ### Inference-time equivalence class — committed spec (the real open engineering question)
+  At deployment the class is not the demo re-descriptions; it must be **generated** — k LLM paraphrases
+  of the incoming item — and that has three consequences that belong in the spec now, not in the
+  December red-team:
+  - **Cost.** k paraphrases × k feeder passes multiplies inference cost, so this item **couples to the
+    efficiency deliverable**: throughput-per-dollar must be measured **with averaging on**, because
+    that is the shipped configuration — an efficiency number without the class generator is measuring a
+    system we don't run.
+  - **Security — the paraphrase generator joins the trust boundary.** An adversary can target it
+    directly: (a) craft input that *paraphrases benignly* (mask intent through the generator), or (b)
+    **attack-or-starve the class** — overtly-harmful content the generator **refuses** to paraphrase
+    gets a **singleton class**, i.e. *no averaging*, i.e. the **weakly-invariant raw score** on exactly
+    the content invariance matters most for. This is the LLM-refusal / translation finding recurring at
+    inference; containment must cover it (fallback: an uncensored/hand-authored paraphraser for the
+    red-team leg, and a singleton-class → escalate default rather than trust the raw score).
+  - **Auditability.** The averaging step is an input to a system whose whole pitch is that nothing is
+    unauditable — so the **audit proof must record the class members (or their hashes)** and the count,
+    or the canonicalization becomes a silent, unverifiable transform.
 - **[committed]** Per-instance **attack-detection AUROC** at scale (50+ euphemism/reframe variants via
   the NRP LLM) — the honest form of containment (the smoke n=4 is directional only).
 - **[committed]** **Cross-lingual** invariance (translations) and the **like-for-like baseline

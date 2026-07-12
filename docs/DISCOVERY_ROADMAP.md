@@ -65,7 +65,17 @@ note, not armor):
 | cross-corpus | Procrustes-aligned cosine bar (civil_comments ↔ MHS) | **≥ 0.60** |
 | non-redundancy | max `|corr|` vs any of the 10 axes | **< 0.35** |
 | unblind (final) | AUROC vs held-out `identity_attack` label | **≥ 0.70** to call it a recovery |
+| **selection correction** | which survivor the 0.70 is tested on | **the single highest-stability survivor only** (pre-designated), OR clear a permutation null |
 | everywhere | seed | `0` |
+
+**Selection correction (no thumb on the scale).** `k=20` directions are mined and some subset `m`
+survives screening; testing *every* survivor and calling *any* AUROC ≥ 0.70 a recovery is **best-of-m
+selection** — a softer bar than it looks. So the 0.70 applies to a **single pre-designated candidate**:
+the **highest-stability survivor**, chosen before unblinding. If instead we report the best of the `m`
+survivors, recovery requires clearing a **selection-corrected null**: the AUROC of the **best of `m`
+random residual directions** under a permutation of the held-out label (≥ its 95th percentile), not the
+raw 0.70. Either rule is pre-registered here; the point experiment that certifies the method does not
+get to pick its winner after seeing the labels.
 
 - **Prediction (registered):** an ICA direction clears the stability + non-redundancy bars and, once
   unblinded, aligns with the held-out `identity_attack` label at **AUROC ≥ 0.70**. Bonus: `sexual_explicit`
