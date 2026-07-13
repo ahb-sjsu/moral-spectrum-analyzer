@@ -227,9 +227,10 @@ its own coverage limits in every report.
 ## 7. Milestones
 
 - **Prep (→ mid-July):** this Charter; the 90-second information capsule; the analyzer + spectrogram
-  demonstrable end-to-end. *(Done: analyzer, re-gate, discovery, audit; both discovery follow-ons
-  closed — `identity_attack` validated at 0.80 and wired live as the 10th channel, `sexual_content`
-  assessed and declined as a moral axis.)*
+  demonstrable end-to-end. *(Done: analyzer, re-gate, discovery, audit; the information capsule
+  scripted and built as a self-running narrated deck (`docs/CAPSULE.md`, `scripts/build_capsule_pptx.py`);
+  both discovery follow-ons closed — `identity_attack` validated at 0.80 and wired live as the 10th
+  channel, `sexual_content` assessed and declined as a moral axis.)*
 - **Development (→ mid-October):** the decision-layer invariance mechanism (θ_d ≤ 0.5); learned
   contraction so the pipeline moderates (not just escalates) on covered categories; the policy-norms
   channel for the declined `sexual_content` signal; efficiency numbers; the live web demo; the
