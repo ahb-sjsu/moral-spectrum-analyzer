@@ -4,9 +4,10 @@
 GTC partner site. **Arc (per onboarding):** problem + stakes → input → process → output walkthrough →
 memorable slogan.
 
-**Format:** narrated **animated PPTX** (self-running, 16:9). Voiceover recorded (human or TTS) over
-eight auto-advancing slides. Generator: `scripts/build_capsule_pptx.py` → `out/capsule.pptx`
-(speaker-notes hold the voiceover; slide timings auto-advance to hit ~90 s).
+**Format:** narrated **animated PPTX** (self-running, 16:9). A silent branded **intro title card**
+(~5 s) opens, then the voiceover (human or TTS) plays over eight auto-advancing shots. Generator:
+`scripts/build_capsule_pptx.py` → `out/capsule.pptx` (speaker-notes hold the voiceover; slide
+timings auto-advance — **~95 s total = 5 s intro + 90 s narrated**).
 
 **Honesty guardrail:** every spoken number is a **[demonstrated]** Charter claim at licensed strength.
 Nothing here states a `[committed]` item as done. Cross-check: `CHARTER.md §5`.
@@ -97,17 +98,18 @@ bars** — recurring so the deck reads as one system.
 
 | # | t (s) | On-screen visual | On-screen text | Animation cue |
 |---|------|------------------|----------------|----------------|
-| 1 | 0–11 | A lone glowing number `0.82` over a blurred feed of scrolling posts | `one number.` | Number pulses once; posts drift up behind it |
-| 2 | 11–23 | The `0.82` cracks into three fault icons: struck-through eye · a sentence wobbling into a re-worded twin · a dark "blind spot" wedge | `opaque · unstable · blind` | Each fault fades in on its VO beat (3 beats) |
-| 3 | 23–35 | The **golden apple** (left) **refracts** — prism-like — into the 9 rising spectrum bars (rays fan apple→bars). Title lands | **Moral Spectrum Analyzer** / *a judgment isn't one score — it has a spectrum* | Apple settles; rays fan out; bars grow L→R; title fades up |
-| 4 | 35–49 | Input box types a real line; the 9 taxonomy bars animate to heights; green ✓ badges pop on each | input: *"Doctors are hiding the cure — drink bleach to flush the virus."* → axes: **epistemic (false info)** · harm · legitimacy | Typewriter in; bars ease to height; badges pop staggered |
-| 5 | 49–61 | A decision chip resolves; a faint side panel lists the values weighed | `ESCALATE → human` · residue: *epistemic · harm · legitimacy* | Chip snaps in; residue panel slides from right |
-| 6 | 61–74 | Triptych: (a) `9/10` gate stamp · (b) the sentence in 5 languages collapsing to ONE point while a scalar dot scatters · (c) an audit hash with a green *re-verified* check | `grounded · invariant · auditable` | Three panels wipe in L→R on VO beats |
-| 7 | 74–84 | A **new** 10th bar rises out of the blind-spot wedge from Shot 2, labeled and badged | *identity attack* `✓ validated · AUROC 0.80` | New violet bar grows + badge; hold |
-| 8 | 84–90 | Logo lockup on black, spectrum bars as a quiet underline | **Moral Spectrum Analyzer** / **Trust — made measurable.** / *Global Trust Challenge 2025* | Bars sweep once under the wordmark |
+| 0 | 0–5 | **Intro title card.** The `analyzer_mark` hero — the golden apple refracting into the 9-axis spectrum — centered | **Moral Spectrum Analyzer** / *a judgment isn't one score — it has a spectrum* / An Information Capsule · **a Philosophy Engineering discipline** · Global Trust Challenge 2026 | Silent cold open: mark fades up, bars settle under the apple, title rises; holds ~5 s, then narration begins |
+| 1 | 5–16 | A lone glowing number `0.82` over a blurred feed of scrolling posts | `one number.` | Number pulses once; posts drift up behind it |
+| 2 | 16–28 | The `0.82` cracks into three fault icons: struck-through eye · a sentence wobbling into a re-worded twin · a dark "blind spot" wedge | `opaque · unstable · blind` | Each fault fades in on its VO beat (3 beats) |
+| 3 | 28–40 | The **golden apple** (left) **refracts** — prism-like — into the 9 rising spectrum bars (rays fan apple→bars). Title lands | **Moral Spectrum Analyzer** / *a judgment isn't one score — it has a spectrum* | Apple settles; rays fan out; bars grow L→R; title fades up |
+| 4 | 40–54 | Input box types a real line; the 9 taxonomy bars animate to heights; green ✓ badges pop on each | input: *"Doctors are hiding the cure — drink bleach to flush the virus."* → axes: **epistemic (false info)** · harm · legitimacy | Typewriter in; bars ease to height; badges pop staggered |
+| 5 | 54–66 | A decision chip resolves; a faint side panel lists the values weighed | `ESCALATE → human` · residue: *epistemic · harm · legitimacy* | Chip snaps in; residue panel slides from right |
+| 6 | 66–79 | Triptych: (a) `9/10` gate stamp · (b) the sentence in 5 languages collapsing to ONE point while a scalar dot scatters · (c) an audit hash with a green *re-verified* check | `grounded · invariant · auditable` | Three panels wipe in L→R on VO beats |
+| 7 | 79–89 | A **new** 10th bar rises out of the blind-spot wedge from Shot 2, labeled and badged | *identity attack* `✓ validated · AUROC 0.80` | New violet bar grows + badge; hold |
+| 8 | 89–95 | Logo lockup on black, spectrum bars as a quiet underline | **Moral Spectrum Analyzer** / **Trust — made measurable.** / *a Philosophy Engineering discipline* / *Global Trust Challenge 2026* | Bars sweep once under the wordmark |
 
-**Timing check:** 8 shots, ~11 s avg, VO ≈ 210 words ≈ 88–92 s. Trim Shot 2 or 6 by one beat if the
-recorded VO runs long.
+**Timing check:** intro 5 s + 8 shots (~11 s avg) ≈ **95 s**; VO ≈ 210 words ≈ 88–92 s over the shots.
+Trim Shot 2 or 6 by one beat if the recorded VO runs long. The intro is silent, so it doesn't eat VO budget.
 
 ---
 

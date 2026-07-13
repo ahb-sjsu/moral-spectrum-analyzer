@@ -43,6 +43,7 @@ AX10 = AX9 + ["identity‑attack"]
 
 # per-shot advance seconds (sums to 90)
 TIMING = [11, 12, 12, 14, 12, 13, 10, 6]
+INTRO_SEC = 5   # silent branded title card before the narration begins
 
 EMU_IN = 914400
 
@@ -197,6 +198,72 @@ def add_apple(slide, l, t, size):
                              width=Inches(size), height=Inches(size))
 
 
+# ---- analyzer sub-mark (apple -> refracted moral spectrum) -------------------
+# Mirrors docs/brand/analyzer_mark.svg exactly (viewBox 400x200): the apple
+# embedded unchanged, refracting into the nine-axis spectrum. Transparent PNG so
+# it sits on the deck background. Keep in sync with the SVG master.
+_MARK_PNG = None
+_MARK_H = [0.45, 0.60, 0.78, 0.68, 0.90, 0.75, 0.85, 0.60, 0.72]
+_MARK_RAMP = [(0xF5, 0xC1, 0x47), (0xEC, 0xA8, 0x4C), (0xCF, 0xC7, 0x55),
+              (0x9C, 0xD1, 0x6E), (0x6E, 0xD1, 0x8C), (0x62, 0xCB, 0xB0),
+              (0x5B, 0xB8, 0xD8), (0x53, 0xA0, 0xEE), (0x4C, 0x8B, 0xF5)]
+
+
+def render_mark(path, w_px=1600, ss=2):
+    from PIL import Image, ImageDraw
+    W, Hp = w_px * ss, (w_px // 2) * ss
+    S = W / 400.0
+    base, maxh, left, right, bw = 155.0, 95.0, 176.0, 380.0, 15.0
+    n = len(_MARK_H); slot = (right - left) / n
+    edge = (131.0, 104.0)
+    img = Image.new("RGBA", (W, Hp), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img, "RGBA")
+
+    def M(p):                                   # mark-space -> px
+        return (p[0] * S, p[1] * S)
+
+    def A(p):                                   # apple-space -> mark-space -> px
+        return ((p[0] * 0.75 + 15) * S, (p[1] * 0.75 + 18.75) * S)
+    # refraction rays: apple edge -> each bar top
+    for i, h in enumerate(_MARK_H):
+        cx = left + i * slot + slot / 2
+        top = base - h * maxh
+        d.line([M(edge), M((cx, top))], fill=_MARK_RAMP[i] + (150,),
+               width=max(1, int(1.3 * S)))
+    # spectrum bars
+    for i, h in enumerate(_MARK_H):
+        x = left + i * slot + (slot - bw) / 2
+        top = base - h * maxh
+        d.rounded_rectangle([M((x, top)), M((x + bw, base))], radius=int(2 * S),
+                            fill=_MARK_RAMP[i] + (255,))
+    # apple (embedded unchanged), scaled/placed via A()
+    d.ellipse([A((42, 57)), A((158, 173))], fill=(0xF5, 0xC1, 0x47, 255))
+    hi = Image.new("RGBA", (W, Hp), (0, 0, 0, 0))
+    ImageDraw.Draw(hi).ellipse([A((70, 75)), A((98, 115))], fill=(0xFF, 0xE8, 0xA8, 128))
+    img = Image.alpha_composite(img, hi); d = ImageDraw.Draw(img, "RGBA")
+    d.line([A(p) for p in _quad((96, 60), (100, 46), (112, 50))],
+           fill=(0x6B, 0x3A, 0x00, 255), width=max(2, int(3.5 * 0.75 * S)), joint="curve")
+    leaf = _quad((114, 50), (135, 42), (140, 62)) + _quad((140, 62), (124, 67), (114, 50))
+    d.polygon([A(p) for p in leaf], fill=(0x4A, 0xDE, 0x80, 255))
+    d.line([A(p) for p in _quad((114, 50), (130, 52), (140, 62))],
+           fill=(0x16, 0x65, 0x34, 255), width=max(1, int(1.2 * 0.75 * S)), joint="curve")
+    img.resize((w_px, w_px // 2), Image.LANCZOS).save(path)
+
+
+def mark_png():
+    global _MARK_PNG
+    if _MARK_PNG is None:
+        os.makedirs("out", exist_ok=True)
+        _MARK_PNG = os.path.join("out", "_mark.png")
+        render_mark(_MARK_PNG)
+    return _MARK_PNG
+
+
+def add_mark(slide, l, t, w):
+    slide.shapes.add_picture(mark_png(), Inches(l), Inches(t),
+                             width=Inches(w), height=Inches(w / 2))
+
+
 def ray(slide, x1, y1, x2, y2, color, width=0.75):
     """A thin refraction ray (the apple's light fanning into the spectrum)."""
     c = slide.shapes.add_connector(MSO_CONNECTOR.STRAIGHT, Inches(x1), Inches(y1),
@@ -230,6 +297,21 @@ def build(path="out/capsule.pptx"):
         "attack — and validated it. And when it can't read something? It says so.",
         "The Moral Spectrum Analyzer. Trust — made measurable.",
     ]
+
+    # --- Intro: branded title card (silent cold open, holds then narration begins) ---
+    s = _blank(prs); bg(s)
+    add_mark(s, (13.333 - 7.4) / 2, 0.85, 7.4)          # analyzer mark: apple -> spectrum
+    text(s, "Moral Spectrum Analyzer", 0, 4.75, 13.333, 1.0, size=46, color=WHITE,
+         bold=True, align=PP_ALIGN.CENTER)
+    text(s, "a judgment isn't one score — it has a spectrum", 0, 5.72, 13.333, 0.6,
+         size=22, color=GREEN, align=PP_ALIGN.CENTER, italic=True)
+    text(s, "An Information Capsule  ·  a Philosophy Engineering discipline", 0, 6.42,
+         13.333, 0.5, size=17, color=GOLD, align=PP_ALIGN.CENTER)
+    text(s, "Global Trust Challenge 2026  ·  Geometric Ethics AI Lab", 0, 6.86, 13.333,
+         0.5, size=14, color=MUTE, align=PP_ALIGN.CENTER)
+    notes(s, "(silent title card — no narration; holds ~5 s, then Shot 1 begins)",
+          "Mark fades up; spectrum bars settle under the apple; title + tagline rise.")
+    advance(s, INTRO_SEC)
 
     # --- Shot 1: the lone number ---
     s = _blank(prs); bg(s)
@@ -341,20 +423,25 @@ def build(path="out/capsule.pptx"):
     text(s, "Trust — made measurable.", 0, 3.8, 13.333, 0.9, size=30, color=GOLD,
          align=PP_ALIGN.CENTER, italic=True)
     bars(s, [0.12] * 9, [""] * 9, base_y=5.25, max_h=0.5)   # quiet spectrum underline
-    text(s, "Global Trust Challenge 2025  ·  Geometric Ethics AI Lab",
-         0, 6.35, 13.333, 0.6, size=16, color=MUTE, align=PP_ALIGN.CENTER)
+    text(s, "a Philosophy Engineering discipline", 0, 5.95, 13.333, 0.5, size=17,
+         color=GOLD, align=PP_ALIGN.CENTER)
+    text(s, "Global Trust Challenge 2026  ·  Geometric Ethics AI Lab",
+         0, 6.4, 13.333, 0.6, size=15, color=MUTE, align=PP_ALIGN.CENTER)
     notes(s, VO[7], "Golden apple settles in; wordmark + slogan fade up; bars sweep once beneath.")
     advance(s, TIMING[7])
 
     # subtle golden-apple brand mark, top-right, on content slides that don't already
-    # feature the apple (skip Shot 3's refraction reveal and Shot 8's hero lockup)
+    # feature the apple (skip the intro title card, Shot 3's refraction reveal, and
+    # Shot 8's hero lockup — indices shift +1 because of the prepended intro)
     for i, sl in enumerate(prs.slides):
-        if i not in (2, 7):
+        if i not in (0, 3, 8):
             add_apple(sl, 12.55, 0.32, 0.5)
 
     os.makedirs(os.path.dirname(path), exist_ok=True)
     prs.save(path)
-    print(f"wrote {path}  ({len(list(prs.slides))} slides, ~{sum(TIMING)}s auto-run)")
+    total = INTRO_SEC + sum(TIMING)
+    print(f"wrote {path}  ({len(list(prs.slides))} slides, ~{total}s auto-run "
+          f"[{INTRO_SEC}s intro + {sum(TIMING)}s narrated])")
 
 
 if __name__ == "__main__":

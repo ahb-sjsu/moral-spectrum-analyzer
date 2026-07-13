@@ -1,6 +1,6 @@
 # gtc-prototype
 
-**Geometric Ethics for Trustworthy AI** — prototype for the **Global Trust Challenge (2025)**.
+**Geometric Ethics for Trustworthy AI** — prototype for the **Global Trust Challenge (2026)**.
 Domain: **multilingual content moderation**.
 
 > Current AI systems collapse morally significant decisions into a single scalar. This prototype

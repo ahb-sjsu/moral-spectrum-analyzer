@@ -1,6 +1,6 @@
 # GTC Prototype — Build Plan (v6, spectrum-analyzer headline)
 
-**Entry:** *Geometric Ethics for Trustworthy AI: Tensor-Based Integrity Verification and Structural Containment* — Global Trust Challenge (2025), entry `jRvRdGdd`.
+**Entry:** *Geometric Ethics for Trustworthy AI: Tensor-Based Integrity Verification and Structural Containment* — Global Trust Challenge (2026), entry `jRvRdGdd`.
 **Team:** Geometric Ethics AI Lab — Andrew Bond, SJSU.
 **This is a public repo.** No infrastructure identifiers (hostnames, IPs, usernames, cluster namespaces) appear in this document or in source. Dev/GPU access is via environment only; the prototype ships **cached real outputs** so a clone runs the demo with no internal access.
 
