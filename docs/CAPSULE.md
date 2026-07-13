@@ -26,8 +26,34 @@ Nothing here states a `[committed]` item as done. Cross-check: `CHARTER.md §5`.
 > The "where a single score would drift" contrast is framed **conceptually** (the thesis), not as a
 > measured decision-vs-decision baseline — that baseline is `[committed]` (§5), so the VO does not
 > quote a number for it.
+>
+> The example resolves to **ESCALATE**, not REMOVE, on purpose: the learned contraction confidently
+> moderates the *covered* (toxicity-family) categories and **escalates the rest** (§4). Disinformation
+> is high-signal on the spectrum but outside the confident-remove set, so routing it to a human is the
+> honest, conservative-by-default behavior — and it demonstrates the escalation value up front.
 
 ---
+
+## Brand & symbolism — the golden apple, built upon
+
+The mark is the **ErisML golden apple** (`docs/brand/erisml_apple.svg`, from the Atlas
+brand kit — do **not** recolour; the gold is the Eris reference and is load-bearing):
+
+- **The apple = the judgment.** Eris's golden apple — *"to the fairest"* — is the object
+  put up for moral weighing; the sphere is its logic and machinery.
+- **Stem + leaf = grounded in earth and life.** The judgment isn't free-floating; it is
+  rooted in the real. In our terms that *is* the **"Grounded"** trust beat — every number
+  traces to a validated encoder, anchored in real data, not asserted.
+
+**What the capsule builds on top of it:** the apple **refracts, prism-like, into the
+nine-axis moral spectrum** — the product's whole thesis in one image (*a judgment isn't
+one score; it has a spectrum*). That refraction is **Shot 3's reveal**; the apple then
+recurs as a quiet corner mark on the content slides and as the hero lockup on Shot 8,
+with the slogan set in brand gold to echo it. The spectrum's warm end meets the apple's
+gold, so the mark and the instrument read as one system.
+
+> If you like the refraction motif, I can promote it to a standalone **`analyzer_mark.svg`**
+> (apple + refracted spectrum) as a proper product sub-mark — say the word.
 
 ## Slogan options (pick one for Shot 8)
 
@@ -48,10 +74,11 @@ Nothing here states a `[committed]` item as done. Cross-check: `CHARTER.md §5`.
    sentence. And worst of all — it can't tell you what it fails to see.
 3. So we built the **Moral Spectrum Analyzer**. It reads content not as one score, but as a
    *spectrum* — the energy across nine distinct moral dimensions.
-4. Feed it a line of content. Each axis lights up — harm, fairness, cruelty, a targeted identity
-   attack — and every one carries a badge showing it was independently validated. No badge, no number.
-5. Out comes a decision — allow, remove, or *escalate to a human* — with its **moral residue**: the
-   values it weighed but didn't act on. Nothing hidden.
+4. Feed it a line of content. Each axis lights up — false information, real-world harm, eroded public
+   trust — and every one carries a badge showing it was independently validated. No badge, no number.
+5. Out comes a decision — allow, remove, or *escalate to a human* — with its **moral residue**: every
+   value it weighed. Here it escalates: the disinformation signal is loud, but the call goes to a
+   person. Nothing hidden.
 6. Nine of ten axes pass a pre-registered validation gate. Reword the sentence, or translate it across
    five languages — the verdict holds, where a single score would drift. And every decision emits a
    proof you can re-verify.
@@ -71,11 +98,11 @@ bars** — recurring so the deck reads as one system.
 |---|------|------------------|----------------|----------------|
 | 1 | 0–11 | A lone glowing number `0.82` over a blurred feed of scrolling posts | `one number.` | Number pulses once; posts drift up behind it |
 | 2 | 11–23 | The `0.82` cracks into three fault icons: struck-through eye · a sentence wobbling into a re-worded twin · a dark "blind spot" wedge | `opaque · unstable · blind` | Each fault fades in on its VO beat (3 beats) |
-| 3 | 23–35 | The number **expands** into 9 rising bars — the reveal. Title lands | **Moral Spectrum Analyzer** / *nine moral dimensions* | Bars grow from baseline L→R; title fades up |
-| 4 | 35–49 | Input box types a real line; bars animate to heights; green ✓ badges pop on each | input: *"They'll beat people with a weapon."* → axes: harm · fairness · cruelty · **identity-attack** | Typewriter in; bars ease to height; badges pop staggered |
-| 5 | 49–61 | A decision chip resolves; a faint side panel lists secondary values | `REMOVE` (p 0.75) · residue: *privacy, legitimacy…* | Chip snaps in; residue panel slides from right |
+| 3 | 23–35 | The **golden apple** (left) **refracts** — prism-like — into the 9 rising spectrum bars (rays fan apple→bars). Title lands | **Moral Spectrum Analyzer** / *a judgment isn't one score — it has a spectrum* | Apple settles; rays fan out; bars grow L→R; title fades up |
+| 4 | 35–49 | Input box types a real line; the 9 taxonomy bars animate to heights; green ✓ badges pop on each | input: *"Doctors are hiding the cure — drink bleach to flush the virus."* → axes: **epistemic (false info)** · harm · legitimacy | Typewriter in; bars ease to height; badges pop staggered |
+| 5 | 49–61 | A decision chip resolves; a faint side panel lists the values weighed | `ESCALATE → human` · residue: *epistemic · harm · legitimacy* | Chip snaps in; residue panel slides from right |
 | 6 | 61–74 | Triptych: (a) `9/10` gate stamp · (b) the sentence in 5 languages collapsing to ONE point while a scalar dot scatters · (c) an audit hash with a green *re-verified* check | `grounded · invariant · auditable` | Three panels wipe in L→R on VO beats |
-| 7 | 74–84 | A **new** bar rises out of the blind-spot wedge from Shot 2, labeled; then a soft `ESCALATE → human` chip | *identity attack* `✓ AUROC 0.80` · `ESCALATE when unsure` | New bar grows + badge; escalate chip fades up |
+| 7 | 74–84 | A **new** 10th bar rises out of the blind-spot wedge from Shot 2, labeled and badged | *identity attack* `✓ validated · AUROC 0.80` | New violet bar grows + badge; hold |
 | 8 | 84–90 | Logo lockup on black, spectrum bars as a quiet underline | **Moral Spectrum Analyzer** / **Trust — made measurable.** / *Global Trust Challenge 2025* | Bars sweep once under the wordmark |
 
 **Timing check:** 8 shots, ~11 s avg, VO ≈ 210 words ≈ 88–92 s. Trim Shot 2 or 6 by one beat if the
