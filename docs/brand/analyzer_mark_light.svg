@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Moral Spectrum Analyzer mark: the ErisML apple (the judgment) refracts
+     into its nine-axis moral spectrum. Builds on erisml_apple.svg (apple
+     geometry embedded unchanged; do not recolour). (c) 2026 Andrew H. Bond. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" role="img" aria-label="Moral Spectrum Analyzer">
+  <title>Moral Spectrum Analyzer</title>
+  <g stroke-linecap="round">
+    <line x1="131.0" y1="104.0" x2="187.3" y2="112.2" stroke="#C38A00" stroke-width="1.3" opacity="0.45"/>
+    <line x1="131.0" y1="104.0" x2="210.0" y2="98.0" stroke="#C07A1E" stroke-width="1.3" opacity="0.45"/>
+    <line x1="131.0" y1="104.0" x2="232.7" y2="80.9" stroke="#9C8A1A" stroke-width="1.3" opacity="0.45"/>
+    <line x1="131.0" y1="104.0" x2="255.3" y2="90.4" stroke="#5F9E2E" stroke-width="1.3" opacity="0.45"/>
+    <line x1="131.0" y1="104.0" x2="278.0" y2="69.5" stroke="#2FA05E" stroke-width="1.3" opacity="0.45"/>
+    <line x1="131.0" y1="104.0" x2="300.7" y2="83.8" stroke="#279488" stroke-width="1.3" opacity="0.45"/>
+    <line x1="131.0" y1="104.0" x2="323.3" y2="74.2" stroke="#2E86B0" stroke-width="1.3" opacity="0.45"/>
+    <line x1="131.0" y1="104.0" x2="346.0" y2="98.0" stroke="#2B6CD0" stroke-width="1.3" opacity="0.45"/>
+    <line x1="131.0" y1="104.0" x2="368.7" y2="86.6" stroke="#2B5CE6" stroke-width="1.3" opacity="0.45"/>
+  </g>
+  <g>
+    <rect x="179.8" y="112.2" width="15.0" height="42.8" rx="2" fill="#C38A00"/>
+    <rect x="202.5" y="98.0" width="15.0" height="57.0" rx="2" fill="#C07A1E"/>
+    <rect x="225.2" y="80.9" width="15.0" height="74.1" rx="2" fill="#9C8A1A"/>
+    <rect x="247.8" y="90.4" width="15.0" height="64.6" rx="2" fill="#5F9E2E"/>
+    <rect x="270.5" y="69.5" width="15.0" height="85.5" rx="2" fill="#2FA05E"/>
+    <rect x="293.2" y="83.8" width="15.0" height="71.2" rx="2" fill="#279488"/>
+    <rect x="315.8" y="74.2" width="15.0" height="80.8" rx="2" fill="#2E86B0"/>
+    <rect x="338.5" y="98.0" width="15.0" height="57.0" rx="2" fill="#2B6CD0"/>
+    <rect x="361.2" y="86.6" width="15.0" height="68.4" rx="2" fill="#2B5CE6"/>
+  </g>
+  <g transform="translate(15,18.75) scale(0.75)">
+    <circle cx="100" cy="115" r="58" fill="#c38a00"/>
+    <ellipse cx="84" cy="95" rx="14" ry="20" fill="#f2c870" opacity="0.5"/>
+    <path d="M 96 60 Q 100 46 112 50" fill="none" stroke="#6b3a00" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M 114 50 Q 135 42 140 62 Q 124 67 114 50 Z" fill="#15803d"/>
+    <path d="M 114 50 Q 130 52 140 62" fill="none" stroke="#1a2340" stroke-width="1"/>
+  </g>
+</svg>

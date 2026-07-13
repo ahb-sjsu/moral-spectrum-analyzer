@@ -52,8 +52,9 @@ recurs as a quiet corner mark on the content slides and as the hero lockup on Sh
 with the slogan set in brand gold to echo it. The spectrum's warm end meets the apple's
 gold, so the mark and the instrument read as one system.
 
-> If you like the refraction motif, I can promote it to a standalone **`analyzer_mark.svg`**
-> (apple + refracted spectrum) as a proper product sub-mark — say the word.
+> The refraction motif is also promoted to a standalone product sub-mark —
+> **`docs/brand/analyzer_mark.svg`** (dark) / **`analyzer_mark_light.svg`** (light): the apple
+> embedded unchanged, refracting into the nine-axis spectrum. See `docs/brand/README.md`.
 
 ## Slogan options (pick one for Shot 8)
 
