@@ -1,4 +1,4 @@
-"""gtc command-line interface. Grows one subcommand per phase; today: perceive (stub-backed)."""
+"""msa command-line interface. Grows one subcommand per phase; today: perceive (stub-backed)."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ from pathlib import Path
 
 import click
 
-from gtc import DEME10, __version__
-from gtc.perception import get_backend
+from moral_spectrum import DEME10, __version__
+from moral_spectrum.perception import get_backend
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
@@ -49,15 +49,19 @@ def cmd_perceive(text: str, backend: str) -> None:
     default=None,
     help="Write report.html + result.json here. Default: out/",
 )
-def cmd_moderate(text: str, backend: str, hard_flags: tuple[str, ...], out_dir: Path | None) -> None:
+def cmd_moderate(
+    text: str, backend: str, hard_flags: tuple[str, ...], out_dir: Path | None
+) -> None:
     """Run TEXT through the end-to-end moderation spine."""
-    from gtc.pipeline import moderate
-    from gtc.report import render_html, result_to_json
+    from moral_spectrum.pipeline import moderate
+    from moral_spectrum.report import render_html, result_to_json
 
     result = moderate(text, backend=backend, hard_flags=list(hard_flags))
     s = result.summary()
-    click.echo(f"[decision] {s['action'].upper()}  S={s['satisfaction']:+.3f}  "
-               f"review={s['requires_human_review']}  validated={s['all_validated']}")
+    click.echo(
+        f"[decision] {s['action'].upper()}  S={s['satisfaction']:+.3f}  "
+        f"review={s['requires_human_review']}  validated={s['all_validated']}"
+    )
     click.echo(f"[tensor]   principal={s['principal_dimension']}")
     if result.decision.moral_residue:
         click.echo(f"[residue]  {', '.join(r['dimension'] for r in result.decision.moral_residue)}")
@@ -73,7 +77,7 @@ def cmd_moderate(text: str, backend: str, hard_flags: tuple[str, ...], out_dir: 
 @cli.command("version")
 def cmd_version() -> None:
     """Print the prototype version."""
-    click.echo(json.dumps({"gtc": __version__}))
+    click.echo(json.dumps({"moral-spectrum-analyzer": __version__}))
 
 
 if __name__ == "__main__":

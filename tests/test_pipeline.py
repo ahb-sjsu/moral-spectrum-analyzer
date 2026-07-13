@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import pytest
 
-from gtc import DEME10
-from gtc.audit import ProofChain
-from gtc.decision import ModerationDecision, decide
-from gtc.perception.base import DimScore, PerceptionResult, ValidationRecord
-from gtc.pipeline import build_tensor, moderate
+from moral_spectrum import DEME10
+from moral_spectrum.audit import ProofChain
+from moral_spectrum.decision import decide
+from moral_spectrum.perception.base import DimScore, PerceptionResult, ValidationRecord
+from moral_spectrum.pipeline import build_tensor, moderate
 
 
 def _perc(values: dict[str, float], *, validated: bool, conf: float = 0.9) -> PerceptionResult:
@@ -23,6 +23,7 @@ def _perc(values: dict[str, float], *, validated: bool, conf: float = 0.9) -> Pe
 
 
 # ---- pipeline (stub backend, offline) ----------------------------------------
+
 
 def test_moderate_stub_runs_end_to_end():
     r = moderate("They will attack and beat people with a weapon; pure violence.", backend="stub")
@@ -46,17 +47,22 @@ def test_moderate_deterministic():
 
 # ---- decision policy (synthetic validated perception) ------------------------
 
+
 def test_validated_clear_violation_removes():
-    p = _perc({"physical_harm": -0.9, "autonomy_respect": -0.7, "privacy_protection": -0.6},
-              validated=True)
+    p = _perc(
+        {"physical_harm": -0.9, "autonomy_respect": -0.7, "privacy_protection": -0.6},
+        validated=True,
+    )
     d = decide(p)
     assert d.action == "remove"
     assert d.requires_human_review is False
 
 
 def test_validated_clear_upheld_allows():
-    p = _perc({"physical_harm": 0.6, "privacy_protection": 0.7, "societal_environmental": 0.6},
-              validated=True)
+    p = _perc(
+        {"physical_harm": 0.6, "privacy_protection": 0.7, "societal_environmental": 0.6},
+        validated=True,
+    )
     d = decide(p)
     assert d.action == "allow"
 
@@ -71,8 +77,13 @@ def test_hard_veto_removes_regardless_of_validation():
 
 
 def test_family_collapse_is_six_axes_not_ten():
-    p = _perc({d: -0.8 for d in ("virtue_care", "fairness_equity", "legitimacy_trust",
-                                 "epistemic_quality")}, validated=True)
+    p = _perc(
+        {
+            d: -0.8
+            for d in ("virtue_care", "fairness_equity", "legitimacy_trust", "epistemic_quality")
+        },
+        validated=True,
+    )
     d = decide(p)
     # The four family dims contribute ONE factor, not four → 5 independent (incl. the discovered
     # identity_attack) + 1 collapsed family = 6 effective axes, not ten.
@@ -83,14 +94,22 @@ def test_family_collapse_is_six_axes_not_ten():
 
 def test_moral_residue_records_discarded_values():
     # Net violation, but a strong upheld epistemic value → that value is the discarded residue.
-    p = _perc({"physical_harm": -0.9, "autonomy_respect": -0.8, "privacy_protection": -0.7,
-               "epistemic_quality": 0.8}, validated=True)
+    p = _perc(
+        {
+            "physical_harm": -0.9,
+            "autonomy_respect": -0.8,
+            "privacy_protection": -0.7,
+            "epistemic_quality": 0.8,
+        },
+        validated=True,
+    )
     d = decide(p)
     assert d.action == "remove"
     assert any(r["dimension"] == "epistemic_quality" for r in d.moral_residue)
 
 
 # ---- the discovered-and-validated 10th axis (identity_attack) ----------------
+
 
 def test_identity_attack_rides_as_validated_extension_channel():
     # The compiler tensor stays a frozen 9-axis type; identity_attack is carried alongside it as a
@@ -108,8 +127,15 @@ def test_identity_attack_rides_as_validated_extension_channel():
 def test_identity_attack_participates_in_contraction_and_residue():
     # A net-violation input in which the discarded upheld value is the identity axis → it must show
     # up in the moral residue (proof that the 10th channel is live in the decision, not cosmetic).
-    p = _perc({"physical_harm": -0.9, "autonomy_respect": -0.8, "privacy_protection": -0.7,
-               "identity_attack": 0.8}, validated=True)
+    p = _perc(
+        {
+            "physical_harm": -0.9,
+            "autonomy_respect": -0.8,
+            "privacy_protection": -0.7,
+            "identity_attack": 0.8,
+        },
+        validated=True,
+    )
     d = decide(p)
     assert d.action == "remove"
     assert "identity_attack" in d.effective_axes
@@ -117,6 +143,7 @@ def test_identity_attack_participates_in_contraction_and_residue():
 
 
 # ---- audit chain -------------------------------------------------------------
+
 
 def test_proof_chain_verifies_and_detects_tamper():
     chain = ProofChain()

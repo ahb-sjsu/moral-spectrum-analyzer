@@ -66,7 +66,7 @@ class DecisionProof:
     def compute_hash(self) -> str:
         return _sha256_json(self._payload())
 
-    def finalize(self) -> "DecisionProof":
+    def finalize(self) -> DecisionProof:
         self.proof_hash = self.compute_hash()
         return self
 

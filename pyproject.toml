@@ -3,14 +3,25 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "gtc-prototype"
+name = "moral-spectrum-analyzer"
 version = "0.1.0"
-description = "Geometric Ethics for Trustworthy AI — Global Trust Challenge prototype (multilingual content moderation)."
+description = "The Moral Spectrum Analyzer — Geometric Ethics for Trustworthy AI: validation-gated, auditable multilingual content moderation."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "Andrew H. Bond", email = "andrew.bond@sjsu.edu" }]
-keywords = ["ai-ethics", "trust", "content-moderation", "geometric-ethics", "deme", "invariance"]
+keywords = ["ai-ethics", "trust", "content-moderation", "geometric-ethics", "deme", "invariance", "moral-spectrum"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Typing :: Typed",
+]
 
 dependencies = [
   "erisml-compiler>=0.9.0",
@@ -18,26 +29,50 @@ dependencies = [
   "click>=8.1",
 ]
 
+[project.urls]
+Homepage = "https://github.com/ahb-sjsu/moral-spectrum-analyzer"
+Repository = "https://github.com/ahb-sjsu/moral-spectrum-analyzer"
+Issues = "https://github.com/ahb-sjsu/moral-spectrum-analyzer/issues"
+
 [project.optional-dependencies]
-# Real perception + GPU work (heavy; runs on Atlas / a GPU host).
+# Real perception + GPU work (heavy; runs on a GPU host). `xbse` is the validated
+# per-dimension encoder layer.
 perception = ["xbse", "torch>=2.2", "sentence-transformers>=2.7"]
 # Scalar toxicity baseline (Phase 2/3).
 baselines = ["detoxify>=0.5"]
-# Black-box target-AI clients + Atlas driver.
+# Black-box target-AI clients + remote driver.
 remote = ["openai>=1.0", "paramiko>=3.0"]
-# Moral Spectrum Analyzer (local analysis + viz; theory-radar added via path or PyPI).
+# Moral-spectrum band (local analysis + viz).
 spectrum = ["scikit-learn>=1.3", "matplotlib>=3.7", "numpy>=1.24"]
-dev = ["pytest>=8", "ruff>=0.6"]
+# Dev toolchain: test, lint, format, type-check.
+dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.6", "black>=24.8", "ty>=0.0.1a1"]
 
 [project.scripts]
-gtc = "gtc.cli:cli"
+msa = "moral_spectrum.cli:cli"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311", "py312"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py310"
 
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]  # line length is handled by black
+
+[tool.ty.environment]
+python-version = "3.10"
+root = ["src"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-q"
+
+[tool.coverage.run]
+source = ["moral_spectrum"]
+branch = true

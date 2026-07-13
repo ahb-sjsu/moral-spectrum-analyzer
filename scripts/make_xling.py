@@ -9,8 +9,8 @@ from __future__ import annotations
 import json
 import os
 
-from gtc.llm import NRPClient
-from gtc.scenarios import SCENARIOS
+from moral_spectrum.llm import NRPClient
+from moral_spectrum.scenarios import SCENARIOS
 
 LANGS = {"es": "Spanish", "ar": "Arabic", "zh": "Simplified Chinese", "hi": "Hindi", "sw": "Swahili"}
 

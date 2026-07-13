@@ -10,8 +10,8 @@ import json
 from dataclasses import asdict
 from pathlib import Path
 
-from gtc import DEME9
-from gtc.invariance import invariance_report
+from moral_spectrum import DEME9
+from moral_spectrum.invariance import invariance_report
 
 
 def main() -> None:

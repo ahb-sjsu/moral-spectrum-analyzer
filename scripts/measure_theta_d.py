@@ -18,7 +18,7 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from gtc.invariance_mechanism import CanonicalProjector, valence  # noqa: E402
+from moral_spectrum.invariance_mechanism import CanonicalProjector, valence  # noqa: E402
 
 INDEPENDENT = ["physical_harm", "autonomy_respect", "privacy_protection",
                "societal_environmental", "identity_attack"]

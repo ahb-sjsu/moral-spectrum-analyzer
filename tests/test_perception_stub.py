@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from gtc import DEME10
-from gtc.perception import StubPerception, get_backend
+from moral_spectrum import DEME10
+from moral_spectrum.perception import StubPerception, get_backend
 
 
 def test_returns_all_ten_dimensions():

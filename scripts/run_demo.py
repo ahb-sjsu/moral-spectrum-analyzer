@@ -7,9 +7,9 @@ from __future__ import annotations
 
 import argparse
 
-from gtc.decision import graded_validated
-from gtc.pipeline import moderate
-from gtc.scenarios import SCENARIOS
+from moral_spectrum.decision import graded_validated
+from moral_spectrum.pipeline import moderate
+from moral_spectrum.scenarios import SCENARIOS
 
 
 def main() -> None:

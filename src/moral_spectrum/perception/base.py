@@ -8,9 +8,12 @@ bind every scored dimension to the encoder (and pre-registered bar) that produce
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Protocol, runtime_checkable
+from typing import Literal, Protocol, runtime_checkable
 
-from gtc import DEME10
+from moral_spectrum import DEME10
+
+# A valence direction, matching the compiler's DimensionMetadata literal.
+Direction = Literal["positive", "negative", "neutral"]
 
 
 @dataclass(frozen=True)
@@ -26,11 +29,11 @@ class DimScore:
 
     value: float
     confidence: float
-    direction: str
+    direction: Direction
     validated: bool
     explanation: str = ""
 
-    def clamped(self) -> "DimScore":
+    def clamped(self) -> DimScore:
         v = max(-1.0, min(1.0, float(self.value)))
         c = max(0.0, min(1.0, float(self.confidence)))
         return DimScore(v, c, self.direction, self.validated, self.explanation)

@@ -47,7 +47,7 @@ The whole phase is explicitly framed as **information-integrity challenges** —
 
 ## 1. Objective
 
-One integrated, demonstrable prototype for **trustworthy content evaluation — with an emphasis on information integrity and AI-generated content** — that shows, on **real numbers**, that trust can be a *measured structural property* rather than a behavioral hope. Packaged as a source-of-truth repo (`gtc-prototype`) + a judge-facing web shopfront + a short governance annex. Optimize for a **strong, reliable demo in weeks**.
+One integrated, demonstrable prototype for **trustworthy content evaluation — with an emphasis on information integrity and AI-generated content** — that shows, on **real numbers**, that trust can be a *measured structural property* rather than a behavioral hope. Packaged as a source-of-truth repo (`moral-spectrum-analyzer`) + a judge-facing web shopfront + a short governance annex. Optimize for a **strong, reliable demo in weeks**.
 
 ### What this jury actually scores (and how we hit each)
 | Jury criterion | Our answer |
@@ -127,13 +127,13 @@ The xbse validation **reports on disk are stale**. Intended policy (pre-register
 Thin orchestration repo — no fork of either library.
 
 ```
-gtc-prototype/
+moral-spectrum-analyzer/
   PLAN.md  README.md  LICENSE  pyproject.toml
   GOVERNANCE.md            policy annex (mechanism → instrument → framework)   [review-1 #1]
-  src/gtc/
+  src/moral_spectrum/
     config.py             env-only infra; no identifiers in source
     perception/           content → DEME-9 scores (+ validation provenance)
-      base.py stub.py cached.py atlas.py
+      base.py stub.py cached.py     (live GPU backend runs off-package)
     pipeline.py           perception → erisml compile → decision + report + audit
     decision.py           moderation decision from tensor / verdict / residue
     invariance.py         BIP harness: deviation across languages/framings   [beat 2]
@@ -237,7 +237,7 @@ README, one-command repro, concept-note alignment, optional Zenodo DOI. Public G
 - [x] 0.2 armored re-gate — 8/9 pass, rights fails; both reports + prereg hash (`docs/REGATE.md`)
 - [x] 0.3 info-integrity demo set (incl. AI-gen disinformation)
 - [x] 0.6 effective-rank **disclosed as a data property** (≈5.19 of 8; causally removable — not moral-space)
-- [x] Moral Spectrum Analyzer — 3 bands + spectrogram (`gtc.spectrum`, `docs/SPECTRUM_FINDINGS.md`)
+- [x] Moral Spectrum Analyzer — 3 bands + spectrogram (`moral_spectrum.spectrum`, `docs/SPECTRUM_FINDINGS.md`)
 - [x] Band-3 discovery **confirmed** (balanced + bootstrap CI): identity_attack (new moral dim),
       sexual_content (content-norms gap), threat **retracted**
 - [x] end-to-end pipeline spine — content → spectrum → decision + residue → re-verifiable audit proof (tested)
@@ -249,12 +249,12 @@ README, one-command repro, concept-note alignment, optional Zenodo DOI. Public G
 - [x] Charter drafted + rendered (Artifact); corrected per review-5 + carries the 0.5 result
 
 **Development phase — one-to-one with the Charter's `[committed]` deliverables (contract = schedule):**
-- [x] invariance **realized in the verdict — mechanism SELECTED by measurement**: **equivalence-class averaging** reaches **θ_d 0.42** (reframe) / 0.39 (euphemism); drift-subspace projection tried and rejected (in-sample 0.52). Built + unit-tested (`gtc.invariance_mechanism.average_perceptions`; `scripts/measure_theta_d.py`). **Two-number rule:** the bar θ_d ≤ 0.5 was calibrated from these smoke scenarios, so 0.42 (leave-scenario-out proxy) is *selection* evidence. **At-scale θ_d now MET (2026-07-12):** generate-the-class-at-inference wired (`gtc.classgen` + `gtc.pipeline.moderate_invariant`; refuse→singleton→escalate; proof records the class), and re-measured on **60 held-out civil_comments items with LLM-generated classes → θ_d 0.219 ≤ 0.5** (raw 0.407→0.219), `scripts/measure_theta_d_atscale.py`. Honest caveats: **24% generator-refusal rate** (toxic content → singleton → escalate; uncensored red-team paraphraser still committed) and natural-not-adversarial paraphrases (adversarial robustness = the containment item). Spec in `docs/INVARIANCE_FINDINGS.md`.
+- [x] invariance **realized in the verdict — mechanism SELECTED by measurement**: **equivalence-class averaging** reaches **θ_d 0.42** (reframe) / 0.39 (euphemism); drift-subspace projection tried and rejected (in-sample 0.52). Built + unit-tested (`moral_spectrum.invariance_mechanism.average_perceptions`; `scripts/measure_theta_d.py`). **Two-number rule:** the bar θ_d ≤ 0.5 was calibrated from these smoke scenarios, so 0.42 (leave-scenario-out proxy) is *selection* evidence. **At-scale θ_d now MET (2026-07-12):** generate-the-class-at-inference wired (`moral_spectrum.classgen` + `moral_spectrum.pipeline.moderate_invariant`; refuse→singleton→escalate; proof records the class), and re-measured on **60 held-out civil_comments items with LLM-generated classes → θ_d 0.219 ≤ 0.5** (raw 0.407→0.219), `scripts/measure_theta_d_atscale.py`. Honest caveats: **24% generator-refusal rate** (toxic content → singleton → escalate; uncensored red-team paraphraser still committed) and natural-not-adversarial paraphrases (adversarial robustness = the containment item). Spec in `docs/INVARIANCE_FINDINGS.md`.
 - [ ] per-instance **attack-detection AUROC** ≥ 0.7 (50+ euphemism/reframe variants via NRP)
 - [x] **cross-lingual at scale via NLLB** (2026-07-12) — the dedicated MT that doesn't refuse harmful content: canonical index **BGE-M3 0.721 [0.71,0.74] / LaBSE 0.804 [0.79,0.82]** on 60 items incl. harmful, **harmful ≈ benign**, demo 0.74/0.81 confirmed at scale (`scripts/measure_xling_atscale.py`, `data/xling_scale/`). *Still committed:* **like-for-like baseline** contrast (decision-vs-decision).
 - [x] **refusal-hole red-team paraphraser** (2026-07-12) — NLLB back-translation (0% refusal vs gpt-oss 20% on toxicity≥0.7) closes the class-generator hole: **θ_d 0.301 ≤ 0.5 on harmful content** → the hole was the generator, not the mechanism (`data/invariance/theta_redteam_result.json`).
-- [x] 0.4 NRP token wired — `gtc.llm.NRPClient` (gpt-oss; token git-ignored) — enables cross-lingual + black-box baselines *(done)*
-- [x] **learned contraction — validated out-of-fold + WIRED** (moderate, not just escalate): 9-feeder logistic, **OOF AUROC 0.863 / F1 0.76**, a **+0.084 lift** over the 8-feeder baseline (0.779) with identity_attack the top weight (−2.69); frozen to `data/contraction/toxicity_contraction.json` w/ its OOF record + bar (≥0.70); `gtc.decision.decide` now returns real allow/remove on covered categories (~80% OOF remove-precision on the balanced set) else escalates. **Leakage-controlled** (review-10): identity_attack feeder trained on civil_comments and is the dominant feature, so refit on the **1523 rows disjoint** from its training set (77/1600 overlap found + excluded via `data/spectrum/feeder_train_hashes.json`) — AUROC 0.872→0.863, lift +0.089→+0.084, so the improvement is real signal not self-scored training data. `scripts/fit_contraction.py`; tests. Honest: over-removes harsh-but-legit criticism (~1-in-5 removes contestable → human-review safeguard).
+- [x] 0.4 NRP token wired — `moral_spectrum.llm.NRPClient` (gpt-oss; token git-ignored) — enables cross-lingual + black-box baselines *(done)*
+- [x] **learned contraction — validated out-of-fold + WIRED** (moderate, not just escalate): 9-feeder logistic, **OOF AUROC 0.863 / F1 0.76**, a **+0.084 lift** over the 8-feeder baseline (0.779) with identity_attack the top weight (−2.69); frozen to `data/contraction/toxicity_contraction.json` w/ its OOF record + bar (≥0.70); `moral_spectrum.decision.decide` now returns real allow/remove on covered categories (~80% OOF remove-precision on the balanced set) else escalates. **Leakage-controlled** (review-10): identity_attack feeder trained on civil_comments and is the dominant feature, so refit on the **1523 rows disjoint** from its training set (77/1600 overlap found + excluded via `data/spectrum/feeder_train_hashes.json`) — AUROC 0.872→0.863, lift +0.089→+0.084, so the improvement is real signal not self-scored training data. `scripts/fit_contraction.py`; tests. Honest: over-removes harsh-but-legit criticism (~1-in-5 removes contestable → human-review safeguard).
 - [x] **identity_attack feeder through the full pre-registered gate** (civil_comments + Measuring Hate Speech) → **PASS: cross-dataset AUROC 0.80, +0.25 over null, fuzz 14.3** (`docs/IDENTITY_ATTACK.md`; `scripts/build_identity_attack.py`; `xbse` builder + prereg bar committed). **9/10 learned axes now pass.**
 - [x] **wire the validated identity_attack as a live 10th channel** — `DEME10` threaded through perception → tensor (carried as an extension channel; compiler's frozen 9-axis tensor NOT forked) → decision (6 effective factors) → audit (proof binds 10 dims, verifies); real scores merged into the replay cache; 22 tests green
 - [x] **sexual_content admission analysis** (2nd corpus + moral-axis-vs-policy) → **DECLINED as a moral axis; it is a policy-norms signal** (`docs/SEXUAL_CONTENT_ADMISSION.md`; `scripts/assess_sexual.py`). civil_comments explicit 87.7% toxic (moral weight = harassment, covered); Social-Chem valence is on conduct/consent not content. Route as a platform-configurable policy channel outside the moral tensor.

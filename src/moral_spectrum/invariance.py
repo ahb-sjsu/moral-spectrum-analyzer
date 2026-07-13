@@ -15,10 +15,10 @@ from __future__ import annotations
 import itertools
 from dataclasses import dataclass, field
 
-from gtc import DEME9
-from gtc.perception import get_backend
-from gtc.pipeline import moderate
-from gtc.scenarios import SCENARIOS
+from moral_spectrum import DEME9
+from moral_spectrum.perception import get_backend
+from moral_spectrum.pipeline import moderate
+from moral_spectrum.scenarios import SCENARIOS
 
 
 @dataclass
@@ -28,7 +28,9 @@ class InvarianceReport:
     per_dim_euph: dict  # dim -> mean |Δ| across euphemism variants
     reframe_mean: float  # overall mean |Δ| across dims+reframings
     euph_mean: float
-    baseline_mean: float  # mean |Δ| between UNRELATED scenarios' base vectors (no-invariance ceiling)
+    baseline_mean: (
+        float  # mean |Δ| between UNRELATED scenarios' base vectors (no-invariance ceiling)
+    )
     invariance_ratio: float  # reframe_mean / baseline_mean  (0 = perfect invariance, 1 = none)
     n_reframe_pairs: int
     n_euph_pairs: int
@@ -70,19 +72,23 @@ def invariance_report(backend: str = "cached") -> InvarianceReport:
                 eu[d].append(dev[d])
             eu_devs.append(sum(dev.values()) / len(DEME9))
             n_eu += 1
-        per_scenario.append({
-            "id": s.id,
-            "reframe_dev": round(sum(rf_devs) / len(rf_devs), 4) if rf_devs else None,
-            "euph_dev": round(sum(eu_devs) / len(eu_devs), 4) if eu_devs else None,
-        })
+        per_scenario.append(
+            {
+                "id": s.id,
+                "reframe_dev": round(sum(rf_devs) / len(rf_devs), 4) if rf_devs else None,
+                "euph_dev": round(sum(eu_devs) / len(eu_devs), 4) if eu_devs else None,
+            }
+        )
 
     def mean(d):
         return {k: (round(sum(v) / len(v), 4) if v else None) for k, v in d.items()}
 
     # No-invariance ceiling: mean |Δ| between UNRELATED scenarios' base vectors.
     bases = {s.id: _vec(be.perceive(s.base)) for s in SCENARIOS}
-    unrel = [sum(abs(a[d] - b[d]) for d in DEME9) / len(DEME9)
-             for a, b in itertools.combinations(bases.values(), 2)]
+    unrel = [
+        sum(abs(a[d] - b[d]) for d in DEME9) / len(DEME9)
+        for a, b in itertools.combinations(bases.values(), 2)
+    ]
     baseline_mean = round(sum(unrel) / len(unrel), 4) if unrel else 0.0
 
     all_rf = [x for v in rf.values() for x in v]

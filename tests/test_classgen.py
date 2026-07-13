@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from gtc import DEME10
-from gtc.classgen import EquivalenceClass, LLMClassGenerator, StubClassGenerator
-from gtc.decision import GRADED
-from gtc.llm import NRPClient
-from gtc.perception.base import DimScore, PerceptionResult
+from moral_spectrum import DEME10
+from moral_spectrum.classgen import EquivalenceClass, LLMClassGenerator, StubClassGenerator
+from moral_spectrum.decision import GRADED
+from moral_spectrum.llm import NRPClient
+from moral_spectrum.perception.base import DimScore, PerceptionResult
 
 
 # --------------------------------------------------------------------------- class generation
@@ -62,7 +62,7 @@ def test_parse_list_strips_fences_and_echo_and_dupes():
     raw = '```json\n["orig", "A rewrite", "A rewrite", "another"]\n```'
     out = NRPClient._parse_list(raw, "orig")
     assert "orig" not in [o.lower() for o in out]  # echo of original dropped
-    assert out == ["A rewrite", "another"]         # de-duped
+    assert out == ["A rewrite", "another"]  # de-duped
 
 
 def test_parse_list_line_delimited_fallback():
@@ -72,10 +72,11 @@ def test_parse_list_line_delimited_fallback():
 
 # --------------------------------------------------------------------------- generate-at-inference
 def test_moderate_invariant_runs_and_records_class():
-    from gtc.pipeline import moderate_invariant
+    from moral_spectrum.pipeline import moderate_invariant
 
-    r = moderate_invariant("Some borderline comment.", backend="stub",
-                           class_generator=StubClassGenerator(k=3))
+    r = moderate_invariant(
+        "Some borderline comment.", backend="stub", class_generator=StubClassGenerator(k=3)
+    )
     assert r.decision.action in {"allow", "remove", "escalate"}
     assert r.proof.verify()
     assert r.proof.equivalence_class is not None
@@ -100,12 +101,13 @@ class _RefusingGen:
 
 def test_singleton_refusal_overrides_to_escalate(monkeypatch):
     """Refuse-to-paraphrase → singleton → escalate, even when the raw score would auto-decide."""
-    import gtc.pipeline as pipe
+    import moral_spectrum.pipeline as pipe
 
     monkeypatch.setattr(pipe, "get_backend", lambda name: _ValidatedBackend())
     # contraction=False → conservative path; validated strong-negative would otherwise REMOVE.
-    r = pipe.moderate_invariant("harmful", backend="x", class_generator=_RefusingGen(),
-                                contraction=False)
+    r = pipe.moderate_invariant(
+        "harmful", backend="x", class_generator=_RefusingGen(), contraction=False
+    )
     assert r.decision.action == "escalate"
     assert r.decision.requires_human_review
     assert r.proof.equivalence_class["refused"] is True
@@ -113,10 +115,11 @@ def test_singleton_refusal_overrides_to_escalate(monkeypatch):
 
 def test_validated_class_still_auto_decides(monkeypatch):
     """Control: with a real (non-refused) class, the validated strong-negative DOES auto-remove."""
-    import gtc.pipeline as pipe
+    import moral_spectrum.pipeline as pipe
 
     monkeypatch.setattr(pipe, "get_backend", lambda name: _ValidatedBackend())
-    r = pipe.moderate_invariant("bad", backend="x", class_generator=StubClassGenerator(k=3),
-                                contraction=False)
+    r = pipe.moderate_invariant(
+        "bad", backend="x", class_generator=StubClassGenerator(k=3), contraction=False
+    )
     assert r.decision.action == "remove"
     assert GRADED  # sanity: graded channels exist

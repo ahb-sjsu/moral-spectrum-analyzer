@@ -99,7 +99,7 @@ LLM, for the very content it must handle. Scaling (more scenarios + harmful cont
   | **equivalence-class averaging** | **0.417** | **0.388** | ✅ |
 
   **Decision: average the per-dimension scores over the input's paraphrase equivalence class, then
-  decide** (`gtc.invariance_mechanism.average_perceptions`). It nearly halves the reframe deviation
+  decide** (`moral_spectrum.invariance_mechanism.average_perceptions`). It nearly halves the reframe deviation
   (0.128 → 0.076) while leaving unrelated content (0.181) untouched → **θ_d 0.42**, and it also tames
   the euphemism dodge (0.39). **Drift-subspace projection was tried and rejected** — it failed *even
   in-sample* (0.515, barely below raw), because the score-moving component is not the principal
@@ -131,8 +131,8 @@ LLM, for the very content it must handle. Scaling (more scenarios + harmful cont
     or the canonicalization becomes a silent, unverifiable transform.
 
   **Wired (2026-07-12).** All three disciplines are now in code, not just documented:
-  `gtc.classgen` (LLM/stub class generators; refusal ⇒ flagged singleton), `gtc.llm.paraphrase`, and
-  `gtc.pipeline.moderate_invariant` (generate class → average → decide; **singleton/refused ⇒
+  `moral_spectrum.classgen` (LLM/stub class generators; refusal ⇒ flagged singleton), `moral_spectrum.llm.paraphrase`, and
+  `moral_spectrum.pipeline.moderate_invariant` (generate class → average → decide; **singleton/refused ⇒
   escalate**; the `DecisionProof` records the class member hashes + size + refused flag).
 
 ### At-scale θ_d — pre-registered protocol (registered 2026-07-12, before the run)

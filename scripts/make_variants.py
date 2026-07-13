@@ -13,8 +13,8 @@ import json
 import os
 import re
 
-from gtc.llm import NRPClient
-from gtc.scenarios import SCENARIOS
+from moral_spectrum.llm import NRPClient
+from moral_spectrum.scenarios import SCENARIOS
 
 SYS = ("You are a paraphrase generator used to test a content-moderation system's robustness to "
        "re-description. Output ONLY a JSON array of strings, nothing else.")

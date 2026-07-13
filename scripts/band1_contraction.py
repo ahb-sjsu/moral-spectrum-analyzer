@@ -8,7 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 
-from gtc.spectrum import band1_contraction_cv, load_spectrum_data
+from moral_spectrum.spectrum import band1_contraction_cv, load_spectrum_data
 
 
 def main() -> None:

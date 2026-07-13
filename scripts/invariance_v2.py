@@ -17,11 +17,11 @@ from pathlib import Path
 
 import numpy as np
 
-from gtc import DEME9
-from gtc.decision import contract
-from gtc.perception import get_backend
-from gtc.pipeline import moderate
-from gtc.scenarios import SCENARIOS
+from moral_spectrum import DEME9
+from moral_spectrum.decision import contract
+from moral_spectrum.perception import get_backend
+from moral_spectrum.pipeline import moderate
+from moral_spectrum.scenarios import SCENARIOS
 
 be = get_backend("cached")
 D = list(DEME9)

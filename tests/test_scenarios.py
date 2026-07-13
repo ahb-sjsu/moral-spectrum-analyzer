@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from gtc.pipeline import moderate
-from gtc.scenarios import SCENARIOS, by_id, framing_twins
+from moral_spectrum.pipeline import moderate
+from moral_spectrum.scenarios import SCENARIOS, by_id, framing_twins
 
 
 def test_ids_unique_and_gold_valid():

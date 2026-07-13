@@ -22,7 +22,7 @@ def _load_module():
 def test_contract_S_collapses_family_to_one_factor():
     m = _load_module()
     # 5 INDEPENDENT + 4 FAMILY; family averages to one factor before the outer mean.
-    v = [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0]      # family all +1, independent all 0
+    v = [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0]  # family all +1, independent all 0
     # ind=[0,0,0,0,0], fam_factor=1.0 → mean of [0,0,0,0,0,1] = 1/6
     assert abs(m.contract_S(v) - (1.0 / 6.0)) < 1e-9
     assert m.DIMS[:5] == m.INDEPENDENT and m.DIMS[5:] == m.FAMILY
@@ -41,7 +41,7 @@ def test_shipped_atscale_result_is_self_consistent():
     r = json.loads((ROOT / "data" / "invariance" / "theta_atscale_result.json").read_text())
     # meets_target flag agrees with the number, and the mechanism helps vs raw.
     assert r["meets_target"] == (r["theta_d_mechanism"] <= r["target"])
-    assert r["theta_d_mechanism"] <= r["theta_d_raw"]          # averaging reduces (or ties) the drift
+    assert r["theta_d_mechanism"] <= r["theta_d_raw"]  # averaging reduces (or ties) the drift
     assert r["n_used"] + r["n_refused"] + r["n_dropped_leak"] == r["n_items_total"]
     assert 0.0 <= r["refusal_rate"] <= 1.0
 
@@ -52,9 +52,9 @@ def test_redteam_result_holds_on_harmful_content():
     if not p.exists():
         return
     r = json.loads(p.read_text())
-    assert r["theta_d_mechanism"] <= 0.5           # mechanism holds on harmful content
+    assert r["theta_d_mechanism"] <= 0.5  # mechanism holds on harmful content
     assert r["theta_d_mechanism"] <= r["theta_d_raw"]
-    assert r["n_refused"] == 0                      # NLLB back-translation never refuses
+    assert r["n_refused"] == 0  # NLLB back-translation never refuses
 
 
 def test_xling_atscale_result_is_consistent():
@@ -66,6 +66,6 @@ def test_xling_atscale_result_is_consistent():
     for tag in ("bge", "labse"):
         if tag in r:
             assert 0.0 <= r[tag]["index"] <= 1.0
-            assert r[tag]["index"] >= 0.5          # pre-registered threshold
+            assert r[tag]["index"] >= 0.5  # pre-registered threshold
     if "bge" in r and "labse" in r:
         assert r["labse"]["index"] >= r["bge"]["index"]  # LaBSE wins cross-lingual (expected)

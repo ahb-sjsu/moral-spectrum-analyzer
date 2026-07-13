@@ -4,15 +4,20 @@ from __future__ import annotations
 
 import numpy as np
 
-from gtc.decision import decide
-from gtc.invariance_mechanism import CanonicalProjector, average_perceptions, valence
-from gtc.perception.base import DimScore, PerceptionResult
+from moral_spectrum.decision import decide
+from moral_spectrum.invariance_mechanism import CanonicalProjector, average_perceptions, valence
+from moral_spectrum.perception.base import DimScore, PerceptionResult
 
 
 def _perc(vals: dict[str, float], validated: bool = True) -> PerceptionResult:
     scores = {
-        d: DimScore(v, 0.9, "positive" if v > 0.05 else ("negative" if v < -0.05 else "neutral"),
-                    validated, "synthetic")
+        d: DimScore(
+            v,
+            0.9,
+            "positive" if v > 0.05 else ("negative" if v < -0.05 else "neutral"),
+            validated,
+            "synthetic",
+        )
         for d, v in vals.items()
     }
     return PerceptionResult("t", "synthetic", scores, [])
@@ -36,8 +41,10 @@ def test_average_validated_only_if_whole_class_validated():
 
 
 def test_averaged_perception_still_decides():
-    cls = [_perc({"physical_harm": -0.9, "autonomy_respect": -0.8, "privacy_protection": -0.7}),
-           _perc({"physical_harm": -0.8, "autonomy_respect": -0.7, "privacy_protection": -0.6})]
+    cls = [
+        _perc({"physical_harm": -0.9, "autonomy_respect": -0.8, "privacy_protection": -0.7}),
+        _perc({"physical_harm": -0.8, "autonomy_respect": -0.7, "privacy_protection": -0.6}),
+    ]
     d = decide(average_perceptions(cls))
     assert d.action in {"allow", "remove", "escalate"}
 
@@ -48,8 +55,8 @@ def test_canonical_projector_removes_drift_direction():
     proj = CanonicalProjector.fit(diffs, r=1)
     z = np.array([[5.0, 7.0, 9.0]])
     zp = proj.project(z)
-    assert abs(zp[0, 0]) < 1e-6          # drift component removed
-    assert abs(zp[0, 1] - 7.0) < 1e-6    # orthogonal components untouched
+    assert abs(zp[0, 0]) < 1e-6  # drift component removed
+    assert abs(zp[0, 1] - 7.0) < 1e-6  # orthogonal components untouched
     assert abs(zp[0, 2] - 9.0) < 1e-6
 
 

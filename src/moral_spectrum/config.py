@@ -54,7 +54,9 @@ class Settings:
     """Which perception backend to use, and where to write artifacts."""
 
     perception_backend: str = "stub"  # "stub" | "cached" | "atlas"
-    cache_path: Path = field(default_factory=lambda: REPO_ROOT / "src" / "gtc" / "perception" / "cache.jsonl")
+    cache_path: Path = field(
+        default_factory=lambda: REPO_ROOT / "src" / "moral_spectrum" / "perception" / "cache.jsonl"
+    )
     out_dir: Path = field(default_factory=lambda: OUT_DIR)
 
     def __post_init__(self) -> None:

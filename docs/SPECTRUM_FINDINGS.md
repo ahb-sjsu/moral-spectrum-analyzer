@@ -61,7 +61,7 @@ negatives (all native labels 0); features = the 8 validated feeder scores vs. th
 reduced to 50 PCA components (unsupervised — no label leakage). Out-of-fold probabilities from 5-fold
 `cross_val_predict` with L2 logistic regression (`max_iter=1000`); AUROC on the OOF predictions; 95% CI
 from 500 bootstrap resamples of the balanced set; seed 0. Capture `scripts/confirm_dims_atlas.py`;
-analysis `scripts/confirm_dims.py` → `gtc.spectrum.analyzer.band3_confirm`.
+analysis `scripts/confirm_dims.py` → `moral_spectrum.spectrum.analyzer.band3_confirm`.
 
 ## Band 1 — coverage vs. contraction
 Per-feeder AUROC is weak individually (many axes near or below 0.5; several anti-correlated). But a
@@ -71,7 +71,7 @@ contraction** recovers usable signal. **Now shipped + wired (2026-07-12):** the 
 contraction (adding the validated `identity_attack` feeder) reaches **OOF AUROC 0.863 / F1 0.76** —
 a **+0.084 lift** over the 8-feeder baseline (0.779) — **both measured on the identical 1523-row
 disjoint sample** — because `identity_attack` carries the **largest weight** (−2.69). It is frozen to `data/contraction/toxicity_contraction.json` with its OOF validation
-record and consumed by `gtc.decision.decide`, so the pipeline now **moderates** covered categories
+record and consumed by `moral_spectrum.decision.decide`, so the pipeline now **moderates** covered categories
 (allow/remove where confident) instead of escalating everything. Fit: `scripts/fit_contraction.py`.
 
 **Leakage control (the number is measured on rows the feeder never saw).** The `identity_attack`

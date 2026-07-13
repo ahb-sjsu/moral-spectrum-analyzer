@@ -30,7 +30,11 @@ def get_backend(name: str, **kw) -> PerceptionBackend:
 
         return CachedPerception(**kw)
     if name == "atlas":
-        from .atlas import AtlasPerception
-
-        return AtlasPerception(**kw)
+        # Live GPU perception (the xbse feeders) runs on a GPU host, not in this package.
+        # The pip install ships the `stub` and `cached` (replay-real-outputs) backends; the
+        # live backend is invoked via the GPU-host scripts, which write the cache this reads.
+        raise NotImplementedError(
+            "the 'atlas' live-perception backend is not bundled in the pip package; run the "
+            "xbse feeders on the GPU host and replay via the 'cached' backend"
+        )
     raise ValueError(f"unknown perception backend {name!r} (expected stub/cached/atlas)")

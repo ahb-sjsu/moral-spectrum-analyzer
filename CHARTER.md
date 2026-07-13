@@ -159,7 +159,7 @@ its own coverage limits in every report.
   input's paraphrase class, then decide — was *selected* on the 8 smoke scenarios (θ_d 0.42,
   leave-scenario-out; **drift-subspace projection tried and rejected**, failed even in-sample 0.52).
   **[demonstrated] the bar is now met at scale:** the generate-the-class-at-inference form is wired
-  (`gtc.pipeline.moderate_invariant` — generate class, average, decide; audit proof records the class),
+  (`moral_spectrum.pipeline.moderate_invariant` — generate class, average, decide; audit proof records the class),
   and re-measured on **60 held-out `civil_comments` items with LLM-generated classes** (disjoint from
   the feeder train set) it reaches **θ_d = 0.219**, roughly **halving** the raw drift (0.407 → 0.219) —
   moving off the calibration scenarios, this is bar-*meeting*, not selection. **Two honest caveats

@@ -9,14 +9,14 @@ import argparse
 import json
 from pathlib import Path
 
-from gtc.spectrum import (
+from moral_spectrum.spectrum import (
     band1_named_spectrum,
     band1_theory_radar,
     band2_eigenspectrum,
     band3_residual_discovery,
     load_spectrum_data,
 )
-from gtc.spectrum.render import spectrogram_html, spectrogram_png
+from moral_spectrum.spectrum.render import spectrogram_html, spectrogram_png
 
 
 def main() -> None:

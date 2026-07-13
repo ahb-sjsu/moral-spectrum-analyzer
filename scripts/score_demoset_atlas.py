@@ -4,7 +4,7 @@ Uses `xbse` directly (no erisml-compiler dependency). Loads only feeders whose r
 PASSES (`require_pass` discipline — the failing `rights_respect` feeder is excluded and handled as a
 deontic hard-constraint channel elsewhere). Processes ONE feeder at a time (load → score all demo
 texts for that dimension → free) so peak VRAM stays ~one BGE-M3, not eight. Writes a JSONL cache
-that `gtc.perception.cached.CachedPerception` replays offline; every number comes from a validated
+that `moral_spectrum.perception.cached.CachedPerception` replays offline; every number comes from a validated
 encoder, and each dimension carries its validation provenance.
 
 Env (so no infrastructure paths live in this public repo):

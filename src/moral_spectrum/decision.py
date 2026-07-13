@@ -24,8 +24,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from gtc import DEME10
-from gtc.perception.base import PerceptionResult
+from moral_spectrum import DEME10
+from moral_spectrum.perception.base import PerceptionResult
 
 # Effective-axis grouping (deontic_transfer_gap §3.2-3.7).
 COLLAPSED_FAMILY = ("virtue_care", "fairness_equity", "legitimacy_trust", "epistemic_quality")
@@ -46,6 +46,7 @@ def graded_validated(perception: PerceptionResult) -> bool:
     """Are all GRADED channels from validated encoders? (rights, a hard channel, is excluded — its
     lack of a graded feeder is by design, not a validation gap.)"""
     return all(perception.scores[d].validated for d in GRADED if d in perception.scores)
+
 
 # Decision thresholds on the contracted satisfaction scalar S in [-1, 1] (+ = values upheld).
 REMOVE_THRESHOLD = -0.25
@@ -170,19 +171,27 @@ def decide(
         }
         if act == "remove":
             return ModerationDecision(
-                action="remove", satisfaction=s,
+                action="remove",
+                satisfaction=s,
                 rationale=f"Covered-category violation — learned contraction p(violation)={p:.2f} "
                 f"≥ {contraction.p_remove} on '{contraction.validation.label}' "
                 f"(out-of-fold AUROC {contraction.validation.oof_auroc}).",
-                requires_human_review=False, effective_axes=axes,
-                moral_residue=_residue(perception, removing=True), contraction=prov)
+                requires_human_review=False,
+                effective_axes=axes,
+                moral_residue=_residue(perception, removing=True),
+                contraction=prov,
+            )
         if act == "allow":
             return ModerationDecision(
-                action="allow", satisfaction=s,
+                action="allow",
+                satisfaction=s,
                 rationale=f"Covered-category clear — learned contraction p(violation)={p:.2f} "
                 f"≤ {contraction.p_allow} (out-of-fold AUROC {contraction.validation.oof_auroc}).",
-                requires_human_review=False, effective_axes=axes,
-                moral_residue=_residue(perception, removing=False), contraction=prov)
+                requires_human_review=False,
+                effective_axes=axes,
+                moral_residue=_residue(perception, removing=False),
+                contraction=prov,
+            )
         # act == "escalate": contraction not confident → fall through to the conservative fallback.
 
     # 4) Conservative equal-weight fallback (escalates almost everything — by design).

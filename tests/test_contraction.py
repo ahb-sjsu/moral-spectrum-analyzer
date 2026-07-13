@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
-from gtc import DEME10
-from gtc.contraction import ContractionValidation, LearnedContraction, load_default
-from gtc.decision import decide
-from gtc.perception.base import DimScore, PerceptionResult
+from moral_spectrum import DEME10
+from moral_spectrum.contraction import ContractionValidation, LearnedContraction, load_default
+from moral_spectrum.decision import decide
+from moral_spectrum.perception.base import DimScore, PerceptionResult
 
 
 def _val(auroc: float = 0.87) -> ContractionValidation:
-    return ContractionValidation("toxicity", "test", auroc, 0.78, 1600, 5, "2026-07-12", 0.5, 0.8, 0.95)
+    return ContractionValidation(
+        "toxicity", "test", auroc, 0.78, 1600, 5, "2026-07-12", 0.5, 0.8, 0.95
+    )
 
 
 def _lc(auroc: float = 0.87) -> LearnedContraction:
@@ -19,14 +21,15 @@ def _lc(auroc: float = 0.87) -> LearnedContraction:
 
 def _perc(identity: float, validated: bool = True) -> PerceptionResult:
     scores = {d: DimScore(0.0, 0.9, "neutral", validated, "x") for d in DEME10}
-    scores["identity_attack"] = DimScore(identity, 0.9,
-                                         "negative" if identity < 0 else "positive", validated, "x")
+    scores["identity_attack"] = DimScore(
+        identity, 0.9, "negative" if identity < 0 else "positive", validated, "x"
+    )
     return PerceptionResult("t", "synthetic", scores, [])
 
 
 def test_probability_and_decide_covered():
     lc = _lc()
-    assert lc.probability({"identity_attack": -0.9}) > 0.9   # strong attack → high violation prob
+    assert lc.probability({"identity_attack": -0.9}) > 0.9  # strong attack → high violation prob
     assert lc.probability({"identity_attack": 0.9}) < 0.1
     assert lc.decide_covered({"identity_attack": -0.9})[0] == "remove"
     assert lc.decide_covered({"identity_attack": 0.9})[0] == "allow"
@@ -53,7 +56,11 @@ def test_below_bar_contraction_does_not_moderate():
 
 def test_no_contraction_is_conservative():
     d = decide(_perc(-0.9), contraction=None)
-    assert d.action in {"escalate", "remove", "allow"}  # equal-weight path; contraction not consulted
+    assert d.action in {
+        "escalate",
+        "remove",
+        "allow",
+    }  # equal-weight path; contraction not consulted
     assert d.contraction is None
 
 

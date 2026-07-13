@@ -11,9 +11,9 @@ from __future__ import annotations
 import html
 import json
 
-from gtc import DEME10
-from gtc.decision import COLLAPSED_FAMILY, HARD_CHANNEL, INDEPENDENT, graded_validated
-from gtc.pipeline import ModerationResult
+from moral_spectrum import DEME10
+from moral_spectrum.decision import COLLAPSED_FAMILY, HARD_CHANNEL, graded_validated
+from moral_spectrum.pipeline import ModerationResult
 
 _ACTION_COLOR = {"allow": "#2e7d32", "remove": "#c62828", "escalate": "#e65100"}
 
@@ -22,7 +22,7 @@ def _bar(value: float) -> str:
     """A tiny signed bar: green right for upheld (+), red left for violated (−)."""
     pct = min(100.0, abs(value) * 100.0)
     color = "#2e7d32" if value >= 0 else "#c62828"
-    side = "left:50%" if value >= 0 else f"right:50%"
+    side = "left:50%" if value >= 0 else "right:50%"
     return (
         f'<span style="display:inline-block;position:relative;width:120px;height:10px;'
         f'background:#eee;border-radius:5px;vertical-align:middle">'
@@ -43,14 +43,18 @@ def render_html(result: ModerationResult) -> str:
         if sc is None:  # pre-10-axis cache: don't invent a row
             continue
         group = (
-            "hard-constraint" if dim in HARD_CHANNEL
-            else "shared-valence family" if dim in COLLAPSED_FAMILY
-            else "independent axis"
+            "hard-constraint"
+            if dim in HARD_CHANNEL
+            else "shared-valence family" if dim in COLLAPSED_FAMILY else "independent axis"
         )
         badge = (
-            '<span style="color:#1565c0">▣ hard rule</span>' if dim in HARD_CHANNEL
-            else '<span style="color:#2e7d32">● validated</span>' if sc.validated
-            else '<span style="color:#b71c1c">○ unvalidated</span>'
+            '<span style="color:#1565c0">▣ hard rule</span>'
+            if dim in HARD_CHANNEL
+            else (
+                '<span style="color:#2e7d32">● validated</span>'
+                if sc.validated
+                else '<span style="color:#b71c1c">○ unvalidated</span>'
+            )
         )
         rows.append(
             f"<tr><td>{html.escape(dim)}</td><td style='color:#777'>{group}</td>"
@@ -75,7 +79,7 @@ def render_html(result: ModerationResult) -> str:
         warn = (
             '<div style="background:#fff8e1;border:1px solid #ffb300;padding:8px 12px;'
             'border-radius:6px;margin:10px 0">⚠ Graded perception is <b>not</b> from validated '
-            f'encoders ({html.escape(p.backend)} backend) — this decision is illustrative, not a '
+            f"encoders ({html.escape(p.backend)} backend) — this decision is illustrative, not a "
             "validated judgment. Real runs use the validated xbse feeders (the `cached`/`atlas` "
             "backends).</div>"
         )

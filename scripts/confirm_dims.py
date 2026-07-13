@@ -9,7 +9,7 @@ import argparse
 import json
 from pathlib import Path
 
-from gtc.spectrum import band3_confirm, load_spectrum_data
+from moral_spectrum.spectrum import band3_confirm, load_spectrum_data
 
 
 def main() -> None:

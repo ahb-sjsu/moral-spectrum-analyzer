@@ -1,4 +1,4 @@
-"""gtc — Geometric Ethics for Trustworthy AI, Global Trust Challenge prototype.
+"""moral_spectrum — the Moral Spectrum Analyzer (Geometric Ethics for Trustworthy AI).
 
 Composes two existing libraries into one multilingual content-moderation prototype:
 

@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 import os
 
-from gtc.llm import NRPClient
+from moral_spectrum.llm import NRPClient
 
 LANGS = {"es": "Spanish", "ar": "Arabic", "zh": "Simplified Chinese", "hi": "Hindi", "sw": "Swahili"}
 VERBATIM = (

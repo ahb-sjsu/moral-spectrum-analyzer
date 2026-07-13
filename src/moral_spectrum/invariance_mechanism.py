@@ -31,7 +31,7 @@ class CanonicalProjector:
         self.drift = np.asarray(drift, dtype="float64")
 
     @classmethod
-    def fit(cls, pair_diffs: np.ndarray, r: int) -> "CanonicalProjector":
+    def fit(cls, pair_diffs: np.ndarray, r: int) -> CanonicalProjector:
         """Estimate the drift subspace from meaning-preserving pairs.
 
         pair_diffs: (m, d) rows z_base − z_reframe. The top-``r`` principal directions of these
@@ -62,7 +62,9 @@ class CanonicalProjector:
 
 def valence(Z: np.ndarray, axis: np.ndarray, center: float, scale: float) -> np.ndarray:
     """The feeder's signed score for embeddings Z: tanh((z·axis − center)/scale)."""
-    return np.tanh((np.asarray(Z, dtype="float64") @ np.asarray(axis, dtype="float64") - center) / scale)
+    return np.tanh(
+        (np.asarray(Z, dtype="float64") @ np.asarray(axis, dtype="float64") - center) / scale
+    )
 
 
 # --------------------------------------------------------------------- the chosen mechanism
@@ -71,7 +73,7 @@ def average_perceptions(perceptions):
 
     Given the input's perception **and the perceptions of a generated set of paraphrases** (its
     equivalence class), return a single ``PerceptionResult`` whose per-dimension score is the class
-    **mean**. Deciding on this averaged perception (``gtc.decision.decide``) evaluates the canonical
+    **mean**. Deciding on this averaged perception (``moral_spectrum.decision.decide``) evaluates the canonical
     (equivalence-class) form, not the surface one, so two paraphrases of the same content yield ~the
     same verdict. The contraction is linear in the per-dimension scores, so averaging per dimension
     then contracting equals averaging the satisfaction scalar — which is what the θ_d measurement did.
@@ -81,7 +83,7 @@ def average_perceptions(perceptions):
     measured θ_d uses the demo re-descriptions as the class and is therefore a (disclosed) proxy for
     the generate-at-inference form.
     """
-    from gtc.perception.base import DimScore, PerceptionResult
+    from moral_spectrum.perception.base import DimScore
 
     perceptions = list(perceptions)
     if not perceptions:
@@ -98,11 +100,19 @@ def average_perceptions(perceptions):
         direction = "positive" if v > 0.05 else ("negative" if v < -0.05 else "neutral")
         # validated only if the whole class came from validated encoders
         validated = all(s.validated for s in members)
-        avg_scores[d] = DimScore(value=v, confidence=c, direction=direction, validated=validated,
-                                 explanation=f"equivalence-class mean over {len(members)} paraphrase(s)")
+        avg_scores[d] = DimScore(
+            value=v,
+            confidence=c,
+            direction=direction,
+            validated=validated,
+            explanation=f"equivalence-class mean over {len(members)} paraphrase(s)",
+        )
     return replace(
         base,
         scores=avg_scores,
-        meta={**base.meta, "invariance_mechanism": "equivalence_class_average",
-              "class_size": len(perceptions)},
+        meta={
+            **base.meta,
+            "invariance_mechanism": "equivalence_class_average",
+            "class_size": len(perceptions),
+        },
     )

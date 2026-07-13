@@ -15,7 +15,7 @@ from __future__ import annotations
 import math
 import re
 
-from gtc import DEME10
+from moral_spectrum import DEME10
 
 from .base import DimScore, PerceptionResult, ValidationRecord
 
@@ -61,10 +61,30 @@ _CUES: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
     # The discovered + validated 10th axis. Cues target identity-based demeaning, not slurs
     # (this stub is a legible stand-in; the real signal comes from the validated encoder).
     "identity_attack": (
-        ("your kind", "these people", "go back to", "subhuman", "vermin", "inferior",
-         "don't belong", "not real", "degenerate", "genetically", "breed", "infest"),
-        ("dignity", "belong", "welcome", "equal regardless", "respect", "every person",
-         "human rights", "inclusive"),
+        (
+            "your kind",
+            "these people",
+            "go back to",
+            "subhuman",
+            "vermin",
+            "inferior",
+            "don't belong",
+            "not real",
+            "degenerate",
+            "genetically",
+            "breed",
+            "infest",
+        ),
+        (
+            "dignity",
+            "belong",
+            "welcome",
+            "equal regardless",
+            "respect",
+            "every person",
+            "human rights",
+            "inclusive",
+        ),
     ),
 }
 
@@ -102,9 +122,7 @@ class StubPerception:
                 validated=False,
                 explanation=f"STUB keyword-valence (not a validated encoder); cues={hits}",
             ).clamped()
-            validation.append(
-                ValidationRecord(dimension=dim, feeder_name="stub", validated=False)
-            )
+            validation.append(ValidationRecord(dimension=dim, feeder_name="stub", validated=False))
         return PerceptionResult(
             text=text,
             backend=self.name,

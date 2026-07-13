@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from gtc.llm import NRPClient
+from moral_spectrum.llm import NRPClient
 
 
 def main() -> None:

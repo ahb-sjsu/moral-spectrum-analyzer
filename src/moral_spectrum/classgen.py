@@ -1,6 +1,6 @@
 """Inference-time equivalence-class generation — the deployable form of the BIP mechanism.
 
-The decision-layer invariance mechanism (`gtc.invariance_mechanism.average_perceptions`) averages a
+The decision-layer invariance mechanism (`moral_spectrum.invariance_mechanism.average_perceptions`) averages a
 perception over the input's paraphrase **equivalence class**, then decides — so two surface forms of
 the same meaning yield ~the same verdict (θ_d 0.42, `docs/INVARIANCE_FINDINGS.md`). At deployment the
 class is not hand-authored; it must be **generated** at inference. That generation is a real part of
@@ -22,7 +22,7 @@ A deterministic ``StubClassGenerator`` lets the whole path run and be tested off
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 def _sha(text: str) -> str:
@@ -34,9 +34,9 @@ class EquivalenceClass:
     """The input plus its generated meaning-preserving paraphrases (members[0] is the original)."""
 
     original: str
-    members: tuple[str, ...]           # members[0] == original; the rest are paraphrases
-    generator: str                     # provenance, e.g. "nrp:gpt-oss:reframe:k=5" or "stub"
-    refused: bool = False              # the generator produced nothing (refusal / empty / error)
+    members: tuple[str, ...]  # members[0] == original; the rest are paraphrases
+    generator: str  # provenance, e.g. "nrp:gpt-oss:reframe:k=5" or "stub"
+    refused: bool = False  # the generator produced nothing (refusal / empty / error)
 
     @property
     def size(self) -> int:
@@ -78,7 +78,8 @@ class LLMClassGenerator(ClassGenerator):
 
     def _client(self):
         if self.client is None:
-            from gtc.llm import NRPClient
+            from moral_spectrum.llm import NRPClient
+
             self.client = NRPClient()
         return self.client
 
@@ -105,9 +106,9 @@ class StubClassGenerator(ClassGenerator):
         t = text.strip()
         variants = [
             t,
-            (t[0].lower() + t[1:]) if t else t,               # decapitalise
-            t.rstrip(".!") ,                                   # drop terminal punctuation
-            f"Honestly, {t[0].lower() + t[1:]}" if t else t,   # benign prefix (meaning-preserving)
+            (t[0].lower() + t[1:]) if t else t,  # decapitalise
+            t.rstrip(".!"),  # drop terminal punctuation
+            f"Honestly, {t[0].lower() + t[1:]}" if t else t,  # benign prefix (meaning-preserving)
         ]
         seen, members = set(), []
         for v in variants:
@@ -116,4 +117,6 @@ class StubClassGenerator(ClassGenerator):
                 members.append(v)
             if len(members) >= self.k + 1:
                 break
-        return EquivalenceClass(original=text, members=tuple(members), generator="stub", refused=False)
+        return EquivalenceClass(
+            original=text, members=tuple(members), generator="stub", refused=False
+        )

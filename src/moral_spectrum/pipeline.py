@@ -24,14 +24,16 @@ from dataclasses import asdict, dataclass, replace
 
 from erisml_compiler.ir.v3 import DimensionMetadata, MoralTensorV3
 
-from gtc import DEME9, DEME10, IDENTITY_ATTACK
-from gtc.audit import DecisionProof, ProofChain, sha256_text, _sha256_json
-from gtc.decision import ModerationDecision, decide, graded_validated
-from gtc.perception import get_backend
-from gtc.perception.base import PerceptionResult
+from moral_spectrum import DEME9, DEME10, IDENTITY_ATTACK
+from moral_spectrum.audit import DecisionProof, ProofChain, _sha256_json, sha256_text
+from moral_spectrum.decision import ModerationDecision, decide, graded_validated
+from moral_spectrum.perception import get_backend
+from moral_spectrum.perception.base import PerceptionResult
 
 
-def build_tensor(perception: PerceptionResult, hard_flags: list[str] | None = None) -> MoralTensorV3:
+def build_tensor(
+    perception: PerceptionResult, hard_flags: list[str] | None = None
+) -> MoralTensorV3:
     """Build the DEME-9 MoralTensorV3 from perception, plus a spectral summary over the full DEME-10.
 
     The compiler's `MoralTensorV3` is a FROZEN nine-axis type (it validates `shape[0] == 9`); we do
@@ -79,7 +81,7 @@ def build_tensor(perception: PerceptionResult, hard_flags: list[str] | None = No
         "principal_dimension": DEME10[principal_k],
         "principal_stress": round(vals[principal_k] ** 2, 6),
     }
-    t.metadata["source"] = "gtc.pipeline.build_tensor"
+    t.metadata["source"] = "moral_spectrum.pipeline.build_tensor"
     return t
 
 
@@ -112,11 +114,11 @@ def moderate(
 ) -> ModerationResult:
     """Run one piece of content through the full spine. Deterministic for the stub backend.
 
-    A validated **learned contraction** (default: the shipped one, `gtc.contraction.load_default`)
+    A validated **learned contraction** (default: the shipped one, `moral_spectrum.contraction.load_default`)
     lets the pipeline *moderate* covered categories where confident instead of escalating everything;
     pass ``contraction=False`` to force the conservative equal-weight path.
     """
-    from gtc.contraction import load_default
+    from moral_spectrum.contraction import load_default
 
     if contraction is None:
         contraction = load_default()
@@ -157,7 +159,7 @@ def moderate_invariant(
     """Moderate under the decision-layer invariance mechanism (the generate-the-class-at-inference form).
 
     Generate the input's paraphrase **equivalence class**, perceive every member, average the
-    perceptions (`gtc.invariance_mechanism.average_perceptions`), and decide on the average — so a
+    perceptions (`moral_spectrum.invariance_mechanism.average_perceptions`), and decide on the average — so a
     reworded input reaches the same verdict (docs/INVARIANCE_FINDINGS.md). Two disciplines from the
     committed spec are enforced here, not just documented:
 
@@ -167,9 +169,9 @@ def moderate_invariant(
       rule-based, not encoder-fed).
     - **Auditability.** The proof records the class (member hashes, size, refused flag).
     """
-    from gtc.classgen import StubClassGenerator
-    from gtc.contraction import load_default
-    from gtc.invariance_mechanism import average_perceptions
+    from moral_spectrum.classgen import StubClassGenerator
+    from moral_spectrum.contraction import load_default
+    from moral_spectrum.invariance_mechanism import average_perceptions
 
     if contraction is None:
         contraction = load_default()
@@ -185,7 +187,11 @@ def moderate_invariant(
     decision = decide(averaged, hard_flags, contraction=contraction)
 
     # Singleton / refused class ⇒ no invariance was applied; do not trust a graded auto-decision.
-    if (eq.singleton or eq.refused) and decision.fired_channel is None and decision.action != "escalate":
+    if (
+        (eq.singleton or eq.refused)
+        and decision.fired_channel is None
+        and decision.action != "escalate"
+    ):
         decision = replace(
             decision,
             action="escalate",

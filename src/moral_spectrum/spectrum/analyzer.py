@@ -26,9 +26,20 @@ def load_spectrum_data(diag_dir: str | Path, prefix: str = "spectrum") -> Spectr
         rows = list(csv.reader(f))
     header = rows[0]
     # feeders are the leading columns; the trailing columns are the native labels.
-    label_names = [c for c in header if c in (
-        "toxicity", "severe_toxicity", "obscene", "threat", "insult",
-        "identity_attack", "sexual_explicit")]
+    label_names = [
+        c
+        for c in header
+        if c
+        in (
+            "toxicity",
+            "severe_toxicity",
+            "obscene",
+            "threat",
+            "insult",
+            "identity_attack",
+            "sexual_explicit",
+        )
+    ]
     feeder_names = [c for c in header if c not in label_names]
     fi = [header.index(c) for c in feeder_names]
     li = [header.index(c) for c in label_names]
@@ -46,8 +57,14 @@ def load_spectrum_data(diag_dir: str | Path, prefix: str = "spectrum") -> Spectr
     return SpectrumData(feeder_names, label_names, X, Y, E, texts)
 
 
-def band3_confirm(data: SpectrumData, category: str, n_boot: int = 500, seed: int = 0,
-                  cv: int = 5, n_emb_pca: int = 50) -> dict:
+def band3_confirm(
+    data: SpectrumData,
+    category: str,
+    n_boot: int = 500,
+    seed: int = 0,
+    cv: int = 5,
+    n_emb_pca: int = 50,
+) -> dict:
     """Balanced, bootstrap-CI confirmation that `category` is a dimension the 9 feeders MISS.
 
     Balanced set = all positives + equal clean negatives (all native labels 0). Out-of-fold AUROC
@@ -68,7 +85,10 @@ def band3_confirm(data: SpectrumData, category: str, n_boot: int = 500, seed: in
     neg_idx = np.where(data.Y.sum(1) == 0)[0]  # clean negatives
     n = min(len(pos_idx), len(neg_idx))
     if n < 30:
-        return {"category": category, "error": f"too few (pos={len(pos_idx)}, cleanneg={len(neg_idx)})"}
+        return {
+            "category": category,
+            "error": f"too few (pos={len(pos_idx)}, cleanneg={len(neg_idx)})",
+        }
     rng = np.random.default_rng(seed)
     sp = rng.choice(pos_idx, n, replace=False)
     sn = rng.choice(neg_idx, n, replace=False)
@@ -78,8 +98,12 @@ def band3_confirm(data: SpectrumData, category: str, n_boot: int = 500, seed: in
     k = min(n_emb_pca, data.E.shape[1])
     Epca = PCA(n_components=k, random_state=0).fit_transform(data.E - data.E.mean(0))
     Xf, Xe = data.X[idx], Epca[idx]
-    oof_f = cross_val_predict(LogisticRegression(max_iter=1000), Xf, y, cv=cv, method="predict_proba")[:, 1]
-    oof_e = cross_val_predict(LogisticRegression(max_iter=1000), Xe, y, cv=cv, method="predict_proba")[:, 1]
+    oof_f = cross_val_predict(
+        LogisticRegression(max_iter=1000), Xf, y, cv=cv, method="predict_proba"
+    )[:, 1]
+    oof_e = cross_val_predict(
+        LogisticRegression(max_iter=1000), Xe, y, cv=cv, method="predict_proba"
+    )[:, 1]
     af, ae = float(roc_auc_score(y, oof_f)), float(roc_auc_score(y, oof_e))
 
     gaps = []
@@ -88,16 +112,25 @@ def band3_confirm(data: SpectrumData, category: str, n_boot: int = 500, seed: in
         b = rng.integers(0, N, N)
         if 0 < y[b].sum() < N:
             gaps.append(roc_auc_score(y[b], oof_e[b]) - roc_auc_score(y[b], oof_f[b]))
-    lo, hi = (float(np.percentile(gaps, 2.5)), float(np.percentile(gaps, 97.5))) if gaps else (None, None)
+    lo, hi = (
+        (float(np.percentile(gaps, 2.5)), float(np.percentile(gaps, 97.5)))
+        if gaps
+        else (None, None)
+    )
     return {
-        "category": category, "n_pos": int(len(pos_idx)), "n_balanced": int(n),
-        "auroc_feeders": round(af, 4), "auroc_embedding": round(ae, 4),
-        "gap": round(ae - af, 4), "gap_ci95": [round(lo, 4), round(hi, 4)] if lo is not None else None,
+        "category": category,
+        "n_pos": int(len(pos_idx)),
+        "n_balanced": int(n),
+        "auroc_feeders": round(af, 4),
+        "auroc_embedding": round(ae, 4),
+        "gap": round(ae - af, 4),
+        "gap_ci95": ([round(lo, 4), round(hi, 4)] if lo is not None and hi is not None else None),
         "confirmed": bool(lo is not None and lo > 0),
     }
 
 
 # ---------------------------------------------------------------- Band 1: named-dimension spectrum
+
 
 def band1_named_spectrum(data: SpectrumData) -> np.ndarray:
     """Per-feeder AUROC vs each native category → (F, L). 0.5 = no signal; <0.5 = anti-correlated."""
@@ -117,7 +150,9 @@ def band1_named_spectrum(data: SpectrumData) -> np.ndarray:
     return M
 
 
-def band1_theory_radar(data: SpectrumData, label: str, test_frac: float = 0.3, seed: int = 0) -> dict:
+def band1_theory_radar(
+    data: SpectrumData, label: str, test_frac: float = 0.3, seed: int = 0
+) -> dict:
     """theory-radar formula over the 9 feeder-scores for one category, vs GB/RF/LR — fair held-out F1.
 
     Answers the core question per band: does an interpretable formula over the existing axes suffice,
@@ -131,14 +166,18 @@ def band1_theory_radar(data: SpectrumData, label: str, test_frac: float = 0.3, s
     try:
         import os
         import sys
+
         # theory-radar is an optional local sibling checkout; probe env override, then a sibling of
         # the repo root, then the home dir — no absolute/user-specific path baked into source.
         sibling = str(Path(__file__).resolve().parents[3].parent / "theory-radar")
-        for p in (os.environ.get("THEORY_RADAR_PATH", ""), sibling,
-                  os.path.expanduser("~/theory-radar")):
+        for p in (
+            os.environ.get("THEORY_RADAR_PATH", ""),
+            sibling,
+            os.path.expanduser("~/theory-radar"),
+        ):
             if p and p not in sys.path:
                 sys.path.insert(0, p)
-        from symbolic_search import TheoryRadar  # type: ignore
+        from symbolic_search import TheoryRadar
     except Exception as e:  # noqa: BLE001
         return {"error": f"theory-radar unavailable: {e}"}
 
@@ -162,9 +201,11 @@ def band1_theory_radar(data: SpectrumData, label: str, test_frac: float = 0.3, s
     except Exception as e:  # noqa: BLE001
         out["formula_error"] = str(e)
 
-    for name, clf in (("gb", GradientBoostingClassifier()),
-                      ("rf", RandomForestClassifier(n_estimators=100)),
-                      ("lr", LogisticRegression(max_iter=1000))):
+    for name, clf in (
+        ("gb", GradientBoostingClassifier()),
+        ("rf", RandomForestClassifier(n_estimators=100)),
+        ("lr", LogisticRegression(max_iter=1000)),
+    ):
         try:
             clf.fit(Xtr, ytr)
             out[f"{name}_f1"] = round(float(f1_score(yte, clf.predict(Xte))), 4)
@@ -173,7 +214,9 @@ def band1_theory_radar(data: SpectrumData, label: str, test_frac: float = 0.3, s
     return out
 
 
-def band1_contraction_cv(data: SpectrumData, label: str = "toxicity", cv: int = 5, seed: int = 0) -> dict:
+def band1_contraction_cv(
+    data: SpectrumData, label: str = "toxicity", cv: int = 5, seed: int = 0
+) -> dict:
     """Out-of-fold contraction scores for a covered category — the `[demonstrated]` discipline.
 
     Returns the logistic contraction's OOF F1/AUROC AND the symbolic formula's own OOF AUROC (PCA fit
@@ -189,7 +232,9 @@ def band1_contraction_cv(data: SpectrumData, label: str = "toxicity", cv: int = 
     j = data.labels.index(label)
     y = data.Y[:, j]
     X = data.X
-    oof = cross_val_predict(LogisticRegression(max_iter=1000), X, y, cv=cv, method="predict_proba")[:, 1]
+    oof = cross_val_predict(LogisticRegression(max_iter=1000), X, y, cv=cv, method="predict_proba")[
+        :, 1
+    ]
     fi = data.feeders.index("fairness_equity")
     formula = np.zeros(len(y))
     for tr, te in StratifiedKFold(cv, shuffle=True, random_state=seed).split(X, y):
@@ -207,6 +252,7 @@ def band1_contraction_cv(data: SpectrumData, label: str = "toxicity", cv: int = 
 
 # ---------------------------------------------------------------------- Band 2: eigen-spectrum
 
+
 def band2_eigenspectrum(data: SpectrumData) -> dict:
     """Eigenvalues of the standardized feeder-score covariance → effective rank (participation ratio)."""
     Xs = (data.X - data.X.mean(0)) / (data.X.std(0) + 1e-9)
@@ -214,7 +260,7 @@ def band2_eigenspectrum(data: SpectrumData) -> dict:
     w = np.linalg.eigvalsh(C)[::-1]
     w = np.clip(w, 0, None)
     total = float(w.sum()) or 1.0
-    participation = float((w.sum() ** 2) / (np.sum(w ** 2) + 1e-12))  # effective rank
+    participation = float((w.sum() ** 2) / (np.sum(w**2) + 1e-12))  # effective rank
     return {
         "eigenvalues": [round(float(v), 5) for v in w],
         "explained_ratio": [round(float(v / total), 5) for v in w],
@@ -225,6 +271,7 @@ def band2_eigenspectrum(data: SpectrumData) -> dict:
 
 
 # --------------------------------------------------------- Band 3: residual / discovery spectrum
+
 
 def band3_residual_discovery(data: SpectrumData, n_emb_pca: int = 50, cv: int = 4) -> dict:
     """Per category: signal reachable from the 9 feeders vs from the raw embedding.
@@ -241,8 +288,7 @@ def band3_residual_discovery(data: SpectrumData, n_emb_pca: int = 50, cv: int = 
         return {"error": "no embeddings captured (Band 3 needs spectrum_emb.npy)"}
 
     k = min(n_emb_pca, data.E.shape[1], data.E.shape[0] - 1)
-    Epca = PCA(n_components=k, random_state=0).fit_transform(
-        (data.E - data.E.mean(0)))
+    Epca = PCA(n_components=k, random_state=0).fit_transform(data.E - data.E.mean(0))
 
     def auroc_cv(Z, y):
         if y.sum() < cv or (len(y) - y.sum()) < cv:
@@ -256,16 +302,23 @@ def band3_residual_discovery(data: SpectrumData, n_emb_pca: int = 50, cv: int = 
         a_feed = auroc_cv(data.X, y)
         a_emb = auroc_cv(Epca, y)
         gap = None if (a_feed is None or a_emb is None) else round(a_emb - a_feed, 4)
-        rows.append({
-            "category": lab,
-            "n_pos": int(y.sum()),
-            "auroc_feeders": None if a_feed is None else round(a_feed, 4),
-            "auroc_embedding": None if a_emb is None else round(a_emb, 4),
-            "gap": gap,  # embedding − feeders; large ⇒ candidate missing dimension
-        })
+        rows.append(
+            {
+                "category": lab,
+                "n_pos": int(y.sum()),
+                "auroc_feeders": None if a_feed is None else round(a_feed, 4),
+                "auroc_embedding": None if a_emb is None else round(a_emb, 4),
+                "gap": gap,  # embedding − feeders; large ⇒ candidate missing dimension
+            }
+        )
+
     # rank candidates by gap (only where the embedding actually has signal)
+    def _emb_has_signal(r: dict) -> bool:
+        ae = r["auroc_embedding"]
+        return isinstance(ae, (int, float)) and ae > 0.65
+
     candidates = sorted(
-        [r for r in rows if r["gap"] is not None and r["auroc_embedding"] and r["auroc_embedding"] > 0.65],
+        [r for r in rows if r["gap"] is not None and _emb_has_signal(r)],
         key=lambda r: -(r["gap"] or 0),
     )
     return {"per_category": rows, "missing_dimension_candidates": candidates}

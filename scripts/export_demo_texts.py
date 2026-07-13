@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 
-from gtc.scenarios import SCENARIOS
+from moral_spectrum.scenarios import SCENARIOS
 
 
 def export() -> list[dict]:

@@ -19,8 +19,8 @@ from sklearn.model_selection import cross_val_predict
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
-from gtc.contraction import ContractionValidation, LearnedContraction  # noqa: E402
-from gtc.spectrum.analyzer import load_spectrum_data  # noqa: E402
+from moral_spectrum.contraction import ContractionValidation, LearnedContraction  # noqa: E402
+from moral_spectrum.spectrum.analyzer import load_spectrum_data  # noqa: E402
 
 LABEL = "toxicity"
 FITTED = "2026-07-12"

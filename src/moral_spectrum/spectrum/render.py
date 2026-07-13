@@ -23,8 +23,10 @@ def _auroc_color(a: float) -> str:
 def spectrogram_html(feeders, labels, M: np.ndarray, band2: dict, band3: dict) -> str:
     """A self-contained moral spectrogram: Band-1 heatmap + effective rank + missing-dimension bars."""
     # Band 1 heatmap
-    head = "".join(f"<th style='font-size:11px;transform:rotate(-30deg);height:70px'>{html.escape(l)}</th>"
-                   for l in labels)
+    head = "".join(
+        f"<th style='font-size:11px;transform:rotate(-30deg);height:70px'>{html.escape(lab)}</th>"
+        for lab in labels
+    )
     rows = []
     for i, f in enumerate(feeders):
         cells = "".join(
@@ -32,9 +34,13 @@ def spectrogram_html(feeders, labels, M: np.ndarray, band2: dict, band3: dict) -
             f"width:46px;height:24px;text-align:center;font-size:10px;color:#222'>{M[i,j]:.2f}</td>"
             for j in range(len(labels))
         )
-        rows.append(f"<tr><td style='font-size:12px;padding-right:8px;white-space:nowrap'>"
-                    f"{html.escape(f)}</td>{cells}</tr>")
-    heat = (f"<table style='border-collapse:collapse'><tr><th></th>{head}</tr>{''.join(rows)}</table>")
+        rows.append(
+            f"<tr><td style='font-size:12px;padding-right:8px;white-space:nowrap'>"
+            f"{html.escape(f)}</td>{cells}</tr>"
+        )
+    heat = (
+        f"<table style='border-collapse:collapse'><tr><th></th>{head}</tr>{''.join(rows)}</table>"
+    )
 
     # Band 2 effective rank
     er = band2.get("effective_rank_participation", "?")
@@ -45,10 +51,12 @@ def spectrogram_html(feeders, labels, M: np.ndarray, band2: dict, band3: dict) -
         f"background:#1565c0;margin:0 2px;vertical-align:bottom' title='{r:.3f}'></span>"
         for r in ev
     )
-    band2_html = (f"<h3>Band 2 — eigen-spectrum</h3>"
-                  f"<div style='height:130px'>{bars}</div>"
-                  f"<div style='color:#555'>effective rank (participation) ≈ <b>{er}</b> of {nd} — "
-                  f"the moral space is lower-rank than its nine named axes.</div>")
+    band2_html = (
+        f"<h3>Band 2 — eigen-spectrum</h3>"
+        f"<div style='height:130px'>{bars}</div>"
+        f"<div style='color:#555'>effective rank (participation) ≈ <b>{er}</b> of {nd} — "
+        f"the moral space is lower-rank than its nine named axes.</div>"
+    )
 
     # Band 3 discovery
     cand = band3.get("missing_dimension_candidates", []) if isinstance(band3, dict) else []
@@ -87,6 +95,7 @@ def spectrogram_png(feeders, labels, M: np.ndarray, path: str | Path) -> bool:
     """Optional matplotlib heatmap. Returns False if matplotlib is unavailable."""
     try:
         import matplotlib
+
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
     except Exception:  # noqa: BLE001
