@@ -1,8 +1,8 @@
 # Moral Spectrum Analyzer
 
 [![CI](https://github.com/ahb-sjsu/moral-spectrum-analyzer/actions/workflows/ci.yaml/badge.svg)](https://github.com/ahb-sjsu/moral-spectrum-analyzer/actions/workflows/ci.yaml)
-[![PyPI](https://img.shields.io/pypi/v/moral-spectrum-analyzer.svg)](https://pypi.org/project/moral-spectrum-analyzer/)
-[![Python](https://img.shields.io/pypi/pyversions/moral-spectrum-analyzer.svg)](https://pypi.org/project/moral-spectrum-analyzer/)
+[![PyPI](https://img.shields.io/pypi/v/moral-spectrum-analyzer)](https://pypi.org/project/moral-spectrum-analyzer/)
+[![Python](https://img.shields.io/pypi/pyversions/moral-spectrum-analyzer)](https://pypi.org/project/moral-spectrum-analyzer/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
