@@ -1,9 +1,8 @@
 name: Release
 
-# Publishes to PyPI on a version tag via Trusted Publishing (OIDC) — no stored token.
-# One-time setup on PyPI: add a Trusted Publisher for project `moral-spectrum-analyzer`,
-# owner `ahb-sjsu`, repo `moral-spectrum-analyzer`, workflow `release.yml`, environment `pypi`.
-# Then: git tag vX.Y.Z && git push --tags   (tag version must match pyproject `version`).
+# Publishes to PyPI on a version tag using the account-level API token stored as the
+# `PYPI_API_TOKEN` repo secret.
+# Release: git tag vX.Y.Z && git push --tags   (tag version must match pyproject `version`).
 
 on:
   push:
@@ -34,9 +33,6 @@ jobs:
   publish:
     needs: build
     runs-on: ubuntu-latest
-    environment: pypi
-    permissions:
-      id-token: write  # required for Trusted Publishing (OIDC)
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -44,3 +40,6 @@ jobs:
           path: dist/
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip-existing: true

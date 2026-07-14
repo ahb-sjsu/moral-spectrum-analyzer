@@ -74,7 +74,7 @@ pytest                    # 48 tests
 
 ## Release
 
-Tag-driven PyPI publish via GitHub Actions **Trusted Publishing** (OIDC, no stored token):
+Tag-driven PyPI publish via GitHub Actions (`PYPI_API_TOKEN` repo secret):
 
 ```bash
 git tag v0.1.0 && git push --tags   # → builds sdist+wheel → publishes to PyPI
