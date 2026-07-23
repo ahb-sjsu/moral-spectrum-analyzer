@@ -1,0 +1,86 @@
+{
+ "privacy": {
+  "auroc": 0.8533825294823811,
+  "raw_ece": 0.10848016842546121,
+  "calibration_ece": 0.0685593025171083,
+  "reliability_weight": 0.7067650589647623,
+  "n_pairs": 476
+ },
+ "care": {
+  "auroc": 0.8126722222222222,
+  "raw_ece": 0.1683482291196144,
+  "calibration_ece": 0.056896161889159816,
+  "reliability_weight": 0.6253444444444445,
+  "n_pairs": 1200
+ },
+ "fairness": {
+  "auroc": 0.7886388888888889,
+  "raw_ece": 0.22300532564176218,
+  "calibration_ece": 0.037192112088593125,
+  "reliability_weight": 0.5772777777777778,
+  "n_pairs": 1200
+ },
+ "legitimacy": {
+  "auroc": 0.706923611111111,
+  "raw_ece": 0.18722777992187004,
+  "calibration_ece": 0.0394378584893013,
+  "reliability_weight": 0.41384722222222203,
+  "n_pairs": 1200
+ },
+ "epistemic": {
+  "auroc": 0.8105666666666667,
+  "raw_ece": 0.14169655749711368,
+  "calibration_ece": 0.04844746829910012,
+  "reliability_weight": 0.6211333333333333,
+  "n_pairs": 1200
+ },
+ "physharm": {
+  "auroc": 0.6291302785545784,
+  "raw_ece": 0.047580689897205146,
+  "calibration_ece": 0.048655210401717615,
+  "reliability_weight": 0.25826055710915674,
+  "n_pairs": 1012
+ },
+ "autonomy": {
+  "auroc": 0.6986074986883047,
+  "raw_ece": 0.03102604812469411,
+  "calibration_ece": 0.0180375736469367,
+  "reliability_weight": 0.3972149973766095,
+  "n_pairs": 1194
+ },
+ "environmental": {
+  "auroc": 0.8158194609591756,
+  "raw_ece": 0.08914620137883453,
+  "calibration_ece": 0.10058093282654,
+  "reliability_weight": 0.6316389219183511,
+  "n_pairs": 696
+ },
+ "identity_attack": {
+  "auroc": 0.803525,
+  "raw_ece": 0.09552800662617278,
+  "calibration_ece": 0.032072261649910686,
+  "reliability_weight": 0.6070500000000001,
+  "n_pairs": 1200
+ },
+ "loyalty": {
+  "auroc": 0.910586111111111,
+  "raw_ece": 0.1287082832703315,
+  "calibration_ece": 0.07918179582732122,
+  "reliability_weight": 0.821172222222222,
+  "n_pairs": 1200
+ },
+ "purity": {
+  "auroc": 0.8112472222222222,
+  "raw_ece": 0.09138630347327391,
+  "calibration_ece": 0.07057489043972615,
+  "reliability_weight": 0.6224944444444445,
+  "n_pairs": 1200
+ },
+ "general_valence": {
+  "auroc": 0.867663888888889,
+  "raw_ece": 0.1905749597128803,
+  "calibration_ece": 0.03468692951853248,
+  "reliability_weight": 0.735327777777778,
+  "n_pairs": 1200
+ }
+}

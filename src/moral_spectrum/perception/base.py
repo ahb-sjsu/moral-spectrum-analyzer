@@ -55,6 +55,11 @@ class ValidationRecord:
     bow_auroc: float = 0.0
     bar_registered: str = ""
     checkpoint_hash: str = ""
+    # Calibration + specificity provenance (xbse XBSE_REVIEW_1 R1/R2, wired 2026-07-23). Defaults
+    # keep pre-calibration caches loading: weight 1.0 = "recorded before weighting existed".
+    reliability_weight: float = 1.0
+    calibration_ece: float | None = None
+    specificity_disposition: str = ""
 
 
 @dataclass

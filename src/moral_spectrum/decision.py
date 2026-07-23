@@ -12,6 +12,17 @@ Two channel types, per the Phase-0.7 resolution (review-2 #1) and the VETO/ADVIS
 Contraction respects the effective-rank finding (`deontic_transfer_gap`): the shared-corpus family
 {care, fairness, legitimacy, epistemic} collapses to ONE factor, so the effective axes are weighted
 as their true count, not naively as nine/ten — the disclosure made functional, not just displayed.
+The registered 12x12 specificity gate (xbse, 2026-07-23) confirmed this at gate level: exactly that
+family is DEMOTE-to-G (each member loses to a sibling or to the general-valence channel G on its
+own held-out pairs), while the five independent axes are decisively own-axis.
+
+**Calibrated authority (xbse XBSE_REVIEW_1 R2, wired 2026-07-23).** Each effective axis enters the
+contraction weighted by its registered `reliability_weight = max(0, 2*AUROC - 1)` from the
+production calibration blocks (`moral_spectrum.reliability`): physical_harm (weight 0.26) moves the
+satisfaction scalar ~2.7x less than privacy_protection (0.71) instead of equally. The weights
+temper *aggregation authority*; the escalation trigger stays on raw encoder confidence — a
+deliberate scoping, since reweighting the trigger could only ever escalate more, and its thresholds
+were registered against raw confidences. Residue entries display their axis's weight.
 
 `identity_attack` — the axis the Moral Spectrum Analyzer discovered and validated (docs/
 IDENTITY_ATTACK.md) — enters here as a graded, INDEPENDENT effective axis: it was fit on genuinely
@@ -26,6 +37,7 @@ from dataclasses import dataclass, field
 
 from moral_spectrum import DEME10
 from moral_spectrum.perception.base import PerceptionResult
+from moral_spectrum.reliability import RELIABILITY_WEIGHT, reliability_weight
 
 # Effective-axis grouping (deontic_transfer_gap §3.2-3.7).
 COLLAPSED_FAMILY = ("virtue_care", "fairness_equity", "legitimacy_trust", "epistemic_quality")
@@ -79,20 +91,33 @@ class ModerationDecision:
         }
 
 
+# Authority weight of the collapsed family factor: the mean of its members' registered weights
+# (the factor's value is the mean of those members' scores, so its authority is theirs pooled).
+FAMILY_WEIGHT = sum(RELIABILITY_WEIGHT[d] for d in COLLAPSED_FAMILY) / len(COLLAPSED_FAMILY)
+
+
 def contract(perception: PerceptionResult) -> tuple[float, dict]:
     """Contract the graded DEME-9 valences to a satisfaction scalar S, collapsing the shared family.
 
-    Returns (S, effective_axes) where effective_axes maps each of the 5 factors to its signed value.
+    S is the **reliability-weighted** mean over the six effective factors: each axis's registered
+    `reliability_weight` scales how much it moves the verdict, so a weakly-validated feeder cannot
+    outvote a strongly-validated one (equal authority was exactly the laundering XBSE_REVIEW_1 R2
+    flagged). Returns (S, effective_axes) where effective_axes maps each factor to its signed value.
     """
     axes: dict[str, float] = {}
+    weights: dict[str, float] = {}
     for dim in INDEPENDENT:
         # tolerate a pre-10-axis cache: a missing identity_attack contributes neutral 0.0
         axes[dim] = perception.scores[dim].value if dim in perception.scores else 0.0
+        weights[dim] = reliability_weight(dim)
     fam = [perception.scores[d].value for d in COLLAPSED_FAMILY if d in perception.scores]
     if not fam:
         fam = [0.0]
-    axes["shared_valence(care/fairness/legitimacy/epistemic)"] = sum(fam) / len(fam)
-    s = sum(axes.values()) / len(axes)
+    fam_key = "shared_valence(care/fairness/legitimacy/epistemic)"
+    axes[fam_key] = sum(fam) / len(fam)
+    weights[fam_key] = FAMILY_WEIGHT
+    total = sum(weights.values())
+    s = sum(axes[k] * weights[k] for k in axes) / total
     return s, axes
 
 
@@ -112,7 +137,14 @@ def _residue(perception: PerceptionResult, removing: bool) -> list[dict]:
         discarded = (removing and s.value > 0) or (not removing and s.value < 0)
         if discarded:
             out.append(
-                {"dimension": dim, "value": round(s.value, 3), "confidence": round(s.confidence, 3)}
+                {
+                    "dimension": dim,
+                    "value": round(s.value, 3),
+                    "confidence": round(s.confidence, 3),
+                    # displayed, not filtered on: a low-reliability axis still SHOWS in the residue
+                    # (transparency), it just carries its registered authority weight
+                    "reliability": round(reliability_weight(dim), 3),
+                }
             )
     return sorted(out, key=lambda d: -abs(d["value"]))
 

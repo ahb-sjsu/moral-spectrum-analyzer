@@ -39,6 +39,24 @@ A thin orchestration layer that **composes two existing libraries** — it does 
 2. **Invariant** — reframing / translation does not move the verdict; a scalar-toxicity baseline drifts.
 3. **Contained** — you cannot game the verdict by relabeling or euphemism.
 
+## Calibrated authority + specificity (2026-07-23)
+
+"Validated" is no longer a binary bit. The upstream `xbse` production reports now carry a
+per-feeder **calibration block** (isotonic map on held-out pairs, split-honest ECE, and the
+registered `reliability_weight = max(0, 2·AUROC − 1)`), and the registered 12×12 **specificity
+gate** has assigned every axis a disposition. The analyzer consumes both
+(`moral_spectrum.reliability`, wired into the decision contraction — see
+[docs/CALIBRATED_AUTHORITY.md](docs/CALIBRATED_AUTHORITY.md)):
+
+- Each effective axis moves the verdict in proportion to its registered reliability weight —
+  `physical_harm` (0.26) no longer votes with the same authority as `privacy_protection` (0.71) or
+  the discovered `identity_attack` (0.61). Residue entries display their axis's weight.
+- The contraction's collapsed family {care, fairness, legitimacy, epistemic} is now confirmed at
+  gate level: exactly that set is **DEMOTE-to-G** (each member loses to a trained sibling or to the
+  validated general-valence channel on its own held-out pairs), while all five independent axes —
+  including `identity_attack` (+0.246) — are decisively **own-axis**. A test pins the two sets to
+  each other.
+
 ## Install
 
 ```bash

@@ -63,6 +63,9 @@ def main() -> None:
     for dim, feeder in DEME10:
         report = _load_report(feeder)
         m = report.metrics or {}
+        # production reports carry the calibration block since the 2026-07-23 wiring (R2);
+        # absent on older checkpoints -> record the unweighted defaults
+        cal = getattr(report, "calibration", None) or {}
         validation.append({
             "dimension": dim,
             "feeder_name": feeder,
@@ -71,6 +74,8 @@ def main() -> None:
             "bow_auroc": float(m.get("bow_auroc", 0.0)),
             "bar_registered": getattr(report, "bar_registered", ""),
             "checkpoint_hash": report.checkpoint_hash,
+            "reliability_weight": float(cal.get("reliability_weight", 1.0)),
+            "calibration_ece": cal.get("calibration_ece"),
         })
         if not report.passed:
             print(f"[score]   skip {dim} ({feeder}) — FAIL (deontic hard channel elsewhere)", flush=True)

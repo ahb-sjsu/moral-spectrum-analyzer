@@ -1,0 +1,112 @@
+{
+ "privacy": {
+  "dim": "privacy",
+  "own_auroc": 0.8533825294823811,
+  "best_rival": "environmental",
+  "best_rival_auroc": 0.5763540710401808,
+  "specificity_gap": 0.27702845844220036,
+  "margin": 0.05,
+  "specific": true,
+  "disposition": "own-axis"
+ },
+ "care": {
+  "dim": "care",
+  "own_auroc": 0.8126722222222222,
+  "best_rival": "general_valence",
+  "best_rival_auroc": 0.8508888888888889,
+  "specificity_gap": -0.03821666666666668,
+  "margin": 0.05,
+  "specific": false,
+  "disposition": "DEMOTE-to-G"
+ },
+ "fairness": {
+  "dim": "fairness",
+  "own_auroc": 0.7886388888888889,
+  "best_rival": "general_valence",
+  "best_rival_auroc": 0.806575,
+  "specificity_gap": -0.017936111111111153,
+  "margin": 0.05,
+  "specific": false,
+  "disposition": "DEMOTE-to-G"
+ },
+ "legitimacy": {
+  "dim": "legitimacy",
+  "own_auroc": 0.706923611111111,
+  "best_rival": "care",
+  "best_rival_auroc": 0.7559194444444445,
+  "specificity_gap": -0.04899583333333346,
+  "margin": 0.05,
+  "specific": false,
+  "disposition": "DEMOTE-to-G"
+ },
+ "epistemic": {
+  "dim": "epistemic",
+  "own_auroc": 0.8105666666666667,
+  "best_rival": "care",
+  "best_rival_auroc": 0.875311111111111,
+  "specificity_gap": -0.06474444444444438,
+  "margin": 0.05,
+  "specific": false,
+  "disposition": "DEMOTE-to-G"
+ },
+ "physharm": {
+  "dim": "physharm",
+  "own_auroc": 0.6291302785545784,
+  "best_rival": "purity",
+  "best_rival_auroc": 0.54726288490681,
+  "specificity_gap": 0.0818673936477684,
+  "margin": 0.05,
+  "specific": true,
+  "disposition": "own-axis"
+ },
+ "autonomy": {
+  "dim": "autonomy",
+  "own_auroc": 0.6986074986883047,
+  "best_rival": "environmental",
+  "best_rival_auroc": 0.5272145203965107,
+  "specificity_gap": 0.171392978291794,
+  "margin": 0.05,
+  "specific": true,
+  "disposition": "own-axis"
+ },
+ "environmental": {
+  "dim": "environmental",
+  "own_auroc": 0.8158194609591756,
+  "best_rival": "fairness",
+  "best_rival_auroc": 0.5061352226185758,
+  "specificity_gap": 0.30968423834059977,
+  "margin": 0.05,
+  "specific": true,
+  "disposition": "own-axis"
+ },
+ "identity_attack": {
+  "dim": "identity_attack",
+  "own_auroc": 0.803525,
+  "best_rival": "environmental",
+  "best_rival_auroc": 0.5575777777777777,
+  "specificity_gap": 0.24594722222222232,
+  "margin": 0.05,
+  "specific": true,
+  "disposition": "own-axis"
+ },
+ "loyalty": {
+  "dim": "loyalty",
+  "own_auroc": 0.910586111111111,
+  "best_rival": "care",
+  "best_rival_auroc": 0.9349527777777779,
+  "specificity_gap": -0.02436666666666687,
+  "margin": 0.05,
+  "specific": false,
+  "disposition": "DEMOTE-to-G"
+ },
+ "purity": {
+  "dim": "purity",
+  "own_auroc": 0.8112472222222222,
+  "best_rival": "general_valence",
+  "best_rival_auroc": 0.93555,
+  "specificity_gap": -0.12430277777777776,
+  "margin": 0.05,
+  "specific": false,
+  "disposition": "DEMOTE-to-G"
+ }
+}

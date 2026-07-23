@@ -127,11 +127,14 @@ def test_identity_attack_rides_as_validated_extension_channel():
 def test_identity_attack_participates_in_contraction_and_residue():
     # A net-violation input in which the discarded upheld value is the identity axis → it must show
     # up in the moral residue (proof that the 10th channel is live in the decision, not cosmetic).
+    # identity_attack carries reliability weight 0.61 under the calibrated contraction, so the
+    # violation side needs strong-axis support for the net verdict to stay "remove".
     p = _perc(
         {
             "physical_harm": -0.9,
             "autonomy_respect": -0.8,
             "privacy_protection": -0.7,
+            "societal_environmental": -0.8,
             "identity_attack": 0.8,
         },
         validated=True,
