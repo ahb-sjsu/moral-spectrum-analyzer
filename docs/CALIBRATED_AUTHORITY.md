@@ -31,8 +31,10 @@ general-valence channel G on each axis's own held-out pairs.
 | physical_harm | 0.258 | 0.049 | own-axis (+0.082) |
 | *(general_valence G)* | *0.735* | *0.035* | *rival channel* |
 
-`rights_respect` has no validated feeder (hypothesized corpus-choice failure; discriminating
-CourtListener run still ⚪) and remains a hand-specified hard channel outside the graded path.
+`rights_respect` has no validated feeder — the discriminating CourtListener run (2026-07-23)
+FAILED on both the aggregate and the stratified physical-integrity pairing, refuting the
+corpus-choice hypothesis (xbse `experiments/rights_r6_summary.json`) — and remains a
+hand-specified hard channel outside the graded path, by design and now by evidence.
 
 Two honest non-improvements, reported as measured: `physical_harm` was already calibrated raw
 (0.048 → 0.049) and `societal_environmental` got slightly *worse* held-out (0.089 → 0.101,
