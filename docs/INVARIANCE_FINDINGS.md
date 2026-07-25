@@ -206,6 +206,32 @@ refuses, rather than trusting the raw score. *Disclosed limitation:* back-transl
 slightly (MT noise), so it is a **red-team instrument**, not necessarily the production paraphraser.
 Result: `data/invariance/theta_redteam_result.json`; capture reuses `scripts/measure_theta_d_atscale.py`.
 
+### Decision-level gold-set translation (2026-07-25): θ_d is not a flip rate — the register gap survives averaging
+The θ_d numbers above are *per-dimension score movement*. The deployment question is what the
+**decision** does: with averaging on, how many genuinely-flagged items still slip past the threshold?
+Measured on the six hand-authored **gold** scenarios (base + audited euphemistic rewrite), scored
+through the deployed encoder instrument, median-calibrated threshold per arm (mirroring the paper's
+construction; classes = `nrp:gpt-oss:reframe` m=6, **0% refusals** on these). Result — an **honest
+negative**:
+
+| arm | flagged | still flip FLAG→PASS defended | mean \|Δ decision\| |
+|---|:--:|:--:|---:|
+| raw | 3/6 | 3 | 0.336 |
+| **class-averaged (m=6)** | 3/6 | **3** | **0.279** |
+
+All three flagged items **still flip**; averaging trims displacement only **−17%** (vs the −46% halving
+on natural rewordings). The failure mode is the adaptive-attack case the containment work anticipated:
+a euphemistic input yields a paraphrase class that **stays euphemistic** — polite versions of a polite
+lie — so the class average stays polite and the attack survives. This is the *decision-level* confirmation
+that **adversarial-register robustness is a distinct, unmet target** (caveat 2 above); the register gap is
+a **generator property**, joining refusal (caveat 1) as the second located hole in the class generator,
+not the averaging mechanism. It sharpens the hardening target to a **register-crossing class generator**
+and keeps **escalate-by-default** load-bearing. This n=6 existence proof is a data point *toward* — not a
+substitute for — the optimizing-attacker experiment in
+[`PREREG_ADVERSARIAL_ROBUSTNESS.md`](PREREG_ADVERSARIAL_ROBUSTNESS.md), which stays `[committed]`.
+Result + script: `benchmarks/ieee_bds_2026/revision/{out/gold_defended_result.json,gold_defended.py}`
+in `agi-hpc` (BDS 2026 extended paper, §"Decision-Level Translation").
+
 ### Cross-lingual invariance AT SCALE (2026-07-12): demo numbers hold, now including harmful content
 The demo cross-lingual index (BGE-M3 0.74 / LaBSE 0.81) was **n=5 benign** — the LLM translator refused
 the 3 harmful scenarios. NLLB doesn't refuse, so we re-ran at scale on **60 held-out items (half

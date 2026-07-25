@@ -131,6 +131,12 @@ Per the AAR survey, wiring is moderate, not free:
   reward = signed distance of the target axis score across the frozen operating point, gated to zero
   unless the meaning-preservation constraint holds (so the search cannot win by breaking meaning).
 - **Grammar swap:** drop the prompt-injection primitives; register the paraphrase/euphemism/obfuscation
-  operator set (frozen appendix).
+  operator set (frozen appendix). **The operator set must include an explicit register-shift operator**
+  (euphemistic ↔ dramatic ↔ neutral re-verbalization), because the decision-level gold-set result
+  (`INVARIANCE_FINDINGS.md`, 2026-07-25) measured that register — not surface wording — is the surviving
+  attack vector: an averaged paraphrase class of a euphemism *stays* euphemistic (all 3 flagged gold
+  items still flipped defended, displacement −17% only). An operator set that only paraphrases within a
+  register will under-power the attacker and flatter the defender, so register-shift is mandatory in the
+  frozen appendix, and the NOT-ROBUST hardening round targets a **register-crossing class generator**.
 - Runs on Atlas GPU with the `cached`/`atlas` backend; the `stub` backend is for CI wiring only (its
   keyword heuristic is trivially attackable and is not a valid defender).
