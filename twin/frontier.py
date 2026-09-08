@@ -14,8 +14,8 @@ from governor import govern           # noqa: E402
 from metrics_get import report as get_report, evaluate as get_evaluate  # noqa: E402
 
 
-def rates(backend, mode, ps):
-    rul = [govern(sc, backend=backend, mode=mode, permissive_s=ps) for sc in SCENARIOS]
+def rates(backend, w_min):
+    rul = [govern(sc, backend=backend, w_min=w_min) for sc in SCENARIOS]
     pos = [r for r in rul if r.should_elevate]
     neg = [r for r in rul if not r.should_elevate]
     fc = sum(1 for r in neg if r.elevate) / max(len(neg), 1)
@@ -27,9 +27,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--backend", default="cached", choices=["stub", "cached", "atlas"])
     a = ap.parse_args()
-    configs = {"conservative": rates(a.backend, "conservative", 1.0)}
-    for ps in (0.25, 0.21, 0.13):
-        configs[f"permissive@{ps}"] = rates(a.backend, "permissive", ps)
+    # Sweep the corroboration requirement: how many independent physical sensors
+    # must agree before elevated authority is granted. This is the real knob.
+    configs = {f"require>={w}sensors": rates(a.backend, w) for w in (1, 2, 3)}
 
     print(f"\nbackend={a.backend}  (false_clear, over_restriction) frontier:")
     for k, (fc, orr) in configs.items():

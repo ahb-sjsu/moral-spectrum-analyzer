@@ -1,21 +1,17 @@
 {
   "backend": "cached",
   "frontier": {
-    "conservative": [
+    "require>=1sensors": [
       0.0,
-      0.6667
-    ],
-    "permissive@0.25": [
-      0.2,
-      0.6667
-    ],
-    "permissive@0.21": [
-      0.2,
       0.0
     ],
-    "permissive@0.13": [
-      0.8,
+    "require>=2sensors": [
+      0.0,
       0.0
+    ],
+    "require>=3sensors": [
+      0.0,
+      1.0
     ]
   },
   "get": {
@@ -26,24 +22,21 @@
           "w_or": 1.0
         },
         "d_G": {
-          "conservative": 0.6667,
-          "permissive@0.25": 0.8969,
-          "permissive@0.21": 0.6,
-          "permissive@0.13": 2.4
+          "require>=1sensors": 0.0,
+          "require>=2sensors": 0.0,
+          "require>=3sensors": 1.0
         },
         "utility": {
-          "conservative": -0.6667,
-          "permissive@0.25": -0.8969,
-          "permissive@0.21": -0.6,
-          "permissive@0.13": -2.4
+          "require>=1sensors": -0.0,
+          "require>=2sensors": -0.0,
+          "require>=3sensors": -1.0
         },
         "ranking_best_first": [
-          "permissive@0.21",
-          "conservative",
-          "permissive@0.25",
-          "permissive@0.13"
+          "require>=1sensors",
+          "require>=2sensors",
+          "require>=3sensors"
         ],
-        "best": "permissive@0.21"
+        "best": "require>=1sensors"
       },
       "balanced": {
         "weights": {
@@ -51,24 +44,21 @@
           "w_or": 1.0
         },
         "d_G": {
-          "conservative": 0.6667,
-          "permissive@0.25": 0.6961,
-          "permissive@0.21": 0.2,
-          "permissive@0.13": 0.8
+          "require>=1sensors": 0.0,
+          "require>=2sensors": 0.0,
+          "require>=3sensors": 1.0
         },
         "utility": {
-          "conservative": -0.6667,
-          "permissive@0.25": -0.6961,
-          "permissive@0.21": -0.2,
-          "permissive@0.13": -0.8
+          "require>=1sensors": -0.0,
+          "require>=2sensors": -0.0,
+          "require>=3sensors": -1.0
         },
         "ranking_best_first": [
-          "permissive@0.21",
-          "conservative",
-          "permissive@0.25",
-          "permissive@0.13"
+          "require>=1sensors",
+          "require>=2sensors",
+          "require>=3sensors"
         ],
-        "best": "permissive@0.21"
+        "best": "require>=1sensors"
       },
       "availability_first": {
         "weights": {
@@ -76,30 +66,27 @@
           "w_or": 4.0
         },
         "d_G": {
-          "conservative": 1.3334,
-          "permissive@0.25": 1.3483,
-          "permissive@0.21": 0.2,
-          "permissive@0.13": 0.8
+          "require>=1sensors": 0.0,
+          "require>=2sensors": 0.0,
+          "require>=3sensors": 2.0
         },
         "utility": {
-          "conservative": -1.3334,
-          "permissive@0.25": -1.3483,
-          "permissive@0.21": -0.2,
-          "permissive@0.13": -0.8
+          "require>=1sensors": -0.0,
+          "require>=2sensors": -0.0,
+          "require>=3sensors": -2.0
         },
         "ranking_best_first": [
-          "permissive@0.21",
-          "permissive@0.13",
-          "conservative",
-          "permissive@0.25"
+          "require>=1sensors",
+          "require>=2sensors",
+          "require>=3sensors"
         ],
-        "best": "permissive@0.21"
+        "best": "require>=1sensors"
       }
     },
     "best_differs": false,
-    "ranking_flips": true,
+    "ranking_flips": false,
     "winners_across_evaluators": [
-      "permissive@0.21"
+      "require>=1sensors"
     ]
   }
 }
