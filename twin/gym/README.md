@@ -89,6 +89,32 @@ by the architecture. That is the whole point.
   is a standard safety default (defense against a single compromised sensor); on
   this set `W_MIN = 1` also separates, because the one ambiguous sensor is
   low-confidence — the set does not distinguish 1 vs 2 (`twin_frontier_cached.json`).
-- A learned video/vision witness (the next module) is itself not an ungameable
-  oracle; the strength is the *corroboration requirement* across independent
-  modalities, not trust in any single model.
+- A learned video/vision witness is itself not an ungameable oracle; the
+  strength is the *corroboration requirement* across independent modalities, not
+  trust in any single model.
+
+## From hand-coded sensors to a perceived, attested witness
+
+The `Sensor` evidence above is hand-coded per scenario. The real robot derives
+it from sensor streams. That path is now built:
+
+- `erisml_compiler.ingestion.video_witness` compiles a camera stream (a clip or a
+  live `VideoWitnessStream` rolling window) into an `EvidenceModel` of *physical
+  observables* — person present, body horizontal, on floor, rapid descent — each
+  with its own confidence. A witness reports facts, never judgments, so the
+  gameable reasoning surface stays out of the authority channel.
+- `erisml_compiler.ir.SensorAttestation` + `check_attestation` verify a hardware
+  signature over the stream (the C2PA / Axis-signed-video model: a key in a
+  secure element signs at capture), plus freshness and a monotonic anti-replay
+  counter. A signature proves origin and integrity, not that the scene is real
+  (the analog hole) — which is exactly why corroboration across independent,
+  independently-keyed sensors remains the load-bearing defense.
+- `twin/witness_adapter.evidence_to_sensor` turns a *trusted* EvidenceModel into
+  a corroborating `Sensor`; an unverified or stale stream abstains (it becomes a
+  low-confidence, non-corroborating sensor — never a veto, never fabricated).
+
+A fall is an event over time: COCO detectors lose a person once fully prone
+(validated — a Blender-rendered CesiumMan detects at 0.98 upright and is lost
+when prone), so the witness reads the *descent* while the person is still
+tracked. A photoreal character (or Nano Banana frames, once billing is enabled)
+completes the prone path; the architecture already degrades gracefully without it.
