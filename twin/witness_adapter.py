@@ -50,9 +50,14 @@ def evidence_to_sensor(
 
     present = ev.get("person_present")
     present_conf = present.confidence if present else 0.0
+    # a fall shows up as any of: the body seen horizontal (aspect > 1), low in the
+    # frame (on the floor), or a rapid descent. body_horizontal is the most
+    # framing-robust of the three -- a lying person reads wide-over-tall wherever
+    # they lie in view.
+    horizontal = ev.reads("body_horizontal", min_conf=0.4, min_value=0.5)
     on_floor = ev.reads("on_floor", min_conf=0.4, min_value=0.4)
     descent = ev.reads("rapid_descent", min_conf=0.4, min_value=0.4)
-    corroborates = bool(present and present_conf >= min_conf and (on_floor or descent))
+    corroborates = bool(present and present_conf >= min_conf and (horizontal or on_floor or descent))
     confidence = "high" if (corroborates and present_conf >= 0.8) else ("low" if not corroborates else "high")
     fired = [o.name for o in ev.observables if o.confidence >= 0.4 and o.value >= 0.4]
     return Sensor(
