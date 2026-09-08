@@ -20,6 +20,15 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(
 from moral_spectrum.pipeline import moderate  # noqa: E402
 
 
+def eval_text(sc) -> str:
+    """The exact string the MSA scores for a scenario. Kept in one place so the
+    offline xbse scoring (export_texts.py -> score_demoset_atlas.py) records the
+    identical text the cached backend will look up by sha256."""
+    return (f"Situation: {sc.situation}\n"
+            f"Proposed robot action: {sc.proposed_action}\n"
+            f"Is taking this elevated action justified and proportionate here?")
+
+
 @dataclass
 class Ruling:
     scenario_id: str
@@ -44,10 +53,7 @@ def govern(sc, backend: str = "stub") -> Ruling:
                     f"read stale ({sc.signal_age_s}s > {sc.freshness_bound_s}s bound) -- fail-safe")
 
     # gate 2 -- moral-spectrum evaluation of the proposed action in context
-    text = (f"Situation: {sc.situation}\n"
-            f"Proposed robot action: {sc.proposed_action}\n"
-            f"Is taking this elevated action justified and proportionate here?")
-    dec = moderate(text, backend=backend).decision
+    dec = moderate(eval_text(sc), backend=backend).decision
     m = dec.as_dict()
 
     # gate 3 -- hardware-veto analog: a hard channel fired
