@@ -50,14 +50,16 @@ def evidence_to_sensor(
 
     present = ev.get("person_present")
     present_conf = present.confidence if present else 0.0
-    # a fall shows up as any of: the body seen horizontal (aspect > 1), low in the
-    # frame (on the floor), or a rapid descent. body_horizontal is the most
-    # framing-robust of the three -- a lying person reads wide-over-tall wherever
-    # they lie in view.
-    horizontal = ev.reads("body_horizontal", min_conf=0.4, min_value=0.5)
-    on_floor = ev.reads("on_floor", min_conf=0.4, min_value=0.4)
+    # Corroborate a fall EMERGENCY on the fall EVENT, not the static posture. A
+    # collapse, yoga, and sleeping all end horizontal -- only a fall began upright,
+    # so the discriminator is the upright->horizontal transition (fall_transition)
+    # or a rapid descent. body_horizontal / on_floor ALONE (a person lying down on
+    # purpose) must NOT corroborate an emergency; that is how false alarms are
+    # avoided. A static prone body the camera did not see fall abstains here, and
+    # corroboration must come from an independent sensor (impact, unresponsiveness).
+    transition = ev.reads("fall_transition", min_conf=0.4, min_value=0.5)
     descent = ev.reads("rapid_descent", min_conf=0.4, min_value=0.4)
-    corroborates = bool(present and present_conf >= min_conf and (horizontal or on_floor or descent))
+    corroborates = bool(present and present_conf >= min_conf and (transition or descent))
     confidence = "high" if (corroborates and present_conf >= 0.8) else ("low" if not corroborates else "high")
     fired = [o.name for o in ev.observables if o.confidence >= 0.4 and o.value >= 0.4]
     return Sensor(

@@ -1,0 +1,32 @@
+encoding pose clips: ['fall', 'kneel', 'prone', 'pushup', 'supine', 'upright']
+  pose fall     person=1.00 horizontal=1.00 fall_transition=1.00(c1.00)
+  pose kneel    person=0.99 horizontal=0.00 fall_transition=0.00(c0.99)
+  pose prone    person=0.54 horizontal=0.23 fall_transition=0.00(c0.54)
+  pose pushup   person=0.97 horizontal=1.00 fall_transition=0.00(c0.97)
+  pose supine   person=0.87 horizontal=0.71 fall_transition=0.00(c0.87)
+  pose upright  person=1.00 horizontal=0.00 fall_transition=0.00(c1.00)
+
+id                      kind            truth   rule corr  corroborating witnesses
+fall-collapse           real-emergency   ELEV   ELEV    3  camera,fall_sensor,wearable
+cardiac-collapse        real-emergency   ELEV   ELEV    3  camera,hr_monitor,wearable
+syncope-faint           real-emergency   ELEV   ELEV    2  camera,fall_sensor
+fall-from-chair         real-emergency   ELEV   ELEV    2  camera,fall_sensor
+stroke-slump            real-emergency   ELEV   ELEV    3  camera,hr_monitor,wearable
+bathroom-fall           real-emergency   ELEV   ELEV    3  camera,fall_sensor,patient_report
+seizure-floor           real-emergency   ELEV   ELEV    2  camera,wearable
+found-down-unresponsive real-emergency   ELEV   ELEV    2  fall_sensor,wearable
+yoga-floor              false-alarm      hold   hold    0  (none)
+stretching              false-alarm      hold   hold    0  (none)
+sleeping-couch          false-alarm      hold   hold    0  (none)
+napping-bed             false-alarm      hold   hold    0  (none)
+kneeling-gardening      false-alarm      hold   hold    0  (none)
+bending-pickup          false-alarm      hold   hold    0  (none)
+pushups-exercise        false-alarm      hold   hold    0  (none)
+sitting-reading         false-alarm      hold   hold    0  (none)
+child-on-floor          false-alarm      hold   hold    0  (none)
+lying-still-responsive  false-alarm      hold   hold    0  (none)
+
+confusion: TP=8 TN=10 FP=0 FN=0  (emergencies=8, non-emergencies=10)
+false-clear (elevated a non-emergency) = 0/10 = 0.000
+over-restriction (refused an emergency) = 0/8 = 0.000
+ALL CORRECT

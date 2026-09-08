@@ -50,3 +50,32 @@ def test_empty_scene_does_not_corroborate():
     ev = _attest(encode_video("clip://empty", backend="stub", stub_track=[None, None, None]))
     s = evidence_to_sensor(ev, verify_sig=lambda *_: True)
     assert not s.corroborates_emergency
+
+
+def _static_prone_track():
+    # already lying down, still, throughout: horizontal but NO descent, NO transition
+    return [{"score": 0.90, "x0": 150, "y0": 300, "x1": 360, "y1": 380} for _ in range(6)]
+
+
+def _transition_track():
+    # upright early -> horizontal late: a fall event
+    return [
+        {"score": 0.95, "x0": 220, "y0": 90, "x1": 290, "y1": 320},   # aspect ~0.35 upright
+        {"score": 0.93, "x0": 210, "y0": 110, "x1": 300, "y1": 330},
+        {"score": 0.90, "x0": 180, "y0": 180, "x1": 340, "y1": 330},  # ~1.1
+        {"score": 0.85, "x0": 150, "y0": 260, "x1": 370, "y1": 360},  # ~2.2 horizontal
+    ]
+
+
+def test_static_prone_does_NOT_corroborate():
+    # a person lying on the floor on purpose (yoga/sleeping): posture only -> abstain
+    ev = _attest(encode_video("clip://yoga", backend="stub", stub_track=_static_prone_track()))
+    s = evidence_to_sensor(ev, verify_sig=lambda *_: True)
+    assert not s.corroborates_emergency  # posture is not a fall event
+
+
+def test_fall_transition_corroborates():
+    ev = _attest(encode_video("clip://fall", backend="stub", stub_track=_transition_track()))
+    assert ev.reads("fall_transition", min_conf=0.4, min_value=0.5)
+    s = evidence_to_sensor(ev, verify_sig=lambda *_: True)
+    assert s.corroborates_emergency and s.confidence == "high"
