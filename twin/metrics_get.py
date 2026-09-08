@@ -42,8 +42,8 @@ def evaluate(configs: dict[str, tuple[float, float]], evaluators: dict = None) -
     Returns per-evaluator distances (lower=better), utilities, and the ranking;
     flags whether the best config is evaluator-relative (ranking flips)."""
     ev = evaluators or EVALUATORS
-    out = {"per_evaluator": {}, "ranking_flips": False}
-    winners = set()
+    out = {"per_evaluator": {}, "best_differs": False, "ranking_flips": False}
+    winners, orderings = set(), set()
     for ename, (w_fc, w_or) in ev.items():
         scored = {c: round(d_ideal(fc, orr, w_fc, w_or), 4) for c, (fc, orr) in configs.items()}
         order = sorted(scored, key=scored.get)  # ascending distance
@@ -54,8 +54,9 @@ def evaluate(configs: dict[str, tuple[float, float]], evaluators: dict = None) -
             "ranking_best_first": order,
             "best": order[0],
         }
-        winners.add(order[0])
-    out["ranking_flips"] = len(winners) > 1
+        winners.add(order[0]); orderings.add(tuple(order))
+    out["best_differs"] = len(winners) > 1
+    out["ranking_flips"] = len(orderings) > 1   # any pair ordered differently across evaluators
     out["winners_across_evaluators"] = sorted(winners)
     return out
 
@@ -68,10 +69,13 @@ def report(configs: dict[str, tuple[float, float]]) -> None:
         w = e["weights"]
         row = "  ".join(f"{e['d_G'][c]:>10.3f}" for c in configs)
         print(f"{ename:20} ({w['w_fc']:>4},{w['w_or']:>4})        {e['best']:<11} {row}")
-    if r["ranking_flips"]:
-        print(f"\nThe best config is EVALUATOR-RELATIVE (winners: {', '.join(r['winners_across_evaluators'])}) "
-              "-- GET's shared-grammar-without-shared-standard, i.e. whose values govern the robot is a choice, not a given.")
+    if r["best_differs"]:
+        print(f"\nThe BEST config is EVALUATOR-RELATIVE (winners: {', '.join(r['winners_across_evaluators'])}) "
+              "-- whose values govern the robot is a choice, not a given.")
+    elif r["ranking_flips"]:
+        print(f"\nEvaluators agree the best is '{r['winners_across_evaluators'][0]}', but RANK OTHER configs "
+              "oppositely (a safety-first vs availability-first flip lower in the order) -- the operating "
+              "point on the false-clear/over-restriction frontier is evaluator-relative (GET's core claim).")
     else:
-        print(f"\nAll evaluators agree the best config is '{r['winners_across_evaluators'][0]}' "
-              "(ordinally-equivalent distances here).")
+        print(f"\nAll evaluators agree the full ranking (ordinally-equivalent distances here).")
     return r

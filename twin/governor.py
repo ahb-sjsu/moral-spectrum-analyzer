@@ -41,7 +41,12 @@ class Ruling:
     msa: dict = field(default_factory=dict)
 
 
-def govern(sc, backend: str = "stub") -> Ruling:
+def govern(sc, backend: str = "stub", mode: str = "conservative",
+           permissive_s: float = 0.22) -> Ruling:
+    """mode='conservative' (fail-safe: elevate only on a resolved 'allow') or
+    'permissive' (also elevate an unresolved/low-authority read whose spectrum is
+    net-positive, S >= permissive_s -- trades safety for coverage). The threshold
+    sweep over permissive_s traces the (false-clear, over-restriction) frontier."""
     def rule(elevate, gate, reason, human=False, msa=None):
         return Ruling(sc.id, elevate, gate, reason, sc.should_elevate,
                       correct=(elevate == sc.should_elevate), human_review=human,
@@ -60,8 +65,13 @@ def govern(sc, backend: str = "stub") -> Ruling:
     if dec.fired_channel:
         return rule(False, "veto", f"hard channel fired: {dec.fired_channel}", msa=m)
 
-    # gate 4 -- regime gate: unresolved / low authority => refuse, defer to human
+    # gate 4 -- regime gate: unresolved / low authority
     if dec.requires_human_review or dec.action == "escalate":
+        if (mode == "permissive" and dec.action != "remove"
+                and dec.satisfaction is not None and dec.satisfaction >= permissive_s):
+            return rule(True, "regime-permissive",
+                        f"low-authority but net-positive (S={dec.satisfaction:+.3f} >= {permissive_s}) -- permissive elevate",
+                        msa=m)
         return rule(False, "regime",
                     "unresolved / low-authority read -- defer to human (fail-safe)",
                     human=True, msa=m)

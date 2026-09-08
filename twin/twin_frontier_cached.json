@@ -1,0 +1,105 @@
+{
+  "backend": "cached",
+  "frontier": {
+    "conservative": [
+      0.0,
+      0.6667
+    ],
+    "permissive@0.25": [
+      0.2,
+      0.6667
+    ],
+    "permissive@0.21": [
+      0.2,
+      0.0
+    ],
+    "permissive@0.13": [
+      0.8,
+      0.0
+    ]
+  },
+  "get": {
+    "per_evaluator": {
+      "safety_first": {
+        "weights": {
+          "w_fc": 9.0,
+          "w_or": 1.0
+        },
+        "d_G": {
+          "conservative": 0.6667,
+          "permissive@0.25": 0.8969,
+          "permissive@0.21": 0.6,
+          "permissive@0.13": 2.4
+        },
+        "utility": {
+          "conservative": -0.6667,
+          "permissive@0.25": -0.8969,
+          "permissive@0.21": -0.6,
+          "permissive@0.13": -2.4
+        },
+        "ranking_best_first": [
+          "permissive@0.21",
+          "conservative",
+          "permissive@0.25",
+          "permissive@0.13"
+        ],
+        "best": "permissive@0.21"
+      },
+      "balanced": {
+        "weights": {
+          "w_fc": 1.0,
+          "w_or": 1.0
+        },
+        "d_G": {
+          "conservative": 0.6667,
+          "permissive@0.25": 0.6961,
+          "permissive@0.21": 0.2,
+          "permissive@0.13": 0.8
+        },
+        "utility": {
+          "conservative": -0.6667,
+          "permissive@0.25": -0.6961,
+          "permissive@0.21": -0.2,
+          "permissive@0.13": -0.8
+        },
+        "ranking_best_first": [
+          "permissive@0.21",
+          "conservative",
+          "permissive@0.25",
+          "permissive@0.13"
+        ],
+        "best": "permissive@0.21"
+      },
+      "availability_first": {
+        "weights": {
+          "w_fc": 1.0,
+          "w_or": 4.0
+        },
+        "d_G": {
+          "conservative": 1.3334,
+          "permissive@0.25": 1.3483,
+          "permissive@0.21": 0.2,
+          "permissive@0.13": 0.8
+        },
+        "utility": {
+          "conservative": -1.3334,
+          "permissive@0.25": -1.3483,
+          "permissive@0.21": -0.2,
+          "permissive@0.13": -0.8
+        },
+        "ranking_best_first": [
+          "permissive@0.21",
+          "permissive@0.13",
+          "conservative",
+          "permissive@0.25"
+        ],
+        "best": "permissive@0.21"
+      }
+    },
+    "best_differs": false,
+    "ranking_flips": true,
+    "winners_across_evaluators": [
+      "permissive@0.21"
+    ]
+  }
+}
