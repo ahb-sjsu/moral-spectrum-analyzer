@@ -418,9 +418,9 @@ def build():
     s = blank(prs)
     header(s, "The same evaluator as a robot's authority gate",
            "september extension · supporting exhibit · software to silicon", 6)
-    text(s, "Structural containment: authority to act comes from corroborated physical evidence, "
-            "never from reasoning. Each gate can only refuse.", 0.6, 1.45, 12.1, 0.5, size=13.5,
-         color=MUTE)
+    text(s, "Defense in depth with a fail-safe default: authority to act comes from corroborated "
+            "physical evidence, never from reasoning. Each gate is independent and can only refuse; "
+            "if any gate is unsure, the robot holds.", 0.6, 1.42, 12.1, 0.55, size=13, color=MUTE)
     gates(s, 2.15)
     rich(s, [
         [("Why: ", GOLD, True),
@@ -471,7 +471,7 @@ def build():
     header(s, "Five weeks to mid-October: remaining items in ship order", "plan · the Charter's [committed] list", 8)
     plan = [
         ("1", "Live web demo + audit-verify UI", "the verification-demo vehicle: paste → spectrum → decision → re-verify", BLUE),
-        ("2", "Governance annex", "mechanism → policy instrument → framework (EU DSA / AI Act, NIST AI RMF, IEEE 7000)", GOLD),
+        ("2", "Governance annex", "mechanism → policy instrument → framework: EU DSA / AI Act, NIST AI RMF, IEEE 7001 (transparency) · 7003 (algorithmic bias) · 7010 (well-being)", GOLD),
         ("3", "Efficiency benchmark", "throughput-per-dollar of small encoders vs LLM-based moderation", GREEN),
         ("4", "Adversarial red-team run", "pre-registered gate; defender frozen, budget fixed; default expectation 'not robust'", AMBER),
         ("5", "Post-route FPGA timing (B3)", "validated clock for the 12-cycle veto → an honest nanosecond number", IDENT),
@@ -512,12 +512,16 @@ def build():
          ("an off-distribution input escalates instead of guessing; every remove carries its out-of-fold "
           "validation. Removes are ~80% precise, so ~1 in 5 is contestable — the audit trail and human "
           "escalation are the safeguard, shown, not hidden.", WHITE, False)],
+        [("An open, standardizable artifact: ", GOLD, True),
+         ("the audit proof is a documented, hash-chained record (inputs, per-axis scores, residue, "
+          "each encoder's validation record) that any third party can re-verify without our code — "
+          "the kind of object a transparency standard can name.", WHITE, False)],
         [("Never a fake number: ", GOLD, True),
          ("the demo replays cached real encoder outputs with a live/cached badge; the stub backend is "
           "for CI only and is never presented as real.", WHITE, False)],
         [("Thirty-second fallback today: ", GOLD, True),
          ("msa moderate \"<text>\" --backend cached", BLUE, False)],
-    ], 0.6, 3.85, 12.1, 3.1, size=14)
+    ], 0.6, 3.8, 12.1, 3.3, size=13)
     notes(s, "Ask: what is submitted for verification, by when, in what form — and is a recorded "
              "fallback acceptable alongside the live session?")
 
@@ -527,7 +531,7 @@ def build():
     asks = [
         ("Verification format", "What is submitted, by when, in what form (live, recorded, repo)? Is the July Charter the reference text, or can an addendum be filed for the embodiment exhibit?"),
         ("Validation session", "Duration, panel composition, whether experts bring their own content."),
-        ("Partner matching", "A trust-and-safety team for a shadow pilot on real moderation traffic; a home-care robotics / assistive-care group for the elevation scenario."),
+        ("Pilot hosting", "A host organization or city for a real-environment pilot: a trust-and-safety team running the analyzer in shadow mode on live moderation traffic, or an assistive-care provider for the elevation scenario. Pre-registered bars, results reported as executed."),
         ("Visibility", "LinkedIn / site promotion timing; whether the capsule can be refreshed before then."),
         ("Honors list", "What 'potential impact in specific real-world contexts' is weighed on, so the governance annex speaks to it."),
     ]
