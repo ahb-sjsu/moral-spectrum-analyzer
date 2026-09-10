@@ -546,9 +546,20 @@ def build():
             "especially on pilots.", 0.6, 6.7, 12.1, 0.4, size=12, color=MUTE)
     notes(s, "Close with the asks; leave the last 8 minutes for their questions.")
 
+    # presenter script into the speaker notes, above the builder's one-line note
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "checkin_script", os.path.join(os.path.dirname(os.path.abspath(__file__)), "checkin_script_2026-09-10.py"))
+    mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
+    for i, sl in enumerate(prs.slides, 1):
+        existing = sl.notes_slide.notes_text_frame.text
+        sl.notes_slide.notes_text_frame.text = mod.SCRIPT[i].strip() + "\n\n\u2014 Builder note \u2014\n" + existing
+    with open(os.path.join("docs", "CHECKIN_2026-09-10_script.md"), "w", encoding="utf-8", newline="\n") as f:
+        f.write(mod.render_markdown())
+
     os.makedirs("out", exist_ok=True)
     prs.save(OUT)
-    print("wrote", OUT, f"({len(prs.slides)} slides)")
+    print("wrote", OUT, f"({len(prs.slides)} slides) and docs/CHECKIN_2026-09-10_script.md")
 
 
 if __name__ == "__main__":
