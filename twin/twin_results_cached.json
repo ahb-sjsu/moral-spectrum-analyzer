@@ -14,11 +14,11 @@
         },
         "d_G": {
           "cached": 0.0,
-          "stub": 1.0
+          "stub": 0.0
         },
         "utility": {
           "cached": -0.0,
-          "stub": -1.0
+          "stub": -0.0
         },
         "ranking_best_first": [
           "cached",
@@ -33,11 +33,11 @@
         },
         "d_G": {
           "cached": 0.0,
-          "stub": 1.0
+          "stub": 0.0
         },
         "utility": {
           "cached": -0.0,
-          "stub": -1.0
+          "stub": -0.0
         },
         "ranking_best_first": [
           "cached",
@@ -52,11 +52,11 @@
         },
         "d_G": {
           "cached": 0.0,
-          "stub": 2.0
+          "stub": 0.0
         },
         "utility": {
           "cached": -0.0,
-          "stub": -2.0
+          "stub": -0.0
         },
         "ranking_best_first": [
           "cached",
@@ -191,10 +191,10 @@
       "human_review": false,
       "corroboration": 2,
       "msa": {
-        "action": "escalate",
+        "action": "allow",
         "satisfaction": 0.2378,
-        "rationale": "High perceptual uncertainty (max 0.98) \u2014 human review.",
-        "requires_human_review": true,
+        "rationale": "Covered-category clear \u2014 learned contraction p(violation)=0.08 \u2264 0.1 (out-of-fold AUROC 0.8626).",
+        "requires_human_review": false,
         "fired_channel": null,
         "effective_axes": {
           "physical_harm": -0.037,
@@ -205,7 +205,12 @@
           "shared_valence(care/fairness/legitimacy/epistemic)": 0.0529
         },
         "moral_residue": [],
-        "contraction": null
+        "contraction": {
+          "label": "toxicity",
+          "oof_auroc": 0.8626,
+          "violation_probability": 0.0813,
+          "threshold": 0.1
+        }
       }
     }
   ]
