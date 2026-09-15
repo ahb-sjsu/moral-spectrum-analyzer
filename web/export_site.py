@@ -24,6 +24,7 @@ repository is built to avoid.
 
     python web/export_site.py
 """
+
 from __future__ import annotations
 
 import json
@@ -56,28 +57,31 @@ def load_cache():
 def main():
     rows = load_cache()
     # Deterministic order, so the chain is reproducible run to run.
-    rows.sort(key=lambda r: (str(r.get("scenario_id")), str(r.get("kind")),
-                             r["text_sha256"]))
+    rows.sort(key=lambda r: (str(r.get("scenario_id")), str(r.get("kind")), r["text_sha256"]))
     chain = ProofChain()
     items = []
     for r in rows:
         res = moderate(r["text"], backend="cached", chain=chain)
         p = res.proof
-        items.append({
-            "text": res.text,
-            "text_sha256": p.source_text_sha256,
-            "scenario_id": r.get("scenario_id"),
-            "kind": r.get("kind"),
-            "recorded_on": r.get("recorded_on"),
-            "scores": {d: {"value": s.value, "confidence": s.confidence}
-                       for d, s in res.perception.scores.items()},
-            "validation": [asdict(v) for v in res.perception.validation],
-            "decision": res.decision.as_dict(),
-            "summary": res.summary(),
-            "proof": p.to_dict(),
-            # The exact bytes the hash is taken over. The browser hashes THIS.
-            "canonical_payload": p.canonical_payload(),
-        })
+        items.append(
+            {
+                "text": res.text,
+                "text_sha256": p.source_text_sha256,
+                "scenario_id": r.get("scenario_id"),
+                "kind": r.get("kind"),
+                "recorded_on": r.get("recorded_on"),
+                "scores": {
+                    d: {"value": s.value, "confidence": s.confidence}
+                    for d, s in res.perception.scores.items()
+                },
+                "validation": [asdict(v) for v in res.perception.validation],
+                "decision": res.decision.as_dict(),
+                "summary": res.summary(),
+                "proof": p.to_dict(),
+                # The exact bytes the hash is taken over. The browser hashes THIS.
+                "canonical_payload": p.canonical_payload(),
+            }
+        )
 
     assert chain.verify_chain(), "the exported chain does not verify"
     for it in items:
@@ -85,15 +89,15 @@ def main():
 
     doc = {
         "note": "Moral Spectrum Analyzer verification demo corpus. Every record "
-                "is a real cached-backend decision; nothing here is a stub.",
+        "is a real cached-backend decision; nothing here is a stub.",
         "generated_by": "web/export_site.py",
         "backend": "cached",
         "n_items": len(items),
         "chain_head": chain.head,
         "hash_note": "proof_hash = sha256(canonical_payload utf-8). "
-                     "canonical_payload = JSON with sorted keys, separators "
-                     "(',' ':'), non-ASCII literal, Python number repr so a "
-                     "float always carries a decimal point.",
+        "canonical_payload = JSON with sorted keys, separators "
+        "(',' ':'), non-ASCII literal, Python number repr so a "
+        "float always carries a decimal point.",
         "dimensions": list(items[0]["scores"]) if items else [],
         "items": items,
     }
@@ -102,21 +106,20 @@ def main():
         json.dump(doc, fh, indent=1, ensure_ascii=False)
         fh.write("\n")
 
-    print("exported %d items -> %s" % (len(items), os.path.relpath(OUT, ROOT)))
-    print("  chain head      %s" % chain.head)
-    print("  dimensions      %d: %s" % (len(doc["dimensions"]),
-                                        ", ".join(doc["dimensions"])))
+    print(f"exported {len(items)} items -> {os.path.relpath(OUT, ROOT)}")
+    print(f"  chain head      {chain.head}")
+    dims = ", ".join(doc["dimensions"])
+    print(f"  dimensions      {len(doc['dimensions'])}: {dims}")
     scenarios = sorted({str(i["scenario_id"]) for i in items})
-    print("  scenarios       %d: %s" % (len(scenarios), ", ".join(scenarios)))
-    acts = {}
+    print(f"  scenarios       {len(scenarios)}: {', '.join(scenarios)}")
+    acts: dict[str, int] = {}
     for i in items:
         acts[i["decision"]["action"]] = acts.get(i["decision"]["action"], 0) + 1
-    print("  actions         %s" % acts)
+    print(f"  actions         {acts}")
     # a sanity line the site repeats: which axes are validated at all
     v0 = items[0]["validation"]
     good = sum(1 for v in v0 if v["validated"])
-    print("  validated axes  %d of %d (the failure is disclosed, not hidden)"
-          % (good, len(v0)))
+    print(f"  validated axes  {good} of {len(v0)} (the failure is disclosed, not hidden)")
     # prove the public canonical form is what we think it is
     assert canonical_json({"b": 1, "a": 0.0}) == '{"a":0.0,"b":1}'
     print("  canonical form  sorted keys, tight separators, float keeps '.0'")

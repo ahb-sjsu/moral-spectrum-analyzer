@@ -32,10 +32,10 @@ jobs:
           pip install -e ".[dev]"
 
       - name: Lint (ruff)
-        run: ruff check src tests
+        run: ruff check src tests web
 
       - name: Format check (black)
-        run: black --check src tests
+        run: black --check src tests web
 
       - name: Type check (ty)
         # ty is pre-1.0 (Astral); run it for signal but don't gate the build on an
@@ -45,3 +45,18 @@ jobs:
 
       - name: Test (pytest + coverage)
         run: pytest --cov=moral_spectrum --cov-report=term-missing
+
+      # The audit claim is that a third party can re-verify a decision record
+      # without our code, and web/verify.js is the evidence for it. Nothing here
+      # ran that, so a change to verify.js could silently stop agreeing with
+      # Python while every Python check stayed green. This runs the JS verifier
+      # against the committed corpus: 29 records, byte-identical canonical form,
+      # and four kinds of tampering that must be rejected.
+      - uses: actions/setup-node@v4
+        if: matrix.python-version == '3.12'
+        with:
+          node-version: '20'
+
+      - name: Verify the audit proofs in JavaScript
+        if: matrix.python-version == '3.12'
+        run: node web/test_verify.mjs
