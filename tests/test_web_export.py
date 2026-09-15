@@ -8,6 +8,7 @@ The last test guards a failure this repository has actually had: a committed
 artifact drifting away from the code that produced it, and then being read as
 current. `web/data/corpus.json` must equal a fresh export.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -19,7 +20,6 @@ import sys
 import pytest
 
 from moral_spectrum.audit import GENESIS, DecisionProof, ProofChain, canonical_json
-from moral_spectrum.pipeline import moderate
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CORPUS = os.path.join(ROOT, "web", "data", "corpus.json")
@@ -43,8 +43,12 @@ def test_canonical_json_is_tight_and_literal():
 
 def test_canonical_payload_hashes_to_proof_hash():
     p = DecisionProof(
-        source_text_sha256="a" * 64, perception_backend="stub", all_validated=False,
-        moral_vector=[0.0, -1.5], validation=[], decision={"action": "allow"},
+        source_text_sha256="a" * 64,
+        perception_backend="stub",
+        all_validated=False,
+        moral_vector=[0.0, -1.5],
+        validation=[],
+        decision={"action": "allow"},
         tensor_sha256="b" * 64,
     ).finalize()
     digest = hashlib.sha256(p.canonical_payload().encode("utf-8")).hexdigest()
@@ -54,16 +58,25 @@ def test_canonical_payload_hashes_to_proof_hash():
 
 def test_payload_excludes_proof_hash_itself():
     p = DecisionProof(
-        source_text_sha256="a" * 64, perception_backend="stub", all_validated=False,
-        moral_vector=[], validation=[], decision={}, tensor_sha256="b" * 64,
+        source_text_sha256="a" * 64,
+        perception_backend="stub",
+        all_validated=False,
+        moral_vector=[],
+        validation=[],
+        decision={},
+        tensor_sha256="b" * 64,
     ).finalize()
     assert "proof_hash" not in json.loads(p.canonical_payload())
 
 
 def test_tampering_breaks_verification():
     p = DecisionProof(
-        source_text_sha256="a" * 64, perception_backend="stub", all_validated=False,
-        moral_vector=[0.1], validation=[], decision={"action": "allow"},
+        source_text_sha256="a" * 64,
+        perception_backend="stub",
+        all_validated=False,
+        moral_vector=[0.1],
+        validation=[],
+        decision={"action": "allow"},
         tensor_sha256="b" * 64,
     ).finalize()
     assert p.verify()
@@ -74,10 +87,17 @@ def test_tampering_breaks_verification():
 def test_chain_links_and_detects_a_splice():
     chain = ProofChain()
     for i in range(3):
-        chain.append(DecisionProof(
-            source_text_sha256=str(i) * 64, perception_backend="stub",
-            all_validated=False, moral_vector=[float(i)], validation=[],
-            decision={"action": "allow"}, tensor_sha256="b" * 64))
+        chain.append(
+            DecisionProof(
+                source_text_sha256=str(i) * 64,
+                perception_backend="stub",
+                all_validated=False,
+                moral_vector=[float(i)],
+                validation=[],
+                decision={"action": "allow"},
+                tensor_sha256="b" * 64,
+            )
+        )
     assert chain.verify_chain()
     assert chain.proofs[0].prev_hash == GENESIS
     chain.proofs[1].prev_hash = GENESIS
@@ -106,9 +126,13 @@ def test_corpus_is_not_stale():
     class of bug deserves.
     """
     before = open(CORPUS, encoding="utf-8").read()
-    subprocess.run([sys.executable, os.path.join(ROOT, "web", "export_site.py")],
-                   check=True, capture_output=True)
+    subprocess.run(
+        [sys.executable, os.path.join(ROOT, "web", "export_site.py")],
+        check=True,
+        capture_output=True,
+    )
     after = open(CORPUS, encoding="utf-8").read()
     assert after == before, (
         "web/data/corpus.json is stale: re-running web/export_site.py changes it. "
-        "Re-export and commit the result.")
+        "Re-export and commit the result."
+    )

@@ -33,3 +33,8 @@ nrp_token.txt
 # OS
 .DS_Store
 Thumbs.db
+
+# coverage artifacts (CI runs pytest --cov)
+.coverage
+.coverage.*
+htmlcov/
