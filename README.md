@@ -77,6 +77,29 @@ msa version
 > Real, validated perception runs the `xbse` feeders on a GPU host; the demo replays those cached
 > real outputs (`--backend cached`). A stub number is never presented as a real one.
 
+## Verification demo — re-verify a decision in your own browser
+
+```bash
+python -m http.server 8000 -d web      # then open http://localhost:8000
+```
+
+Paste or pick content, see the spectrum with per-axis validation badges, the decision and the moral
+residue, then **re-verify the audit proof in the browser**. `web/verify.js` is an independent
+re-implementation of the hash check that shares no code with the analyzer, and `node
+web/test_verify.mjs` shows it reproduces Python's canonical bytes on all 29 records and rejects
+tampering. Details and the disclosures in [`web/README.md`](web/README.md).
+
+## Embodied governance — the analyzer as a robot's authority gate
+
+`twin/` is the P1 governance loop: a home-care robot proposes an action needing **elevated
+authority**, and a four-gate governor grants or refuses it. Authority is gated on **corroborated
+physical sensor evidence**, never on a moral-reasoning verdict, because a learned evaluator is a
+gameable surface. The analyzer is advisory and **downward-only**: it can refuse, it can never confer
+elevation. Removing it can only make the robot more restrictive.
+
+18-scenario witness suite: 8 real emergencies elevated, 10 false alarms held, false-clear 0/10,
+over-restriction 0/8. See [`twin/README.md`](twin/README.md).
+
 ## Develop
 
 ```bash

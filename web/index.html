@@ -1,0 +1,377 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moral Spectrum Analyzer — verification demo</title>
+<style>
+  :root{
+    --bg:#0b1020; --panel:#141b2f; --line:#232c45; --fg:#f2f5fa; --mute:#8a93a8;
+    --gold:#f5c147; --green:#3ddc97; --amber:#f2b13d; --red:#e55a5a;
+    --ident:#b86bf5; --blue:#6aa6f5;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:15px/1.55 ui-sans-serif,system-ui,"Segoe UI",sans-serif}
+  .wrap{max-width:1080px;margin:0 auto;padding-block:28px;padding-left:18px;padding-right:18px}
+  h1{font-size:1.35rem;margin:0 0 4px}
+  h2{font-size:.78rem;text-transform:uppercase;letter-spacing:.09em;
+     color:var(--mute);margin:0 0 12px;font-weight:600}
+  .sub{color:var(--mute);font-size:.92rem;margin:0 0 22px;max-width:70ch}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+         padding:18px;margin-bottom:16px}
+  .cols{display:flex;gap:16px;flex-wrap:wrap}
+  .cols>*{flex:1 1 320px;min-width:0}
+  textarea{width:100%;min-height:96px;background:#0d1428;color:var(--fg);
+           border:1px solid var(--line);border-radius:8px;padding:10px;font:inherit;resize:vertical}
+  select,button{font:inherit}
+  select{width:100%;background:#0d1428;color:var(--fg);border:1px solid var(--line);
+         border-radius:8px;padding:9px}
+  button{background:var(--blue);color:#06101f;border:0;border-radius:8px;
+         padding:9px 16px;font-weight:650;cursor:pointer}
+  button.ghost{background:transparent;color:var(--fg);border:1px solid var(--line);font-weight:500}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+  .miss{border-left:3px solid var(--amber);padding:10px 14px;background:#1b1a10;
+        border-radius:0 8px 8px 0;color:#f0dfae;font-size:.92rem}
+  .miss code{color:var(--gold)}
+  /* spectrum */
+  .ax{display:grid;grid-template-columns:minmax(120px,1.3fr) minmax(120px,2fr) 62px auto;
+      gap:10px;align-items:center;padding:5px 0;border-bottom:1px solid #1b2238}
+  .ax:last-child{border-bottom:0}
+  .ax .nm{font-size:.86rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .track{position:relative;height:13px;background:#0d1428;border-radius:7px;overflow:hidden}
+  .track .mid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:#33405f}
+  .track .fill{position:absolute;top:0;bottom:0;border-radius:3px}
+  .val{font-variant-numeric:tabular-nums;font-size:.84rem;text-align:right;color:var(--mute)}
+  .badge{font-size:.7rem;padding:2px 7px;border-radius:999px;white-space:nowrap;
+         border:1px solid transparent}
+  .b-ok{color:var(--green);border-color:#1e5c42;background:#0e2a20}
+  .b-no{color:var(--red);border-color:#5e2a2a;background:#2a1414}
+  .b-hard{color:var(--gold);border-color:#5c4a1e;background:#2a2410}
+  /* decision */
+  .chip{display:inline-block;padding:5px 14px;border-radius:999px;font-weight:700;
+        letter-spacing:.04em;text-transform:uppercase;font-size:.8rem}
+  .a-allow{background:#0e2a20;color:var(--green)}
+  .a-escalate{background:#2a2410;color:var(--amber)}
+  .a-remove{background:#2a1414;color:var(--red)}
+  dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:14px 0 0;font-size:.9rem}
+  dt{color:var(--mute)}
+  dd{margin:0;font-variant-numeric:tabular-nums}
+  /* audit */
+  pre{background:#0d1428;border:1px solid var(--line);border-radius:8px;padding:12px;
+      overflow-x:auto;font-size:.74rem;line-height:1.45;max-height:230px;color:#c9d4e8}
+  .check{display:flex;gap:9px;align-items:baseline;font-size:.9rem;padding:3px 0}
+  .check .m{font-weight:700;width:1.2em}
+  .pass{color:var(--green)} .fail{color:var(--red)}
+  .hash{font-family:ui-monospace,monospace;font-size:.76rem;word-break:break-all;color:var(--mute)}
+  table{width:100%;border-collapse:collapse;font-size:.82rem}
+  th,td{text-align:left;padding:5px 8px;border-bottom:1px solid #1b2238}
+  th{color:var(--mute);font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em}
+  .scroll{overflow-x:auto}
+  .foot{color:var(--mute);font-size:.82rem;margin-top:8px}
+  .foot b{color:var(--fg);font-weight:600}
+  .hide{display:none!important}
+</style>
+
+<div class="wrap">
+  <h1>Moral Spectrum Analyzer <span style="color:var(--mute);font-weight:400">· verification demo</span></h1>
+  <p class="sub">Content is scored across ten moral axes by separately validated encoders, contracted
+  to a decision, and bound to a hash-chained proof. <b>The proof is re-verified in your browser</b>,
+  by a second implementation that shares no code with the analyzer.</p>
+
+  <div class="panel">
+    <h2>1 · Content</h2>
+    <div class="cols">
+      <div>
+        <textarea id="text" spellcheck="false" placeholder="Paste content to analyse…"></textarea>
+        <div class="row">
+          <button id="go">Analyse</button>
+          <span id="shaline" class="hash"></span>
+        </div>
+      </div>
+      <div>
+        <label for="pick" style="font-size:.82rem;color:var(--mute)">Or load a recorded item</label>
+        <select id="pick"></select>
+        <p class="foot" id="corpusline"></p>
+      </div>
+    </div>
+    <div id="miss" class="miss hide" style="margin-top:12px"></div>
+  </div>
+
+  <div id="results" class="hide">
+    <div class="cols">
+      <div class="panel">
+        <h2>2 · Spectrum, with validation</h2>
+        <div id="spectrum"></div>
+        <p class="foot" id="specfoot"></p>
+      </div>
+      <div class="panel">
+        <h2>3 · Decision</h2>
+        <div id="decision"></div>
+      </div>
+    </div>
+
+    <div class="panel" id="invpanel">
+      <h2>4 · Invariance — the same meaning, re-described</h2>
+      <div id="invariance"></div>
+      <p class="foot">Every variant below is a meaning-preserving re-description of the same
+      scenario, scored independently. A moderation layer that changes its mind under paraphrase is
+      not measuring content.<br>
+      <b>These are RAW per-item decisions, with the invariance mechanism off.</b> That is the
+      baseline, and it is the weak case: across this corpus the decision survives re-description in
+      four of the eight scenarios that have variants, and changes in four. The mechanism that
+      addresses it, averaging perception over a generated equivalence class, is measured separately
+      on held-out items and roughly halves reframe drift, θ<sub>d</sub> 0.407 → 0.219 against a
+      pre-registered bar of 0.5 (<code>docs/INVARIANCE_FINDINGS.md</code>). It is not applied here,
+      so what you see is the harder number, not the better one.</p>
+    </div>
+
+    <div class="panel">
+      <h2>5 · Moral residue</h2>
+      <div id="residue"></div>
+      <p class="foot">Residue is what the decision did not resolve: axes still carrying material
+      signal after the action was chosen. It is reported, not discharged.</p>
+    </div>
+
+    <div class="panel">
+      <h2>6 · Audit proof — verify it yourself</h2>
+      <p class="foot" id="fmt"></p>
+      <div class="row">
+        <button id="verify">Re-verify in this browser</button>
+        <button id="tamper" class="ghost">Tamper with it</button>
+        <button id="reset" class="ghost hide">Undo tamper</button>
+        <button id="chain" class="ghost">Verify the whole chain</button>
+      </div>
+      <div id="checks" style="margin-top:12px"></div>
+      <p class="foot" style="margin-top:10px">Bytes the hash is taken over:</p>
+      <pre id="payload"></pre>
+      <div id="chainout"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>What this demo does not claim</h2>
+    <p class="foot">
+      <b>Backend is <code>cached</code>:</b> every number replays a real encoder run recorded on the
+      GPU host. Text with no recorded run is refused rather than scored by a stub, because a stub
+      number presented as a real one is the failure this project exists to avoid.<br>
+      <b>Nine of ten axes are validated.</b> <code>rights_respect</code> failed its pre-registered
+      gate twice, including on a legal corpus, so it carries no validated graded feeder and is used
+      only as a hand-specified deontic hard channel. It is shown failing.<br>
+      <b>The corpus is a design set, not a benchmark.</b> It demonstrates the mechanism and the audit
+      path. It does not measure generalisation, and one item
+      (<code>harsh_but_factual_criticism</code>) is a disclosed false positive kept in the record.
+    </p>
+  </div>
+</div>
+
+<script type="module">
+import { verifyRecord, verifyChain, textSha256 } from "./verify.js";
+
+const $ = (id) => document.getElementById(id);
+const HARD = new Set(["rights_respect"]);
+const DISCOVERED = new Set(["identity_attack"]);
+let DOC = null, current = null, pristine = null;
+
+const fmtNum = (x, n = 3) => (x === null || x === undefined) ? "—" : Number(x).toFixed(n);
+const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+
+async function boot() {
+  const res = await fetch("data/corpus.json");
+  DOC = await res.json();
+  $("corpusline").innerHTML =
+    `<b>${DOC.n_items}</b> recorded items · backend <b>${DOC.backend}</b> · chain head ` +
+    `<span class="hash">${DOC.chain_head.slice(0, 16)}…</span>`;
+  const byScen = new Map();
+  DOC.items.forEach((it, i) => {
+    const k = it.scenario_id ?? "(unnamed)";
+    if (!byScen.has(k)) byScen.set(k, []);
+    byScen.get(k).push([i, it]);
+  });
+  const sel = $("pick");
+  sel.innerHTML = `<option value="">— choose —</option>`;
+  for (const [scen, rows] of [...byScen].sort()) {
+    const g = document.createElement("optgroup");
+    g.label = scen;
+    for (const [i, it] of rows) {
+      const o = document.createElement("option");
+      o.value = String(i);
+      o.textContent = `${it.kind ?? "base"} · ${it.decision.action}`;
+      g.appendChild(o);
+    }
+    sel.appendChild(g);
+  }
+  sel.onchange = () => { if (sel.value !== "") show(DOC.items[+sel.value]); };
+  $("fmt").innerHTML = esc(DOC.hash_note);
+}
+
+function show(item) {
+  current = item;
+  pristine = item.canonical_payload;
+  $("text").value = item.text;
+  $("miss").classList.add("hide");
+  $("results").classList.remove("hide");
+  $("shaline").textContent = "sha256 " + item.text_sha256.slice(0, 24) + "…";
+  renderSpectrum(item);
+  renderDecision(item);
+  renderResidue(item);
+  renderInvariance(item);
+  $("payload").textContent = item.canonical_payload;
+  $("checks").innerHTML = "";
+  $("chainout").innerHTML = "";
+  $("reset").classList.add("hide");
+}
+
+function renderSpectrum(item) {
+  const vmap = Object.fromEntries(item.validation.map((v) => [v.dimension, v]));
+  $("spectrum").innerHTML = Object.entries(item.scores).map(([dim, s]) => {
+    const v = vmap[dim] || {};
+    const pct = Math.min(Math.abs(s.value), 1) * 50;
+    const pos = s.value >= 0;
+    const colour = HARD.has(dim) ? "var(--gold)"
+      : DISCOVERED.has(dim) ? "var(--ident)"
+      : pos ? "var(--green)" : "var(--red)";
+    const badge = HARD.has(dim)
+      ? `<span class="badge b-hard" title="deontic hard channel, rule-based, no validated graded feeder">hard channel</span>`
+      : v.validated
+        ? `<span class="badge b-ok" title="passed a pre-registered cross-dataset gate">AUROC ${fmtNum(v.structure_auroc, 2)}</span>`
+        : `<span class="badge b-no">not validated</span>`;
+    return `<div class="ax">
+      <span class="nm" title="${esc(dim)}">${esc(dim.replace(/_/g, " "))}</span>
+      <span class="track"><span class="mid"></span>
+        <span class="fill" style="background:${colour};${pos
+          ? `left:50%;width:${pct}%` : `right:50%;width:${pct}%`}"></span></span>
+      <span class="val">${s.value >= 0 ? "+" : ""}${fmtNum(s.value)}</span>
+      ${badge}</div>`;
+  }).join("");
+  const nOk = item.validation.filter((v) => v.validated).length;
+  $("specfoot").innerHTML =
+    `<b>${nOk} of ${item.validation.length}</b> axes passed a pre-registered cross-dataset gate. ` +
+    `Violet is <code>identity_attack</code>, an axis this project discovered was missing and then ` +
+    `built and validated. Gold is the rule-based hard channel.`;
+}
+
+function renderDecision(item) {
+  const d = item.decision;
+  const c = d.contraction;
+  $("decision").innerHTML =
+    `<span class="chip a-${d.action}">${d.action}</span>
+     <dl>
+       <dt>satisfaction</dt><dd>${d.satisfaction >= 0 ? "+" : ""}${fmtNum(d.satisfaction, 4)}</dd>
+       <dt>human review</dt><dd>${d.requires_human_review ? "required" : "no"}</dd>
+       <dt>hard channel</dt><dd>${d.fired_channel ? esc(d.fired_channel) : "did not fire"}</dd>
+       ${c ? `<dt>contraction</dt><dd>${esc(c.label)} · p(violation) ${fmtNum(c.violation_probability)}
+              · threshold ${fmtNum(c.threshold, 2)} · OOF AUROC ${fmtNum(c.oof_auroc, 3)}</dd>` : ""}
+     </dl>
+     <p class="foot" style="margin-top:12px">${esc(d.rationale)}</p>`;
+}
+
+function renderResidue(item) {
+  const r = item.decision.moral_residue || [];
+  if (!r.length) { $("residue").innerHTML = `<p class="foot">No axis carries material unresolved signal.</p>`; return; }
+  $("residue").innerHTML = `<div class="scroll"><table>
+    <tr><th>axis</th><th>value</th><th>confidence</th><th>reliability</th></tr>
+    ${r.map((x) => `<tr><td>${esc(x.dimension.replace(/_/g, " "))}</td>
+      <td>${x.value >= 0 ? "+" : ""}${fmtNum(x.value)}</td>
+      <td>${fmtNum(x.confidence)}</td><td>${fmtNum(x.reliability)}</td></tr>`).join("")}
+  </table></div>`;
+}
+
+function renderInvariance(item) {
+  const sibs = DOC.items.filter((x) => x.scenario_id === item.scenario_id);
+  const panel = $("invpanel");
+  if (sibs.length < 2) { panel.classList.add("hide"); return; }
+  panel.classList.remove("hide");
+  const base = sibs.find((x) => (x.kind ?? "base") === "base") || sibs[0];
+  const drift = Object.keys(item.scores).map((d) => {
+    let mx = 0;
+    for (const s of sibs) mx = Math.max(mx, Math.abs(s.scores[d].value - base.scores[d].value));
+    return [d, mx];
+  }).sort((a, b) => b[1] - a[1]);
+  const actions = new Set(sibs.map((s) => s.decision.action));
+  $("invariance").innerHTML = `<div class="scroll"><table>
+      <tr><th>re-description</th><th>decision</th><th>satisfaction</th></tr>
+      ${sibs.map((s) => `<tr${s === item ? ' style="background:#19203a"' : ""}>
+        <td>${esc(s.kind ?? "base")}</td>
+        <td><span class="chip a-${s.decision.action}" style="font-size:.68rem;padding:2px 9px">${s.decision.action}</span></td>
+        <td>${s.decision.satisfaction >= 0 ? "+" : ""}${fmtNum(s.decision.satisfaction, 4)}</td></tr>`).join("")}
+    </table></div>
+    <p class="foot" style="margin-top:10px">
+      ${actions.size === 1
+        ? `<b style="color:var(--green)">The decision is the same across all ${sibs.length} re-descriptions.</b>`
+        : `<b style="color:var(--amber)">The decision changes across re-descriptions (${[...actions].join(", ")}).</b>
+           That is reported, not smoothed.`}
+      Largest per-axis drift from the base wording:
+      ${drift.slice(0, 3).map(([d, m]) => `${esc(d.replace(/_/g, " "))} ${fmtNum(m)}`).join(" · ")}.
+    </p>`;
+}
+
+function line(ok, label, detail = "") {
+  return `<div class="check"><span class="m ${ok ? "pass" : "fail"}">${ok ? "✓" : "✗"}</span>
+    <span>${label}${detail ? ` <span class="hash">${detail}</span>` : ""}</span></div>`;
+}
+
+async function doVerify() {
+  const r = await verifyRecord(current);
+  $("checks").innerHTML =
+    line(r.hashMatches, "SHA-256 of the bytes below equals the recorded proof hash") +
+    line(r.selfConsistent === true, "those bytes are canonical: re-serialising reproduces them exactly") +
+    line(r.saysWhatWeShow === true, "the bytes state the decision and source hash shown above") +
+    `<div class="check"><span class="m"></span><span class="hash">computed ${r.computed}<br>recorded ${r.claimed}</span></div>` +
+    `<p class="foot" style="margin-top:8px">${r.ok
+      ? "Verified. Nothing above came from the analyzer: this browser hashed the bytes itself."
+      : "<b style='color:var(--red)'>This record does not verify.</b> The bytes no longer hash to the recorded proof."}</p>`;
+}
+
+$("verify").onclick = doVerify;
+
+$("tamper").onclick = async () => {
+  const d = current.decision;
+  const swap = d.action === "remove" ? "allow" : "remove";
+  let p = current.canonical_payload;
+  if (p.includes(`"action":"${d.action}"`)) p = p.replace(`"action":"${d.action}"`, `"action":"${swap}"`);
+  else p = p.replace(/("satisfaction":)(-?[\d.]+)/, "$10.9999");
+  current = { ...current, canonical_payload: p };
+  $("payload").textContent = p;
+  $("reset").classList.remove("hide");
+  await doVerify();
+};
+
+$("reset").onclick = async () => {
+  current = { ...current, canonical_payload: pristine };
+  $("payload").textContent = pristine;
+  $("reset").classList.add("hide");
+  await doVerify();
+};
+
+$("chain").onclick = async () => {
+  $("chainout").innerHTML = `<p class="foot">Verifying ${DOC.n_items} proofs…</p>`;
+  const c = await verifyChain(DOC.items);
+  const bad = c.rows.filter((r) => !r.ok);
+  $("chainout").innerHTML =
+    `<p class="foot" style="margin-top:14px">` +
+    line(c.allOk, `all ${DOC.n_items} proofs verify and every prev-hash link is intact`) +
+    line(c.head === DOC.chain_head, "the chain head matches the published head",
+         c.head.slice(0, 24) + "…") +
+    (bad.length ? `<br>failing: ${bad.map((b) => esc(b.id)).join(", ")}` : "") +
+    `</p>`;
+};
+
+$("go").onclick = async () => {
+  const t = $("text").value;
+  if (!t.trim()) return;
+  const sha = await textSha256(t);
+  $("shaline").textContent = "sha256 " + sha.slice(0, 24) + "…";
+  const hit = DOC.items.find((x) => x.text_sha256 === sha);
+  if (hit) { $("pick").value = String(DOC.items.indexOf(hit)); show(hit); return; }
+  $("results").classList.add("hide");
+  const m = $("miss");
+  m.classList.remove("hide");
+  m.innerHTML = `<b>No recorded perception for this text.</b><br>
+    The <code>cached</code> backend raises <code>CacheMiss</code> rather than falling back to the
+    stub, so this demo will not show you a score it did not measure. To score new text, run the real
+    encoders on the GPU host (<code>scripts/score_demoset_atlas.py</code>) and re-export.<br>
+    <span class="hash">sha256 ${sha}</span>`;
+};
+
+boot();
+</script>

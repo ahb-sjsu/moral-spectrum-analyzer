@@ -261,7 +261,13 @@ README, one-command repro, concept-note alignment, optional Zenodo DOI. Public G
 - [ ] containment / red-team report (residue + audit-trail visibility)
 - [ ] efficiency — throughput-per-$ vs LLM moderation
 - [ ] B3 post-route timing (validated clock → honest ns) — the silicon "timing closure" the Charter commits
-- [ ] web shopfront (spectrogram centerpiece) + audit-verify UI
+- [x] web shopfront (spectrogram centerpiece) + audit-verify UI — `web/`, built 2026-09-14.
+      Paste/select → spectrum with per-axis validation badges → decision + residue →
+      **in-browser re-verification of the proof**, by an independent JS implementation that
+      `web/test_verify.mjs` shows reproduces Python's canonical bytes on all 29 records and
+      rejects four kinds of tampering. Invariance panel included, showing the RAW (mechanism-off)
+      drift. **Not yet on the page:** the red-team result and the efficiency number, which are
+      their own checklist items below.
 - [ ] governance annex
 
 **Stretch / gated / optional:**

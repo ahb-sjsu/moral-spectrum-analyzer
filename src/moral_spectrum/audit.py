@@ -16,10 +16,20 @@ from dataclasses import asdict, dataclass, field
 GENESIS = "0" * 64
 
 
+def canonical_json(obj) -> str:
+    """The exact string form that gets hashed. THIS IS THE INTEROP CONTRACT.
+
+    Keys sorted, no insignificant whitespace, non-ASCII left as literal UTF-8.
+    Numbers are Python's `repr`, so a float always carries a decimal point
+    (`0.0`, never `0`) while an int never does. A third-party verifier has to
+    reproduce these rules byte for byte or the hash will not match, which is why
+    this is public and documented rather than an implementation detail.
+    """
+    return json.dumps(obj, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+
+
 def _sha256_json(obj) -> str:
-    return hashlib.sha256(
-        json.dumps(obj, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-    ).hexdigest()
+    return hashlib.sha256(canonical_json(obj).encode("utf-8")).hexdigest()
 
 
 def sha256_text(text: str) -> str:
@@ -63,8 +73,17 @@ class DecisionProof:
             payload["equivalence_class"] = self.equivalence_class
         return payload
 
+    def canonical_payload(self) -> str:
+        """The exact bytes this proof's hash is taken over, as a string.
+
+        Public because the audit claim is that anyone can re-verify without our
+        code: hand this string to any SHA-256 implementation and compare the
+        digest to `proof_hash`.
+        """
+        return canonical_json(self._payload())
+
     def compute_hash(self) -> str:
-        return _sha256_json(self._payload())
+        return hashlib.sha256(self.canonical_payload().encode("utf-8")).hexdigest()
 
     def finalize(self) -> DecisionProof:
         self.proof_hash = self.compute_hash()
