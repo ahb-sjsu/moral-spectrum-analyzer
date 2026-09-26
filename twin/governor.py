@@ -9,9 +9,11 @@ authority to elevate is contained by the sensor bus (a hard channel that can
 GRANT), and the Moral Spectrum Analyzer is advisory and DOWNWARD-ONLY: it can
 refuse a disproportionate or harmful action, it can never confer elevation.
 
-This is structural containment. Removing the MSA can only make the robot MORE
-restrictive; it can never let the robot act without physical corroboration. The
-gate is the architecture, not the AI's judgment.
+This is structural containment. The MSA can only make the robot MORE
+restrictive, and removing it can never let the robot act without physical
+corroboration. The gate is the architecture, not the AI's judgment.
+(Corrected 2026-09-25: this said "Removing the MSA can only make the robot MORE
+restrictive", which is inverted, since gate 3 only refuses.)
 
 Four gates, each of which can only refuse:
 

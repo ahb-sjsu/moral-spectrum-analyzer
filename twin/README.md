@@ -20,10 +20,17 @@ agent can construct a situation that *reads* as justified. Sensor corroboration
 is ground truth an agent cannot talk its way past.
 
 So the Moral Spectrum Analyzer is **advisory and downward-only**. It can refuse a
-disproportionate or harmful action. It can never confer elevation. **Removing the
-MSA can only make the robot more restrictive; it can never let the robot act
+disproportionate or harmful action. It can never confer elevation. **The MSA can
+only make the robot more restrictive, and removing it can never let the robot act
 without physical corroboration.** The guarantee is the architecture, not the AI's
 judgment.
+
+(Correction 2026-09-25. The bold sentence first said "Removing the MSA can only
+make the robot more restrictive". Gate 3 in `governor.py` only ever returns a
+refusal, so removing it can only make the robot *less* restrictive: every case the
+MSA would have refused then elevates, provided gates 1 and 2 grant. What holds is
+that adding the MSA can only restrict, and that without it elevation still
+requires physical corroboration at gate 2.)
 
 ## The four gates (`governor.py`)
 
