@@ -128,4 +128,9 @@ proof) runs end-to-end. See the milestone checklist in [PLAN.md](PLAN.md).
 
 ## License
 
-MIT © Andrew H. Bond (SJSU).
+Two licenses, split by what the file is.
+
+| What | License | File |
+|---|---|---|
+| Prose and figures: documentation, articles, papers, notes, figures, data, README | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | `LICENSE-TEXT` |
+| Source code: the package, scripts, tools, experiment harnesses, the code in notebooks | [MIT](https://opensource.org/licenses/MIT) | `LICENSE` |
