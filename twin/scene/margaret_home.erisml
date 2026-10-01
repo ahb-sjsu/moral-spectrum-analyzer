@@ -7,7 +7,7 @@
 # that happens, using only these types (actor margaret unless noted):
 #   activity_started      content: reading | sofa | lying_by_tv | yoga | playing_with_dog |
 #                                  napping | watering | walking
-#   inactivity_exceeded   content: seated | in_bed      (the time limits are in the norms below)
+#   inactivity_exceeded   content: seated | in_bed      (limits in extra.inactivity_limits_minutes)
 #   check_in_made         actor robot
 #   check_in_answered | check_in_unanswered
 #   help_requested        content: getting_up
@@ -16,6 +16,8 @@
 #   feed_stale            content: <sensor name>
 #   governor_ruling       actor robot, content: elevate | refuse | refuse_human_review
 #                         (from twin/service.py; the authority gate stays outside this model)
+#   action_performed      actor robot, content: <capability>  (discharges an obligation)
+#   caregiver_confirmed_privacy_restore   actor caregiver  (the only way privacy is restored)
 schema_version: erisml_compiler_ir_v0.3
 document:
   doc_id: margaret_home
@@ -142,19 +144,27 @@ norms:
 - id: n1
   modality: prohibition
   actor: robot
-  action: record_or_share_margaret
+  action: record
   target: margaret
   priority_tier: 1
   defeasible: true
-  source: margaret_refusal_e0
+  source: commitment:privacy_promise
+- id: n1b
+  modality: prohibition
+  actor: robot
+  action: share_data
+  target: margaret
+  priority_tier: 1
+  defeasible: true
+  source: commitment:privacy_promise
 - id: n2
   modality: prohibition
   actor: robot
-  action: enter_bedroom_without_permission
+  action: enter_bedroom
   target: margaret
   priority_tier: 1
   defeasible: true
-  source: margaret_refusal_e0
+  source: commitment:privacy_promise
 - id: n3
   modality: prohibition
   actor: robot
@@ -162,7 +172,8 @@ norms:
   target: margaret
   priority_tier: 0
   defeasible: false
-  source: delegation_e2_without_governor_elevate
+  source: delegation_e2
+  conditions: ["not:cond:corroborated_life_threatening_emergency"]
 - id: n4
   modality: obligation
   actor: robot
@@ -170,28 +181,56 @@ norms:
   target: margaret
   priority_tier: 2
   defeasible: true
-  source: duty_of_care_when_inactive_seated_90_min_or_in_bed_120_min
+  source: commitment:duty_of_care
+  conditions: ["event:inactivity_exceeded"]
 - id: n5
   modality: obligation
   actor: robot
-  action: refer_to_caregiver
+  action: call_caregiver
   target: caregiver
   priority_tier: 1
   defeasible: false
-  source: duty_of_care_when_check_in_unanswered_or_governor_refers
+  source: commitment:duty_of_care
+  conditions: ["cond:needs_human_review"]
 - id: n6
   modality: obligation
   actor: robot
-  action: call_emergency_services_and_stay
+  action: call_emergency_services
   target: emergency_services
   priority_tier: 0
   defeasible: false
-  source: duty_of_care_when_governor_elevates
+  source: commitment:duty_of_care
+  conditions: ["cond:corroborated_life_threatening_emergency"]
 - id: n7
   modality: permission
   actor: robot
-  action: household_chores
+  action: chores
   target: margaret
   priority_tier: 3
   defeasible: true
-  source: household_chores_commitment
+  source: commitment:household_chores
+# Scene-specific links read by erisml_compiler.runtime.scene (conditions, capabilities, oversight).
+extra:
+  agent: robot
+  conditions:
+    # the governor's latest ruling is elevate: at least two attested physical witnesses, a fresh
+    # reading, and the analyzer not refusing (twin/service.py); nothing else counts
+    corroborated_life_threatening_emergency: ["latest:governor_ruling=elevate"]
+    needs_human_review: ["event:check_in_unanswered"]
+  oversight: [caregiver_confirmed_privacy_restore]
+  inactivity_limits_minutes: {seated: 90, in_bed: 120}
+  capabilities:
+  - {action: chores, elevated: false}
+  - {action: approach, elevated: false}
+  - {action: speak, elevated: false}
+  - {action: check_in, elevated: false}
+  - {action: wait_and_observe, elevated: false}
+  - {action: call_caregiver, elevated: false}
+  - {action: guide_dog_away_by_voice, elevated: false}
+  - {action: call_emergency_services, elevated: true}
+  - {action: physical_assist, elevated: true}
+  - {action: separate_dog, elevated: true}
+  - {action: unlock_medication_box, elevated: true}
+  - {action: record, elevated: true}
+  - {action: share_data, elevated: true}
+  - {action: enter_bedroom, elevated: true}
