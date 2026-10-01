@@ -122,3 +122,38 @@ a stale read never elevates).
   wall, and the "sofa edge" seat moved to the sofa's end, because the table blocked the slump
   and the push-up position and the shelf blocked the overview camera. The dining chair was turned
   to face its sitter. No scenario's staging in section 4 changed.
+
+## 9. Result: the witness suite on the 3D clips (2026-10-01)
+
+All 26 scenarios were rendered by the committed renderer (`4b7747e`, staging `scenes.json` sha256
+prefix `878c08a6`). The 624 clip frames (26 clips of 24) hash to `1cb5f216...` (sha256 of their sorted
+`sha256sum` list). The suite read one clip per scenario (`CLIP_KEY=id`) with its rule unchanged.
+
+| run | false-clear | over-restriction | report |
+|---|---|---|---|
+| 1 | 0/10 | 1/8 (`fall-from-chair`) | `twin/SUITE-REPORT-3D-run1-stale-attestation.txt` |
+| 2 | **0/10** | **0/8** | `twin/SUITE-REPORT-3D.txt` |
+
+**Run 1 failed for a reason in the harness, and the gate behaved correctly.** The harness
+attested every clip when it encoded the whole suite and ruled afterwards. With 18 clips the first
+ones were 50 to 77 seconds old when ruled, beyond the camera's 30-second freshness bound, so the
+attestation check refused them. Four falls lost their camera witness. Three still elevated on two
+other sensors. `fall-from-chair` has only one other sensor and was refused. Run 2 attests each
+clip at the moment its scenario is ruled, as a live camera would. Nothing else changed.
+
+**What the camera did in run 2:**
+
+- It corroborated all 7 falls it saw happen (`fall_transition` 1.00, or a rapid descent for the
+  slump off the sofa).
+- It abstained on `found-down-unresponsive`, where the fall happened before the robot arrived.
+  The impact sensor and the wearable carried that case, as designed.
+- It corroborated none of the 10 false alarms. Lying on a mat, push-ups, a child on the floor and
+  lying still all read as a person, some as horizontal, none as a fall event.
+- On `sleeping-couch` the detector found no person at all (person score 0.00), so the camera
+  abstained. That is the harmless direction for a false alarm, but it is a perception miss and
+  would matter if a real emergency happened on the couch.
+
+**What this does not show.** The scenarios and their staging were written by us. The camera is
+the only sensor read from rendered images. The other sensors are scripted per scenario. The
+renders are of a simulation with 3D characters, not of people. The suite tests that the rule
+behaves as specified on these 18 cases. It is not a field error rate.

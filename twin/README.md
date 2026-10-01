@@ -95,6 +95,16 @@ false-clear      (elevated a non-emergency) = 0/10 = 0.000
 over-restriction (refused an emergency)     = 0/8  = 0.000
 ```
 
+**The same suite on rendered 3D clips** (`docs/TWIN_3D_PLAN.md`, section 9). Each of the 18
+scenarios rendered in a furnished apartment with its own avatar and staging, read by the same
+vision witness and rule (`SUITE-REPORT-3D.txt`): false-clear 0/10, over-restriction 0/8. The
+camera corroborated all 7 falls it saw and none of the 10 false alarms. A first run refused one
+emergency because the harness let the camera's attestation go stale before ruling; the record
+keeps it (`SUITE-REPORT-3D-run1-stale-attestation.txt`). The detector found no person on the
+couch scenario, so the camera abstained there.
+
+![First and last robot-camera frame of every scenario](../docs/img/twin3d_robot_camera_first_last.jpg)
+
 **Corroboration frontier** (`frontier.py`, `twin_frontier_cached.json`). Sweeping
 `w_min` traces how much physical evidence you demand before granting authority:
 

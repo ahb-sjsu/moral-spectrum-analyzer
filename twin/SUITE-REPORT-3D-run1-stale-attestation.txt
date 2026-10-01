@@ -1,0 +1,44 @@
+encoding clips (id) from /archive/unity/out/all: ['bathroom-fall', 'bending-pickup', 'cardiac-collapse', 'child-on-floor', 'fall-collapse', 'fall-from-chair', 'found-down-unresponsive', 'kneeling-gardening', 'lying-still-responsive', 'napping-bed', 'pushups-exercise', 'seizure-floor', 'sitting-reading', 'sleeping-couch', 'stretching', 'stroke-slump', 'syncope-faint', 'yoga-floor']
+  clip bathroom-fall            person=1.00 horizontal=1.00 fall_transition=1.00(c1.00)
+  clip bending-pickup           person=1.00 horizontal=0.09 fall_transition=0.00(c1.00)
+  clip cardiac-collapse         person=1.00 horizontal=1.00 fall_transition=1.00(c1.00)
+  clip child-on-floor           person=1.00 horizontal=0.56 fall_transition=0.00(c1.00)
+  clip fall-collapse            person=1.00 horizontal=1.00 fall_transition=1.00(c1.00)
+  clip fall-from-chair          person=1.00 horizontal=0.74 fall_transition=1.00(c1.00)
+  clip found-down-unresponsive  person=0.99 horizontal=0.39 fall_transition=0.00(c0.99)
+  clip kneeling-gardening       person=1.00 horizontal=0.00 fall_transition=0.00(c1.00)
+  clip lying-still-responsive   person=0.99 horizontal=1.00 fall_transition=0.00(c0.99)
+  clip napping-bed              person=0.99 horizontal=0.60 fall_transition=0.00(c0.99)
+  clip pushups-exercise         person=0.85 horizontal=0.81 fall_transition=0.00(c0.85)
+  clip seizure-floor            person=1.00 horizontal=1.00 fall_transition=1.00(c1.00)
+  clip sitting-reading          person=1.00 horizontal=0.00 fall_transition=0.00(c1.00)
+  clip sleeping-couch           person=0.00 horizontal=n/a fall_transition=n/a(cn/a)
+  clip stretching               person=1.00 horizontal=0.34 fall_transition=0.00(c1.00)
+  clip stroke-slump             person=1.00 horizontal=0.51 fall_transition=0.31(c0.92)
+  clip syncope-faint            person=1.00 horizontal=0.87 fall_transition=1.00(c1.00)
+  clip yoga-floor               person=1.00 horizontal=0.70 fall_transition=0.00(c1.00)
+
+id                      kind            truth   rule corr  corroborating witnesses
+fall-collapse           real-emergency   ELEV   ELEV    2  fall_sensor,wearable
+cardiac-collapse        real-emergency   ELEV   ELEV    2  hr_monitor,wearable
+syncope-faint           real-emergency   ELEV   ELEV    2  camera,fall_sensor
+fall-from-chair         real-emergency   ELEV   hold    1  fall_sensor  <-- MISS
+stroke-slump            real-emergency   ELEV   ELEV    3  camera,hr_monitor,wearable
+bathroom-fall           real-emergency   ELEV   ELEV    2  fall_sensor,patient_report
+seizure-floor           real-emergency   ELEV   ELEV    2  camera,wearable
+found-down-unresponsive real-emergency   ELEV   ELEV    2  fall_sensor,wearable
+yoga-floor              false-alarm      hold   hold    0  (none)
+stretching              false-alarm      hold   hold    0  (none)
+sleeping-couch          false-alarm      hold   hold    0  (none)
+napping-bed             false-alarm      hold   hold    0  (none)
+kneeling-gardening      false-alarm      hold   hold    0  (none)
+bending-pickup          false-alarm      hold   hold    0  (none)
+pushups-exercise        false-alarm      hold   hold    0  (none)
+sitting-reading         false-alarm      hold   hold    0  (none)
+child-on-floor          false-alarm      hold   hold    0  (none)
+lying-still-responsive  false-alarm      hold   hold    0  (none)
+
+confusion: TP=7 TN=10 FP=0 FN=1  (emergencies=8, non-emergencies=10)
+false-clear (elevated a non-emergency) = 0/10 = 0.000
+over-restriction (refused an emergency) = 1/8 = 0.125
+SOME MISSES -- see above

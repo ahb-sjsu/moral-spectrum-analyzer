@@ -54,16 +54,26 @@ def _gpu_detector():
 
 
 _DET = None
+_TRACKS = {}
 
 
 def pose_evidence(pose):
+    """The camera's evidence for one clip, attested now.
+
+    The detector runs once per clip and its track is cached; the attestation is stamped each
+    time the evidence is built. Build it immediately before the ruling that reads it: a reading
+    attested when the whole suite was encoded goes stale (over max_age_s) before the later
+    rulings, and the freshness check then rightly refuses it (run 1 of the 3D suite).
+    """
     global _DET
-    if _DET is None:
-        _DET = _gpu_detector()
-    frames = [iio.imread(p)[:, :, :3] for p in sorted(glob.glob(os.path.join(POSE_ROOT, f"pose_{pose}", "f*.png")))]
-    if not frames:
-        raise SystemExit(f"no frames for pose {pose} in {POSE_ROOT}/pose_{pose}")
-    track, ih = _DET(frames)
+    if pose not in _TRACKS:
+        if _DET is None:
+            _DET = _gpu_detector()
+        frames = [iio.imread(p)[:, :, :3] for p in sorted(glob.glob(os.path.join(POSE_ROOT, f"pose_{pose}", "f*.png")))]
+        if not frames:
+            raise SystemExit(f"no frames for pose {pose} in {POSE_ROOT}/pose_{pose}")
+        _TRACKS[pose] = _DET(frames)
+    track, ih = _TRACKS[pose]
     # feed the GPU-computed track through the stub backend -> identical observables, fast
     ev = encode_video(f"pose://{pose}", backend="stub", stub_track=track, img_h=ih)
     ev.attestation = SensorAttestation(device_id="cam01", key_id="k1", counter=7,
@@ -91,12 +101,15 @@ def main():
     POSE_EV = {p: pose_evidence(p) for p in poses}
     for p, ev in POSE_EV.items():
         ft = ev.get("fall_transition"); pp = ev.get("person_present"); bh = ev.get("body_horizontal")
-        out(f"  clip {p:24} person={pp.confidence:.2f} horizontal={bh.value:.2f} fall_transition={ft.value:.2f}(c{ft.confidence:.2f})")
+        def v(o, attr):  # an observable the detector could not produce is reported, not assumed
+            return "n/a" if o is None else f"{getattr(o, attr):.2f}"
+        out(f"  clip {p:24} person={v(pp, 'confidence')} horizontal={v(bh, 'value')} "
+            f"fall_transition={v(ft, 'value')}(c{v(ft, 'confidence')})")
 
     out(f"\n{'id':24}{'kind':15}{'truth':>6}{'rule':>7}{'corr':>5}  corroborating witnesses")
     tp = tn = fp = fn = 0
     for s in SUITE:
-        vs = evidence_to_sensor(POSE_EV[clip(s)], name="camera", verify_sig=lambda *a: True,
+        vs = evidence_to_sensor(pose_evidence(clip(s)),  # attested at ruling time name="camera", verify_sig=lambda *a: True,
                                 max_age_s=30, min_counter=0)
         sensors = list(s.context) + [vs]
         corr = corroboration(sensors)
@@ -109,6 +122,7 @@ def main():
         mark = "" if ok else "  <-- MISS"
         out(f"{s.id:24}{s.kind:15}{('ELEV' if s.should_elevate else 'hold'):>6}"
             f"{('ELEV' if elevate else 'hold'):>7}{len(corr):>5}  {','.join(sorted(corr)) or '(none)'}{mark}")
+        out(f"{'':24}camera: {vs.note}")
 
     pos = tp + fn; neg = tn + fp
     out(f"\nconfusion: TP={tp} TN={tn} FP={fp} FN={fn}  (emergencies={pos}, non-emergencies={neg})")
