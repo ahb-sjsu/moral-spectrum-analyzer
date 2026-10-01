@@ -1,0 +1,5 @@
+TwinWorld/*
+!TwinWorld/Assets/
+TwinWorld/Assets/*
+!TwinWorld/Assets/Twin/
+*.meta

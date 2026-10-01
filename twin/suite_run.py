@@ -5,6 +5,10 @@ the vision Sensor with its context sensors and elevates only on >=2 corroboratin
 independent physical sensors.
 
   CUDA_VISIBLE_DEVICES=1 PYTHONPATH=src:twin python suite_run.py
+
+CLIP_KEY=id reads one clip per scenario (POSE_ROOT/pose_<scenario id>, the layout the Unity
+renderer of docs/TWIN_3D_PLAN.md writes) instead of the six shared pose clips, and SUITE_REPORT
+names the report file. The rule is the same either way.
 """
 import glob, os, sys
 import imageio.v2 as iio
@@ -18,6 +22,8 @@ from erisml_compiler.ingestion import encode_video    # noqa: E402
 from erisml_compiler.ir import SensorAttestation      # noqa: E402
 
 POSE_ROOT = os.path.expanduser(os.environ.get("POSE_ROOT", "~/twin-gym/assets/char"))
+CLIP_KEY = os.environ.get("CLIP_KEY", "pose")  # "pose": shared pose clips; "id": one clip per scenario
+REPORT = os.environ.get("SUITE_REPORT", "SUITE-REPORT.txt")
 W_MIN = 2
 
 
@@ -79,17 +85,18 @@ def main():
     def out(s=""):
         print(s, flush=True); L.append(s)
 
-    poses = sorted({s.pose for s in SUITE})
-    out(f"encoding pose clips: {poses}")
+    clip = (lambda s: s.id) if CLIP_KEY == "id" else (lambda s: s.pose)
+    poses = sorted({clip(s) for s in SUITE})
+    out(f"encoding clips ({CLIP_KEY}) from {POSE_ROOT}: {poses}")
     POSE_EV = {p: pose_evidence(p) for p in poses}
     for p, ev in POSE_EV.items():
         ft = ev.get("fall_transition"); pp = ev.get("person_present"); bh = ev.get("body_horizontal")
-        out(f"  pose {p:8} person={pp.confidence:.2f} horizontal={bh.value:.2f} fall_transition={ft.value:.2f}(c{ft.confidence:.2f})")
+        out(f"  clip {p:24} person={pp.confidence:.2f} horizontal={bh.value:.2f} fall_transition={ft.value:.2f}(c{ft.confidence:.2f})")
 
     out(f"\n{'id':24}{'kind':15}{'truth':>6}{'rule':>7}{'corr':>5}  corroborating witnesses")
     tp = tn = fp = fn = 0
     for s in SUITE:
-        vs = evidence_to_sensor(POSE_EV[s.pose], name="camera", verify_sig=lambda *a: True,
+        vs = evidence_to_sensor(POSE_EV[clip(s)], name="camera", verify_sig=lambda *a: True,
                                 max_age_s=30, min_counter=0)
         sensors = list(s.context) + [vs]
         corr = corroboration(sensors)
@@ -109,7 +116,7 @@ def main():
     out(f"over-restriction (refused an emergency) = {fn}/{pos} = {fn/max(pos,1):.3f}")
     out("ALL CORRECT" if fp == 0 and fn == 0 else "SOME MISSES -- see above")
 
-    with open(os.path.join(HERE, "SUITE-REPORT.txt"), "w", encoding="utf-8") as f:
+    with open(os.path.join(HERE, REPORT), "w", encoding="utf-8") as f:
         f.write("\n".join(L))
 
 

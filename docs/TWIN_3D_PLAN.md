@@ -95,6 +95,18 @@ reason and date.
    presentation shots of all 26 scenarios.
 4. Blender photoreal versions of the hero shots for the capsule.
 5. Optional live mode through MATLAB's ROS link for the validation session.
+6. A real-time game for the validation session, built on the same scene. Evaluators trigger
+   events (a fall, the television drama, a spoofed alert, a stale or unplugged sensor, a
+   disproportionate request) and try to make the robot act without real corroboration. Unity
+   holds no copy of the rules. It sends the sensor state to the governor service and acts only on
+   the ruling returned. The robot proposes actions from a fixed menu of texts the analyzer has
+   scored, and an unscored text is refused. Every ruling of a session is written to the audit log
+   with its proof. A side panel shows the rulings the way a packet capture tool shows packets: a
+   list with one row per authority request (time, event, proposed action, witnesses, deciding
+   gate, outcome), a detail tree of the selected ruling with each gate's inputs, threshold and
+   result, and the canonical proof bytes with their hash-chain link and a re-verification mark.
+   How evaluators run it (a local build and service, or a shared screen) is
+   decided before December, and a networked service gets access control designed in first.
 
 ## 7. Later: proving the governor
 
@@ -105,4 +117,8 @@ a stale read never elevates).
 
 ## 8. Staging change log
 
-(empty)
+- 2026-10-01, while developing the renderer and before any clip was read by the vision witness:
+  the living room's coffee table was scaled to 60% and moved back, its shelf moved to the west
+  wall, and the "sofa edge" seat moved to the sofa's end, because the table blocked the slump
+  and the push-up position and the shelf blocked the overview camera. The dining chair was turned
+  to face its sitter. No scenario's staging in section 4 changed.

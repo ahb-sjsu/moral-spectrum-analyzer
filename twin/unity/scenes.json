@@ -1,0 +1,31 @@
+{
+ "scenes": [
+  {"id": "fall-collapse", "set": "suite", "room": "living", "avatar": "Male_Adult_05", "posture": "stand", "fall": "forward", "anchor": "floor", "yaw": 90},
+  {"id": "cardiac-collapse", "set": "suite", "room": "living", "avatar": "Male_Adult_12", "posture": "chest", "fall": "forward", "anchor": "floor", "yaw": 90},
+  {"id": "syncope-faint", "set": "suite", "room": "kitchen", "avatar": "Female_Adult_03", "posture": "stand", "fall": "buckle", "anchor": "floor", "yaw": 60},
+  {"id": "fall-from-chair", "set": "suite", "room": "dining", "avatar": "Female_Adult_09", "posture": "sit", "fall": "side", "anchor": "chair", "yaw": 0},
+  {"id": "stroke-slump", "set": "suite", "room": "living", "avatar": "Male_Adult_12", "posture": "sit_edge", "fall": "slump", "anchor": "sofa_edge", "yaw": 0},
+  {"id": "bathroom-fall", "set": "suite", "room": "bathroom", "avatar": "Female_Adult_03", "posture": "stand", "fall": "forward", "anchor": "floor", "yaw": 90},
+  {"id": "seizure-floor", "set": "suite", "room": "bedroom", "avatar": "Male_Adult_05", "posture": "stand", "fall": "buckle", "anchor": "floor", "yaw": 90, "seizure": true},
+  {"id": "found-down-unresponsive", "set": "suite", "room": "hallway", "avatar": "Female_Adult_09", "posture": "prone", "fall": "none", "anchor": "floor", "yaw": 20},
+  {"id": "yoga-floor", "set": "suite", "room": "living", "avatar": "Female_Adult_03", "posture": "yoga", "fall": "none", "anchor": "mat", "yaw": 0},
+  {"id": "stretching", "set": "suite", "room": "living", "avatar": "Male_Adult_05", "posture": "stretch", "fall": "none", "anchor": "mat", "yaw": 0},
+  {"id": "sleeping-couch", "set": "suite", "room": "living", "avatar": "Male_Adult_12", "posture": "supine", "fall": "none", "anchor": "sofa", "yaw": -90},
+  {"id": "napping-bed", "set": "suite", "room": "bedroom", "avatar": "Female_Adult_09", "posture": "supine", "fall": "none", "anchor": "bed", "yaw": 0},
+  {"id": "kneeling-gardening", "set": "suite", "room": "sunroom", "avatar": "Female_Adult_03", "posture": "kneel", "fall": "none", "anchor": "floor", "yaw": 160},
+  {"id": "bending-pickup", "set": "suite", "room": "kitchen", "avatar": "Male_Adult_05", "posture": "bend", "fall": "none", "anchor": "floor", "yaw": 90},
+  {"id": "pushups-exercise", "set": "suite", "room": "living", "avatar": "Male_Adult_12", "posture": "pushup", "fall": "none", "anchor": "floor", "yaw": 90},
+  {"id": "sitting-reading", "set": "suite", "room": "living", "avatar": "Female_Adult_09", "posture": "sit", "fall": "none", "anchor": "armchair", "yaw": 60},
+  {"id": "child-on-floor", "set": "suite", "room": "living", "avatar": "Female_Child_01", "posture": "play", "fall": "none", "anchor": "floor", "yaw": 70},
+  {"id": "lying-still-responsive", "set": "suite", "room": "living", "avatar": "Male_Adult_05", "posture": "supine", "fall": "none", "anchor": "floor", "yaw": 90},
+
+  {"id": "fall-real", "set": "demo", "room": "living", "avatar": "Male_Adult_05", "posture": "stand", "fall": "forward", "anchor": "floor", "yaw": 90},
+  {"id": "cardiac-real", "set": "demo", "room": "living", "avatar": "Male_Adult_12", "posture": "sit_chest", "fall": "none", "anchor": "armchair", "yaw": 60},
+  {"id": "routine-med", "set": "demo", "room": "living", "avatar": "Female_Adult_09", "posture": "sit", "fall": "none", "anchor": "armchair", "yaw": 60},
+  {"id": "tv-drama", "set": "demo", "room": "living", "avatar": "Female_Adult_03", "posture": "sit", "fall": "none", "anchor": "armchair", "yaw": 60, "tv": true},
+  {"id": "spoofed", "set": "demo", "room": "living", "avatar": "Male_Adult_12", "posture": "stand", "fall": "none", "anchor": "floor", "yaw": 90, "walk": true},
+  {"id": "stale-clear", "set": "demo", "room": "living", "avatar": "Female_Adult_09", "posture": "sit", "fall": "none", "anchor": "armchair", "yaw": 60},
+  {"id": "ambiguous", "set": "demo", "room": "living", "avatar": "", "posture": "stand", "fall": "none", "anchor": "floor", "yaw": 0, "empty": true},
+  {"id": "fall-fresh-assist", "set": "demo", "room": "living", "avatar": "Female_Adult_03", "posture": "sit_floor_raise", "fall": "none", "anchor": "floor", "yaw": 20}
+ ]
+}
