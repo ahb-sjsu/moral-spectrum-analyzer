@@ -11,6 +11,8 @@ Sources:
   Poly Haven (CC0)          furniture, props and surface textures, 1k resolution
   Microsoft Rocketbox (MIT) rigged avatars, copied from a local clone of
                             github.com/microsoft/Microsoft-Rocketbox
+  Unitree G1 (BSD-3-Clause) humanoid robot description (URDF and meshes), copied from a local
+                            clone of github.com/unitreerobotics/unitree_ros
 """
 
 import argparse
@@ -72,6 +74,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("dest", help="the Unity project's Assets/ThirdParty folder")
     ap.add_argument("--rocketbox", required=True, help="local clone of Microsoft-Rocketbox")
+    ap.add_argument("--unitree", help="local clone of unitreerobotics/unitree_ros (for the G1)")
     a = ap.parse_args()
     manifest = {"polyhaven_models": {}, "polyhaven_textures": {}, "rocketbox": {}}
 
@@ -112,7 +115,22 @@ def main():
         manifest["rocketbox"][name] = files
         print("avatar", name, len(files), "files", flush=True)
     manifest["rocketbox_commit"] = rb_commit
-    manifest["licenses"] = {"polyhaven": "CC0 1.0", "rocketbox": "MIT (Microsoft, 2020)"}
+    if a.unitree:
+        src = os.path.join(a.unitree, "robots", "g1_description")
+        dst = os.path.join(a.dest, "Robots", "g1_description")
+        files = {}
+        for rel in ["g1_29dof_rev_1_0.urdf"] + [os.path.join("meshes", f) for f in sorted(os.listdir(os.path.join(src, "meshes")))]:
+            s_, d_ = os.path.join(src, rel), os.path.join(dst, rel)
+            if os.path.isdir(s_):
+                continue
+            os.makedirs(os.path.dirname(d_), exist_ok=True)
+            shutil.copy2(s_, d_)
+            files[rel] = hashlib.sha256(open(d_, "rb").read()).hexdigest()
+        manifest["unitree_g1"] = files
+        manifest["unitree_commit"] = os.popen(f"git -C {a.unitree} rev-parse HEAD").read().strip()
+        print("robot g1", len(files), "files", flush=True)
+    manifest["licenses"] = {"polyhaven": "CC0 1.0", "rocketbox": "MIT (Microsoft, 2020)",
+                            "unitree_g1": "BSD-3-Clause (Unitree Robotics)"}
     json.dump(manifest, open(os.path.join(a.dest, "ASSETS-MANIFEST.json"), "w"), indent=1)
     print("ASSETS_DONE", flush=True)
 

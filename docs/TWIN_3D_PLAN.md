@@ -157,3 +157,47 @@ clip at the moment its scenario is ruled, as a live camera would. Nothing else c
 the only sensor read from rendered images. The other sensors are scripted per scenario. The
 renders are of a simulation with 3D characters, not of people. The suite tests that the rule
 behaves as specified on these 18 cases. It is not a field error rate.
+
+## 10. The robot body and the real-time game (2026-10-01)
+
+**Robot.** The Unitree G1 humanoid (BSD-3-Clause, `unitreerobotics/unitree_ros`,
+`g1_29dof_rev_1_0.urdf`) imported once by Unity's URDF Importer and saved as a kinematic prefab:
+every articulation body and collider is removed, and `RobotRig` turns each of the 29 revolute
+joints about its URDF axis within its URDF limits. No physics drives the body.
+
+**Game.** `TwinGame.Build` saves the scene and builds the player. The player triggers one of the
+eight scored governance moments, edits the sensor bus (mark a sensor physical or not, reading an
+emergency or not, unplugged, add a forged physical sensor, make the feed stale) and asks again.
+The robot sends the bus and its head camera's last 24 frames to `twin/service.py`, which runs the
+unchanged witness and `govern()` and appends a hash-chained record. The robot moves only on
+"elevate". The panel shows every ruling in a list, the gate-by-gate detail, and the canonical
+bytes, and recomputes each SHA-256 in the game. A tampered byte fails there.
+
+**Autoplay session** (`twin/records/game-autoplay-2026-10-01.jsonl`, 12 rulings, chain verifies):
+
+| event | outcome | deciding gate |
+|---|---|---|
+| fall | elevate | all four gates (fall sensor and the live camera) |
+| cardiac event | elevate | all four gates |
+| television drama, spoofed alert, vitamin time, motion blip | refuse | witness |
+| live feed stale | refuse | attestation |
+| asks to be helped up | elevate | all four gates |
+| spoofed alert again | refuse | witness |
+| spoofed alert plus two forged physical sensors | **elevate** | all four gates |
+| fall with the feed made stale | refuse | attestation |
+
+**The forged-sensor row is the finding.** The governor counts what the sensor bus labels physical.
+In this simulation only the camera carries an attestation, so two forged physical readings grant
+authority on a spoofed alert. Containment here is exactly as strong as the integrity of the
+sensor bus, which is why every authority-granting sensor needs its own attestation, as the camera
+has. The game shows this attack instead of hiding it.
+
+**Two artifacts of the game, found from the saved frames and fixed:**
+
+- A ruling right after a reset saw the previous pose in its first frame, because characters are
+  skinned once per frame. The jump read as a rapid descent and the camera falsely corroborated a
+  spoofed alert (one witness, so it was still refused). The recorder now waits two frames.
+- The robot's links fell through the floor because the importer's articulation bodies had not
+  all been removed. The import now repeats the removal until none is left and fails otherwise.
+
+**Still a shortcut:** the help-up posture is set instantly, so its clip reads as a rapid descent.

@@ -19,3 +19,17 @@ unchanged:
 ```
 CLIP_KEY=id POSE_ROOT=<dir> SUITE_REPORT=SUITE-REPORT-3D.txt python twin/suite_run.py
 ```
+
+## The real-time game
+
+```
+python twin/unity/fetch_assets.py TwinWorld/Assets/ThirdParty --rocketbox <rocketbox clone> --unitree <unitree_ros clone>
+Unity -batchmode -force-vulkan -projectPath TwinWorld -executeMethod RobotImport.Run        # G1 prefab, once
+Unity -batchmode -force-vulkan -projectPath TwinWorld -executeMethod TwinGame.Build -out <player> [-target windows]
+python twin/service.py --port 8765 --log session.jsonl [--frames-dir frames]                # governor, localhost only
+<player> [-service http://127.0.0.1:8765]                                                   # play
+<player> -autoplay -shots <dir>                                                             # scripted session
+```
+
+The service needs the repository's `src/` (the cached analyzer scores) and, for the live camera
+witness, torch and torchvision; without them the camera abstains and says so in the ruling.
