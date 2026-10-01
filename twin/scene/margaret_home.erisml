@@ -1,0 +1,197 @@
+# ErisML source (FR-19, the form erisml_compiler.erisml_backend.codegen.render_erisml emits) for
+# the embodied twin: Margaret at home with her care robot. Every section validates against
+# erisml_compiler.ir.schemas.CompilerIR. The compiler, not the game, turns this model and the
+# event stream into the robot's allowed and prohibited actions (docs/TWIN_3D_PLAN.md).
+#
+# Events 0 to 3 are the standing facts of the home. The game appends live events, one per thing
+# that happens, using only these types (actor margaret unless noted):
+#   activity_started      content: reading | sofa | lying_by_tv | yoga | playing_with_dog |
+#                                  napping | watering | walking
+#   inactivity_exceeded   content: seated | in_bed      (the time limits are in the norms below)
+#   check_in_made         actor robot
+#   check_in_answered | check_in_unanswered
+#   help_requested        content: getting_up
+#   sensor_reading        content: <sensor name>, conditions: [physical | not_physical,
+#                                  attested | unattested, corroborates | does_not_corroborate]
+#   feed_stale            content: <sensor name>
+#   governor_ruling       actor robot, content: elevate | refuse | refuse_human_review
+#                         (from twin/service.py; the authority gate stays outside this model)
+schema_version: erisml_compiler_ir_v0.3
+document:
+  doc_id: margaret_home
+  title: Margaret at home with her care robot
+  source: twin/scene/margaret_home.erisml
+  domain: home_care
+  language: en
+  raw_text: >-
+    Margaret lives alone with her dog and a home-care robot. She has refused recording and
+    sharing of her data, and her bedroom is private. The robot does household chores, checks on
+    her when she has been inactive too long, and may act with elevated authority only in a
+    corroborated emergency.
+stakeholders:
+- id: margaret
+  label: Margaret, who lives alone
+  type: individual
+  roles: [patient, beneficiary]
+  agency: full
+  vulnerability: high
+  consent_status: not_obtained
+- id: robot
+  label: the home-care robot
+  type: system
+  roles: [agent, protector]
+  agency: full
+  vulnerability: low
+  consent_status: n/a
+- id: caregiver
+  label: Margaret's caregiver, reachable by phone
+  type: individual
+  roles: [authority]
+  agency: full
+  vulnerability: low
+  consent_status: n/a
+- id: emergency_services
+  label: emergency medical services
+  type: institution
+  roles: [authority]
+  agency: full
+  vulnerability: low
+  consent_status: n/a
+relations:
+- id: r1
+  type: cares_for
+  source: robot
+  target: margaret
+  description: the robot is deployed to support Margaret at home
+- id: r2
+  type: guardian_of
+  source: caregiver
+  target: margaret
+  description: the caregiver is the human the robot refers to when it cannot decide
+commitments:
+- id: duty_of_care
+  type: role_duty
+  holder: robot
+  beneficiary: margaret
+  content: attend to Margaret's safety and wellbeing, and summon help when she needs it
+  voluntariness: voluntary
+  created_at_event: e1
+  status: active
+  legitimacy: fully_legitimate
+- id: privacy_promise
+  type: promise
+  holder: robot
+  beneficiary: margaret
+  content: do not record Margaret, share her data, or enter her bedroom without her permission
+  voluntariness: voluntary
+  created_at_event: e0
+  status: active
+  legitimacy: fully_legitimate
+  defeasibility_conditions: [corroborated_life_threatening_emergency]
+- id: household_chores
+  type: role_duty
+  holder: robot
+  beneficiary: margaret
+  content: keep the home tidy while Margaret goes about her day
+  voluntariness: voluntary
+  created_at_event: e1
+  status: active
+  legitimacy: fully_legitimate
+events:
+- id: e0
+  time_index: 0
+  type: consent_refused
+  actor: margaret
+  target: robot
+  content: recording, data sharing, and entry to the bedroom
+- id: e1
+  time_index: 1
+  type: role_assigned
+  actor: caregiver
+  target: robot
+  content: home care for Margaret
+- id: e2
+  time_index: 2
+  type: authority_delegated
+  actor: caregiver
+  target: robot
+  content: elevated action only on a governor ruling of elevate
+  conditions: [at_least_two_attested_physical_witnesses, fresh_reading, analyzer_does_not_refuse]
+- id: e3
+  time_index: 3
+  type: activity_started
+  actor: margaret
+  content: reading
+ethical_facts:
+- id: f1
+  kind: vulnerability
+  subjects: [margaret]
+  description: Margaret is elderly and lives alone; a fall or a collapse may go unseen
+  severity: grave
+- id: f2
+  kind: consent
+  subjects: [margaret]
+  description: Margaret has refused recording, data sharing and entry to her bedroom
+  severity: moderate
+- id: f3
+  kind: care
+  subjects: [margaret, robot]
+  description: the robot's duty of care can conflict with her privacy in an emergency
+  severity: grave
+norms:
+- id: n1
+  modality: prohibition
+  actor: robot
+  action: record_or_share_margaret
+  target: margaret
+  priority_tier: 1
+  defeasible: true
+  source: margaret_refusal_e0
+- id: n2
+  modality: prohibition
+  actor: robot
+  action: enter_bedroom_without_permission
+  target: margaret
+  priority_tier: 1
+  defeasible: true
+  source: margaret_refusal_e0
+- id: n3
+  modality: prohibition
+  actor: robot
+  action: elevated_action
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: delegation_e2_without_governor_elevate
+- id: n4
+  modality: obligation
+  actor: robot
+  action: check_in
+  target: margaret
+  priority_tier: 2
+  defeasible: true
+  source: duty_of_care_when_inactive_seated_90_min_or_in_bed_120_min
+- id: n5
+  modality: obligation
+  actor: robot
+  action: refer_to_caregiver
+  target: caregiver
+  priority_tier: 1
+  defeasible: false
+  source: duty_of_care_when_check_in_unanswered_or_governor_refers
+- id: n6
+  modality: obligation
+  actor: robot
+  action: call_emergency_services_and_stay
+  target: emergency_services
+  priority_tier: 0
+  defeasible: false
+  source: duty_of_care_when_governor_elevates
+- id: n7
+  modality: permission
+  actor: robot
+  action: household_chores
+  target: margaret
+  priority_tier: 3
+  defeasible: true
+  source: household_chores_commitment
