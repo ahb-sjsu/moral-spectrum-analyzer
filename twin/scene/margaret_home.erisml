@@ -272,12 +272,12 @@ extra:
     corroborated_life_threatening_emergency: ["latest:governor_ruling=elevate"]
     needs_human_review: ["event:check_in_unanswered"]
   oversight: [caregiver_confirmed_privacy_restore]
-  inactivity_limits_minutes: {seated: 90, in_bed: 120}
+  inactivity_limits_minutes: {seated: 90, in_bed: 120, on_floor: 10}
   default_action: chores
   # what the robot's perception may report; anything else is rejected by the classifier
   event_types:
     activity_started: {description: a person begins an ordinary activity, content: [reading, sitting, lying_down, exercising, playing_with_pet, sleeping, gardening, cooking, walking, other]}
-    inactivity_exceeded: {description: a person has stayed in one pose longer than the limit in inactivity_limits_minutes, content: [seated, in_bed, on_floor]}
+    inactivity_exceeded: {description: 'a person has stayed seated over 90 minutes, in bed over 120 minutes in the daytime, or on the floor over 10 minutes', content: [seated, in_bed, on_floor]}
     fall: {description: a person went from upright to the floor quickly}
     harm_inflicted: {description: a person, animal or object caused bodily harm to someone, content: [mild, moderate, severe]}
     medical_distress: {description: signs such as chest pain, breathing difficulty, seizure or fainting; content names the sign}
