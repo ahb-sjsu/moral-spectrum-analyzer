@@ -32,9 +32,15 @@ sys.path.insert(0, os.path.join(os.path.dirname(HERE), "src"))
 
 from governor import W_MIN, govern  # noqa: E402
 from scenarios import SCENARIOS, Scenario, Sensor  # noqa: E402
+from scenarios_suite import SUITE  # noqa: E402
 from moral_spectrum.audit import canonical_json  # noqa: E402
 
 SCORED = {s.id: s for s in SCENARIOS}
+# the witness suite's false alarms, for the robot's checks when Margaret is on the floor for an
+# ordinary reason; their situation texts were never scored, so if a forged bus ever carried one
+# of them past the witness gate, the analyzer has no real output and the ruling is a refusal
+CHECKS = {s.id: s for s in SUITE if s.kind == "false-alarm"}
+CHECK_ACTION = "Call emergency services and stay with the patient."
 MAX_FRAMES = 48
 MAX_BODY = 8 * 1024 * 1024
 
@@ -141,9 +147,14 @@ def trace(sc: Scenario, ruling) -> list:
 
 def rule(req: dict, chain: Chain, camera: CameraWitness, backend: str) -> dict:
     sid = req.get("scenario_id")
-    if sid not in SCORED:
-        raise ValueError(f"scenario_id must be one of the scored governance moments {sorted(SCORED)}")
-    base = SCORED[sid]
+    if sid in SCORED:
+        base = SCORED[sid]
+    elif sid in CHECKS:
+        c = CHECKS[sid]
+        base = Scenario(id=c.id, situation=c.note, proposed_action=CHECK_ACTION, should_elevate=False,
+                        signal_age_s=1, freshness_bound_s=30, kind=c.kind)
+    else:
+        raise ValueError(f"scenario_id must be a scored moment {sorted(SCORED)} or a suite check {sorted(CHECKS)}")
     sensors = []
     for s in req.get("sensors", []):
         sensors.append(Sensor(name=str(s["name"]), physical=bool(s["physical"]), corroborates_emergency=bool(s["corroborates"]),
@@ -164,7 +175,8 @@ def rule(req: dict, chain: Chain, camera: CameraWitness, backend: str) -> dict:
         outcome = "elevate" if r.elevate else ("refuse, human review" if r.human_review else "refuse")
         gates, gate, reason = trace(sc, r), r.gate, r.reason
     except Exception as e:  # e.g. CacheMiss: the analyzer has no real output for this text
-        outcome, gate, reason = "refuse", "analyzer unavailable", f"{type(e).__name__}: {e}"[:300]
+        outcome, gate = "refuse", "analyzer unavailable"
+        reason = f"no real analyzer output for this situation, so no score is invented: {type(e).__name__}"[:300]
         gates = [{"gate": "3 analyzer", "result": "refuse", "input": reason}]
     body = {
         "time": datetime.now(timezone.utc).isoformat(), "event": str(req.get("event", ""))[:80], "scenario_id": sid,
@@ -174,7 +186,7 @@ def rule(req: dict, chain: Chain, camera: CameraWitness, backend: str) -> dict:
     return chain.append(body)
 
 
-def make_handler(chain, camera, backend):
+def make_handler(chain, camera, backend, brain=None):
     class H(BaseHTTPRequestHandler):
         def _send(self, code, obj):
             data = json.dumps(obj, ensure_ascii=False).encode("utf-8")
@@ -200,10 +212,38 @@ def make_handler(chain, camera, backend):
                                             "signal_age_s": v.signal_age_s, "freshness_bound_s": v.freshness_bound_s,
                                             "sensors": [{"name": x.name, "physical": x.physical, "corroborates": x.corroborates_emergency,
                                                          "confidence": x.confidence, "note": x.note} for x in v.sensors if x.name != "camera"]}
-                                        for k, v in SCORED.items()})
+                                        for k, v in SCORED.items()}
+                                       | {k: {"situation": v.note, "proposed_action": CHECK_ACTION, "signal_age_s": 1, "freshness_bound_s": 30, "check": True,
+                                              "sensors": [{"name": x.name, "physical": x.physical, "corroborates": x.corroborates_emergency,
+                                                           "confidence": x.confidence, "note": x.note} for x in v.context]}
+                                          for k, v in CHECKS.items()})
             self._send(404, {"error": "not found"})
 
         def do_POST(self):
+            if self.path in ("/decide", "/performed", "/event"):
+                if brain is None:
+                    return self._send(503, {"error": "the autonomous brain is not running (start with --scene)"})
+                n = int(self.headers.get("Content-Length", "0"))
+                if n <= 0 or n > MAX_BODY:
+                    return self._send(413, {"error": "body missing or too large"})
+                try:
+                    req = json.loads(self.rfile.read(n))
+                    if self.path == "/decide":
+                        cam, info = None, None
+                        if req.get("camera_frames"):
+                            try:
+                                cam, info = camera.sensor(req["camera_frames"])
+                            except Exception as e:  # no detector: the camera abstains, never invented
+                                cam = Sensor("camera", True, False, "low", f"camera witness unavailable: {type(e).__name__}")
+                        body = brain.decide(req, cam)
+                        body["camera"] = info
+                    elif self.path == "/performed":
+                        body = brain.performed(str(req["action"]))
+                    else:
+                        body = brain.event(dict(req["event"]))
+                    return self._send(200, chain.append(body))
+                except (ValueError, KeyError, TypeError) as e:
+                    return self._send(400, {"error": str(e)[:300]})
             if self.path != "/rule":
                 return self._send(404, {"error": "not found"})
             n = int(self.headers.get("Content-Length", "0"))
@@ -224,11 +264,33 @@ def main():
     ap.add_argument("--log", default=os.path.join(HERE, "session-log.jsonl"))
     ap.add_argument("--backend", default="cached", choices=("cached", "stub"))
     ap.add_argument("--frames-dir", help="keep each ruling's camera frames here, named by their sha256")
+    ap.add_argument("--scene", help="ErisML scene; starts the autonomous brain (needs ERISML_LLM_API_KEY)")
+    ap.add_argument("--live", help="score new situations with the validated feeders; a session cache file")
+    ap.add_argument("--llm-model", default=os.environ.get("ERISML_LLM_MODEL", "gpt-oss"))
     a = ap.parse_args()
     chain = Chain(a.log)
     cam = CameraWitness()
     cam.frames_dir = a.frames_dir
-    srv = ThreadingHTTPServer(("127.0.0.1", a.port), make_handler(chain, cam, a.backend))
+    brain = None
+    if a.scene:
+        import shutil
+
+        from brain import BigOutputAdapter, Brain
+        from erisml_compiler.annotation.llm_extractor import NRPOpenAIAdapter
+
+        scorer = None
+        if a.live:
+            # the session cache starts from the recorded scores and grows with live ones
+            repo_cache = os.path.join(os.path.dirname(HERE), "src", "moral_spectrum", "perception", "cache.jsonl")
+            if not os.path.exists(a.live):
+                shutil.copy(repo_cache, a.live)
+            os.environ["MSA_CACHE_PATH"] = os.path.abspath(a.live)
+            from msa_live import LiveScorer
+
+            scorer = LiveScorer(a.live)
+        brain = Brain(a.scene, BigOutputAdapter(NRPOpenAIAdapter(model=a.llm_model)), scorer)
+        print(f"brain: scene {a.scene}, model {a.llm_model}, live scoring {'on' if scorer else 'off'}", flush=True)
+    srv = ThreadingHTTPServer(("127.0.0.1", a.port), make_handler(chain, cam, a.backend, brain))
     print(f"governor service on 127.0.0.1:{a.port}, backend={a.backend}, log={a.log} ({len(chain.records)} records)", flush=True)
     srv.serve_forever()
 

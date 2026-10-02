@@ -54,8 +54,13 @@ class Settings:
     """Which perception backend to use, and where to write artifacts."""
 
     perception_backend: str = "stub"  # "stub" | "cached" | "atlas"
+    # MSA_CACHE_PATH points the replay cache elsewhere, e.g. at a live session's cache that the
+    # GPU-host scorer appends real encoder outputs to (twin/msa_live.py)
     cache_path: Path = field(
-        default_factory=lambda: REPO_ROOT / "src" / "moral_spectrum" / "perception" / "cache.jsonl"
+        default_factory=lambda: Path(
+            os.environ.get("MSA_CACHE_PATH")
+            or REPO_ROOT / "src" / "moral_spectrum" / "perception" / "cache.jsonl"
+        )
     )
     out_dir: Path = field(default_factory=lambda: OUT_DIR)
 
