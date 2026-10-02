@@ -92,4 +92,4 @@ jobs:
       - name: Test the twin's boundaries
         env:
           TWIN_TESTS_REQUIRED: "1"  # here a missing scene runtime is a failure, not a skip
-        run: pytest tests/test_twin_ladder.py -v
+        run: pytest tests/test_twin_ladder.py tests/test_ieip_labeller.py -v

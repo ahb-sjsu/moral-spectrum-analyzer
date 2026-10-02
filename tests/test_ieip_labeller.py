@@ -36,8 +36,10 @@ def test_every_labelled_type_is_present():
     assert set(label(quiet(), BANDS)) == set(LABELLED)
 
 
-def test_a_quiet_moment_is_all_false():
+def test_a_quiet_moment_is_false_except_what_it_cannot_settle():
     lab = label(quiet(), BANDS)
+    # seated and still, with no wearable alarm: nothing shows whether she would respond
+    assert lab.pop("unresponsive") == (None, None)
     assert all(v == (False, None) for v in lab.values()), lab
 
 
@@ -136,7 +138,7 @@ def test_errors_count_misses_false_events_and_wrong_contents_and_skip_unsettled(
 
 
 def test_the_cut_points_are_the_scenes():
-    pytest.importorskip("erisml_compiler.ingestion")
+    pytest.importorskip("erisml_compiler.runtime")  # the scene format needs erisml-compiler main
     from erisml_compiler.ingestion.structured_loader import load_structured_input
     from labeller import bands_from_scene
 
