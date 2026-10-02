@@ -316,6 +316,8 @@ def main():
     ap.add_argument("--scene", help="ErisML scene; starts the autonomous brain (needs ERISML_LLM_API_KEY)")
     ap.add_argument("--live", help="score new situations with the validated feeders; a session cache file")
     ap.add_argument("--llm-model", default=os.environ.get("ERISML_LLM_MODEL", "gpt-oss"))
+    ap.add_argument("--onboard-url", help="the robot's on-robot model (an OpenAI-compatible endpoint), its tier 2")
+    ap.add_argument("--onboard-model", help="the on-robot model's name at that endpoint")
     a = ap.parse_args()
     chain = Chain(a.log)
     cam = CameraWitness()
@@ -337,8 +339,12 @@ def main():
             from msa_live import LiveScorer
 
             scorer = LiveScorer(a.live)
-        brain = Brain(a.scene, BigOutputAdapter(NRPOpenAIAdapter(model=a.llm_model)), scorer)
-        print(f"brain: scene {a.scene}, model {a.llm_model}, live scoring {'on' if scorer else 'off'}", flush=True)
+        from cascade import Cascade, twin_experts
+
+        robot = Cascade(twin_experts(a.llm_model, a.onboard_url, a.onboard_model))
+        brain = Brain(a.scene, robot, scorer, desk_adapter=BigOutputAdapter(NRPOpenAIAdapter(model=a.llm_model)))
+        print(f"brain: scene {a.scene}, robot tiers {[e.name for e in robot.all.experts.values()]} + compiled, "
+              f"live scoring {'on' if scorer else 'off'}", flush=True)
     srv = ThreadingHTTPServer(("127.0.0.1", a.port), make_handler(chain, cam, a.backend, brain))
     print(f"governor service on 127.0.0.1:{a.port}, backend={a.backend}, log={a.log} ({len(chain.records)} records)", flush=True)
     srv.serve_forever()

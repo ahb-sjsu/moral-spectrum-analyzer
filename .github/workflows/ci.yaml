@@ -84,6 +84,10 @@ jobs:
           pip install --force-reinstall --no-deps "erisml-compiler @ git+https://github.com/ahb-sjsu/erisml-compiler@main"
           # DEME, the output ethics layer (twin/output_gate.py)
           pip install "erisml-lib @ git+https://github.com/ahb-sjsu/erisml-lib@main"
+          # the robot's model tiers ride agi-hpc's vMOE cascade (twin/cascade.py); only
+          # agi.primer is used, so its heavy dependencies are not needed
+          pip install openai
+          pip install --no-deps "agi-hpc @ git+https://github.com/ahb-sjsu/agi-hpc@main"
 
       - name: Test the twin's boundaries
         env:

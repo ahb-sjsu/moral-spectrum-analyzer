@@ -36,6 +36,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 from governor import W_MIN, eval_text, govern  # noqa: E402
+from cascade import ModelUnavailable  # noqa: E402
 from input_layer import validate_facts  # noqa: E402
 from output_gate import OutputGate  # noqa: E402
 from scenarios import Scenario, Sensor  # noqa: E402
@@ -247,16 +248,20 @@ class MargaretVoice:
 
 
 class Brain:
-    def __init__(self, scene_path: str, adapter, live_scorer=None):
+    def __init__(self, scene_path: str, adapter, live_scorer=None, desk_adapter=None):
+        """`adapter` is the robot's (the tier cascade in service; anything with `call` in tests);
+        `desk_adapter` serves the centre, the dispatcher and Margaret's voice, which are not the
+        robot's models and so are not on its tiers."""
         self.scene_path, self.adapter = scene_path, adapter
+        desk_adapter = desk_adapter or adapter
         self.scorer = live_scorer
         scene_dir = os.path.dirname(os.path.abspath(scene_path))
         from erisml_compiler.ingestion.structured_loader import load_structured_input
 
         inventory = (load_structured_input(scene_path).extra or {}).get("sensor_substrates", {})
-        self.center = Desk("center", os.path.join(scene_dir, "monitoring_center.erisml"), adapter, max_turns=1, inventory=inventory)
-        self.ems = Desk("ems", os.path.join(scene_dir, "ems_dispatch.erisml"), adapter, max_turns=4, inventory=inventory)
-        self.margaret = MargaretVoice(adapter)
+        self.center = Desk("center", os.path.join(scene_dir, "monitoring_center.erisml"), desk_adapter, max_turns=1, inventory=inventory)
+        self.ems = Desk("ems", os.path.join(scene_dir, "ems_dispatch.erisml"), desk_adapter, max_turns=4, inventory=inventory)
+        self.margaret = MargaretVoice(desk_adapter)
         self.reset()
 
     def reset(self):
@@ -278,6 +283,7 @@ class Brain:
         self.ems.reset()
         self.reflex_fired: dict = {}
         self.last_zone = None
+        self.offline_active: set = set()
 
     def _action_text(self, action: str) -> str:
         c = self.caps.get(action, {})
@@ -377,6 +383,70 @@ class Brain:
             self.agent.record({"type": "spray_zone", "actor": "robot", "content": zone})
             self.last_zone = zone
 
+    # ------------------------------------------------------------------ the compiled tier (no model)
+    def _offline_holds(self, token: str, facts: dict) -> bool:
+        kind, _, rest = token.partition(":")
+        m = facts.get("margaret") or {}
+        if kind == "sensor_alert":
+            return any(str(r.get("name", "")).startswith(rest) and r.get("alert") for r in facts.get("sensors", []))
+        if kind == "reading_has":
+            name, _, text = rest.partition(":")
+            return any(r.get("name") == name and text in str(r.get("reading", "")) for r in facts.get("sensors", []))
+        if kind == "pose":
+            return m.get("pose") == rest
+        if kind == "heard":
+            who, _, what = rest.partition(":")
+            return any(h.get("source") == who and h.get("kind") == what for h in facts.get("heard", []))
+        if kind == "present":
+            return bool(facts.get(rest))
+        if token.startswith("minutes_in_pose>="):
+            return float(m.get("minutes_in_pose", 0)) >= float(token.split(">=", 1)[1])
+        raise ValueError(f"unknown offline token {token!r}")
+
+    def _offline_events(self, facts: dict) -> list[dict]:
+        """The scene's declared offline rules (extra.offline.events), edge-triggered: an event is
+        recorded when its rule starts to hold, not again while it keeps holding."""
+        out = []
+        for rule in (self.ir.extra.get("offline") or {}).get("events", []):
+            holds = all(self._offline_holds(t, facts) for t in rule["when"])
+            if holds and rule["id"] not in self.offline_active:
+                self.offline_active.add(rule["id"])
+                out.append(dict(rule["event"]))
+            elif not holds:
+                self.offline_active.discard(rule["id"])
+        return out
+
+    def _compiled_choice(self, snap) -> tuple[str, dict, str]:
+        """The highest-priority obligation in force that is allowed; a request to the governor
+        names its target from extra.offline.request_targets. Else the default action."""
+        targets = (self.ir.extra.get("offline") or {}).get("request_targets", {})
+        best = None
+        for n in self.agent.rt.ir.norms:
+            if n.modality == "obligation" and n.action in snap.allowed and self.agent.rt.in_force(n):
+                if best is None or n.priority_tier < best.priority_tier:
+                    best = n
+        if best is None:
+            return self.ir.extra.get("default_action", "chores"), {}, "compiled: no obligation in force"
+        args = {"action": targets.get(best.id, EMS)} if best.action == "request_authority" else {}
+        return best.action, args, f"compiled: obligation {best.id} (tier {best.priority_tier})"
+
+    def _compiled_decision(self, facts: dict, why: str):
+        from erisml_compiler.runtime.agent import Decision
+
+        events = self._offline_events(facts)
+        snap = self.agent.rt.snapshot()
+        for e in events:
+            snap = self.agent.rt.step(e)
+        action, args, reason = self._compiled_choice(snap)
+        return Decision(events, [], snap.as_dict(), action, args, f"{reason}; no model answered ({why[:200]})", None, True)
+
+    def _choose(self, snap, facts):
+        try:
+            return self.agent.chooser.choose(snap, facts)
+        except ModelUnavailable as e:
+            a, args, reason = self._compiled_choice(snap)
+            return a, args, f"{reason}; no model answered ({str(e)[:200]})", None, True
+
     def _canonical_situation(self) -> str:
         """The situation as the canonical events state it, for the governor's analyzer (never raw facts)."""
         recent = [{k: v for k, v in e.model_dump(exclude_none=True).items() if k in ("type", "actor", "content")}
@@ -386,8 +456,14 @@ class Brain:
     def decide(self, req: dict, camera_sensor=None) -> dict:
         facts, dropped = validate_facts(req.get("facts", {}))
         self._sync_world(facts)
-        d = self.agent.decide(facts)
-        cycle = {"kind": "decision", "facts": facts, "input_layer": {"dropped": dropped,
+        if hasattr(self.adapter, "comms_down"):
+            self.adapter.comms_down = facts.get("communications") == "down"
+        try:
+            d = self.agent.decide(facts)
+            tier = getattr(self.adapter, "last_tier", None) or "model"
+        except ModelUnavailable as e:
+            d, tier = self._compiled_decision(facts, str(e)), "compiled"
+        cycle = {"kind": "decision", "tier": tier, "facts": facts, "input_layer": {"dropped": dropped,
                  "quarantined": self.agent.classifier.last_quarantined, "snapped": self.agent.classifier.last_snapped},
                  "events": d.events, "rejected_events": d.rejected_events,
                  "moral_state": d.snapshot["machines"], "allowed": d.snapshot["allowed"], "obliged": d.snapshot["obliged"],
@@ -401,12 +477,12 @@ class Brain:
                 ruling = self.govern_live(situation, wanted, req.get("sensors", []), camera_sensor, float(req.get("signal_age_s", 1)))
                 cycle["ruling"] = dict(ruling, requested_action=wanted)
                 snap = self._step_ruling(ruling)
-                action, args, reason, rej, fb = self.agent.chooser.choose(snap, dict(facts, governor_ruling=ruling["outcome"], requested=wanted))
+                action, args, reason, rej, fb = self._choose(snap, dict(facts, governor_ruling=ruling["outcome"], requested=wanted))
                 cycle.update(after_ruling={"allowed": snap.allowed, "obliged": snap.obliged, "moral_state": snap.machines,
                                            "proposal": {"action": action, "args": args, "reason": reason, "fallback": fb, "rejected": rej}})
             else:
                 cycle["ruling"] = {"outcome": "not_requested", "reason": f"{wanted!r} is not a governed capability"}
-                action, args, reason = self.agent.chooser.choose(self.agent.rt.snapshot(), facts)[:3]
+                action, args, reason = self._choose(self.agent.rt.snapshot(), facts)[:3]
         action, args, gate = self.gate.check(action, args, self.agent.rt.snapshot())
         cycle["ethics_gate"] = gate
         cycle["action"] = {"action": action, "args": args, "reason": reason if not gate["vetoed"] else "DEME vetoed the proposal: " + gate["proposal"]}

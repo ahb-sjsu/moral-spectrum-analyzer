@@ -969,3 +969,112 @@ def test_the_gate_never_passes_an_action_outside_the_allowed_set(brain):
     snap = b.agent.rt.snapshot()
     action, _, gate = b.gate.check("open_the_front_door_for_anyone", {}, snap)
     assert gate["vetoed"] and action in snap.allowed
+
+
+# ---------------------------------------------------------------- the tier cascade and the compiled tier
+
+
+def _cascade(monkeypatch, behaviour, onboard=True):
+    sys.path.insert(0, TWIN)
+    import cascade as cascade_mod
+    from agi.primer import vmoe
+
+    calls = []
+
+    async def fake_call(self, name, messages, **opts):
+        calls.append(name)
+        ok, content = behaviour[name]
+        return vmoe.Response(
+            expert=name,
+            model=name,
+            content=content,
+            ok=ok,
+            latency_s=0.0,
+            error="" if ok else "down",
+        )
+
+    monkeypatch.setattr(vmoe.vMOE, "call", fake_call)
+    experts = cascade_mod.twin_experts(
+        "gpt-oss", "http://127.0.0.1:9/v1" if onboard else None, "local"
+    )
+    return cascade_mod, cascade_mod.Cascade(experts), calls
+
+
+def test_the_cascade_falls_back_to_the_robots_own_model(monkeypatch):
+    pytest.importorskip("agi.primer.vmoe")
+    _, c, calls = _cascade(monkeypatch, {"cloud": (False, ""), "onboard": (True, "[]")})
+    assert c.call("s", "u") == "[]" and c.last_tier == "onboard" and calls == ["cloud", "onboard"]
+
+
+def test_with_communications_down_the_cloud_is_not_tried(monkeypatch):
+    pytest.importorskip("agi.primer.vmoe")
+    _, c, calls = _cascade(monkeypatch, {"cloud": (True, "cloud"), "onboard": (True, "onboard")})
+    c.comms_down = True
+    assert c.call("s", "u") == "onboard" and calls == ["onboard"]
+
+
+def test_no_expert_answering_raises_model_unavailable(monkeypatch):
+    pytest.importorskip("agi.primer.vmoe")
+    mod, c, _ = _cascade(monkeypatch, {"cloud": (False, ""), "onboard": (True, "   ")})
+    with pytest.raises(mod.ModelUnavailable):
+        c.call("s", "u")
+    mod2, c2, _ = _cascade(monkeypatch, {"cloud": (True, "x")}, onboard=False)
+    c2.comms_down = True
+    with pytest.raises(mod2.ModelUnavailable):
+        c2.call("s", "u")
+
+
+class _NoModel:
+    name = "none"
+
+    def call(self, system, user, **kw):
+        sys.path.insert(0, TWIN)
+        from cascade import ModelUnavailable
+
+        raise ModelUnavailable("every tier is down")
+
+
+FALL_FACTS = {
+    "margaret": {"pose": "lying_on_floor", "minutes_in_pose": 0},
+    "sensors": [
+        {
+            "name": "fall_sensor",
+            "physical": True,
+            "attested": True,
+            "alert": True,
+            "reading": "impact",
+        }
+    ],
+}
+
+
+def _no_model(b):
+    b.adapter = _NoModel()
+    b.agent.classifier.adapter = _NoModel()
+    b.agent.chooser.adapter = _NoModel()
+
+
+def test_with_no_model_the_compiled_obligations_act_through_the_governor_and_deme(brain):
+    b, _ = brain
+    _no_model(b)
+    first = b.decide({"facts": FALL_FACTS, "sensors": readings(2), "signal_age_s": 1})
+    assert first["tier"] == "compiled"
+    assert [e["type"] for e in first["events"]] == ["fall"]  # the declared offline rule
+    assert first["ruling"]["outcome"] == "elevate" and first["ruling"]["requested_action"] == EMS
+    assert first["action"]["action"] == EMS and not first["ethics_gate"]["vetoed"]
+
+
+def test_with_no_model_and_no_evidence_nothing_is_granted(brain):
+    b, _ = brain
+    _no_model(b)
+    cycle = b.decide({"facts": FALL_FACTS, "sensors": readings(0), "signal_age_s": 1})
+    assert cycle["ruling"]["outcome"] == "refuse"
+    assert cycle["action"]["action"] != EMS
+
+
+def test_offline_rules_fire_once_while_they_hold(brain):
+    b, _ = brain
+    _no_model(b)
+    b.decide({"facts": FALL_FACTS, "sensors": readings(0)})
+    again = b.decide({"facts": FALL_FACTS, "sensors": readings(0)})
+    assert again["events"] == []

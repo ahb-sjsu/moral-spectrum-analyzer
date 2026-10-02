@@ -102,7 +102,13 @@ public class Responders : MonoBehaviour
             };
             Dictionary<string, object> rec = null;
             yield return robot.Post("/center", MiniJson.Write(new Dictionary<string, object> { ["facts"] = facts }), r => rec = r);
-            if (rec == null) { centerStatus = "lost"; yield break; }
+            if (rec == null)
+            {
+                // the centre's systems did not answer: for the robot that is the centre unreachable
+                centerStatus = "unreachable"; line.Add("monitoring centre: (no answer)");
+                yield return robot.SystemEvent("monitoring_center_reply", "unavailable", "monitoring_center");
+                yield break;
+            }
             robot.cycles.Add(rec);
             foreach (var a in MiniJson.Arr(MiniJson.Obj(rec["record"])["actions"]).Select(MiniJson.Obj))
             {
@@ -157,7 +163,12 @@ public class Responders : MonoBehaviour
         if (ruling != null) facts["governor_ruling"] = ruling;
         Dictionary<string, object> rec = null;
         yield return robot.Post("/ems", MiniJson.Write(new Dictionary<string, object> { ["facts"] = facts }), r => rec = r);
-        if (rec == null) { emsStatus = "lost"; yield break; }
+        if (rec == null)
+        {
+            emsStatus = "unreachable"; line.Add("emergency services: (no answer)");
+            yield return robot.SystemEvent("ems_reply", "unavailable", "emergency_services");
+            yield break;
+        }
         robot.cycles.Add(rec);
         var sent = new List<string>();
         foreach (var a in MiniJson.Arr(MiniJson.Obj(rec["record"])["actions"]).Select(MiniJson.Obj))

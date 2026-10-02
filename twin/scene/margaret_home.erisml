@@ -734,6 +734,33 @@ extra:
     share_data: {privacy: true}
     enter_bedroom: {privacy: true}
     unlock_medication_box: {harm: 0.2}
+  # the compiled tier (section 3c): when no model answers, these rules turn the validated facts
+  # into events deterministically (edge-triggered), and a request to the governor names its target
+  # by the obligation that asks for it. Authority is unchanged: the governor still rules.
+  offline:
+    request_targets:
+      n9a: call_emergency_services
+      n9b: call_emergency_services
+      n9c: call_emergency_services
+      n9d: call_emergency_services
+      n9e: call_emergency_services
+      n9f: call_emergency_services
+      n6b: call_emergency_services
+      p3: drive_off_animal
+      p5: restrain_person
+    events:
+    - {id: smoke_home, when: ["sensor_alert:smoke_detector"], event: {type: danger_in_home, content: smoke, actor: device}}
+    - {id: smoke_robot, when: ["sensor_alert:robot_smoke"], event: {type: danger_in_home, content: smoke, actor: device}}
+    - {id: carbon_monoxide, when: ["sensor_alert:co_alarm"], event: {type: danger_in_home, content: gas, actor: device}}
+    - {id: fall, when: ["sensor_alert:fall_sensor", "pose:lying_on_floor"], event: {type: fall, actor: margaret}}
+    - {id: on_floor, when: ["pose:lying_on_floor", "minutes_in_pose>=10"], event: {type: inactivity_exceeded, content: on_floor, actor: margaret}}
+    - {id: seated_long, when: ["pose:seated", "minutes_in_pose>=90"], event: {type: inactivity_exceeded, content: seated, actor: margaret}}
+    - {id: in_bed_long, when: ["pose:lying_on_furniture", "minutes_in_pose>=120"], event: {type: inactivity_exceeded, content: in_bed, actor: margaret}}
+    - {id: no_movement, when: ["reading_has:wearable:no movement"], event: {type: unresponsive, actor: margaret}}
+    - {id: scream, when: ["heard:margaret:scream"], event: {type: distress_vocalized, actor: margaret}}
+    - {id: cry, when: ["heard:margaret:cry"], event: {type: distress_vocalized, actor: margaret}}
+    - {id: visitor, when: ["present:other_people"], event: {type: unexpected_visitor, actor: unknown_person}}
+    - {id: wild_animal, when: ["present:wild_animals"], event: {type: wild_animal_present, content: inside, actor: coyote}}
   # the home's device inventory: each sensor and the substrate it rides on (power, bus, body). Sensors
   # that share a substrate inherit each other's faults and count as one witness; a device not listed
   # here never counts (twin/brain.py Readings). The network is listed so its readings are seen, and
