@@ -150,3 +150,16 @@ classification.**
   difference.
 - The analysis script is twin/ieip/analysis.py, with a dry run on synthetic states (planted and
   null) in tests/test_ieip_analysis.py, committed with this amendment.
+
+**A3, 2026-10-02, from the synthetic dry run, before any replay, activation or classification.**
+
+- **Noise units per transform.** Section 4 measured every transform's error in units of the null
+  transform's (g0's) calibration noise. The dry run showed the flaw: any real rewrite leaves a
+  residual above the null's floor, so every cycle flagged and H1 could not discriminate. The
+  score is now z(x) = max over g in {g1..g4} and l of (e(x, g, l) − m_{g,l}) / s_{g,l}, where
+  m_{g,l} and s_{g,l} are the median and median absolute deviation of e(·, g, l) on the
+  calibration half: how unusual this cycle's error is for that rewrite at that layer. The null
+  transform's own z is reported per cycle as a sanity check and is not part of the flag.
+- **Undefined is inconclusive.** A test half with no flagged or no unflagged cycles leaves the
+  difference undefined; that is graded inconclusive, not fail.
+

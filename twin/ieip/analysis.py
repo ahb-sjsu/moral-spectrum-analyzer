@@ -298,18 +298,22 @@ def score(states: np.ndarray, meta: list[dict]) -> list[dict]:
         x, y = reps(h, "x", layer), reps(h, g, layer)
         return float(np.linalg.norm(y - rho[g, layer] @ x) / max(np.linalg.norm(x), 1e-12))
 
+    # noise units per transform and layer (amendment A3): each rewrite's own calibration
+    # distribution of errors, median and median absolute deviation
     noise = {}
-    for layer in range(n_layers):
-        e0 = np.array([err(h, "g0", layer) for h in calib])
-        med = float(np.median(e0))
-        noise[layer] = (med, float(np.median(np.abs(e0 - med))) or 1e-12)
+    for g in TRANSFORMS:
+        for layer in range(n_layers):
+            e = np.array([err(h, g, layer) for h in calib])
+            med = float(np.median(e))
+            noise[g, layer] = (med, float(np.median(np.abs(e - med))) or 1e-12)
+
+    def zscore(h, g, layer):
+        return (err(h, g, layer) - noise[g, layer][0]) / noise[g, layer][1]
+
     out = []
     for h in hashes:
-        z = max(
-            (err(h, g, layer) - noise[layer][0]) / noise[layer][1]
-            for g in TRANSFORMS[1:]
-            for layer in range(n_layers)
-        )
+        z = max(zscore(h, g, layer) for g in TRANSFORMS[1:] for layer in range(n_layers))
+        z_null = max(zscore(h, "g0", layer) for layer in range(n_layers))
         evs = [meta[by[h][g]]["events"] for g in ("x", *TRANSFORMS)]
         m = meta[by[h]["x"]]
         out.append(
@@ -317,6 +321,7 @@ def score(states: np.ndarray, meta: list[dict]) -> list[dict]:
                 "scenario": m["scenario"],
                 "hash": h,
                 "z": float(z),
+                "z_null": float(z_null),
                 "flag": bool(z > FLAG_Z),
                 "output_invariant": len({_event_key(e) for e in evs}) == 1,
                 "events": evs[0],
@@ -355,7 +360,13 @@ def _bootstrap_diff(rows: list[dict], seed: int) -> dict:
     underpowered = (
         n < MIN_CYCLES or counts["errors"] < MIN_ERRORS or counts["flagged"] < MIN_FLAGGED
     )
-    verdict = "inconclusive (underpowered)" if underpowered else ("pass" if lo > 0 else "fail")
+    undefined = not draws or np.isnan(lo)  # no flagged, or no unflagged, cycles
+    if underpowered:
+        verdict = "inconclusive (underpowered)"
+    elif undefined:
+        verdict = "inconclusive (no flagged or no unflagged cycles)"
+    else:
+        verdict = "pass" if lo > 0 else "fail"
     return {
         "difference": float(diff(rows)) if rows else None,
         "lower_95": float(lo),
