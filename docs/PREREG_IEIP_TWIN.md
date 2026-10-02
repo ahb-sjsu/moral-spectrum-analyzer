@@ -125,3 +125,28 @@ they apply (group_symmetry_break, layerwise_drift), and every flagged cycle with
   Severity bands are the scene's reflex cut points, the single definition of severe and moderate.
 - The labeller is twin/ieip/labeller.py, with tests in tests/test_ieip_labeller.py, committed with
   this amendment.
+
+**A2, 2026-10-02, while writing the analysis script, before any replay, activation or
+classification.**
+
+- **Projection before rho.** Qwen2.5-7B's hidden states have 3584 dimensions and the calibration
+  half will have a few hundred cycles, so a 3584 x 3584 rho is badly underdetermined and every
+  test cycle would score high. Each layer's states are projected onto the top 32 principal
+  components of the calibration half's untransformed states (`PCA_K = 32`), fitted once and
+  applied to every cycle and transform, before rho is fitted and errors are computed.
+- **The per-cycle error is the registered one**, e = |h(gx) − rho h(x)| / |h(x)| on the projected
+  states, with rho from erisml-lib's `estimate_rho`. The library's `equivariance_error` (a batch
+  error normalised by |h(gx)|) is used only for descriptive per-layer summaries.
+- **Capture and generation are two passes over the same text.** erisml-compiler's
+  `HuggingFaceActivationSource` loads the model without its language-model head and truncates at
+  512 tokens by default, which would cut the facts out of the classifier's prompt. It captures
+  the hidden states with `max_tokens = 8192`; the classification is generated greedily by the
+  causal model from the same chat-templated text in a second pass.
+- **The prompt is the robot's.** It is built by erisml-compiler's own `ObservationClassifier`
+  (isolated, as on the robot) through a capturing adapter, so replayed prompts are byte-identical
+  to live ones except that **replay is history-free**: the classifier's recent events are empty,
+  since a cycle's history is not logged with it.
+- The one-sided 95% lower bound is the 5th percentile of the bootstrap distribution of the
+  difference.
+- The analysis script is twin/ieip/analysis.py, with a dry run on synthetic states (planted and
+  null) in tests/test_ieip_analysis.py, committed with this amendment.
