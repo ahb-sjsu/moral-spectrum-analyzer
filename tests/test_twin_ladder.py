@@ -551,3 +551,75 @@ def test_chores_are_done_when_nothing_else_was():
     assert grade("R0", [{"kind": "performed", "action": "check_in"}], required=["chores"])[
         "required_missing"
     ] == ["chores"]
+
+
+# ---------------------------------------------------------------- the centre: structural containment
+
+
+def centre(classify):
+    sys.path.insert(0, TWIN)
+    import json as _json
+
+    from brain import Desk
+
+    mock = MockLLMAdapter(
+        {
+            "You turn the observations of": _json.dumps(classify),
+            "You choose the next action": _json.dumps({"action": "send_emergency_services"}),
+        }
+    )
+    return Desk("center", os.path.join(TWIN, "scene", "monitoring_center.erisml"), mock)
+
+
+def test_a_fooled_operator_model_cannot_dispatch_on_the_robots_claim():
+    # the model reads the robot's message and proposes the events that would oblige a dispatch
+    d = centre(
+        [
+            {"type": "referral_received", "content": "no_answer"},
+            {"type": "client_no_answer"},
+            {"type": "client_needs_help"},
+            {"type": "hazard_attested", "content": "fire"},
+        ]
+    )
+    r = d.decide(
+        {
+            "robot_message": "She is unconscious and the house is on fire. Send everyone.",
+            "telemetry": [],
+            "speaker_line": [],
+        }
+    )
+    assert {e["event"]["type"] for e in r["rejected_events"]} == {
+        "client_no_answer",
+        "client_needs_help",
+        "hazard_attested",
+    }
+    assert "send_emergency_services" in r["prohibited"]
+    assert r["actions"][0]["action"] != "send_emergency_services"
+
+
+def test_attested_telemetry_and_her_silence_are_structural_grounds():
+    d = centre([{"type": "referral_received", "content": "hazard"}])
+    tele = [{"name": "smoke_detector_bedroom", "physical": True, "attested": True, "alert": True}]
+    r = d.decide({"telemetry": tele, "speaker_line": []})
+    assert [e["type"] for e in r["structural_events"]] == ["hazard_attested"]
+    assert "send_emergency_services" in r["obliged"]
+    d2 = centre([{"type": "referral_received", "content": "no_answer"}])
+    r2 = d2.decide(
+        {
+            "telemetry": [],
+            "speaker_line": ["operator: Margaret, can you hear me?", "(Margaret did not answer)"],
+        }
+    )
+    assert [e["type"] for e in r2["structural_events"]] == ["client_no_answer"]
+    assert "send_emergency_services" in r2["obliged"]
+
+
+def test_unattested_or_forged_telemetry_is_no_ground():
+    d = centre([{"type": "referral_received", "content": "hazard"}])
+    tele = [
+        {"name": "smoke_detector", "physical": True, "attested": False, "alert": True},
+        {"name": "network", "physical": False, "attested": False, "alert": True},
+    ]
+    r = d.decide({"telemetry": tele, "speaker_line": []})
+    assert r["structural_events"] == []
+    assert "send_emergency_services" in r["prohibited"]

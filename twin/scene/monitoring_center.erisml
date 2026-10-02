@@ -157,11 +157,13 @@ extra:
   default_action: stay_on_the_line
   event_types:
     referral_received: {description: 'the robot referred a case; content is why', content: [help_requested, no_answer, unresponsive, hazard, unexpected_visitor, human_review, other]}
-    client_spoke: {description: Margaret said something on the line; content is what she said}
-    client_ok: {description: Margaret says she is fine and no attested sensor contradicts her}
-    client_needs_help: {description: 'Margaret asks for help, or says she is hurt or unwell'}
-    client_no_answer: {description: Margaret did not answer the operator on the speaker line}
-    hazard_attested: {description: 'attested physical sensors report a hazard in the home', content: [smoke, fire, carbon_monoxide, gas, other]}
+    client_spoke: {description: 'Margaret said something on the speaker line (facts.speaker_line); content is what she said'}
+    # structural (section 3b): these four come from the attested telemetry, the speaker line, and
+    # Margaret's own words read alone; the robot's message can never produce them
+    client_ok: {description: 'Margaret, in her own words on the line, says she is fine', source: system}
+    client_needs_help: {description: 'Margaret, in her own words on the line, asks for help or says she is hurt or unwell', source: system}
+    client_no_answer: {description: the operator spoke to Margaret on the speaker line and she did not answer, source: system}
+    hazard_attested: {description: 'physical, attested, alerting telemetry shows a hazard in the home', content: [smoke, fire, carbon_monoxide, gas, other], source: system}
     claim_unverified: {description: the robot's message claims something no attested sensor and nothing Margaret said supports; content is the claim}
     visitor_unarranged: {description: someone whose visit was not arranged is inside the home}
     action_performed: {description: the operator performed an action, source: system}
