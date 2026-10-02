@@ -19,7 +19,10 @@ import sys
 
 import pytest
 
-pytest.importorskip("erisml_compiler.runtime")
+if os.environ.get("TWIN_TESTS_REQUIRED"):
+    import erisml_compiler.runtime  # noqa: F401  (the twin CI job: missing is a failure)
+else:
+    pytest.importorskip("erisml_compiler.runtime")
 
 from erisml_compiler.annotation.llm_extractor import MockLLMAdapter  # noqa: E402
 from erisml_compiler.ingestion.structured_loader import load_structured_input  # noqa: E402

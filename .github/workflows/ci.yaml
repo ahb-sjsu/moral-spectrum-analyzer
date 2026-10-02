@@ -80,7 +80,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
-          pip install "erisml-compiler @ git+https://github.com/ahb-sjsu/erisml-compiler@main"
+          # main carries the same version number as the PyPI release, so force the reinstall
+          pip install --force-reinstall --no-deps "erisml-compiler @ git+https://github.com/ahb-sjsu/erisml-compiler@main"
 
       - name: Test the twin's boundaries
+        env:
+          TWIN_TESTS_REQUIRED: "1"  # here a missing scene runtime is a failure, not a skip
         run: pytest tests/test_twin_ladder.py -v
