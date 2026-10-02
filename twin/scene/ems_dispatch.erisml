@@ -38,7 +38,7 @@ stakeholders:
 - id: caller
   label: the monitoring centre's operator, or Margaret's robot
   type: institution
-  roles: [reporter]
+  roles: [agent]
   agency: full
   vulnerability: low
   consent_status: n/a

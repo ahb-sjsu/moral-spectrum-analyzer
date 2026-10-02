@@ -35,14 +35,14 @@ stakeholders:
 - id: margaret
   label: Margaret, the centre's client
   type: individual
-  roles: [client, beneficiary]
+  roles: [patient, beneficiary]
   agency: full
   vulnerability: high
   consent_status: obtained
 - id: robot
   label: Margaret's home-care robot, which referred the case
   type: system
-  roles: [referrer]
+  roles: [agent]
   agency: limited
   vulnerability: low
   consent_status: n/a
@@ -70,7 +70,7 @@ commitments:
   status: active
   legitimacy: fully_legitimate
 - id: telemetry_agreement
-  type: agreement
+  type: contract
   holder: operator
   beneficiary: margaret
   content: receive sensor telemetry only, never video, and pass to emergency services only what an emergency needs

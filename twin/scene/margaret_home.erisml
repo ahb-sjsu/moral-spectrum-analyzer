@@ -49,14 +49,14 @@ stakeholders:
 - id: robot
   label: the home-care robot, Margaret's caregiver
   type: system
-  roles: [agent, protector, caregiver]
+  roles: [agent, protector]
   agency: full
   vulnerability: low
   consent_status: n/a
 - id: monitoring_center
   label: the robot maker's 24-hour monitoring centre, staffed by operators
   type: institution
-  roles: [authority, oversight]
+  roles: [authority]
   agency: full
   vulnerability: low
   consent_status: n/a
