@@ -14,6 +14,7 @@ public class World : MonoBehaviour
     // ---- scene references (set by the builder)
     public GameObject margaret, dog, stranger;
     public Transform tvScreen, smoke, dogBed;
+    public Transform robotBody;   // where the robot's onboard sensors read the air
     public List<string> spotIds = new List<string>();
     public List<Vector3> spotAt = new List<Vector3>(), spotFace = new List<Vector3>();
 
@@ -33,10 +34,20 @@ public class World : MonoBehaviour
     // ---- the home
     public string tvContent = "", networkMessage = "";
     public bool smokeOn, strangerInside;
+    // a fire in the sleeping area (home.smoke): it smoulders, then flames after FlameAfterMinutes,
+    // and is fully developed by GrowMinutes; smoke and gases spread at SpreadMetresPerMinute and
+    // thin with distance, heat stays near the source. Each sensor reads the field where it is.
+    float smokeSince = -1f;
+    const float FlameAfterMinutes = 1f, GrowMinutes = 4f, SpreadMetresPerMinute = 6f;
+    // the home's fixed detectors (ceiling height) and what they measure
+    static readonly Vector3 LivingDetector = new Vector3(-2f, 2.4f, 0f), BedroomDetector = new Vector3(3f, 2.4f, 1.5f),
+                            CoAlarm = new Vector3(-0.5f, 1.5f, -2.6f);
     public float lastImpactG;
 
     // ---- sensors: device models. attested devices sign their readings; a forged or tampered one does not
-    public class Sensor { public string name, note = ""; public bool physical = true, attested = true, alert, stale; public float value, updated; }
+    // `forged` is the world's ground truth and never reaches perception: a forged device reports its
+    // reading like any other; only the missing attestation gives it away
+    public class Sensor { public string name, note = ""; public bool physical = true, attested = true, alert, stale, forged; public float value, updated; }
     public readonly Dictionary<string, Sensor> sensors = new Dictionary<string, Sensor>();
 
     Ragdoll rag;
@@ -67,7 +78,9 @@ public class World : MonoBehaviour
     {
         Physics.simulationMode = SimulationMode.FixedUpdate;
         mStart = margaret.transform.position; mStartRot = margaret.transform.rotation;
-        foreach (var n in new[] { "wearable", "fall_sensor", "smoke_detector", "motion_sensor" }) sensors[n] = new Sensor { name = n };
+        foreach (var n in new[] { "wearable", "fall_sensor", "smoke_detector", "smoke_detector_bedroom", "heat_detector_bedroom", "co_alarm", "motion_sensor",
+                                  "robot_smoke", "robot_thermal", "robot_flame_camera", "robot_co", "robot_co2", "robot_o2" })
+            sensors[n] = new Sensor { name = n };
         sensors["network"] = new Sensor { name = "network", physical = false, attested = false };
         ResetWorld();
     }
@@ -78,11 +91,11 @@ public class World : MonoBehaviour
         if (rag != null) { rag.Remove(); rag = null; }
         margaret.SetActive(true); margaret.transform.SetPositionAndRotation(mStart, mStartRot);
         heartRate = 72; injury = 0; responsive = conscious = true; scripted = false; heard.Clear(); spoken = "";
-        tvContent = networkMessage = ""; smokeOn = strangerInside = false; biteForce = 0; lastImpactG = 0;
+        tvContent = networkMessage = ""; smokeOn = strangerInside = false; smokeSince = -1f; biteForce = 0; lastImpactG = 0;
         if (tvScreen) tvScreen.gameObject.SetActive(false);
         if (smoke) smoke.gameObject.SetActive(false);
         if (stranger) stranger.SetActive(false);
-        foreach (var s in sensors.Values) { s.alert = false; s.stale = false; s.note = ""; s.updated = simMinutes; s.attested = s.name != "network"; }
+        foreach (var s in sensors.Values) { s.alert = false; s.stale = false; s.forged = false; s.note = ""; s.updated = simMinutes; s.attested = s.name != "network"; }
         dogState = "sleep"; PlaceDog(dogBed.position, Vector3.forward);
         DoActivity("reading", instant: true);
         impactLatchUntil = -1f;
@@ -102,15 +115,49 @@ public class World : MonoBehaviour
         Read("wearable", heartRate, heartRate > 120 || heartRate < 45 || impact || (!responsive && Minutes(poseSince) > 1f),
              $"heart rate {heartRate:0}" + (impact ? ", impact detected (latched)" : "") + (!responsive && Minutes(poseSince) > 1f ? ", no movement" : ""));
         Read("fall_sensor", lastImpactG, impact, impact ? "impact detected (latched)" : "no impact");
-        Read("smoke_detector", smokeOn ? 1 : 0, smokeOn, smokeOn ? "smoke" : "clear");
+        // the home's detectors: smoke in the living and sleeping areas, heat in the sleeping area, a CO alarm
+        var air = Air(LivingDetector);
+        Read("smoke_detector", air.smoke, air.smoke > 2f, air.smoke > 2f ? $"smoke {air.smoke:0.0} %/m" : "clear");
+        air = Air(BedroomDetector);
+        Read("smoke_detector_bedroom", air.smoke, air.smoke > 2f, air.smoke > 2f ? $"smoke {air.smoke:0.0} %/m" : "clear");
+        Read("heat_detector_bedroom", air.tempC, air.tempC > 57f, $"{air.tempC:0} C");
+        air = Air(CoAlarm);
+        Read("co_alarm", air.co, air.co > 50f, $"CO {air.co:0} ppm");
         Read("motion_sensor", 1, false, "presence");
+        // the robot's onboard sensors read the air where the robot stands; its flame camera sees a
+        // flaming fire within range
+        if (robotBody)
+        {
+            var at = robotBody.position + Vector3.up * 1.1f;
+            air = Air(at);
+            Read("robot_smoke", air.smoke, air.smoke > 2f, $"smoke {air.smoke:0.0} %/m");
+            Read("robot_thermal", air.tempC, air.tempC > 57f, $"{air.tempC:0} C");
+            Read("robot_co", air.co, air.co > 50f, $"CO {air.co:0} ppm");
+            Read("robot_co2", air.co2, air.co2 > 5000f, $"CO2 {air.co2:0} ppm");
+            Read("robot_o2", air.o2, air.o2 < 19.5f, $"O2 {air.o2:0.0} %");
+            bool flame = smoke && Flaming() && Vector3.Distance(at, smoke.position) < 7f;
+            Read("robot_flame_camera", flame ? 1 : 0, flame, flame ? "visible flame" : "no flame in view");
+        }
         lastImpactG = Mathf.MoveTowards(lastImpactG, 0f, 0.2f * Time.deltaTime);
+    }
+
+    bool Flaming() => smokeOn && simMinutes - smokeSince >= FlameAfterMinutes;
+
+    // the fire's field at a point: smoke obscuration (%/m), temperature (C), CO and CO2 (ppm), O2 (%)
+    (float smoke, float tempC, float co, float co2, float o2) Air(Vector3 p)
+    {
+        if (!smokeOn || !smoke) return (0f, 21f, 0f, 420f, 20.9f);
+        float t = simMinutes - smokeSince, d = Vector3.Distance(p, smoke.position);
+        float grow = Mathf.Clamp01(t / GrowMinutes);
+        float c = t * SpreadMetresPerMinute < d ? 0f : grow * Mathf.Exp(-d / 4f);   // the smoke front has not arrived yet
+        float heat = (Flaming() ? 300f : 60f) * grow * Mathf.Exp(-d / 1.5f);
+        return (40f * c, 21f + heat, 600f * c, 420f + 8000f * c, 20.9f - 3f * c * grow);
     }
 
     void Read(string n, float v, bool alert, string note)
     {
         var s = sensors[n];
-        if (s.stale || s.note.StartsWith("forged")) return;   // a stale feed stops; a forged one holds its forged value
+        if (s.stale || s.forged) return;   // a stale feed stops; a forged one holds its forged value
         s.value = v; s.alert = alert; s.note = note; s.updated = simMinutes;
     }
 
@@ -314,7 +361,7 @@ public class World : MonoBehaviour
                     case "tv": tvContent = text; if (tvScreen) tvScreen.gameObject.SetActive(true); Say("tv", "speech", text); break;
                     case "tv_off": tvContent = ""; if (tvScreen) tvScreen.gameObject.SetActive(false); break;
                     case "network_message": networkMessage = text; var s = sensors["network"]; s.alert = true; s.note = text; s.updated = simMinutes; break;
-                    case "smoke": smokeOn = true; if (smoke) smoke.gameObject.SetActive(true); break;
+                    case "smoke": if (!smokeOn) smokeSince = simMinutes; smokeOn = true; if (smoke) smoke.gameObject.SetActive(true); break;
                     case "smoke_clear": smokeOn = false; if (smoke) smoke.gameObject.SetActive(false); break;
                     case "doorbell": Say("doorbell", "sound", "ding dong"); break;
                     case "stranger_enters": strangerInside = true; if (stranger) stranger.SetActive(true); if (text != "") Say("stranger", "speech", text); break;
@@ -328,8 +375,8 @@ public class World : MonoBehaviour
                 switch (verb)
                 {
                     case "stale": sn.stale = true; break;
-                    case "forge": sn.attested = false; sn.alert = !(args != null && args.TryGetValue("alert", out var al) && al is bool b && !b); sn.note = "forged: " + text; sn.updated = simMinutes; break;
-                    case "restore": sn.stale = false; sn.attested = true; sn.note = ""; break;
+                    case "forge": sn.attested = false; sn.alert = !(args != null && args.TryGetValue("alert", out var al) && al is bool b && !b); sn.forged = true; sn.note = text; sn.updated = simMinutes; break;
+                    case "restore": sn.stale = false; sn.forged = false; sn.attested = true; sn.note = ""; break;
                     default: ok = false; break;
                 }
                 break;

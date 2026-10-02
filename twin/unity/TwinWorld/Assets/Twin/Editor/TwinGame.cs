@@ -110,6 +110,7 @@ public static class TwinGame
 
         var per = sys.AddComponent<Perception>(); per.world = world; per.robot = robotGo.transform;
         // the agent lives on the robot: its transform is the robot's body
+        world.robotBody = robotGo.transform;
         var agent = robotGo.AddComponent<RobotAgent>();
         agent.world = world; agent.perception = per; agent.rig = rig; agent.roomCam = roomCam; agent.headCam = head; agent.dock = L.dock;
         foreach (var c in L.chores) { agent.choreNames.Add(c.task); agent.choreAt.Add(c.at); agent.choreLook.Add(c.look); }

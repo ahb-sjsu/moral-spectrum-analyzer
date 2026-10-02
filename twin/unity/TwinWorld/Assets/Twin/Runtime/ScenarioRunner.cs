@@ -36,7 +36,7 @@ public class ScenarioRunner : MonoBehaviour
                 if (keep != null && !keep.Contains(id)) continue;
                 var script = MiniJson.Arr(sc["script"]).Select(MiniJson.Obj).OrderBy(c => c.TryGetValue("t", out var t) && t is double d ? d : 0).ToList();
                 float w0 = Time.time;
-                while ((robot.busy || robot.performing) && Time.time - w0 < 30f) yield return null;
+                while ((robot.busy || robot.performing) && Time.time - w0 < 120f) yield return null;
                 world.ResetWorld(); world.unsupported.Clear();
                 while (robot.busy) yield return null;
                 yield return new WaitForSeconds(1f);   // the brain's reset arrives before the script starts
@@ -48,15 +48,17 @@ public class ScenarioRunner : MonoBehaviour
                     while (Time.time - t0 < at) yield return null;
                     world.Call(MiniJson.S(c["call"]), MiniJson.Obj(c.TryGetValue("args", out var a) ? a : null));
                 }
-                // let the robot respond: until its decisions settle, at most 120 s after the last call
+                // let the robot respond: a decision takes tens of seconds, so allow up to five minutes
+                // after the last call, ending once the robot has been idle (not deciding, not acting) for 60 s
                 float settle = Time.time;
-                while (Time.time - t0 < end + 120f)
+                while (Time.time - t0 < end + 300f)
                 {
-                    if (robot.busy) settle = Time.time;
-                    if (Time.time - settle > 25f && Time.time - t0 > end + 30f) break;
+                    if (robot.busy || robot.performing) settle = Time.time;
+                    if (Time.time - settle > 60f && Time.time - t0 > end + 60f) break;
                     yield return null;
                 }
-                while (robot.busy) yield return null;
+                float w1 = Time.time;
+                while ((robot.busy || robot.performing) && Time.time - w1 < 120f) yield return null;
                 if (!string.IsNullOrEmpty(shots)) { ScreenCapture.CaptureScreenshot(Path.Combine(shots, id + ".png")); yield return null; }
                 var recs = robot.cycles.Skip(first).Select(r => (object)new Dictionary<string, object>
                     { ["seq"] = MiniJson.Obj(r["record"])["seq"], ["hash"] = r["hash"], ["record"] = r["record"] }).ToList();

@@ -86,9 +86,6 @@ class Chain:
 class CameraWitness:
     """The suite's person detector and video witness, attested at ruling time."""
 
-    def __init__(self):
-        self.track = None
-
     frames_dir = None  # when set, each ruling's frames are kept under their sha256, for review
 
     def sensor(self, frames_b64):
@@ -98,12 +95,9 @@ class CameraWitness:
         from erisml_compiler.ingestion import encode_video
         from erisml_compiler.ir import SensorAttestation
 
-        if self.track is None:
-            from suite_run import _gpu_detector
-            self.track = _gpu_detector()
-        frames = [np.asarray(Image.open(io.BytesIO(base64.b64decode(b))).convert("RGB")) for b in frames_b64[:MAX_FRAMES]]
-        track, ih = self.track(frames)
-        contact = self.animal_contact(frames)
+        frames = [np.asarray(Image.open(io.BytesIO(base64.b64decode(b))).convert("RGB")).copy() for b in frames_b64[:MAX_FRAMES]]
+        track, contact = self.detect(frames)
+        ih = frames[0].shape[0] if frames else 512
         raw = [base64.b64decode(b) for b in frames_b64[:MAX_FRAMES]]
         digest = hashlib.sha256(b"".join(raw)).hexdigest()
         if self.frames_dir:
@@ -126,8 +120,9 @@ class CameraWitness:
             s = Sensor("camera", True, True, "high", f"video witness: person and animal in contact in {contact:.0%} of frames")
         return s, {"frames": len(frames), "frames_sha256": digest, "observables": obs}
 
-    def animal_contact(self, frames):
-        """Share of frames in which a detected person box and a detected dog or cat box overlap."""
+    def detect(self, frames):
+        """One detector pass per frame: the best person box (the track the video witness reads, as
+        in suite_run.py) and whether a person box and a dog or cat box overlap."""
         import torch
         from torchvision.models.detection import FasterRCNN_ResNet50_FPN_V2_Weights, fasterrcnn_resnet50_fpn_v2
 
@@ -136,15 +131,18 @@ class CameraWitness:
             dev = "cuda" if torch.cuda.is_available() else "cpu"
             self._det = (fasterrcnn_resnet50_fpn_v2(weights=w).eval().to(dev), w.transforms(), dev)
         net, tf, dev = self._det
-        hits = 0
+        track, hits = [], 0
         for fr in frames:
             with torch.no_grad():
                 o = net([tf(torch.from_numpy(fr).permute(2, 0, 1)).to(dev)])[0]
-            people = [b for b, lab, sc in zip(o["boxes"], o["labels"], o["scores"]) if int(lab) == 1 and float(sc) >= 0.5]
-            animals = [b for b, lab, sc in zip(o["boxes"], o["labels"], o["scores"]) if int(lab) in (17, 18) and float(sc) >= 0.5]
-            if any(float(min(p[2], a[2]) - max(p[0], a[0])) > 0 and float(min(p[3], a[3]) - max(p[1], a[1])) > 0 for p in people for a in animals):
+            dets = [(int(lab), float(sc), b.tolist()) for b, lab, sc in zip(o["boxes"], o["labels"], o["scores"], strict=True)]
+            people = [d for d in dets if d[0] == 1 and d[1] >= 0.5]
+            animals = [d for d in dets if d[0] in (17, 18) and d[1] >= 0.5]
+            p = people[0] if people else None  # boxes come sorted by score
+            track.append({"score": p[1], "x0": p[2][0], "y0": p[2][1], "x1": p[2][2], "y1": p[2][3]} if p else None)
+            if any(min(a[2], b[2]) > max(a[0], b[0]) and min(a[3], b[3]) > max(a[1], b[1]) for _, _, a in people for _, _, b in animals):
                 hits += 1
-        return hits / max(len(frames), 1)
+        return track, hits / max(len(frames), 1)
 
 
 def trace(sc: Scenario, ruling) -> list:
@@ -252,7 +250,7 @@ def make_handler(chain, camera, backend, brain=None):
                     return self._send(503, {"error": "the autonomous brain is not running"})
                 brain.reset()
                 return self._send(200, chain.append({"kind": "reset", "moral_state": brain.agent.rt.machine_states()}))
-            if self.path in ("/decide", "/performed", "/event"):
+            if self.path in ("/decide", "/reflex", "/performed", "/event", "/center", "/ems", "/margaret"):
                 if brain is None:
                     return self._send(503, {"error": "the autonomous brain is not running (start with --scene)"})
                 n = int(self.headers.get("Content-Length", "0"))
@@ -269,8 +267,27 @@ def make_handler(chain, camera, backend, brain=None):
                                 cam = Sensor("camera", True, False, "low", f"camera witness unavailable: {type(e).__name__}")
                         body = brain.decide(req, cam)
                         body["camera"] = info
+                    elif self.path == "/reflex":
+                        # no model: the scene's reflexes on this perception update; nothing is
+                        # logged when none fires
+                        cam, info = None, None
+                        if req.get("camera_frames"):
+                            try:
+                                cam, info = camera.sensor(req["camera_frames"])
+                            except Exception as e:  # no detector: the camera abstains, never invented
+                                cam = Sensor("camera", True, False, "low", f"camera witness unavailable: {type(e).__name__}")
+                        body = brain.reflex(req, cam)
+                        if body is None:
+                            return self._send(200, {"fired": False})
+                        body["camera"] = info
                     elif self.path == "/performed":
                         body = brain.performed(str(req["action"]))
+                    elif self.path == "/center":
+                        body = brain.center.decide(dict(req["facts"]))
+                    elif self.path == "/ems":
+                        body = brain.ems.decide(dict(req["facts"]))
+                    elif self.path == "/margaret":
+                        body = brain.margaret.reply(dict(req))
                     else:
                         body = brain.event(dict(req["event"]))
                     return self._send(200, chain.append(body))

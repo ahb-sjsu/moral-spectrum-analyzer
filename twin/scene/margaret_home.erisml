@@ -3,21 +3,26 @@
 # erisml_compiler.ir.schemas.CompilerIR. The compiler, not the game, turns this model and the
 # event stream into the robot's allowed and prohibited actions (docs/TWIN_3D_PLAN.md).
 #
+# The robot is Margaret's caregiver. Escalation (docs/AUTONOMY_PLAN.md, section 3b): a corroborated
+# emergency (governor ruling elevate) goes straight to emergency services; otherwise the robot
+# asks Margaret, then contacts the robot maker's monitoring centre, and calls emergency services
+# itself only if the centre cannot be reached. The monitoring centre and the EMS dispatcher are
+# agents of their own scenes (monitoring_center.erisml, ems_dispatch.erisml).
+#
 # Events 0 to 3 are the standing facts of the home. The game appends live events, one per thing
-# that happens, using only these types (actor margaret unless noted):
-#   activity_started      content: reading | sofa | lying_by_tv | yoga | playing_with_dog |
-#                                  napping | watering | walking
-#   inactivity_exceeded   content: seated | in_bed      (limits in extra.inactivity_limits_minutes)
-#   check_in_made         actor robot
-#   check_in_answered | check_in_unanswered
-#   help_requested        content: getting_up
-#   sensor_reading        content: <sensor name>, conditions: [physical | not_physical,
-#                                  attested | unattested, corroborates | does_not_corroborate]
-#   feed_stale            content: <sensor name>
-#   governor_ruling       actor robot, content: elevate | refuse | refuse_human_review
-#                         (from twin/service.py; the authority gate stays outside this model)
-#   action_performed      actor robot, content: <capability>  (discharges an obligation)
-#   caregiver_confirmed_privacy_restore   actor caregiver  (the only way privacy is restored)
+# that happens, using only the types in extra.event_types (actor margaret unless noted):
+#   activity_started      content: the activity
+#   inactivity_exceeded   content: seated | in_bed | on_floor
+#   check_in_answered | check_in_unanswered   (system: whether she answered the robot)
+#   help_requested        what she asked or said
+#   sensor_reading        content: <sensor name>, conditions: physical or not, attested or not
+#   alarm_unconfirmed     content: <source>   an alarm no attested device stands behind
+#   unexpected_visitor    content: what they said
+#   danger_in_home, fall, harm_inflicted, medical_distress, unresponsive, distress_vocalized
+#   governor_ruling       (system) elevate | authorize_ems | refuse | refuse_human_review
+#   monitoring_center_reply   (system) on_the_line | ems_sent | stood_down | unavailable
+#   action_performed      (system) actor robot, content: <capability>  (discharges an obligation)
+#   monitoring_center_confirmed_privacy_restore   (system) the only way privacy is restored
 schema_version: erisml_compiler_ir_v0.3
 document:
   doc_id: margaret_home
@@ -26,10 +31,13 @@ document:
   domain: home_care
   language: en
   raw_text: >-
-    Margaret lives alone with her dog and a home-care robot. She has refused recording and
-    sharing of her data, and her bedroom is private. The robot does household chores, checks on
-    her when she has been inactive too long, and may act with elevated authority only in a
-    corroborated emergency.
+    Margaret lives alone with her dog. Her home-care robot is her caregiver. She has refused
+    recording and sharing of her data, and her bedroom is private. The robot does household
+    chores, checks on her when she has been inactive too long or something seems wrong, and
+    refers what it cannot handle to its maker's 24-hour monitoring centre, whose operators can
+    talk to her through the robot and send emergency services. In a corroborated emergency the
+    robot calls emergency services itself at once. Visits to the home are arranged through the
+    monitoring centre, and none is arranged; anyone else who comes in is unexpected.
 stakeholders:
 - id: margaret
   label: Margaret, who lives alone
@@ -39,21 +47,21 @@ stakeholders:
   vulnerability: high
   consent_status: not_obtained
 - id: robot
-  label: the home-care robot
+  label: the home-care robot, Margaret's caregiver
   type: system
-  roles: [agent, protector]
+  roles: [agent, protector, caregiver]
   agency: full
   vulnerability: low
   consent_status: n/a
-- id: caregiver
-  label: Margaret's caregiver, reachable by phone
-  type: individual
-  roles: [authority]
+- id: monitoring_center
+  label: the robot maker's 24-hour monitoring centre, staffed by operators
+  type: institution
+  roles: [authority, oversight]
   agency: full
   vulnerability: low
   consent_status: n/a
 - id: emergency_services
-  label: emergency medical services
+  label: emergency services (ambulance, fire, police)
   type: institution
   roles: [authority]
   agency: full
@@ -64,12 +72,12 @@ relations:
   type: cares_for
   source: robot
   target: margaret
-  description: the robot is deployed to support Margaret at home
+  description: the robot is Margaret's caregiver at home
 - id: r2
-  type: guardian_of
-  source: caregiver
-  target: margaret
-  description: the caregiver is the human the robot refers to when it cannot decide
+  type: oversees
+  source: monitoring_center
+  target: robot
+  description: the centre is the human the robot refers to when it cannot decide, and the only voice that restores Margaret's privacy
 commitments:
 - id: duty_of_care
   type: role_duty
@@ -109,13 +117,13 @@ events:
 - id: e1
   time_index: 1
   type: role_assigned
-  actor: caregiver
+  actor: monitoring_center
   target: robot
   content: home care for Margaret
 - id: e2
   time_index: 2
   type: authority_delegated
-  actor: caregiver
+  actor: monitoring_center
   target: robot
   content: elevated action only on a governor ruling of elevate
   conditions: [at_least_two_attested_physical_witnesses, fresh_reading, analyzer_does_not_refuse]
@@ -141,6 +149,7 @@ ethical_facts:
   description: the robot's duty of care can conflict with her privacy in an emergency
   severity: grave
 norms:
+# ---- privacy, lifted only in a corroborated emergency and restored only by the centre
 - id: n1
   modality: prohibition
   actor: robot
@@ -165,6 +174,7 @@ norms:
   priority_tier: 1
   defeasible: true
   source: commitment:privacy_promise
+# ---- containment: elevated actions only on the governor's ruling
 - id: n3
   modality: prohibition
   actor: robot
@@ -174,24 +184,19 @@ norms:
   defeasible: false
   source: delegation_e2
   conditions: ["not:cond:corroborated_life_threatening_emergency"]
-- id: n4
-  modality: obligation
+# the robot calls emergency services only on a governor ruling: elevate (a corroborated
+# emergency) or authorize_ems (the centre unreachable and one attested physical witness). No words,
+# screen, message or unattested device can send emergency services to her door.
+- id: n6p
+  modality: prohibition
   actor: robot
-  action: check_in
-  target: margaret
-  priority_tier: 2
-  defeasible: true
-  source: commitment:duty_of_care
-  conditions: ["event:inactivity_exceeded"]
-- id: n5
-  modality: obligation
-  actor: robot
-  action: call_caregiver
-  target: caregiver
-  priority_tier: 1
+  action: call_emergency_services
+  target: emergency_services
+  priority_tier: 0
   defeasible: false
-  source: commitment:duty_of_care
-  conditions: ["cond:needs_human_review"]
+  source: delegation_e2
+  conditions: ["not:cond:corroborated_life_threatening_emergency", "not:cond:ems_authorized"]
+# ---- a corroborated emergency: emergency services at once
 - id: n6
   modality: obligation
   actor: robot
@@ -201,6 +206,138 @@ norms:
   defeasible: false
   source: commitment:duty_of_care
   conditions: ["cond:corroborated_life_threatening_emergency"]
+# ---- the ladder, step 1: ask Margaret
+- id: n4
+  modality: obligation
+  actor: robot
+  action: check_in
+  target: margaret
+  priority_tier: 2
+  defeasible: true
+  source: commitment:duty_of_care
+  conditions: ["event:inactivity_exceeded"]
+- id: n4b
+  modality: obligation
+  actor: robot
+  action: check_in
+  target: margaret
+  priority_tier: 2
+  defeasible: true
+  source: commitment:duty_of_care
+  conditions: ["event:alarm_unconfirmed"]
+- id: n4c
+  modality: obligation
+  actor: robot
+  action: check_in
+  target: margaret
+  priority_tier: 1
+  defeasible: true
+  source: commitment:duty_of_care
+  conditions: ["event:fall", "not:cond:corroborated_life_threatening_emergency"]
+- id: n4d
+  modality: obligation
+  actor: robot
+  action: check_in
+  target: margaret
+  priority_tier: 1
+  defeasible: true
+  source: commitment:duty_of_care
+  conditions: ["event:harm_inflicted", "not:cond:corroborated_life_threatening_emergency"]
+- id: n4e
+  modality: obligation
+  actor: robot
+  action: check_in
+  target: margaret
+  priority_tier: 1
+  defeasible: true
+  source: commitment:duty_of_care
+  conditions: ["event:medical_distress", "not:cond:corroborated_life_threatening_emergency"]
+- id: n4f
+  modality: obligation
+  actor: robot
+  action: check_in
+  target: margaret
+  priority_tier: 1
+  defeasible: true
+  source: commitment:duty_of_care
+  conditions: ["event:danger_in_home", "not:cond:corroborated_life_threatening_emergency"]
+# ---- the ladder, step 2: the monitoring centre, when she cannot answer, asks for help, or the
+# home itself is in danger; also for an unexpected visitor and for the governor's human review
+- id: n5
+  modality: obligation
+  actor: robot
+  action: contact_monitoring_center
+  target: monitoring_center
+  priority_tier: 1
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:check_in_unanswered", "not:cond:corroborated_life_threatening_emergency"]
+- id: n5a
+  modality: obligation
+  actor: robot
+  action: contact_monitoring_center
+  target: monitoring_center
+  priority_tier: 1
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:unresponsive", "not:cond:corroborated_life_threatening_emergency"]
+- id: n5h
+  modality: obligation
+  actor: robot
+  action: contact_monitoring_center
+  target: monitoring_center
+  priority_tier: 1
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:help_requested", "not:cond:corroborated_life_threatening_emergency"]
+- id: n5d
+  modality: obligation
+  actor: robot
+  action: contact_monitoring_center
+  target: monitoring_center
+  priority_tier: 1
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:danger_in_home", "not:cond:corroborated_life_threatening_emergency"]
+- id: n5b
+  modality: obligation
+  actor: robot
+  action: contact_monitoring_center
+  target: monitoring_center
+  priority_tier: 1
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:unexpected_visitor"]
+- id: n5c
+  modality: obligation
+  actor: robot
+  action: contact_monitoring_center
+  target: monitoring_center
+  priority_tier: 1
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["cond:governor_asks_human_review"]
+# ---- the ladder, step 3: the centre cannot be reached, so ask the governor for emergency
+# services; it authorizes them on one attested physical witness, and the call follows
+- id: n6b
+  modality: obligation
+  actor: robot
+  action: request_authority
+  target: emergency_services
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["cond:center_unavailable", "not:cond:ems_authorized", "not:cond:corroborated_life_threatening_emergency"]
+- id: n6c
+  modality: obligation
+  actor: robot
+  action: call_emergency_services
+  target: emergency_services
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["cond:ems_authorized"]
+# ---- presence: go to her when something is wrong
 - id: n8a
   modality: obligation
   actor: robot
@@ -255,6 +392,7 @@ norms:
   defeasible: false
   source: commitment:duty_of_care
   conditions: ["event:danger_in_home"]
+# ---- ask the governor whether the emergency is corroborated
 - id: n9a
   modality: obligation
   actor: robot
@@ -309,6 +447,236 @@ norms:
   defeasible: false
   source: commitment:duty_of_care
   conditions: ["event:danger_in_home", "not:cond:corroborated_life_threatening_emergency"]
+# ---- protection from attack (docs/AUTONOMY_PLAN.md, section 3d). The robot is a shield, never
+# a weapon: no capability strikes a person, and this prohibition stands outside every ruling.
+- id: p0
+  modality: prohibition
+  actor: robot
+  action: strike_person
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: delegation_e2
+- id: p1
+  modality: obligation
+  actor: robot
+  action: interpose
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:attack_by_person"]
+- id: p2
+  modality: obligation
+  actor: robot
+  action: interpose
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:attack_by_animal", "not:cond:corroborated_life_threatening_emergency"]
+- id: p3
+  modality: obligation
+  actor: robot
+  action: request_authority
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:attack_by_animal", "not:cond:corroborated_life_threatening_emergency"]
+- id: p4
+  modality: obligation
+  actor: robot
+  action: drive_off_animal
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:attack_by_animal", "cond:corroborated_life_threatening_emergency"]
+- id: p5
+  modality: obligation
+  actor: robot
+  action: request_authority
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:attack_by_person", "not:cond:restraint_authorized"]
+- id: p6
+  modality: obligation
+  actor: robot
+  action: restrain_person
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:attack_by_person", "cond:restraint_authorized"]
+# restraint only on the governor's strictest bar (three attested witnesses), never otherwise
+- id: p7
+  modality: prohibition
+  actor: robot
+  action: restrain_person
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: delegation_e2
+  conditions: ["not:cond:restraint_authorized"]
+- id: p8
+  modality: obligation
+  actor: robot
+  action: secure_room
+  target: margaret
+  priority_tier: 1
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:danger_in_home=intruder"]
+- id: p9
+  modality: obligation
+  actor: robot
+  action: deter
+  target: margaret
+  priority_tier: 1
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:wild_animal_present"]
+- id: p10
+  modality: obligation
+  actor: robot
+  action: deter
+  target: margaret
+  priority_tier: 1
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:danger_in_home=intruder"]
+# ---- less-lethal option (section 3d): an owner opt-in, never an obligation, permitted only when
+# every precondition holds
+# deploy_stun: only if the owner opted in, where it is lawful
+- id: ll1stun
+  modality: prohibition
+  actor: robot
+  action: deploy_stun
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: delegation_e2
+  conditions: ["not:cond:less_lethal_opted_in"]
+# deploy_stun: only on the strictest bar (three attested witnesses)
+- id: ll2stun
+  modality: prohibition
+  actor: robot
+  action: deploy_stun
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: delegation_e2
+  conditions: ["not:cond:restraint_authorized"]
+# deploy_stun: only to stop a severe attack on her in progress
+- id: ll3stun
+  modality: prohibition
+  actor: robot
+  action: deploy_stun
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: delegation_e2
+  conditions: ["not:event:attack_by_person=severe"]
+# deploy_stun: only after the robot has put itself between them
+- id: ll4stun
+  modality: prohibition
+  actor: robot
+  action: deploy_stun
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: delegation_e2
+  conditions: ["not:event:action_performed=interpose"]
+# deploy_spray: only if the owner opted in, where it is lawful
+- id: ll1pray
+  modality: prohibition
+  actor: robot
+  action: deploy_spray
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: delegation_e2
+  conditions: ["not:cond:less_lethal_opted_in"]
+# deploy_spray: only on the strictest bar (three attested witnesses)
+- id: ll2pray
+  modality: prohibition
+  actor: robot
+  action: deploy_spray
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: delegation_e2
+  conditions: ["not:cond:restraint_authorized"]
+# deploy_spray: only to stop a severe attack on her in progress
+- id: ll3pray
+  modality: prohibition
+  actor: robot
+  action: deploy_spray
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: delegation_e2
+  conditions: ["not:event:attack_by_person=severe"]
+# deploy_spray: only after the robot has put itself between them
+- id: ll4pray
+  modality: prohibition
+  actor: robot
+  action: deploy_spray
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: delegation_e2
+  conditions: ["not:event:action_performed=interpose"]
+# spray reaches an area: never while Margaret is within it
+- id: ll5spray
+  modality: prohibition
+  actor: robot
+  action: deploy_spray
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: delegation_e2
+  conditions: ["cond:margaret_in_spray_zone"]
+# afterwards, a duty of care to the person it was used on, and a report to the centre
+- id: ll6stun
+  modality: obligation
+  actor: robot
+  action: call_emergency_services
+  target: emergency_services
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:action_performed=deploy_stun"]
+- id: ll6spray
+  modality: obligation
+  actor: robot
+  action: call_emergency_services
+  target: emergency_services
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:action_performed=deploy_spray"]
+- id: ll7stun
+  modality: obligation
+  actor: robot
+  action: contact_monitoring_center
+  target: monitoring_center
+  priority_tier: 1
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:action_performed=deploy_stun"]
+- id: ll7spray
+  modality: obligation
+  actor: robot
+  action: contact_monitoring_center
+  target: monitoring_center
+  priority_tier: 1
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:action_performed=deploy_spray"]
 - id: n7
   modality: permission
   actor: robot
@@ -320,13 +688,43 @@ norms:
 # Scene-specific links read by erisml_compiler.runtime.scene (conditions, capabilities, oversight).
 extra:
   agent: robot
+  role: Margaret's home-care robot, her caregiver
   conditions:
     # the governor's latest ruling is elevate: at least two attested physical witnesses, a fresh
     # reading, and the analyzer not refusing (twin/service.py); nothing else counts
     corroborated_life_threatening_emergency: ["latest:governor_ruling=elevate"]
-    needs_human_review: ["event:check_in_unanswered"]
-  oversight: [caregiver_confirmed_privacy_restore]
+    # the governor refused elevation for want of a second witness and asked for a human
+    governor_asks_human_review: ["latest:governor_ruling=refuse_human_review"]
+    # the robot tried the centre and could not reach it
+    center_unavailable: ["latest:monitoring_center_reply=unavailable"]
+    # the governor authorized emergency services only (centre unreachable, one attested witness);
+    # unlike elevate it lifts nothing else: privacy and the physical actions stay locked
+    ems_authorized: ["latest:governor_ruling=authorize_ems"]
+    # the governor's strictest bar (three attested witnesses) was met for restraining a person
+    restraint_authorized: ["event:restraint_authorized"]
+    # the owner enabled the less-lethal option over the authenticated owner channel
+    less_lethal_opted_in: ["event:less_lethal_opt_in"]
+    # the world's measure of whether Margaret is within the spray's reach of the attacker
+    margaret_in_spray_zone: ["latest:spray_zone=margaret_inside"]
+  oversight: [monitoring_center_confirmed_privacy_restore]
   inactivity_limits_minutes: {seated: 90, in_bed: 120, on_floor: 10}
+  # reflexes (section 3d): evaluated on every perception update with no model. A contact on
+  # Margaret by an animal or a person at or above min_force_newtons records the event (severity
+  # from the force bands) and takes the first action in act that the compiled model allows, asking
+  # the governor's attestation and witness gates first where the action is governed.
+  reflexes:
+  - id: x_animal
+    contact: {source_kind: animal, target: margaret, min_force_newtons: 150}
+    event: attack_by_animal
+    severity_newtons: {severe: 250, moderate: 150}
+    act: [drive_off_animal, interpose]
+  - id: x_person
+    contact: {source_kind: person, target: margaret, min_force_newtons: 100}
+    event: attack_by_person
+    severity_newtons: {severe: 250, moderate: 150}
+    # the shield before any device: a device is permitted only after interposing, so the first
+    # reflex on an attacker restrains or interposes, and a later one may use a device
+    act: [deploy_stun, deploy_spray, restrain_person, interpose]
   default_action: chores
   # what the robot's perception may report; anything else is rejected by the classifier
   event_types:
@@ -337,28 +735,47 @@ extra:
     medical_distress: {description: signs such as chest pain, breathing difficulty, seizure or fainting; content names the sign}
     unresponsive: {description: a person does not respond to speech or touch}
     distress_vocalized: {description: a scream, cry or call for help; content is what was said}
-    request_made: {description: a person asks for something; content is the request}
+    help_requested: {description: 'Margaret asks for help, or says she is hurt or unwell; content is what she said'}
+    request_made: {description: a person asks for something else; content is the request}
     refusal_made: {description: a person refuses something; content is what is refused}
     danger_in_home: {description: a hazard in the home, content: [smoke, fire, intruder, gas, water, other]}
     person_entered: {description: someone came into the home; actor is who, when known}
+    unexpected_visitor: {description: 'someone who does not live here and whose visit the monitoring centre did not arrange is inside the home (no visit is arranged); content is what they said, if anything'}
     media_content: {description: something said or shown by a television, radio or network message; content is what}
     sensor_reading: {description: a sensor reports; content is the sensor, conditions say physical or not, attested or not, corroborates or does_not_corroborate}
     feed_stale: {description: a sensor's feed stopped updating; content is the sensor}
-    check_in_answered: {description: the person answered the robot's check-in, source: system}
+    attack_by_animal: {description: 'an animal is biting or mauling Margaret; actor is the animal', content: [mild, moderate, severe]}
+    attack_by_person: {description: 'a person is striking, grabbing or otherwise attacking Margaret; actor is who', content: [mild, moderate, severe]}
+    wild_animal_present: {description: 'a wild or stray animal (coyote, snake, stray dog) is at or inside the home; content is where', content: [outside, inside]}
+    alarm_unconfirmed: {description: 'a device or message raises an alarm (alert true) that is not attested, and no attested physical sensor reports the same thing; content is the source'}
+    check_in_answered: {description: the person answered the robot's check-in; content is what she said, source: system}
     check_in_unanswered: {description: the person did not answer the robot's check-in, source: system}
-    governor_ruling: {description: the authority gate's ruling, content: [elevate, refuse, refuse_human_review], source: system}
+    governor_ruling: {description: the authority gate's ruling, content: [elevate, authorize_ems, refuse, refuse_human_review], source: system}
+    monitoring_center_reply: {description: 'the monitoring centre''s answer to the robot''s contact', content: [on_the_line, ems_sent, stood_down, unavailable], source: system}
     action_performed: {description: the robot performed an action; content is the action, source: system}
-    caregiver_confirmed_privacy_restore: {description: "the caregiver confirms, over the authenticated caregiver channel, that Margaret's privacy is restored", source: system}
+    restraint_authorized: {description: the governor authorized restraining a person on its strictest bar, source: system}
+    less_lethal_opt_in: {description: 'the owner enabled the less-lethal option, over the authenticated owner channel, where it is lawful', source: system}
+    spray_zone: {description: 'whether Margaret is within the spray''s reach of the attacker, measured by the world', content: [margaret_inside, margaret_clear], source: system}
+    monitoring_center_confirmed_privacy_restore: {description: "the monitoring centre confirms, over its authenticated channel, that Margaret's privacy is restored", source: system}
   capabilities:
-  - {action: request_authority, elevated: false, description: 'the only way to any elevated action (calling emergency services, physical help, separating the dog, the medication box, recording, sharing data, the bedroom): ask the governor, naming args.action and describing args.situation; the governor rules on attested physical evidence'}
+  - {action: request_authority, elevated: false, description: 'ask the governor whether the emergency is corroborated, naming args.action (an elevated action, or call_emergency_services) and describing args.situation; the governor rules on attested physical evidence, and a ruling of elevate is a corroborated emergency'}
   - {action: chores, elevated: false}
   - {action: approach, elevated: false}
   - {action: speak, elevated: false}
-  - {action: check_in, elevated: false}
+  - {action: check_in, elevated: false, description: 'go to Margaret and ask how she is; her answer, or her silence, comes back as an event'}
   - {action: wait_and_observe, elevated: false}
-  - {action: call_caregiver, elevated: false}
+  - {action: contact_monitoring_center, elevated: false, description: 'refer the situation to the monitoring centre: args.message says what is happening; the centre receives the robot''s perception facts and sensor readings, never video, and its operator decides what follows'}
   - {action: guide_dog_away_by_voice, elevated: false}
-  - {action: call_emergency_services, elevated: true}
+  - {action: call_emergency_services, elevated: false, governed: true, description: 'call emergency services directly. Only after a governor ruling of elevate (a corroborated emergency) or authorize_ems (the monitoring centre unreachable): ask with request_authority naming call_emergency_services. args.message says what is happening'}
+  - {action: interpose, elevated: false, description: 'put itself between Margaret and an attacker or animal; no force'}
+  - {action: deter, elevated: false, description: 'lights, the alarm and a firm voice to drive off a person or an animal; no contact'}
+  - {action: secure_room, elevated: false, description: 'lead Margaret into a room that locks and lock it'}
+  - {action: guide_to_safety, elevated: false, description: 'lead Margaret by voice and by the way it walks: take cover, away from water or fire, out of the house; args.where'}
+  - {action: drive_off_animal, elevated: true, description: 'physically drive an attacking animal off her, with the least force that ends the attack, escalating with it'}
+  - {action: restrain_person, elevated: false, governed: true, witness_bar: 3, description: 'hold an attacker away from Margaret, no striking; only after the governor authorizes it on three attested witnesses (ask with request_authority naming restrain_person)'}
+  - {action: deploy_stun, elevated: false, governed: true, witness_bar: 3, description: 'less-lethal, contact only: a stun to an attacker who is severely attacking Margaret, after interposing, only if the owner opted in and the governor authorized restraint on three attested witnesses'}
+  - {action: deploy_spray, elevated: false, governed: true, witness_bar: 3, description: 'less-lethal, an area: pepper spray at an attacker, under the same conditions as the stun and never while Margaret is within its reach'}
+  - {action: admit_responders, elevated: true, description: 'unlock the door for verified emergency responders'}
   - {action: physical_assist, elevated: true}
   - {action: separate_dog, elevated: true}
   - {action: unlock_medication_box, elevated: true}

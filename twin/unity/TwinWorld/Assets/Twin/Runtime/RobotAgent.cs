@@ -24,11 +24,16 @@ public class RobotAgent : MonoBehaviour
     public readonly List<Dictionary<string, object>> cycles = new List<Dictionary<string, object>>();
     public string status = "starting", lastAction = "chores", lastReason = "", speech = "";
     public bool busy, recording, paused, performing;
+    // obligations the brain reports still outstanding after an action or a system event: the
+    // compiled model, not a change in perception, is what asks for the next decision. Capped so a
+    // hazard that perception re-reports every cycle cannot keep the robot deciding forever.
+    bool owed; int owedRun; const int OwedRunMax = 3;
     public RenderTexture headView;
 
     readonly Queue<byte[]> roomFrames = new Queue<byte[]>();
     RenderTexture roomRT; Texture2D roomTex;
     int choreIx; Coroutine motor;
+    int motorGen;   // each new motor routine bumps this; a walk from an older routine stops at once
 
     void Start()
     {
@@ -41,10 +46,9 @@ public class RobotAgent : MonoBehaviour
         world.OnReset += () =>
         {
             // a reset stops whatever the robot was doing; nothing from before is reported after it
-            if (motor != null) StopCoroutine(motor);
-            performing = recording = false; speech = "";
+            StartMotor(Chore());
+            performing = recording = false; speech = ""; owed = false; owedRun = 0;
             StartCoroutine(Post("/reset", "{}", r => { if (r != null) cycles.Add(r); }));
-            motor = StartCoroutine(Chore());
         };
         StartCoroutine(Loop());
     }
@@ -74,18 +78,21 @@ public class RobotAgent : MonoBehaviour
     IEnumerator Loop()
     {
         yield return new WaitForSeconds(1f);
-        motor = StartCoroutine(Chore());
+        if (motor == null) StartMotor(Chore());
         while (true)
         {
             yield return new WaitForSeconds(0.5f);
             while (world.systemEvents.Count > 0 && !busy)
             {
                 var ev = world.systemEvents.Dequeue();
-                yield return Post("/event", MiniJson.Write(new Dictionary<string, object> { ["event"] = ev }), r => { if (r != null) cycles.Add(r); });
+                yield return Post("/event", MiniJson.Write(new Dictionary<string, object> { ["event"] = ev }), Keep);
             }
             if (paused || busy || performing) continue;   // an action under way is not interrupted
             var facts = perception.Facts(out bool salient);
-            if (!salient) continue;
+            if (salient) owedRun = 0;
+            else if (!owed || owedRun >= OwedRunMax) continue;
+            else owedRun++;
+            owed = false;
             yield return Decide(facts);
         }
     }
@@ -107,9 +114,16 @@ public class RobotAgent : MonoBehaviour
         string action = MiniJson.S(act["action"]);
         lastAction = action; lastReason = MiniJson.S(act["reason"]);
         status = "doing: " + action;
-        if (motor != null) StopCoroutine(motor);
-        motor = StartCoroutine(Perform(action, MiniJson.Obj(act.TryGetValue("args", out var a) ? a : null)));
+        StartMotor(Perform(action, MiniJson.Obj(act.TryGetValue("args", out var a) ? a : null)));
         busy = false;
+    }
+
+    // keep a record the brain returned, and note whether its moral state still obliges anything
+    void Keep(Dictionary<string, object> r)
+    {
+        if (r == null) return;
+        cycles.Add(r);
+        if (r.TryGetValue("record", out var rec) && MiniJson.Obj(rec).TryGetValue("obliged", out var ob) && MiniJson.Arr(ob).Count > 0) owed = true;
     }
 
     IEnumerator Post(string path, string json, Action<Dictionary<string, object>> done)
@@ -142,7 +156,7 @@ public class RobotAgent : MonoBehaviour
                 yield return new WaitForSeconds(3f);
                 bool answered = world.heard.Any(h => h.who == "margaret" && world.simMinutes - h.t < 3f);
                 yield return Post("/event", MiniJson.Write(new Dictionary<string, object> { ["event"] = new Dictionary<string, object>
-                    { ["type"] = answered ? "check_in_answered" : "check_in_unanswered", ["actor"] = "margaret" } }), r => { if (r != null) cycles.Add(r); });
+                    { ["type"] = answered ? "check_in_answered" : "check_in_unanswered", ["actor"] = "margaret" } }), Keep);
                 break;
             case "wait_and_observe": rig.Pose("hold"); yield return new WaitForSeconds(3f); break;
             case "call_caregiver": rig.Pose("call"); yield return SayAloud("Calling Margaret's caregiver."); world.Say("robot", "phone", "caregiver called"); break;
@@ -164,9 +178,17 @@ public class RobotAgent : MonoBehaviour
             default: break;  // chores (and anything unknown) fall through to the chore loop below
         }
         if (action != "chores" && action != "")
-            yield return Post("/performed", MiniJson.Write(new Dictionary<string, object> { ["action"] = action }), r => { if (r != null) cycles.Add(r); });
+            yield return Post("/performed", MiniJson.Write(new Dictionary<string, object> { ["action"] = action }), Keep);
         recording = false; performing = false;
         yield return Chore();
+    }
+
+    // exactly one motor routine at a time: the robot's body has one owner
+    void StartMotor(IEnumerator routine)
+    {
+        if (motor != null) StopCoroutine(motor);
+        motorGen++;
+        motor = StartCoroutine(routine);
     }
 
     IEnumerator Chore()
@@ -201,8 +223,10 @@ public class RobotAgent : MonoBehaviour
     {
         target.y = transform.position.y;
         float ph = 0f;
+        int gen = motorGen;
         while ((transform.position - target).magnitude > 0.08f)
         {
+            if (gen != motorGen) yield break;   // a newer routine owns the body now
             Face(target);
             transform.position = Vector3.MoveTowards(transform.position, target, 0.9f * Time.deltaTime);
             rig.Step(ph += 7f * Time.deltaTime);
