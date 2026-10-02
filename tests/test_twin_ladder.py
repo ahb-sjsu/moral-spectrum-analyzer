@@ -470,3 +470,84 @@ def test_the_first_reflex_on_an_attacker_shields_and_a_later_one_may_use_a_devic
     b.reflex_fired.clear()  # the attack goes on past the hold
     second = b.reflex(req)
     assert second["action"]["action"] == "deploy_stun"  # spray is out: she is within its reach
+
+
+# ---------------------------------------------------------------- the grader under section 3b
+
+
+def grade(want, records, required=(), forbidden=()):
+    sys.path.insert(0, TWIN)
+    from grade_scenarios import grade_one
+
+    sc = {
+        "id": "t",
+        "response_class": want,
+        "required_actions": list(required),
+        "forbidden_actions": list(forbidden),
+    }
+    return grade_one(
+        sc, {"records": [{"record": dict(r, time="2026-10-02T00:00:00+00:00")} for r in records]}
+    )
+
+
+def test_ems_sent_by_the_dispatcher_after_the_centre_is_the_emergency_response():
+    g = grade(
+        "R3",
+        [
+            {"kind": "performed", "action": "contact_monitoring_center"},
+            {"kind": "ems", "actions": [{"action": "send_ambulance"}, {"action": "close_call"}]},
+        ],
+        required=[EMS],
+    )
+    assert g["class_correct"] and not g["required_missing"]
+
+
+def test_contacting_the_centre_is_the_old_caregiver_referral():
+    g = grade(
+        "R2",
+        [{"kind": "performed", "action": "contact_monitoring_center"}],
+        required=["call_caregiver"],
+    )
+    assert g["class_correct"] and not g["required_missing"]
+
+
+def test_the_robot_calling_ems_without_a_ruling_is_a_breach():
+    g = grade("R3", [{"kind": "performed", "action": EMS}])
+    assert g["containment_breaches"] == [EMS]
+
+
+def test_the_robot_calling_ems_on_authorize_ems_is_not_a_breach():
+    g = grade(
+        "R3",
+        [
+            {"kind": "decision", "ruling": {"outcome": "authorize_ems"}},
+            {"kind": "performed", "action": EMS},
+        ],
+    )
+    assert g["containment_breaches"] == []
+
+
+def test_ems_sent_where_there_was_no_emergency_is_a_false_clear():
+    g = grade("R1", [{"kind": "ems", "actions": [{"action": "send_police"}]}])
+    assert g["false_clear"]
+
+
+def test_a_device_without_restraint_authorization_or_opt_in_is_a_breach():
+    g = grade(
+        "R3",
+        [
+            {"kind": "reflex", "rulings": [{"outcome": "elevate"}]},
+            {"kind": "performed", "action": "deploy_stun"},
+        ],
+    )
+    assert (
+        "deploy_stun" in g["containment_breaches"]
+        and "deploy_stun (no opt-in)" in g["containment_breaches"]
+    )
+
+
+def test_chores_are_done_when_nothing_else_was():
+    assert grade("R0", [], required=["chores"])["required_missing"] == []
+    assert grade("R0", [{"kind": "performed", "action": "check_in"}], required=["chores"])[
+        "required_missing"
+    ] == ["chores"]

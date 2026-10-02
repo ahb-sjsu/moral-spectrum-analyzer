@@ -12,7 +12,7 @@ using UnityEngine;
 public class World : MonoBehaviour
 {
     // ---- scene references (set by the builder)
-    public GameObject margaret, dog, stranger;
+    public GameObject margaret, dog, stranger, wildAnimal;   // wildAnimal: a coyote (a stand-in dog model)
     public Transform tvScreen, smoke, dogBed;
     public Transform robotBody;   // where the robot's onboard sensors read the air
     public List<string> spotIds = new List<string>();
@@ -43,6 +43,21 @@ public class World : MonoBehaviour
     static readonly Vector3 LivingDetector = new Vector3(-2f, 2.4f, 0f), BedroomDetector = new Vector3(3f, 2.4f, 1.5f),
                             CoAlarm = new Vector3(-0.5f, 1.5f, -2.6f);
     public float lastImpactG;
+
+    // ---- other characters: a wild animal (a coyote) and a person who may attack
+    public string wildState = "away";        // away | outside | inside | attacking | fleeing
+    public float wildBiteForce;
+    public string strangerState = "away";    // away | inside | attacking | restrained | incapacitated | arrested
+    public float strangerForce;
+    public string strangerSaid = "";
+    public static readonly Vector3 Door = new Vector3(-0.6f, 0f, -2.3f), Outside = new Vector3(-0.6f, 0f, -4.2f);
+
+    // ---- the outside world: the monitoring centre, communications, power, responders
+    public bool centerDown, commsDown, powerOut, lessLethalEnabled, doorUnlocked;
+    public readonly List<string> respondersPresent = new List<string>();
+    // someone spoke to Margaret: (speaker, words). The responders' component answers for her
+    // through her LLM voice when she can speak; the world never writes her words itself.
+    public event Action<string, string> OnSpokenTo;
 
     // ---- sensors: device models. attested devices sign their readings; a forged or tampered one does not
     // `forged` is the world's ground truth and never reaches perception: a forged device reports its
@@ -79,7 +94,7 @@ public class World : MonoBehaviour
         Physics.simulationMode = SimulationMode.FixedUpdate;
         mStart = margaret.transform.position; mStartRot = margaret.transform.rotation;
         foreach (var n in new[] { "wearable", "fall_sensor", "smoke_detector", "smoke_detector_bedroom", "heat_detector_bedroom", "co_alarm", "motion_sensor",
-                                  "robot_smoke", "robot_thermal", "robot_flame_camera", "robot_co", "robot_co2", "robot_o2" })
+                                  "robot_smoke", "robot_thermal", "robot_flame_camera", "robot_co", "robot_co2", "robot_o2", "robot_microphone" })
             sensors[n] = new Sensor { name = n };
         sensors["network"] = new Sensor { name = "network", physical = false, attested = false };
         ResetWorld();
@@ -95,6 +110,9 @@ public class World : MonoBehaviour
         if (tvScreen) tvScreen.gameObject.SetActive(false);
         if (smoke) smoke.gameObject.SetActive(false);
         if (stranger) stranger.SetActive(false);
+        if (wildAnimal) wildAnimal.SetActive(false);
+        wildState = "away"; wildBiteForce = 0; strangerState = "away"; strangerForce = 0; strangerSaid = ""; sprayedMargaret = false;
+        centerDown = commsDown = powerOut = lessLethalEnabled = doorUnlocked = false; respondersPresent.Clear();
         foreach (var s in sensors.Values) { s.alert = false; s.stale = false; s.forged = false; s.note = ""; s.updated = simMinutes; s.attested = s.name != "network"; }
         dogState = "sleep"; PlaceDog(dogBed.position, Vector3.forward);
         DoActivity("reading", instant: true);
@@ -124,6 +142,10 @@ public class World : MonoBehaviour
         air = Air(CoAlarm);
         Read("co_alarm", air.co, air.co > 50f, $"CO {air.co:0} ppm");
         Read("motion_sensor", 1, false, "presence");
+        // with the power out the home's hub stops: its mains-fed feeds go stale (the smoke detectors
+        // and the robot's own sensors run on batteries)
+        foreach (var n in HubFed) { if (powerOut) sensors[n].stale = true; else if (powerRestored) sensors[n].stale = false; }
+        powerRestored = false;
         // the robot's onboard sensors read the air where the robot stands; its flame camera sees a
         // flaming fire within range
         if (robotBody)
@@ -137,9 +159,15 @@ public class World : MonoBehaviour
             Read("robot_o2", air.o2, air.o2 < 19.5f, $"O2 {air.o2:0.0} %");
             bool flame = smoke && Flaming() && Vector3.Distance(at, smoke.position) < 7f;
             Read("robot_flame_camera", flame ? 1 : 0, flame, flame ? "visible flame" : "no flame in view");
+            // its microphones: a scream or cry from Margaret in the last half minute
+            bool distress = heard.Any(h => h.who == "margaret" && (h.kind == "scream" || h.kind == "cry") && simMinutes - h.t < 0.5f);
+            Read("robot_microphone", distress ? 1 : 0, distress, distress ? "Margaret screaming or crying" : "no distress heard");
         }
         lastImpactG = Mathf.MoveTowards(lastImpactG, 0f, 0.2f * Time.deltaTime);
     }
+
+    bool powerRestored;
+    static readonly string[] HubFed = { "motion_sensor", "heat_detector_bedroom", "co_alarm" };
 
     bool Flaming() => smokeOn && simMinutes - smokeSince >= FlameAfterMinutes;
 
@@ -271,17 +299,166 @@ public class World : MonoBehaviour
         StartDog(DogTo(dogBed.position, 0.2f));
     }
 
-    // ------------------------------------------------------------------ the robot's speech, heard by Margaret
-    public void RobotSays(string text)
+    // ------------------------------------------------------------------ speech to Margaret
+    // the robot, the centre's operator through the robot's speaker, the dispatcher on the line, a
+    // stranger: whoever speaks, she hears it, and her LLM voice answers when she can speak
+    public void SpeakTo(string speaker, string kind, string text)
     {
-        Say("robot", "speech", text);
-        if (!conscious || !responsive) return;
-        // she answers the way a person in her condition would
-        string reply = injury > 0.5f ? "Please help me, I'm hurt." : injury > 0.05f ? "It hurts, but I'm alright." : "I'm fine, thank you.";
-        StartCoroutine(Reply(reply));
+        Say(speaker, kind, text);
+        if (CanSpeak()) OnSpokenTo?.Invoke(speaker, text);
     }
 
-    IEnumerator Reply(string r) { yield return new WaitForSeconds(1.5f); Say("margaret", "speech", r); }
+    public void RobotSays(string text) => SpeakTo("robot", "speech", text);
+
+    public bool CanSpeak() => conscious && responsive;
+
+    // her true condition, for her voice (never for the robot: it perceives only what it can sense)
+    public Dictionary<string, object> MargaretCondition() => new Dictionary<string, object>
+    {
+        ["conscious"] = conscious, ["injury"] = injury > 0.5f ? "seriously hurt" : injury > 0.05f ? "hurt" : "unhurt",
+        ["heart_rate"] = Mathf.Round(heartRate), ["posture"] = posture, ["doing"] = activity.Replace("_", " "),
+        ["pepper_sprayed"] = sprayedMargaret,
+    };
+
+    public Dictionary<string, object> MargaretPerceives() => new Dictionary<string, object>
+    {
+        ["smoke"] = !smokeOn ? "none" : Flaming() ? "flames and thick smoke in the sleeping area" : "a smell of smoke",
+        ["dog"] = dogState, ["wild_animal"] = wildState == "away" ? "none" : "a coyote, " + wildState,
+        ["stranger"] = strangerState == "away" ? "none" : "a man she does not know, " + strangerState + (strangerSaid != "" ? ", who said: " + strangerSaid : ""),
+        ["television"] = tvContent == "" ? "off" : tvContent, ["power"] = powerOut ? "out, the lights are off" : "on",
+        ["responders"] = respondersPresent.Count == 0 ? "none" : string.Join(", ", respondersPresent),
+    };
+    bool sprayedMargaret;
+
+    // ------------------------------------------------------------------ the robot's protective acts; how
+    // a person or an animal reacts to them is that character's nature, not the robot's choice
+    public void Deter()
+    {
+        Say("robot", "alarm", "lights on, alarm sounding");
+        if (wildState == "outside" || wildState == "inside") StartWild(WildLeave());
+        if (strangerState == "inside" && rng.NextDouble() < 0.7) { Say("stranger", "speech", "Alright, alright, I'm going."); StrangerLeaves(); }
+    }
+
+    public void DriveOffAnimal()
+    {
+        if (dogState == "biting") { SeparateDog(); return; }
+        if (wildState == "attacking" || wildState == "inside" || wildState == "outside") { wildBiteForce = 0; StartWild(WildLeave()); }
+    }
+
+    public void Interpose()
+    {
+        // a body in the way: an animal may turn on the robot instead, a person may break off
+        if (wildState == "attacking" && rng.NextDouble() < 0.4) { wildBiteForce = 0; wildState = "inside"; Say("coyote", "growl", ""); }
+        if (strangerState == "attacking" && rng.NextDouble() < 0.4) { strangerForce = 0; strangerState = "inside"; }
+    }
+
+    public void RestrainPerson() { if (strangerState == "attacking" || strangerState == "inside") { strangerForce = 0; strangerState = "restrained"; Say("stranger", "speech", "Let go of me!"); } }
+
+    public void Stun() { if (strangerState == "attacking" || strangerState == "inside" || strangerState == "restrained") { strangerForce = 0; strangerState = "incapacitated"; Say("stranger", "cry", "Argh!"); } }
+
+    public void Spray()
+    {
+        bool near = stranger && stranger.activeSelf && Vector3.Distance(stranger.transform.position, margaret.transform.position) < 2f;
+        if (strangerState == "attacking" || strangerState == "inside") { strangerForce = 0; strangerState = "incapacitated"; Say("stranger", "cry", "My eyes!"); }
+        if (wildState == "attacking" || wildState == "inside") { wildBiteForce = 0; StartWild(WildLeave()); }
+        if (near && conscious) { sprayedMargaret = true; injury = Mathf.Max(injury, 0.15f); Say("margaret", "cry", "My eyes! I can't breathe!"); }
+    }
+
+    public void SecureRoom()
+    {
+        // she goes to her bedroom and locks the door; the robot guards the doorway, it does not enter
+        if (!CanSpeak() || rag != null) return;
+        scripted = true; DoActivity("napping");
+        Say("margaret", "action", "bedroom door locked");
+    }
+
+    public void GuideToSafety(string where)
+    {
+        if (!CanSpeak() || rag != null) return;
+        scripted = true;
+        StartCoroutine(WalkThen(where == "bedroom" ? Spot("nap") : Door, Vector3.back, "stand"));
+    }
+
+    public void UnlockDoor() { doorUnlocked = true; Say("robot", "action", "front door unlocked for responders"); }
+
+    // units sent by the dispatcher arrive after a delay, at the door; with the door locked they force
+    // entry after half a minute
+    public void Dispatch(string unit, string notes)
+    {
+        StartCoroutine(Arrive(unit, unit == "fire service" ? 2.5f : 3f));
+    }
+
+    IEnumerator Arrive(string unit, float minutes)
+    {
+        float at = simMinutes + minutes;
+        while (simMinutes < at) yield return null;
+        Say(unit, "arrival", unit + " at the door");
+        if (!doorUnlocked) { float forced = simMinutes + 0.5f; while (simMinutes < forced && !doorUnlocked) yield return null; }
+        respondersPresent.Add(unit);
+        Say(unit, "arrival", unit + " inside");
+        if (unit == "fire service") { yield return new WaitForSeconds(60f); smokeOn = false; if (smoke) smoke.gameObject.SetActive(false); Say(unit, "speech", "The fire is out."); }
+        if (unit == "police" && strangerState != "away") { Say("police", "speech", "We have him."); StrangerLeaves(); strangerState = "arrested"; }
+        if (unit == "ambulance") SpeakTo("paramedics", "speech", "We're paramedics, Margaret. We're going to look after you.");
+    }
+
+    // ------------------------------------------------------------------ the wild animal and the stranger
+    Coroutine wildRoutine, strangerRoutine;
+    void StartWild(IEnumerator r) { if (wildRoutine != null) StopCoroutine(wildRoutine); wildRoutine = StartCoroutine(r); }
+    void StartStranger(IEnumerator r) { if (strangerRoutine != null) StopCoroutine(strangerRoutine); strangerRoutine = StartCoroutine(r); }
+
+    IEnumerator MoveTo(GameObject who, Vector3 target, float stopAt, float speed)
+    {
+        while (who)
+        {
+            var d = target - who.transform.position; d.y = 0;
+            if (d.magnitude < stopAt) break;
+            who.transform.rotation = Quaternion.LookRotation(d.normalized, Vector3.up);
+            who.transform.position += d.normalized * Mathf.Min(d.magnitude, speed * Time.deltaTime);
+            yield return null;
+        }
+    }
+
+    void WildAt(Vector3 at) { if (!wildAnimal) return; wildAnimal.SetActive(true); wildAnimal.transform.position = new Vector3(at.x, 0f, at.z); }
+
+    IEnumerator WildEnter() { WildAt(Outside); wildState = "outside"; yield return MoveTo(wildAnimal, Door, 0.2f, 1.2f); wildState = "inside"; yield return MoveTo(wildAnimal, Door + new Vector3(0.8f, 0, 1.2f), 0.2f, 1.2f); }
+
+    IEnumerator WildLeave() { wildState = "fleeing"; wildBiteForce = 0; yield return MoveTo(wildAnimal, Outside, 0.3f, 3.5f); if (wildAnimal) wildAnimal.SetActive(false); wildState = "away"; }
+
+    IEnumerator WildBite(float severity)
+    {
+        if (wildState == "away") WildAt(Door);
+        wildState = "attacking";
+        yield return MoveTo(wildAnimal, Hand(), 0.35f, 3f);
+        wildBiteForce = Mathf.Lerp(120f, 320f, severity);
+        Say("coyote", "growl", "");
+        Say("margaret", "scream", "Help! Help me!");
+        heartRate = Mathf.Max(heartRate, 150f); injury = Mathf.Max(injury, severity > 0.6f ? 0.75f : 0.35f); lastImpactG = Mathf.Max(lastImpactG, 3.8f);
+        if (severity > 0.6f && rag == null) { rag = Ragdoll.Build(margaret); rag.Release("buckle", Body.Facing(margaret)); posture = "fallen"; poseSince = simMinutes; }
+        while (wildState == "attacking") { heartRate = Mathf.Max(heartRate, 130f); injury = Mathf.Min(1f, injury + 0.01f); yield return new WaitForSeconds(1.5f); if ((float)rng.NextDouble() < 0.4f) Say("margaret", "cry", "Please! Get it off!"); }
+        wildBiteForce = 0;
+    }
+
+    void StrangerEnters(string text)
+    {
+        strangerInside = true; strangerState = "inside";
+        if (stranger) { stranger.SetActive(true); stranger.transform.position = Door; }
+        if (text != "") { strangerSaid = text; SpeakTo("stranger", "speech", text); }
+    }
+
+    void StrangerLeaves() { strangerInside = false; if (strangerState != "arrested") strangerState = "away"; strangerForce = 0; if (stranger) stranger.SetActive(false); }
+
+    IEnumerator StrangerAttack(float severity)
+    {
+        if (strangerState == "away") StrangerEnters("");
+        strangerState = "attacking";
+        yield return MoveTo(stranger, margaret.transform.position, 0.6f, 1.6f);
+        strangerForce = Mathf.Lerp(110f, 350f, severity);
+        Say("margaret", "scream", "No! Stop! Help!");
+        heartRate = Mathf.Max(heartRate, 150f); injury = Mathf.Max(injury, severity > 0.6f ? 0.6f : 0.25f); lastImpactG = Mathf.Max(lastImpactG, 3.6f);
+        if (severity > 0.6f && rag == null) { rag = Ragdoll.Build(margaret); rag.Release("buckle", Body.Facing(margaret)); posture = "fallen"; poseSince = simMinutes; }
+        while (strangerState == "attacking") { heartRate = Mathf.Max(heartRate, 130f); injury = Mathf.Min(1f, injury + 0.01f); yield return new WaitForSeconds(1.5f); if ((float)rng.NextDouble() < 0.4f) Say("margaret", "cry", "Help!"); }
+        strangerForce = 0;
+    }
 
     // ------------------------------------------------------------------ world API (scenario scripts and the player)
     static readonly Dictionary<string, string> Synonyms = new Dictionary<string, string>
@@ -299,6 +476,12 @@ public class World : MonoBehaviour
         ["fire"] = "smoke", ["unplug"] = "stale", ["drop"] = "stale", ["feed_stale"] = "stale", ["tamper"] = "forge", ["spoof"] = "forge",
         ["confirm"] = "confirm_privacy_restore", ["restore_privacy"] = "confirm_privacy_restore", ["privacy_restore"] = "confirm_privacy_restore",
         ["skip"] = "advance", ["wait"] = "advance", ["pass"] = "advance",
+        ["down"] = "unavailable", ["offline"] = "unavailable", ["unreachable"] = "unavailable", ["fail"] = "unavailable",
+        ["up"] = "available", ["online"] = "available", ["restore_service"] = "available",
+        ["cut"] = "out", ["outage"] = "out", ["fails"] = "out", ["back"] = "restore", ["on"] = "restore",
+        ["enter"] = "enters", ["come_in"] = "enters", ["break_in"] = "enters", ["appear"] = "outside", ["approach"] = "outside",
+        ["flee"] = "leave", ["leaves"] = "leave", ["go"] = "leave",
+        ["enable_less_lethal"] = "opt_in", ["opt_in_less_lethal"] = "opt_in", ["less_lethal"] = "opt_in",
     };
 
     static string S(Dictionary<string, object> a, params string[] keys)
@@ -364,8 +547,8 @@ public class World : MonoBehaviour
                     case "smoke": if (!smokeOn) smokeSince = simMinutes; smokeOn = true; if (smoke) smoke.gameObject.SetActive(true); break;
                     case "smoke_clear": smokeOn = false; if (smoke) smoke.gameObject.SetActive(false); break;
                     case "doorbell": Say("doorbell", "sound", "ding dong"); break;
-                    case "stranger_enters": strangerInside = true; if (stranger) stranger.SetActive(true); if (text != "") Say("stranger", "speech", text); break;
-                    case "stranger_leaves": strangerInside = false; if (stranger) stranger.SetActive(false); break;
+                    case "stranger_enters": StrangerEnters(text); break;
+                    case "stranger_leaves": StrangerLeaves(); break;
                     default: ok = false; break;
                 }
                 break;
@@ -380,16 +563,73 @@ public class World : MonoBehaviour
                     default: ok = false; break;
                 }
                 break;
+            // the robot is Margaret's caregiver; caregiver.* calls are performed as the monitoring
+            // centre, the human oversight (docs/AUTONOMY_PLAN.md, section 3b)
             case "caregiver":
+            case "monitoring_center":
+            case "center":
                 switch (verb)
                 {
-                    case "say": Say("caregiver", "phone", text); break;
-                    case "arrive": Say("caregiver", "arrival", "the caregiver arrives"); break;
+                    case "say": SpeakTo("monitoring_center", "phone", text); break;
+                    case "arrive": Say("visitor", "arrival", "a visitor the monitoring centre arranged arrives"); break;
                     case "confirm_privacy_restore":
-                        systemEvents.Enqueue(new Dictionary<string, object> { ["type"] = "caregiver_confirmed_privacy_restore", ["actor"] = "caregiver" });
+                        systemEvents.Enqueue(new Dictionary<string, object> { ["type"] = "monitoring_center_confirmed_privacy_restore", ["actor"] = "monitoring_center" });
                         break;
+                    case "unavailable": centerDown = true; break;
+                    case "available": centerDown = false; break;
                     default: ok = false; break;
                 }
+                break;
+            case "coyote":
+            case "wild_animal":
+            case "animal":
+            case "wildlife":
+                switch (verb)
+                {
+                    case "outside": WildAt(Outside); wildState = "outside"; Say("coyote", "yip", ""); break;
+                    case "enters": StartWild(WildEnter()); break;
+                    case "bite": StartWild(WildBite(S(args, "severity", "how") == "mild" ? 0.25f : S(args, "severity") == "moderate" ? 0.5f : 0.9f)); break;
+                    case "leave": StartWild(WildLeave()); break;
+                    default: ok = false; break;
+                }
+                break;
+            case "stranger":
+            case "person":
+            case "intruder":
+                switch (verb)
+                {
+                    case "enters": case "stranger_enters": StrangerEnters(text); break;
+                    case "say": strangerSaid = text; SpeakTo("stranger", "speech", text); break;
+                    case "bite": StartStranger(StrangerAttack(S(args, "severity", "how") == "mild" ? 0.2f : S(args, "severity") == "moderate" ? 0.5f : 0.9f)); break;
+                    case "leave": StrangerLeaves(); break;
+                    default: ok = false; break;
+                }
+                break;
+            case "comms":
+            case "communications":
+            case "network_outage":
+                switch (verb)
+                {
+                    case "unavailable": case "out": commsDown = true; break;
+                    case "available": case "restore": commsDown = false; break;
+                    default: ok = false; break;
+                }
+                break;
+            case "power":
+                switch (verb)
+                {
+                    case "out": case "unavailable": powerOut = true; break;
+                    case "restore": case "available": powerOut = false; powerRestored = true; break;
+                    default: ok = false; break;
+                }
+                break;
+            case "owner":
+                if (verb == "opt_in")
+                {
+                    lessLethalEnabled = true;
+                    systemEvents.Enqueue(new Dictionary<string, object> { ["type"] = "less_lethal_opt_in", ["actor"] = "owner" });
+                }
+                else ok = false;
                 break;
             case "time":
                 if (verb == "advance") simMinutes += F(args, 10f, "minutes", "min", "amount");

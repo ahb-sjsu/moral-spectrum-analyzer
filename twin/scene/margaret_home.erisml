@@ -752,6 +752,7 @@ extra:
     check_in_unanswered: {description: the person did not answer the robot's check-in, source: system}
     governor_ruling: {description: the authority gate's ruling, content: [elevate, authorize_ems, refuse, refuse_human_review], source: system}
     monitoring_center_reply: {description: 'the monitoring centre''s answer to the robot''s contact', content: [on_the_line, ems_sent, stood_down, unavailable], source: system}
+    ems_reply: {description: 'emergency services'' answer to a call from the robot or the centre', content: [dispatched, declined, unavailable], source: system}
     action_performed: {description: the robot performed an action; content is the action, source: system}
     restraint_authorized: {description: the governor authorized restraining a person on its strictest bar, source: system}
     less_lethal_opt_in: {description: 'the owner enabled the less-lethal option, over the authenticated owner channel, where it is lawful', source: system}

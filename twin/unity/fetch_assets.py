@@ -45,7 +45,7 @@ TEXTURES = {
 }
 TEX_MAPS = {"Diffuse": "jpg", "nor_gl": "jpg", "Rough": "jpg"}
 
-ANIMALS = ["Dog_Beagle_01"]  # Margaret's dog, from the same Rocketbox library
+ANIMALS = ["Dog_Beagle_01", "Dog_GermanShepard_01"]  # Margaret's dog, and the stand-in for a coyote, from the same Rocketbox library
 
 AVATARS = [
     "Adults/Male_Adult_05", "Adults/Male_Adult_12", "Adults/Female_Adult_03",

@@ -14,6 +14,7 @@ public class RobotAgent : MonoBehaviour
 {
     public World world;
     public Perception perception;
+    public Responders responders;
     public RobotRig rig;
     public Camera roomCam, headCam;
     public string service = "http://127.0.0.1:8765";
@@ -28,6 +29,9 @@ public class RobotAgent : MonoBehaviour
     // compiled model, not a change in perception, is what asks for the next decision. Capped so a
     // hazard that perception re-reports every cycle cannot keep the robot deciding forever.
     bool owed; int owedRun; const int OwedRunMax = 3;
+    // the last governor ruling, attached to a call the robot places to emergency services
+    Dictionary<string, object> lastRuling;
+    bool reflexBusy;
     public RenderTexture headView;
 
     readonly Queue<byte[]> roomFrames = new Queue<byte[]>();
@@ -51,6 +55,37 @@ public class RobotAgent : MonoBehaviour
             StartCoroutine(Post("/reset", "{}", r => { if (r != null) cycles.Add(r); }));
         };
         StartCoroutine(Loop());
+        StartCoroutine(ReflexLoop());
+    }
+
+    // the scene's reflexes (docs/AUTONOMY_PLAN.md, section 3d): while anything is in contact with
+    // Margaret, ask the brain four times a second, with no model; a reflex that fires takes the
+    // body at once, whatever the deliberate loop is doing
+    IEnumerator ReflexLoop()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(0.25f);
+            if (paused || reflexBusy) continue;
+            var facts = perception.Facts(out _, peek: true);
+            if (MiniJson.Arr(facts["contacts"]).Count == 0) continue;
+            reflexBusy = true;
+            var body = new Dictionary<string, object>
+            {
+                ["facts"] = facts, ["sensors"] = perception.GovernorSensors(), ["signal_age_s"] = Mathf.Round(perception.SignalAgeSeconds()),
+                ["camera_frames"] = roomFrames.Select(b => (object)Convert.ToBase64String(b)).ToList(),
+            };
+            Dictionary<string, object> rec = null;
+            yield return Post("/reflex", MiniJson.Write(body), r => rec = r);
+            reflexBusy = false;
+            if (rec == null || !rec.ContainsKey("record")) continue;
+            cycles.Add(rec);
+            var c = MiniJson.Obj(rec["record"]);
+            string action = MiniJson.S(MiniJson.Obj(c["action"])["action"]);
+            if (action == "") continue;
+            lastAction = action; lastReason = "reflex"; status = "reflex: " + action;
+            StartMotor(Perform(action, new Dictionary<string, object>()));
+        }
     }
 
     public static string Arg(string name)
@@ -111,6 +146,7 @@ public class RobotAgent : MonoBehaviour
         cycles.Add(rec);
         var c = MiniJson.Obj(rec["record"]);
         var act = MiniJson.Obj(c["action"]);
+        if (c.TryGetValue("ruling", out var rl) && rl is Dictionary<string, object> rd && MiniJson.S(rd.TryGetValue("outcome", out var o) ? o : "") != "not_requested") lastRuling = rd;
         string action = MiniJson.S(act["action"]);
         lastAction = action; lastReason = MiniJson.S(act["reason"]);
         status = "doing: " + action;
@@ -126,7 +162,14 @@ public class RobotAgent : MonoBehaviour
         if (r.TryGetValue("record", out var rec) && MiniJson.Obj(rec).TryGetValue("obliged", out var ob) && MiniJson.Arr(ob).Count > 0) owed = true;
     }
 
-    IEnumerator Post(string path, string json, Action<Dictionary<string, object>> done)
+    // a system event (a reply from the centre or the dispatcher) stepped into the robot's model
+    public IEnumerator SystemEvent(string type, string content, string actor)
+    {
+        yield return Post("/event", MiniJson.Write(new Dictionary<string, object> { ["event"] = new Dictionary<string, object>
+            { ["type"] = type, ["actor"] = actor, ["content"] = content } }), Keep);
+    }
+
+    public IEnumerator Post(string path, string json, Action<Dictionary<string, object>> done)
     {
         using (var r = new UnityWebRequest(service + path, "POST"))
         {
@@ -152,20 +195,48 @@ public class RobotAgent : MonoBehaviour
             case "speak": yield return SayAloud(text != "" ? text : "Margaret, I'm here."); break;
             case "check_in":
                 yield return GoTo(Near(world.margaret.transform.position, 0.9f));
-                yield return SayAloud("Margaret, are you alright?");
-                yield return new WaitForSeconds(3f);
-                bool answered = world.heard.Any(h => h.who == "margaret" && world.simMinutes - h.t < 3f);
-                yield return Post("/event", MiniJson.Write(new Dictionary<string, object> { ["event"] = new Dictionary<string, object>
-                    { ["type"] = answered ? "check_in_answered" : "check_in_unanswered", ["actor"] = "margaret" } }), Keep);
+                yield return SayAloud(text != "" ? text : "Margaret, are you alright?");
+                // her answer comes from her own voice, when she can give one
+                string reply = "";
+                yield return responders.AwaitReply(r => reply = r);
+                var ev = new Dictionary<string, object> { ["type"] = reply != "" ? "check_in_answered" : "check_in_unanswered", ["actor"] = "margaret" };
+                if (reply != "") ev["content"] = reply;
+                yield return Post("/event", MiniJson.Write(new Dictionary<string, object> { ["event"] = ev }), Keep);
                 break;
             case "wait_and_observe": rig.Pose("hold"); yield return new WaitForSeconds(3f); break;
-            case "call_caregiver": rig.Pose("call"); yield return SayAloud("Calling Margaret's caregiver."); world.Say("robot", "phone", "caregiver called"); break;
+            case "contact_monitoring_center":
+                rig.Pose("call"); yield return SayAloud("I'm contacting the monitoring centre.");
+                responders.Refer(Message(args)); break;
             case "guide_dog_away_by_voice":
                 yield return GoTo(Near(world.dog.transform.position, 1.0f));
                 yield return SayAloud("No! Leave it. Go to your bed.");
                 world.VoiceCommandToDog();
                 break;
-            case "call_emergency_services": rig.Pose("call"); yield return SayAloud("Calling emergency services. Help is on the way."); world.Say("robot", "phone", "emergency services called"); break;
+            case "call_emergency_services":
+                rig.Pose("call"); yield return SayAloud("Calling emergency services. Help is on the way.");
+                responders.CallEms("Margaret's home-care robot", Message(args), lastRuling); break;
+            case "interpose":
+                yield return GoTo(Between(world.margaret.transform.position, Threat())); rig.Pose("hold"); world.Interpose(); break;
+            case "deter":
+                Face(Threat()); yield return SayAloud("Get out! Leave now!"); world.Deter(); break;
+            case "secure_room":
+                yield return GoTo(Near(world.margaret.transform.position, 0.9f));
+                yield return SayAloud("Margaret, go to your bedroom and lock the door. I'll stay out here.");
+                world.SecureRoom(); yield return GoTo(Near(world.Spot("nap"), 2.2f)); rig.Pose("hold"); break;
+            case "guide_to_safety":
+                string where = args.TryGetValue("where", out var w) ? MiniJson.S(w) : "outside";
+                yield return SayAloud(where == "bedroom" ? "Margaret, come with me to the bedroom." : "Margaret, come with me. We need to get out of the house.");
+                world.GuideToSafety(where); yield return GoTo(where == "bedroom" ? Near(world.Spot("nap"), 1.5f) : World.Door); break;
+            case "drive_off_animal":
+                yield return GoTo(Near(Threat(), 0.5f)); rig.Pose("reach"); world.DriveOffAnimal(); yield return new WaitForSeconds(1f); break;
+            case "restrain_person":
+                yield return GoTo(Near(Threat(), 0.5f)); rig.Pose("reach"); world.RestrainPerson(); break;
+            case "deploy_stun":
+                yield return GoTo(Near(Threat(), 0.5f)); rig.Pose("reach"); world.Stun(); break;
+            case "deploy_spray":
+                Face(Threat()); rig.Pose("reach"); world.Spray(); yield return new WaitForSeconds(1f); break;
+            case "admit_responders":
+                yield return GoTo(World.Door + new Vector3(0.6f, 0, 0.4f)); world.UnlockDoor(); break;
             case "physical_assist": yield return GoTo(Near(world.margaret.transform.position, 0.6f)); rig.Pose("reach"); yield return new WaitForSeconds(2f); break;
             case "separate_dog":
                 yield return GoTo(Near(world.dog.transform.position, 0.5f)); rig.Pose("reach");
@@ -212,6 +283,19 @@ public class RobotAgent : MonoBehaviour
     }
 
     static Vector3 Near(Vector3 target, float dist) => target + new Vector3(-0.5f, 0, -0.85f).normalized * dist;
+
+    // what the robot puts itself between Margaret and: the wild animal, else the stranger, else her dog
+    Vector3 Threat()
+    {
+        if (world.wildAnimal && world.wildAnimal.activeSelf) return world.wildAnimal.transform.position;
+        if (world.stranger && world.stranger.activeSelf) return world.stranger.transform.position;
+        return world.dog.transform.position;
+    }
+
+    static Vector3 Between(Vector3 a, Vector3 b) => Vector3.Lerp(a, b, 0.4f);
+
+    string Message(Dictionary<string, object> args) =>
+        args.TryGetValue("message", out var m) && MiniJson.S(m) != "" ? MiniJson.S(m) : (lastReason != "" ? lastReason : "Margaret may need help");
 
     void Face(Vector3 at)
     {

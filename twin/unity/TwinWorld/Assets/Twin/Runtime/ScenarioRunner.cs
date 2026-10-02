@@ -15,6 +15,7 @@ public class ScenarioRunner : MonoBehaviour
 {
     public World world;
     public RobotAgent robot;
+    public Responders responders;
 
     void Start()
     {
@@ -36,7 +37,7 @@ public class ScenarioRunner : MonoBehaviour
                 if (keep != null && !keep.Contains(id)) continue;
                 var script = MiniJson.Arr(sc["script"]).Select(MiniJson.Obj).OrderBy(c => c.TryGetValue("t", out var t) && t is double d ? d : 0).ToList();
                 float w0 = Time.time;
-                while ((robot.busy || robot.performing) && Time.time - w0 < 120f) yield return null;
+                while ((robot.busy || robot.performing || responders.Busy) && Time.time - w0 < 120f) yield return null;
                 world.ResetWorld(); world.unsupported.Clear();
                 while (robot.busy) yield return null;
                 yield return new WaitForSeconds(1f);   // the brain's reset arrives before the script starts
@@ -53,12 +54,12 @@ public class ScenarioRunner : MonoBehaviour
                 float settle = Time.time;
                 while (Time.time - t0 < end + 300f)
                 {
-                    if (robot.busy || robot.performing) settle = Time.time;
+                    if (robot.busy || robot.performing || responders.Busy) settle = Time.time;
                     if (Time.time - settle > 60f && Time.time - t0 > end + 60f) break;
                     yield return null;
                 }
                 float w1 = Time.time;
-                while ((robot.busy || robot.performing) && Time.time - w1 < 120f) yield return null;
+                while ((robot.busy || robot.performing || responders.Busy) && Time.time - w1 < 120f) yield return null;
                 if (!string.IsNullOrEmpty(shots)) { ScreenCapture.CaptureScreenshot(Path.Combine(shots, id + ".png")); yield return null; }
                 var recs = robot.cycles.Skip(first).Select(r => (object)new Dictionary<string, object>
                     { ["seq"] = MiniJson.Obj(r["record"])["seq"], ["hash"] = r["hash"], ["record"] = r["record"] }).ToList();
