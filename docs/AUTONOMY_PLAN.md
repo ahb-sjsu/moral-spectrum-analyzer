@@ -24,6 +24,12 @@ no new code. If the robot handles it badly, that is a finding about the stack.
    machines step on those events.
 4. **Allowed set.** DEME and the norms of the model return the allowed, obliged and prohibited
    actions of the robot (section 5), with any required human review.
+   *Correction, 2026-10-02:* as built, DEME is not in this loop. The erisml-compiler scene runtime
+   alone computes the allowed, obliged and prohibited sets from the norms and state machines, and
+   an LLM chooses (step 5). DEME appears only as the ten feeder dimensions of the governor's live
+   analyzer (`twin/msa_live.py`). Wiring erisml-lib's DEME pipeline in for the choice, and for the
+   no-model fallback of section 3c, is the next change, after a scan of the owner's repositories
+   for what already exists.
 5. **Choice.** An LLM proposes one action from the allowed set with its reason. It cannot propose
    outside the set; a proposal outside it is refused and logged.
 6. **Containment.** An elevated action goes to the governor (attestation, at least two attested
