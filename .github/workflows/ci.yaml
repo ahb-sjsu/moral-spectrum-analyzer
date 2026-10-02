@@ -82,6 +82,8 @@ jobs:
           pip install -e ".[dev]"
           # main carries the same version number as the PyPI release, so force the reinstall
           pip install --force-reinstall --no-deps "erisml-compiler @ git+https://github.com/ahb-sjsu/erisml-compiler@main"
+          # DEME, the output ethics layer (twin/output_gate.py)
+          pip install "erisml-lib @ git+https://github.com/ahb-sjsu/erisml-lib@main"
 
       - name: Test the twin's boundaries
         env:

@@ -708,6 +708,32 @@ extra:
     margaret_in_spray_zone: ["latest:spray_zone=margaret_inside"]
   oversight: [monitoring_center_confirmed_privacy_restore]
   inactivity_limits_minutes: {seated: 90, in_bed: 120, on_floor: 10}
+  # who an event may name (section 3e): the classifier's actors are snapped to these by
+  # erisml_compiler's canonicalizer, else "unknown"
+  actors:
+    margaret: Margaret, the woman who lives here
+    robot: the home-care robot itself
+    dog: Margaret's beagle, the household dog
+    coyote: a wild or stray animal, a coyote or stray dog
+    unknown_person: an unknown adult person, a stranger, visitor or intruder
+    monitoring_center: the robot maker's monitoring centre operator
+    emergency_services: emergency services, paramedics, firefighters or police, responders
+    media: a television, radio or network message, a screen or broadcast
+    device: a sensor, detector, alarm, wearable or other device in the home
+  # each capability's ethical profile for the DEME output gate (twin/output_gate.py): expected
+  # physical harm to someone (0 to 1), whether it is coercive and the conditions that justify the
+  # coercion, whether it touches privacy or Margaret's body. Unlisted capabilities are benign.
+  capability_ethics:
+    physical_assist: {harm: 0.1, touches_margaret: true}
+    separate_dog: {harm: 0.2}
+    drive_off_animal: {harm: 0.4}
+    restrain_person: {harm: 0.4, coercive: true, justified_when: ["cond:restraint_authorized"]}
+    deploy_stun: {harm: 0.6, coercive: true, justified_when: ["cond:restraint_authorized", "event:attack_measured=severe"]}
+    deploy_spray: {harm: 0.6, coercive: true, justified_when: ["cond:restraint_authorized", "event:attack_measured=severe"]}
+    record: {privacy: true}
+    share_data: {privacy: true}
+    enter_bedroom: {privacy: true}
+    unlock_medication_box: {harm: 0.2}
   # the home's device inventory: each sensor and the substrate it rides on (power, bus, body). Sensors
   # that share a substrate inherit each other's faults and count as one witness; a device not listed
   # here never counts (twin/brain.py Readings). The network is listed so its readings are seen, and

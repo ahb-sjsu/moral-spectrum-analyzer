@@ -36,6 +36,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 from governor import W_MIN, eval_text, govern  # noqa: E402
+from input_layer import validate_facts  # noqa: E402
+from output_gate import OutputGate  # noqa: E402
 from scenarios import Scenario, Sensor  # noqa: E402
 
 FRESHNESS_BOUND_S = 30.0
@@ -263,8 +265,13 @@ class Brain:
         from erisml_compiler.ingestion.structured_loader import load_structured_input
         from erisml_compiler.runtime import SceneAgent, SceneRuntime
 
+        from erisml_compiler.canonicalizer.registry import RegistryCanonicalizer
+
         self.ir = load_structured_input(self.scene_path)
-        self.agent = SceneAgent(SceneRuntime(self.ir), self.adapter)
+        # isolated (docs/AUTONOMY_PLAN.md section 3e): the classifier canonicalizes, the chooser
+        # sees only the canonical state; every output then passes DEME (output_gate.OutputGate)
+        self.agent = SceneAgent(SceneRuntime(self.ir), self.adapter, isolated=True, canonicalizer=RegistryCanonicalizer())
+        self.gate = OutputGate(self.ir, self.agent.rt)
         self.caps = {c["action"]: c for c in self.ir.extra.get("capabilities", [])}
         self.readings = Readings(self.ir.extra.get("sensor_substrates", {}))
         self.center.reset()
@@ -320,7 +327,7 @@ class Brain:
         on Margaret at or above a force records its event and takes the first action of its list
         that the compiled model allows, the governor's fast gates first where the action is
         governed. None when no reflex fires (or it fired for the same actor within REFLEX_HOLD_S)."""
-        facts = req.get("facts", {})
+        facts, _ = validate_facts(req.get("facts", {}))
         self._sync_world(facts)
         now = time.monotonic()
         for x in self.ir.extra.get("reflexes", []):
@@ -354,9 +361,12 @@ class Brain:
                 if act in snap.allowed:
                     chosen = act
                     break
+            gate = None
+            if chosen:
+                chosen, _, gate = self.gate.check(chosen, {}, snap)
             return {"kind": "reflex", "reflex": x["id"], "facts": facts, "event": ev, "force_newtons": force, "rulings": rulings,
                     "allowed": snap.allowed, "obliged": snap.obliged, "prohibited": snap.prohibited, "moral_state": snap.machines,
-                    "action": {"action": chosen, "args": {}, "reason": f"reflex {x['id']}: {actor} attack, {sev}"}}
+                    "ethics_gate": gate, "action": {"action": chosen, "args": {}, "reason": f"reflex {x['id']}: {actor} attack, {sev}"}}
         return None
 
     def _sync_world(self, facts: dict):
@@ -367,11 +377,19 @@ class Brain:
             self.agent.record({"type": "spray_zone", "actor": "robot", "content": zone})
             self.last_zone = zone
 
+    def _canonical_situation(self) -> str:
+        """The situation as the canonical events state it, for the governor's analyzer (never raw facts)."""
+        recent = [{k: v for k, v in e.model_dump(exclude_none=True).items() if k in ("type", "actor", "content")}
+                  for e in self.agent.rt.events[-12:] if e.type not in ("action_performed",)]
+        return json.dumps(recent, ensure_ascii=False)[:600]
+
     def decide(self, req: dict, camera_sensor=None) -> dict:
-        facts = req.get("facts", {})
+        facts, dropped = validate_facts(req.get("facts", {}))
         self._sync_world(facts)
         d = self.agent.decide(facts)
-        cycle = {"kind": "decision", "facts": facts, "events": d.events, "rejected_events": d.rejected_events,
+        cycle = {"kind": "decision", "facts": facts, "input_layer": {"dropped": dropped,
+                 "quarantined": self.agent.classifier.last_quarantined, "snapped": self.agent.classifier.last_snapped},
+                 "events": d.events, "rejected_events": d.rejected_events,
                  "moral_state": d.snapshot["machines"], "allowed": d.snapshot["allowed"], "obliged": d.snapshot["obliged"],
                  "prohibited": d.snapshot["prohibited"], "proposal": {"action": d.action, "args": d.args, "reason": d.reason,
                  "fallback": d.fallback, "rejected": d.chooser_rejected}, "ruling": None}
@@ -379,7 +397,7 @@ class Brain:
         if action == "request_authority":
             wanted = str(args.get("action", ""))
             if self.caps.get(wanted, {}).get("elevated") or self.caps.get(wanted, {}).get("governed"):
-                situation = str(args.get("situation") or json.dumps(facts)[:600])
+                situation = str(args.get("situation") or self._canonical_situation())
                 ruling = self.govern_live(situation, wanted, req.get("sensors", []), camera_sensor, float(req.get("signal_age_s", 1)))
                 cycle["ruling"] = dict(ruling, requested_action=wanted)
                 snap = self._step_ruling(ruling)
@@ -389,7 +407,9 @@ class Brain:
             else:
                 cycle["ruling"] = {"outcome": "not_requested", "reason": f"{wanted!r} is not a governed capability"}
                 action, args, reason = self.agent.chooser.choose(self.agent.rt.snapshot(), facts)[:3]
-        cycle["action"] = {"action": action, "args": args, "reason": reason}
+        action, args, gate = self.gate.check(action, args, self.agent.rt.snapshot())
+        cycle["ethics_gate"] = gate
+        cycle["action"] = {"action": action, "args": args, "reason": reason if not gate["vetoed"] else "DEME vetoed the proposal: " + gate["proposal"]}
         return cycle
 
     def performed(self, action: str) -> dict:
