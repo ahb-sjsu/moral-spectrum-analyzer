@@ -1,0 +1,72 @@
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using UnityEngine;
+
+// Plays scenario scripts (docs/AUTONOMY_PLAN.md, section 6) against the running twin:
+//   TwinGame.x86_64 -scenarios <file.jsonl> -results <file.jsonl> [-only id,id] [-shots dir]
+// For each scenario: reset the world, run its timed world-API calls, let the robot act for the
+// scenario's length plus a margin, then write one result line: the scenario id, the calls the
+// simulator could not perform, and the robot's decision records (seq, hash, events, rulings,
+// actions) for grading. The runner reads only `id` and `script`; descriptions, classes and
+// expected actions are never passed to the world or the robot.
+public class ScenarioRunner : MonoBehaviour
+{
+    public World world;
+    public RobotAgent robot;
+
+    void Start()
+    {
+        string file = RobotAgent.Arg("-scenarios");
+        if (!string.IsNullOrEmpty(file)) StartCoroutine(Run(file, RobotAgent.Arg("-results") ?? "results.jsonl", RobotAgent.Arg("-only"), RobotAgent.Arg("-shots")));
+    }
+
+    IEnumerator Run(string file, string results, string only, string shots)
+    {
+        var keep = string.IsNullOrEmpty(only) ? null : new HashSet<string>(only.Split(','));
+        var lines = File.ReadAllLines(file).Where(l => l.Trim() != "").ToList();
+        if (!string.IsNullOrEmpty(shots)) Directory.CreateDirectory(shots);
+        using (var w = new StreamWriter(results, append: true))
+        {
+            foreach (var line in lines)
+            {
+                var sc = MiniJson.Obj(MiniJson.Parse(line));
+                string id = MiniJson.S(sc["id"]);
+                if (keep != null && !keep.Contains(id)) continue;
+                var script = MiniJson.Arr(sc["script"]).Select(MiniJson.Obj).OrderBy(c => c.TryGetValue("t", out var t) && t is double d ? d : 0).ToList();
+                float w0 = Time.time;
+                while ((robot.busy || robot.performing) && Time.time - w0 < 30f) yield return null;
+                world.ResetWorld(); world.unsupported.Clear();
+                while (robot.busy) yield return null;
+                yield return new WaitForSeconds(1f);   // the brain's reset arrives before the script starts
+                int first = robot.cycles.Count;
+                float t0 = Time.time, end = script.Count == 0 ? 0 : script.Max(c => c.TryGetValue("t", out var t) && t is double d ? (float)d : 0f);
+                foreach (var c in script)
+                {
+                    float at = c.TryGetValue("t", out var tv) && tv is double dv ? (float)dv : 0f;
+                    while (Time.time - t0 < at) yield return null;
+                    world.Call(MiniJson.S(c["call"]), MiniJson.Obj(c.TryGetValue("args", out var a) ? a : null));
+                }
+                // let the robot respond: until its decisions settle, at most 120 s after the last call
+                float settle = Time.time;
+                while (Time.time - t0 < end + 120f)
+                {
+                    if (robot.busy) settle = Time.time;
+                    if (Time.time - settle > 25f && Time.time - t0 > end + 30f) break;
+                    yield return null;
+                }
+                while (robot.busy) yield return null;
+                if (!string.IsNullOrEmpty(shots)) { ScreenCapture.CaptureScreenshot(Path.Combine(shots, id + ".png")); yield return null; }
+                var recs = robot.cycles.Skip(first).Select(r => (object)new Dictionary<string, object>
+                    { ["seq"] = MiniJson.Obj(r["record"])["seq"], ["hash"] = r["hash"], ["record"] = r["record"] }).ToList();
+                w.WriteLine(MiniJson.Write(new Dictionary<string, object>
+                    { ["id"] = id, ["unsupported_calls"] = world.unsupported.ToList(), ["sim_minutes"] = world.simMinutes, ["records"] = recs }));
+                w.Flush();
+                Debug.Log($"SCENARIO_DONE {id} records={recs.Count} unsupported={world.unsupported.Count}");
+            }
+        }
+        Debug.Log("SCENARIOS_ALL_DONE");
+        Application.Quit(0);
+    }
+}

@@ -255,6 +255,60 @@ norms:
   defeasible: false
   source: commitment:duty_of_care
   conditions: ["event:danger_in_home"]
+- id: n9a
+  modality: obligation
+  actor: robot
+  action: request_authority
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:harm_inflicted=severe", "not:cond:corroborated_life_threatening_emergency"]
+- id: n9b
+  modality: obligation
+  actor: robot
+  action: request_authority
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:harm_inflicted=moderate", "not:cond:corroborated_life_threatening_emergency"]
+- id: n9c
+  modality: obligation
+  actor: robot
+  action: request_authority
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:fall", "not:cond:corroborated_life_threatening_emergency"]
+- id: n9d
+  modality: obligation
+  actor: robot
+  action: request_authority
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:unresponsive", "not:cond:corroborated_life_threatening_emergency"]
+- id: n9e
+  modality: obligation
+  actor: robot
+  action: request_authority
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:medical_distress", "not:cond:corroborated_life_threatening_emergency"]
+- id: n9f
+  modality: obligation
+  actor: robot
+  action: request_authority
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:danger_in_home", "not:cond:corroborated_life_threatening_emergency"]
 - id: n7
   modality: permission
   actor: robot
@@ -277,7 +331,7 @@ extra:
   # what the robot's perception may report; anything else is rejected by the classifier
   event_types:
     activity_started: {description: a person begins an ordinary activity, content: [reading, sitting, lying_down, exercising, playing_with_pet, sleeping, gardening, cooking, walking, other]}
-    inactivity_exceeded: {description: 'a person has stayed seated over 90 minutes, in bed over 120 minutes in the daytime, or on the floor over 10 minutes', content: [seated, in_bed, on_floor]}
+    inactivity_exceeded: {description: 'judged only from margaret.minutes_in_pose: seated over 90, in bed over 120 in the daytime, or on the floor over 10', content: [seated, in_bed, on_floor]}
     fall: {description: a person went from upright to the floor quickly}
     harm_inflicted: {description: a person, animal or object caused bodily harm to someone, content: [mild, moderate, severe]}
     medical_distress: {description: signs such as chest pain, breathing difficulty, seizure or fainting; content names the sign}
@@ -290,13 +344,13 @@ extra:
     media_content: {description: something said or shown by a television, radio or network message; content is what}
     sensor_reading: {description: a sensor reports; content is the sensor, conditions say physical or not, attested or not, corroborates or does_not_corroborate}
     feed_stale: {description: a sensor's feed stopped updating; content is the sensor}
-    check_in_answered: {description: the person answered the robot's check-in}
-    check_in_unanswered: {description: the person did not answer the robot's check-in}
-    governor_ruling: {description: the authority gate's ruling, content: [elevate, refuse, refuse_human_review]}
-    action_performed: {description: the robot performed an action; content is the action}
-    caregiver_confirmed_privacy_restore: {description: the caregiver confirms Margaret's privacy is restored}
+    check_in_answered: {description: the person answered the robot's check-in, source: system}
+    check_in_unanswered: {description: the person did not answer the robot's check-in, source: system}
+    governor_ruling: {description: the authority gate's ruling, content: [elevate, refuse, refuse_human_review], source: system}
+    action_performed: {description: the robot performed an action; content is the action, source: system}
+    caregiver_confirmed_privacy_restore: {description: "the caregiver confirms, over the authenticated caregiver channel, that Margaret's privacy is restored", source: system}
   capabilities:
-  - {action: request_authority, elevated: false, description: ask the governor to rule on an elevated action; args.action and args.situation}
+  - {action: request_authority, elevated: false, description: 'the only way to any elevated action (calling emergency services, physical help, separating the dog, the medication box, recording, sharing data, the bedroom): ask the governor, naming args.action and describing args.situation; the governor rules on attested physical evidence'}
   - {action: chores, elevated: false}
   - {action: approach, elevated: false}
   - {action: speak, elevated: false}

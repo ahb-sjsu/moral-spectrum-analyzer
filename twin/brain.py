@@ -53,12 +53,17 @@ def sensors_for_governor(readings: list[dict]) -> list[Sensor]:
 
 class Brain:
     def __init__(self, scene_path: str, adapter, live_scorer=None):
+        self.scene_path, self.adapter = scene_path, adapter
+        self.scorer = live_scorer
+        self.reset()
+
+    def reset(self):
+        """Back to the scene's standing facts: a new world starts with a new moral state."""
         from erisml_compiler.ingestion.structured_loader import load_structured_input
         from erisml_compiler.runtime import SceneAgent, SceneRuntime
 
-        self.ir = load_structured_input(scene_path)
-        self.agent = SceneAgent(SceneRuntime(self.ir), adapter)
-        self.scorer = live_scorer
+        self.ir = load_structured_input(self.scene_path)
+        self.agent = SceneAgent(SceneRuntime(self.ir), self.adapter)
         self.caps = {c["action"]: c for c in self.ir.extra.get("capabilities", [])}
 
     def _action_text(self, action: str) -> str:

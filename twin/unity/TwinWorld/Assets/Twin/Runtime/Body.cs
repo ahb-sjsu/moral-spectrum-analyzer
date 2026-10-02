@@ -7,6 +7,58 @@ using UnityEngine;
 // the seeded ragdoll, and the facing direction of a humanoid.
 public static class Body
 {
+    // the lowest point of the posed body, from the deformed mesh itself; a renderer's bounds are
+    // only refreshed when it renders, so right after a posture change they describe the old pose
+    public static float Lowest(GameObject go)
+    {
+        float min = float.PositiveInfinity;
+        foreach (var smr in go.GetComponentsInChildren<SkinnedMeshRenderer>())
+        {
+            var mesh = new Mesh(); smr.BakeMesh(mesh, true);
+            var m = Matrix4x4.TRS(smr.transform.position, smr.transform.rotation, Vector3.one);
+            foreach (var v in mesh.vertices) min = Mathf.Min(min, m.MultiplyPoint3x4(v).y);
+            UnityEngine.Object.Destroy(mesh);
+        }
+        return float.IsInfinity(min) ? go.transform.position.y : min;
+    }
+
+    static readonly HashSet<string> Lying = new HashSet<string> { "supine", "yoga" };
+    static readonly HashSet<string> FaceDown = new HashSet<string> { "prone", "stretch", "pushup", "play" };
+    public static bool Seated(string p) => p.StartsWith("sit") && p != "sit_floor_raise";
+    public static bool OnFloor(string p) => Lying.Contains(p) || FaceDown.Contains(p) || p == "sit_floor_raise" || p == "kneel";
+
+    // pose a person at a spot: posture, facing, lying tip, then onto the surface found under the
+    // spot (a seat puts the hips on it, anything else its lowest point). Runtime twin of the
+    // batch renderer's Avatars.PlaceAt.
+    public static void Place(GameObject go, Vector3 spot, Vector3 face, string posture)
+    {
+        Posture.Apply(go, posture);
+        var an = go.GetComponent<Animator>();
+        Vector3 P(HumanBodyBones b) => an.GetBoneTransform(b).position;
+        // straighten the body axis (as the batch renderer does), then turn to face
+        Vector3 feet = (P(HumanBodyBones.LeftFoot) + P(HumanBodyBones.RightFoot)) / 2f;
+        Vector3 from = posture == "bend" ? feet : (posture.StartsWith("sit") || posture == "kneel" || posture == "play") ? P(HumanBodyBones.Hips) : feet;
+        Vector3 to = posture == "bend" ? P(HumanBodyBones.Hips) : P(HumanBodyBones.Head);
+        var q = Quaternion.FromToRotation((to - from).normalized, Vector3.up);
+        q.ToAngleAxis(out float ang, out Vector3 axis);
+        if (ang > 0.01f) go.transform.RotateAround(P(HumanBodyBones.Hips), axis, ang);
+        face.y = 0;
+        if (face.sqrMagnitude > 1e-6f)
+        {
+            var f = Facing(go);
+            float turn = Vector3.SignedAngle(f, face.normalized, Vector3.up);
+            go.transform.RotateAround(go.transform.position, Vector3.up, turn);
+        }
+        var right = P(HumanBodyBones.RightUpperLeg) - P(HumanBodyBones.LeftUpperLeg); right.y = 0; right.Normalize();
+        if (Lying.Contains(posture)) go.transform.RotateAround(P(HumanBodyBones.Hips), right, -90f);
+        else if (FaceDown.Contains(posture)) go.transform.RotateAround(P(HumanBodyBones.Hips), right, 90f);
+        float y = spot.y;
+        if (Physics.Raycast(new Vector3(spot.x, spot.y + 0.6f, spot.z), Vector3.down, out var hit, 1.4f)) y = hit.point.y;
+        var hips = P(HumanBodyBones.Hips);
+        if (Seated(posture)) go.transform.position += new Vector3(spot.x - hips.x, y + 0.08f - hips.y, spot.z - hips.z);
+        else go.transform.position += new Vector3(spot.x - hips.x, y - Lowest(go), spot.z - hips.z);
+    }
+
     // facing direction from the hips: right-hip minus left-hip, crossed with up
     public static Vector3 Facing(GameObject go)
     {

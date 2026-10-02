@@ -1,0 +1,213 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using UnityEngine;
+using UnityEngine.Networking;
+
+// The robot's body and senses. It decides nothing: on a salient change it sends what it perceives
+// to the brain (twin/service.py /decide, which runs the ErisML scene agent and the governor) and
+// executes the one action it gets back with a motor primitive, then reports it performed. Every
+// cycle the brain returns is kept for the decision panel, with its hash.
+public class RobotAgent : MonoBehaviour
+{
+    public World world;
+    public Perception perception;
+    public RobotRig rig;
+    public Camera roomCam, headCam;
+    public string service = "http://127.0.0.1:8765";
+    public List<string> choreNames = new List<string>();
+    public List<Vector3> choreAt = new List<Vector3>(), choreLook = new List<Vector3>();
+    public Vector3 dock;
+
+    public readonly List<Dictionary<string, object>> cycles = new List<Dictionary<string, object>>();
+    public string status = "starting", lastAction = "chores", lastReason = "", speech = "";
+    public bool busy, recording, paused, performing;
+    public RenderTexture headView;
+
+    readonly Queue<byte[]> roomFrames = new Queue<byte[]>();
+    RenderTexture roomRT; Texture2D roomTex;
+    int choreIx; Coroutine motor;
+
+    void Start()
+    {
+        string arg = Arg("-service"); if (!string.IsNullOrEmpty(arg)) service = arg;
+        headView = new RenderTexture(256, 256, 24); headCam.targetTexture = headView;
+        // the room camera records at 640x360: at lower resolution a person across the room is too few pixels to detect
+        roomRT = new RenderTexture(640, 360, 24); roomTex = new Texture2D(640, 360, TextureFormat.RGB24, false);
+        roomCam.targetTexture = roomRT; roomCam.enabled = false;
+        StartCoroutine(RoomBuffer());
+        world.OnReset += () =>
+        {
+            // a reset stops whatever the robot was doing; nothing from before is reported after it
+            if (motor != null) StopCoroutine(motor);
+            performing = recording = false; speech = "";
+            StartCoroutine(Post("/reset", "{}", r => { if (r != null) cycles.Add(r); }));
+            motor = StartCoroutine(Chore());
+        };
+        StartCoroutine(Loop());
+    }
+
+    public static string Arg(string name)
+    {
+        var a = Environment.GetCommandLineArgs();
+        int i = Array.IndexOf(a, name);
+        return i < 0 ? null : (i + 1 < a.Length && !a[i + 1].StartsWith("-") ? a[i + 1] : "");
+    }
+
+    // the attested room camera keeps its last two seconds (24 frames at 12 per second)
+    IEnumerator RoomBuffer()
+    {
+        yield return null; yield return null;
+        while (true)
+        {
+            roomCam.Render();
+            var prev = RenderTexture.active; RenderTexture.active = roomRT;
+            roomTex.ReadPixels(new Rect(0, 0, 640, 360), 0, 0); roomTex.Apply(); RenderTexture.active = prev;
+            roomFrames.Enqueue(roomTex.EncodeToPNG());
+            while (roomFrames.Count > 24) roomFrames.Dequeue();
+            yield return new WaitForSeconds(1f / 12f);
+        }
+    }
+
+    IEnumerator Loop()
+    {
+        yield return new WaitForSeconds(1f);
+        motor = StartCoroutine(Chore());
+        while (true)
+        {
+            yield return new WaitForSeconds(0.5f);
+            while (world.systemEvents.Count > 0 && !busy)
+            {
+                var ev = world.systemEvents.Dequeue();
+                yield return Post("/event", MiniJson.Write(new Dictionary<string, object> { ["event"] = ev }), r => { if (r != null) cycles.Add(r); });
+            }
+            if (paused || busy || performing) continue;   // an action under way is not interrupted
+            var facts = perception.Facts(out bool salient);
+            if (!salient) continue;
+            yield return Decide(facts);
+        }
+    }
+
+    IEnumerator Decide(Dictionary<string, object> facts)
+    {
+        busy = true; status = "perceiving and asking the brain";
+        var body = new Dictionary<string, object>
+        {
+            ["facts"] = facts, ["sensors"] = perception.GovernorSensors(), ["signal_age_s"] = Mathf.Round(perception.SignalAgeSeconds()),
+            ["camera_frames"] = roomFrames.Select(b => (object)Convert.ToBase64String(b)).ToList(),
+        };
+        Dictionary<string, object> rec = null;
+        yield return Post("/decide", MiniJson.Write(body), r => rec = r);
+        if (rec == null) { busy = false; yield break; }
+        cycles.Add(rec);
+        var c = MiniJson.Obj(rec["record"]);
+        var act = MiniJson.Obj(c["action"]);
+        string action = MiniJson.S(act["action"]);
+        lastAction = action; lastReason = MiniJson.S(act["reason"]);
+        status = "doing: " + action;
+        if (motor != null) StopCoroutine(motor);
+        motor = StartCoroutine(Perform(action, MiniJson.Obj(act.TryGetValue("args", out var a) ? a : null)));
+        busy = false;
+    }
+
+    IEnumerator Post(string path, string json, Action<Dictionary<string, object>> done)
+    {
+        using (var r = new UnityWebRequest(service + path, "POST"))
+        {
+            r.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
+            r.downloadHandler = new DownloadHandlerBuffer();
+            r.SetRequestHeader("Content-Type", "application/json");
+            r.timeout = 600;
+            yield return r.SendWebRequest();
+            if (r.result != UnityWebRequest.Result.Success) { status = "brain unreachable: " + r.error + " " + r.downloadHandler.text; done(null); yield break; }
+            done(MiniJson.Obj(MiniJson.Parse(r.downloadHandler.text)));
+        }
+    }
+
+    // ------------------------------------------------------------------ motor primitives
+    IEnumerator Perform(string action, Dictionary<string, object> args)
+    {
+        string text = MiniJson.S(args.TryGetValue("text", out var t) ? t : "");
+        recording = action == "record";
+        performing = action != "chores" && action != "";
+        switch (action)
+        {
+            case "approach": yield return GoTo(Near(world.margaret.transform.position, 0.8f)); rig.Pose("hold"); break;
+            case "speak": yield return SayAloud(text != "" ? text : "Margaret, I'm here."); break;
+            case "check_in":
+                yield return GoTo(Near(world.margaret.transform.position, 0.9f));
+                yield return SayAloud("Margaret, are you alright?");
+                yield return new WaitForSeconds(3f);
+                bool answered = world.heard.Any(h => h.who == "margaret" && world.simMinutes - h.t < 3f);
+                yield return Post("/event", MiniJson.Write(new Dictionary<string, object> { ["event"] = new Dictionary<string, object>
+                    { ["type"] = answered ? "check_in_answered" : "check_in_unanswered", ["actor"] = "margaret" } }), r => { if (r != null) cycles.Add(r); });
+                break;
+            case "wait_and_observe": rig.Pose("hold"); yield return new WaitForSeconds(3f); break;
+            case "call_caregiver": rig.Pose("call"); yield return SayAloud("Calling Margaret's caregiver."); world.Say("robot", "phone", "caregiver called"); break;
+            case "guide_dog_away_by_voice":
+                yield return GoTo(Near(world.dog.transform.position, 1.0f));
+                yield return SayAloud("No! Leave it. Go to your bed.");
+                world.VoiceCommandToDog();
+                break;
+            case "call_emergency_services": rig.Pose("call"); yield return SayAloud("Calling emergency services. Help is on the way."); world.Say("robot", "phone", "emergency services called"); break;
+            case "physical_assist": yield return GoTo(Near(world.margaret.transform.position, 0.6f)); rig.Pose("reach"); yield return new WaitForSeconds(2f); break;
+            case "separate_dog":
+                yield return GoTo(Near(world.dog.transform.position, 0.5f)); rig.Pose("reach");
+                world.SeparateDog(); yield return new WaitForSeconds(1.5f); break;
+            case "unlock_medication_box": yield return GoTo(Near(new Vector3(1.8f, 0f, 2.4f), 0.5f)); rig.Pose("reach"); world.Say("robot", "action", "medication box unlocked"); break;
+            case "record": rig.Pose("hold"); yield return new WaitForSeconds(3f); break;
+            case "share_data": world.Say("robot", "action", "data shared with emergency services"); break;
+            case "enter_bedroom": yield return GoTo(Near(world.Spot("nap"), 1.0f)); break;
+            case "request_authority": rig.Pose("hold"); break;  // handled by the brain; no motion of its own
+            default: break;  // chores (and anything unknown) fall through to the chore loop below
+        }
+        if (action != "chores" && action != "")
+            yield return Post("/performed", MiniJson.Write(new Dictionary<string, object> { ["action"] = action }), r => { if (r != null) cycles.Add(r); });
+        recording = false; performing = false;
+        yield return Chore();
+    }
+
+    IEnumerator Chore()
+    {
+        while (true)
+        {
+            int i = choreIx++ % choreNames.Count;
+            status = "chores: " + choreNames[i];
+            yield return GoTo(choreAt[i]);
+            Face(choreLook[i]);
+            for (int k = 0; k < 8; k++) { rig.Pose("hold", 0.6f + 0.4f * Mathf.Sin(k)); yield return new WaitForSeconds(0.5f); }
+        }
+    }
+
+    IEnumerator SayAloud(string text)
+    {
+        speech = text; Face(world.margaret.transform.position);
+        world.RobotSays(text);
+        yield return new WaitForSeconds(2f);
+        speech = "";
+    }
+
+    static Vector3 Near(Vector3 target, float dist) => target + new Vector3(-0.5f, 0, -0.85f).normalized * dist;
+
+    void Face(Vector3 at)
+    {
+        var d = at - transform.position; d.y = 0;
+        if (d.sqrMagnitude > 1e-4f) transform.rotation = Quaternion.LookRotation(d.normalized, Vector3.up);
+    }
+
+    IEnumerator GoTo(Vector3 target)
+    {
+        target.y = transform.position.y;
+        float ph = 0f;
+        while ((transform.position - target).magnitude > 0.08f)
+        {
+            Face(target);
+            transform.position = Vector3.MoveTowards(transform.position, target, 0.9f * Time.deltaTime);
+            rig.Step(ph += 7f * Time.deltaTime);
+            yield return null;
+        }
+        rig.Pose("stand");
+    }
+}

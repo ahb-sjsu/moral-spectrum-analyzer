@@ -45,6 +45,8 @@ TEXTURES = {
 }
 TEX_MAPS = {"Diffuse": "jpg", "nor_gl": "jpg", "Rough": "jpg"}
 
+ANIMALS = ["Dog_Beagle_01"]  # Margaret's dog, from the same Rocketbox library
+
 AVATARS = [
     "Adults/Male_Adult_05", "Adults/Male_Adult_12", "Adults/Female_Adult_03",
     "Adults/Female_Adult_09", "Children/Female_Child_01", "Professions/Medical_Female_01",
@@ -114,6 +116,18 @@ def main():
                 files[f"{sub}/{fn}"] = hashlib.sha256(open(d, "rb").read()).hexdigest()
         manifest["rocketbox"][name] = files
         print("avatar", name, len(files), "files", flush=True)
+    for an in ANIMALS:
+        src = os.path.join(a.rocketbox, "Assets", "Animals", an)
+        dst = os.path.join(a.dest, "RocketboxAnimals", an)
+        files = {}
+        for sub in ("Export", "Textures"):
+            for fn in sorted(os.listdir(os.path.join(src, sub))):
+                s_, d_ = os.path.join(src, sub, fn), os.path.join(dst, sub, fn)
+                os.makedirs(os.path.dirname(d_), exist_ok=True)
+                shutil.copy2(s_, d_)
+                files[f"{sub}/{fn}"] = hashlib.sha256(open(d_, "rb").read()).hexdigest()
+        manifest.setdefault("rocketbox_animals", {})[an] = files
+        print("animal", an, len(files), "files", flush=True)
     manifest["rocketbox_commit"] = rb_commit
     if a.unitree:
         src = os.path.join(a.unitree, "robots", "g1_description")

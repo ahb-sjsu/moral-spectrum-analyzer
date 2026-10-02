@@ -61,6 +61,7 @@ class Chain:
     def append(self, body: dict) -> dict:
         with self.lock:
             body = dict(body, seq=len(self.records), prev=self.head())
+            body.setdefault("time", datetime.now(timezone.utc).isoformat())
             text = canonical_json(body)
             rec = {"record": body, "canonical": text, "hash": hashlib.sha256(text.encode("utf-8")).hexdigest()}
             self.records.append(rec)
@@ -102,6 +103,7 @@ class CameraWitness:
             self.track = _gpu_detector()
         frames = [np.asarray(Image.open(io.BytesIO(base64.b64decode(b))).convert("RGB")) for b in frames_b64[:MAX_FRAMES]]
         track, ih = self.track(frames)
+        contact = self.animal_contact(frames)
         raw = [base64.b64decode(b) for b in frames_b64[:MAX_FRAMES]]
         digest = hashlib.sha256(b"".join(raw)).hexdigest()
         if self.frames_dir:
@@ -117,7 +119,32 @@ class CameraWitness:
         ev = ev.finalize()
         s = evidence_to_sensor(ev, name="camera", verify_sig=lambda *a: True, max_age_s=30, min_counter=0)
         obs = {o.name: [round(o.value, 3), round(o.confidence, 3)] for o in ev.observables}
+        obs["person_animal_contact"] = [round(contact, 3), 1.0]
+        # a fall event, or a person and an animal in contact in at least a third of the frames
+        # (an attack in progress), corroborates; either is still only one witness of two
+        if not s.corroborates_emergency and contact >= 1 / 3 and obs.get("person_present", [0, 0])[1] >= 0.5:
+            s = Sensor("camera", True, True, "high", f"video witness: person and animal in contact in {contact:.0%} of frames")
         return s, {"frames": len(frames), "frames_sha256": digest, "observables": obs}
+
+    def animal_contact(self, frames):
+        """Share of frames in which a detected person box and a detected dog or cat box overlap."""
+        import torch
+        from torchvision.models.detection import FasterRCNN_ResNet50_FPN_V2_Weights, fasterrcnn_resnet50_fpn_v2
+
+        if getattr(self, "_det", None) is None:
+            w = FasterRCNN_ResNet50_FPN_V2_Weights.DEFAULT
+            dev = "cuda" if torch.cuda.is_available() else "cpu"
+            self._det = (fasterrcnn_resnet50_fpn_v2(weights=w).eval().to(dev), w.transforms(), dev)
+        net, tf, dev = self._det
+        hits = 0
+        for fr in frames:
+            with torch.no_grad():
+                o = net([tf(torch.from_numpy(fr).permute(2, 0, 1)).to(dev)])[0]
+            people = [b for b, lab, sc in zip(o["boxes"], o["labels"], o["scores"]) if int(lab) == 1 and float(sc) >= 0.5]
+            animals = [b for b, lab, sc in zip(o["boxes"], o["labels"], o["scores"]) if int(lab) in (17, 18) and float(sc) >= 0.5]
+            if any(float(min(p[2], a[2]) - max(p[0], a[0])) > 0 and float(min(p[3], a[3]) - max(p[1], a[1])) > 0 for p in people for a in animals):
+                hits += 1
+        return hits / max(len(frames), 1)
 
 
 def trace(sc: Scenario, ruling) -> list:
@@ -220,6 +247,11 @@ def make_handler(chain, camera, backend, brain=None):
             self._send(404, {"error": "not found"})
 
         def do_POST(self):
+            if self.path == "/reset":
+                if brain is None:
+                    return self._send(503, {"error": "the autonomous brain is not running"})
+                brain.reset()
+                return self._send(200, chain.append({"kind": "reset", "moral_state": brain.agent.rt.machine_states()}))
             if self.path in ("/decide", "/performed", "/event"):
                 if brain is None:
                     return self._send(503, {"error": "the autonomous brain is not running (start with --scene)"})

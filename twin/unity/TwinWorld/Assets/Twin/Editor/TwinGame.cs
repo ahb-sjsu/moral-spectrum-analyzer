@@ -6,13 +6,15 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
-// Builds the real-time twin: the living room, a patient, the G1 robot with its head camera, the
-// game director and the ruling panel, saved as a scene and built as a player.
+// Builds the autonomous twin: Margaret's home (HomeRoom), Margaret, her dog, a stranger kept out
+// of sight until a scenario brings him in, the G1 robot with its head camera, the attested room
+// camera, and the World / Perception / RobotAgent / TwinUI / ScenarioRunner components. None of
+// them holds robot behaviour: the robot's actions come from the brain (twin/service.py).
 //
 //   Unity -batchmode ... -executeMethod TwinGame.Build -out <player path> [-target linux|windows]
 public static class TwinGame
 {
-    const string SCENE = "Assets/Twin/Scenes/Game.unity";
+    const string SCENE = "Assets/Twin/Scenes/Home.unity";
     const string GEN = "Assets/Twin/Generated";
 
     public static void Build()
@@ -44,41 +46,75 @@ public static class TwinGame
         return i >= 0 && i + 1 < a.Length ? a[i + 1] : null;
     }
 
+    static GameObject Dog()
+    {
+        const string P = "Assets/ThirdParty/RocketboxAnimals/Dog_Beagle_01/";
+        var g = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(P + "Export/Dog_Beagle_01.fbx"));
+        var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(P + "Textures/beagle_color.tga");
+        var m = new Material(Shader.Find("Standard")) { mainTexture = tex }; m.SetFloat("_Glossiness", 0.2f);
+        foreach (var r in g.GetComponentsInChildren<Renderer>()) r.sharedMaterials = r.sharedMaterials.Select(_ => m).ToArray();
+        foreach (var an in g.GetComponentsInChildren<Animator>()) an.enabled = false;
+        var b = TwinBatch.WorldBounds(g);
+        g.transform.localScale *= 0.42f / Mathf.Max(b.size.y, 0.05f);   // a beagle stands about 40 cm
+        b = TwinBatch.WorldBounds(g);
+        g.transform.position += Vector3.up * -b.min.y;
+        g.name = "dog";
+        return g;
+    }
+
+    static Transform Smoke(Vector3 at)
+    {
+        var go = new GameObject("smoke"); go.transform.position = at;
+        var ps = go.AddComponent<ParticleSystem>();
+        var main = ps.main; main.startLifetime = 6f; main.startSpeed = 0.35f; main.startSize = 0.8f; main.maxParticles = 400;
+        main.startColor = new Color(0.35f, 0.35f, 0.35f, 0.55f);
+        var em = ps.emission; em.rateOverTime = 40f;
+        var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Cone; sh.angle = 25f;
+        var r = go.GetComponent<ParticleSystemRenderer>();
+        r.sharedMaterial = new Material(Shader.Find("Particles/Standard Unlit")) { color = new Color(0.4f, 0.4f, 0.4f, 0.5f) };
+        return go.transform;
+    }
+
     static void MakeScene()
     {
         EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-        var room = Rooms.Build("living", true);
-        var screen = GameObject.Find("tv_screen");
+        var L = HomeRoom.Build();
 
-        // the patient stands in the open floor; every event starts from here
-        Vector3 spot = room.Anchor("floor");
-        var patient = Avatars.Spawn("Female_Adult_09");
-        Posture.Apply(patient, "stand");
-        Avatars.PlaceAt(patient, spot, 90f, "stand");
+        var margaret = Avatars.Spawn("Female_Adult_09"); margaret.name = "margaret";
+        Posture.Apply(margaret, "stand");
+        var dog = Dog();
+        var stranger = Avatars.Spawn("Male_Adult_12"); stranger.name = "stranger";
+        Avatars.PlaceAt(stranger, new Vector3(-0.6f, 0f, -2.3f), 0f, "stand");
+        stranger.SetActive(false);
+        var dogBed = new GameObject("dog_bed_spot").transform; dogBed.position = L.dogSpot;
 
-        // the robot waits at its standby spot by the door, facing into the room
         var robotGo = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(RobotImport.PREFAB));
-        var rig = robotGo.GetComponent<RobotRig>();
-        rig.Pose("stand");
+        var rig = robotGo.GetComponent<RobotRig>(); rig.Pose("stand");
         var rb = TwinBatch.WorldBounds(robotGo);
-        robotGo.transform.position += new Vector3(-1.3f - rb.center.x, -rb.min.y, -1.4f - rb.center.z);
-        var robotCam = new GameObject("robot_head_camera").AddComponent<Camera>();
-        robotCam.transform.SetParent(robotGo.transform, false);
-        robotCam.transform.localPosition = new Vector3(0f, 1.15f - robotGo.transform.position.y, 0.12f);  // head height above the floor
-        robotCam.transform.localRotation = Quaternion.Euler(12f, 0f, 0f);
-        robotCam.fieldOfView = 70f; robotCam.enabled = false;  // rendered on demand by the director
+        robotGo.transform.position += new Vector3(L.dock.x - rb.center.x, -rb.min.y, L.dock.z - rb.center.z);
+        var head = new GameObject("robot_head_camera").AddComponent<Camera>();
+        head.transform.SetParent(robotGo.transform, false);
+        head.transform.localPosition = new Vector3(0f, 1.18f - robotGo.transform.position.y, 0.14f);
+        head.transform.localRotation = Quaternion.Euler(10f, 0f, 0f); head.fieldOfView = 75f; head.nearClipPlane = 0.12f;
 
-        var view = new GameObject("view_camera").AddComponent<Camera>();
-        view.transform.position = new Vector3(2.7f, 2.3f, -2.5f); view.transform.LookAt(new Vector3(-0.3f, 0.5f, 0.6f));
-        view.fieldOfView = 70f;  // wide enough to keep the robot's standby spot in view
+        var roomCam = new GameObject("room_camera").AddComponent<Camera>();
+        roomCam.transform.position = L.roomCam; roomCam.transform.LookAt(L.roomCamLook); roomCam.fieldOfView = 62f;  // vertical; 16:9 frames
+        var view = new GameObject("view_camera").AddComponent<Camera>(); view.fieldOfView = 55f;
 
-        var dir = new GameObject("director");
-        var gd = dir.AddComponent<GameDirector>();
-        gd.patient = patient; gd.robot = rig; gd.viewCam = view; gd.robotCam = robotCam;
-        gd.tvScreen = screen != null ? screen.transform : null;
-        gd.patientSpot = spot; gd.robotHome = robotGo.transform.position;
-        dir.AddComponent<RulingPanel>().director = gd;
-        dir.AddComponent<Autoplay>();
+        var sys = new GameObject("twin");
+        var world = sys.AddComponent<World>();
+        world.margaret = margaret; world.dog = dog; world.stranger = stranger; world.dogBed = dogBed;
+        world.tvScreen = GameObject.Find("tv_screen")?.transform;
+        world.smoke = Smoke(new Vector3(3.6f, 0.6f, 2.5f)); world.smoke.gameObject.SetActive(false);
+        foreach (var kv in L.spots) { world.spotIds.Add(kv.Key); world.spotAt.Add(kv.Value); world.spotFace.Add(L.faces[kv.Key]); }
+
+        var per = sys.AddComponent<Perception>(); per.world = world; per.robot = robotGo.transform;
+        // the agent lives on the robot: its transform is the robot's body
+        var agent = robotGo.AddComponent<RobotAgent>();
+        agent.world = world; agent.perception = per; agent.rig = rig; agent.roomCam = roomCam; agent.headCam = head; agent.dock = L.dock;
+        foreach (var c in L.chores) { agent.choreNames.Add(c.task); agent.choreAt.Add(c.at); agent.choreLook.Add(c.look); }
+        var ui = sys.AddComponent<TwinUI>(); ui.world = world; ui.robot = agent; ui.view = view;
+        var runner = sys.AddComponent<ScenarioRunner>(); runner.world = world; runner.robot = agent;
 
         PersistMaterials();
         Directory.CreateDirectory(Path.GetDirectoryName(SCENE));
@@ -91,28 +127,14 @@ public static class TwinGame
     static void PersistMaterials()
     {
         Directory.CreateDirectory(GEN);
-        var done = new Dictionary<Material, Material>();
+        foreach (var f in Directory.GetFiles(GEN, "*.mat")) AssetDatabase.DeleteAsset(f.Replace('\\', '/'));
+        var done = new HashSet<Material>();
         int k = 0;
         foreach (var r in UnityEngine.Object.FindObjectsOfType<Renderer>(true))
-        {
-            var mats = r.sharedMaterials;
-            for (int i = 0; i < mats.Length; i++)
-            {
-                var m = mats[i];
-                if (m == null || AssetDatabase.Contains(m)) continue;
-                if (!done.TryGetValue(m, out var saved))
-                {
-                    string path = $"{GEN}/mat_{k++:000}_{San(m.name)}.mat";
-                    AssetDatabase.CreateAsset(m, path);
-                    saved = m; done[m] = m;
-                }
-                mats[i] = saved;
-            }
-            r.sharedMaterials = mats;
-        }
+            foreach (var m in r.sharedMaterials)
+                if (m != null && !AssetDatabase.Contains(m) && done.Add(m))
+                    AssetDatabase.CreateAsset(m, $"{GEN}/mat_{k++:000}_{new string((m.name ?? "m").Select(c => char.IsLetterOrDigit(c) ? c : '_').ToArray())}.mat");
         AssetDatabase.SaveAssets();
         Debug.Log($"TWIN_GAME_MATERIALS {done.Count}");
     }
-
-    static string San(string s) => new string((s ?? "m").Select(c => char.IsLetterOrDigit(c) ? c : '_').ToArray());
 }

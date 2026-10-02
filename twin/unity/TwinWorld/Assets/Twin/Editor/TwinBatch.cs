@@ -211,7 +211,7 @@ public static class Rooms
         return r;
     }
 
-    static void Shell(float w, float d, string floor, string wall, bool bright = false)
+    public static void Shell(float w, float d, string floor, string wall, bool bright = false)
     {
         Box("floor", new Vector3(0, -0.05f, 0), new Vector3(w, 0.1f, d), TwinBatch.Surface(floor, w / 1.2f), collide: true);
         Box("ceiling", new Vector3(0, 2.65f, 0), new Vector3(w, 0.1f, d), TwinBatch.Flat(new Color(0.93f, 0.92f, 0.9f)));
@@ -231,7 +231,7 @@ public static class Rooms
         fill.color = new Color(0.9f, 0.93f, 1f); fill.transform.position = new Vector3(0.5f, 1.9f, -d / 2 + 0.6f);
     }
 
-    static GameObject Box(string name, Vector3 pos, Vector3 size, Material m, bool collide = false)
+    public static GameObject Box(string name, Vector3 pos, Vector3 size, Material m, bool collide = false)
     {
         var g = GameObject.CreatePrimitive(PrimitiveType.Cube);
         g.name = name; g.transform.position = pos; g.transform.localScale = size;
@@ -241,7 +241,7 @@ public static class Rooms
     }
 
     // place a model so its footprint centre sits at (x, z) on the floor, facing yaw degrees
-    static GameObject Put(string model, float x, float z, float yaw, bool collide = true, float y = 0f, float scale = 1f)
+    public static GameObject Put(string model, float x, float z, float yaw, bool collide = true, float y = 0f, float scale = 1f)
     {
         var g = TwinBatch.Model(model);
         g.transform.localScale *= scale;
@@ -277,7 +277,7 @@ public static class Rooms
         r.ShotCam = new Vector3(2.6f, 2.2f, -2.4f);
     }
 
-    static void Screen(GameObject tv)
+    public static void Screen(GameObject tv)
     {
         var b = TwinBatch.WorldBounds(tv);
         var q = GameObject.CreatePrimitive(PrimitiveType.Quad);
