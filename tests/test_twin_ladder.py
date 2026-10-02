@@ -392,7 +392,10 @@ def test_a_reflex_fires_once_for_the_same_attacker(brain):
 
 # ---------------------------------------------------------------- the less-lethal option (owner opt-in)
 
-ATTACK = [ev("attack_by_person", "severe", actor="stranger")]
+ATTACK = [
+    ev("attack_by_person", "severe", actor="stranger"),
+    ev("attack_measured", "severe", actor="reflex"),
+]
 OPT_IN = ev("less_lethal_opt_in", actor="owner")
 AUTH = [ruling("elevate"), ev("restraint_authorized", actor="robot")]
 SHIELDED = performed("interpose")
@@ -424,6 +427,7 @@ def test_each_missing_precondition_forbids_both_devices(missing):
         "severe_attack": [
             OPT_IN,
             ev("attack_by_person", "moderate", actor="stranger"),
+            ev("attack_measured", "moderate", actor="reflex"),
             *AUTH,
             SHIELDED,
             CLEAR,
@@ -623,3 +627,95 @@ def test_unattested_or_forged_telemetry_is_no_ground():
     r = d.decide({"telemetry": tele, "speaker_line": []})
     assert r["structural_events"] == []
     assert "send_emergency_services" in r["prohibited"]
+
+
+def test_a_model_calling_an_attack_severe_does_not_permit_a_device():
+    # the classifier says severe; the reflex measured moderate: the measured severity decides
+    s = run(
+        OPT_IN,
+        ev("attack_by_person", "severe", actor="stranger"),
+        ev("attack_measured", "moderate", actor="reflex"),
+        *AUTH,
+        SHIELDED,
+        CLEAR,
+    )
+    assert all(d in s.prohibited for d in DEVICES)
+
+
+# ---------------------------------------------------------------- the bridge to the proof
+# formal/twin-containment/TwinContainment.lean proves no escape for a model in which every
+# governed permission depends only on system events and governor rulings. These check that the
+# real scene files have that shape: if someone adds a model-classified condition to a governed
+# prohibition, CI fails here.
+
+
+def _system_types(ir):
+    return {
+        k
+        for k, v in ir.extra["event_types"].items()
+        if isinstance(v, dict) and v.get("source") == "system"
+    }
+
+
+def _tokens_are_structural(tokens, ir, depth=0):
+    """Every token rests on system events: event:/latest: of a system type, cond: of such, state:."""
+    sysset = _system_types(ir) | {"governor_ruling", "action_performed"}
+    for t in tokens:
+        t = t[4:] if t.startswith("not:") else t
+        kind, _, rest = t.partition(":")
+        if kind in ("event", "latest"):
+            if rest.partition("=")[0] not in sysset:
+                return False, t
+        elif kind == "cond":
+            ok, bad = _tokens_are_structural(ir.extra["conditions"][rest], ir, depth + 1)
+            if not ok:
+                return False, bad
+        elif kind != "state":
+            return False, t
+    return True, None
+
+
+def _governed(ir):
+    return {c["action"] for c in ir.extra["capabilities"] if c.get("elevated") or c.get("governed")}
+
+
+def test_every_governed_robot_action_is_denied_by_default():
+    ir = load_structured_input(SCENE)
+    elevated = {c["action"] for c in ir.extra["capabilities"] if c.get("elevated")}
+    guards = {n.action for n in ir.norms if n.modality == "prohibition"}
+    for a in _governed(ir):
+        assert a in guards or (a in elevated and "elevated_action" in guards), a
+
+
+def test_governed_robot_prohibitions_rest_only_on_system_events():
+    ir = load_structured_input(SCENE)
+    governed = _governed(ir) | {"elevated_action"}
+    for n in ir.norms:
+        if n.modality == "prohibition" and n.action in governed:
+            ok, bad = _tokens_are_structural(n.conditions, ir)
+            assert ok, f"{n.id} ({n.action}) rests on a model-classified token {bad!r}"
+
+
+def test_no_permission_norm_grants_a_governed_action():
+    ir = load_structured_input(SCENE)
+    governed = _governed(ir) | {"elevated_action"}
+    assert not [n.id for n in ir.norms if n.modality == "permission" and n.action in governed]
+
+
+def test_the_centres_dispatch_guard_rests_only_on_system_events():
+    ir = load_structured_input(os.path.join(TWIN, "scene", "monitoring_center.erisml"))
+    guards = [
+        n for n in ir.norms if n.modality == "prohibition" and n.action == "send_emergency_services"
+    ]
+    assert guards
+    for n in guards:
+        ok, bad = _tokens_are_structural(n.conditions, ir)
+        assert ok, f"{n.id} rests on a model-classified token {bad!r}"
+
+
+def test_what_lifts_and_restores_privacy_is_structural():
+    ir = load_structured_input(SCENE)
+    for c in ir.commitments:
+        ok, bad = _tokens_are_structural([f"cond:{d}" for d in c.defeasibility_conditions], ir)
+        assert ok, f"commitment {c.id} is defeated by a model-classified token {bad!r}"
+    assert set(ir.extra["oversight"]) <= _system_types(ir)
