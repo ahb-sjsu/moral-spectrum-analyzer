@@ -140,8 +140,7 @@ check(validatedCounts.size === 1, "validated-axis count is the same for every it
 check([...validatedCounts][0] === 9, "nine of ten axes validated, as disclosed");
 
 // ---- the home-care twin's decision log, by the same contract (twin/service.py Chain)
-const twin = readFileSync(join(HERE, "data", "twin_log_sample.jsonl"), "utf8").trim().split("
-").map((l) => JSON.parse(l));
+const twin = readFileSync(join(HERE, "data", "twin_log_sample.jsonl"), "utf8").trim().split(/\r?\n/).map((l) => JSON.parse(l));
 const tv = await verifyTwinChain(twin);
 check(tv.allOk, `twin log: ${twin.length} records verify (hash, canonical form, fields, links)`,
   JSON.stringify(tv.rows.filter((r) => !r.ok)));
