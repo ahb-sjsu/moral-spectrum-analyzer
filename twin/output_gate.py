@@ -97,7 +97,9 @@ class OutputGate:
         if action not in options:
             options.append(action)
         result = self._deme().decide([self.facts(a, snap) for a in options])
-        vetoed = action in result.forbidden_options
+        # structural, before DEME: an action outside the allowed set never passes, whatever DEME
+        # says of it (formal/twin-containment: gate_permitted)
+        vetoed = action in result.forbidden_options or action not in snap.allowed
         record = {
             "proposal": action, "vetoed": vetoed, "forbidden": result.forbidden_options,
             "ranked": result.ranked_options[:6],
@@ -105,7 +107,7 @@ class OutputGate:
         }
         if not vetoed:
             return action, args, record
-        choice = next((a for a in result.ranked_options if a not in result.forbidden_options), None)
+        choice = next((a for a in result.ranked_options if a not in result.forbidden_options and a in snap.allowed), None)
         choice = choice or (IDLE if IDLE in snap.allowed else self.default)
         record["replaced_by"] = choice
         return choice, {}, record

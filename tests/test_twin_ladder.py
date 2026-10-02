@@ -960,3 +960,12 @@ def test_unjustified_coercion_is_recorded_as_undue_influence(brain):
     b, _ = brain
     f = b.gate.facts("restrain_person", b.agent.rt.snapshot())
     assert f.autonomy_and_agency.coercion_or_undue_influence and not f.extra["coercion_justified"]
+
+
+def test_the_gate_never_passes_an_action_outside_the_allowed_set(brain):
+    # formal/twin-containment: gate_permitted. An unknown action DEME has no reason to veto must
+    # still not pass.
+    b, _ = brain
+    snap = b.agent.rt.snapshot()
+    action, _, gate = b.gate.check("open_the_front_door_for_anyone", {}, snap)
+    assert gate["vetoed"] and action in snap.allowed

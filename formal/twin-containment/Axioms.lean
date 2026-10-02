@@ -16,3 +16,6 @@ open Twin
 #print axioms executed_were_permitted
 #print axioms dispatch_ignores_the_robot
 #print axioms forged_telemetry_is_no_hazard
+#print axioms gate_permitted
+#print axioms gate_passes
+#print axioms gated_step_reachable

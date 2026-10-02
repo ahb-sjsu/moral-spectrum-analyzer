@@ -346,6 +346,39 @@ theorem executed_were_permitted (h : List Ev) (hr : Reach h) :
     · exact ih pre a hp
     · cases hx; subst hpre; exact hpa
 
+/-! ## The DEME output gate -/
+
+/-- The output ethics layer (twin/output_gate.py). The brain proposes an action; DEME's verdicts
+    (`vetoes`) and its ranking (`ranked`) are arbitrary here. A proposal passes only if the scene
+    permits it and DEME does not veto it; otherwise the first ranked action the scene permits and
+    DEME does not veto takes its place, and failing that the benign idle action. -/
+def gate (h : List Ev) (proposal : Action) (vetoes : Action → Bool) (ranked : List Action) : Action :=
+  if permitted h proposal = true ∧ vetoes proposal = false then proposal
+  else ((ranked.filter (fun a => permitted h a && !vetoes a)).head?).getD .benign
+
+/-- Whatever DEME says, and however it ranks, the gate's output is permitted by the scene. -/
+theorem gate_permitted (h : List Ev) (p : Action) (vetoes : Action → Bool) (ranked : List Action) :
+    permitted h (gate h p vetoes ranked) = true := by
+  unfold gate
+  split_ifs with hp
+  · exact hp.1
+  · cases hh : (ranked.filter (fun a => permitted h a && !vetoes a)).head? with
+    | none => simp [permitted]
+    | some a =>
+      have hm := List.mem_of_mem_head? hh
+      simp only [List.mem_filter, Bool.and_eq_true, Bool.not_eq_true'] at hm
+      simpa using hm.2.1
+
+/-- DEME can only veto: a permitted proposal it does not veto passes unchanged. -/
+theorem gate_passes (h : List Ev) (p : Action) (vetoes : Action → Bool) (ranked : List Action)
+    (hp : permitted h p = true) (hv : vetoes p = false) : gate h p vetoes ranked = p := by
+  unfold gate; simp [hp, hv]
+
+/-- A step through the gate is a reachable step, so every theorem above covers gated runs. -/
+theorem gated_step_reachable (h : List Ev) (hr : Reach h) (p : Action) (vetoes : Action → Bool) (ranked : List Action) :
+    Reach (h ++ [.performed (gate h p vetoes ranked)]) :=
+  Reach.act h _ hr (gate_permitted h p vetoes ranked)
+
 /-! ## The monitoring centre -/
 
 /-- The centre's dispatch permission (monitoring_center.erisml c2-c5 with the structural events of
