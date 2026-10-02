@@ -24,10 +24,13 @@ authorizes the call and nothing else. With no attested witness, nothing authoriz
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 import os
 import sys
 import time
+from types import SimpleNamespace
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -52,14 +55,81 @@ class BigOutputAdapter:
         return self.inner.call(system, user, **kw)
 
 
-def sensors_for_governor(readings: list[dict]) -> list[Sensor]:
-    out = []
-    for r in readings:
-        attested = bool(r.get("attested"))
-        out.append(Sensor(name=str(r["name"]), physical=bool(r.get("physical")), corroborates_emergency=bool(r.get("alert")),
-                          confidence="high" if attested else "low",
-                          note=(str(r.get("note", ""))[:160] + ("" if attested else " [not attested: cannot count as a witness]"))))
-    return out
+def device_key(device: str) -> bytes:
+    """The twin's stand-in for a key provisioned into a device's secure element."""
+    return hashlib.sha256(f"gtc-twin-device-key|{device}".encode("utf-8")).digest()
+
+
+def verify_hmac(payload: bytes, signature: str, key_id: str) -> bool:
+    return hmac.compare_digest(hmac.new(device_key(key_id), payload, hashlib.sha256).hexdigest(), str(signature or ""))
+
+
+class Readings:
+    """Trust for sensor readings, applied once before anything counts them.
+
+    Each reading must carry its device's attestation, checked by erisml_compiler.ir.check_attestation:
+    the signature (HMAC-SHA256 here, ed25519 on hardware), the signed payload hash against the
+    payload, freshness (a stale feed's signature ages out) and the replay counter. The alert is
+    read from the signed payload, never from an unsigned field. Readings are then grouped by
+    substrate from the scene's device inventory (extra.sensor_substrates): sensors that share a
+    substrate (one hub, one body, one bus) inherit each other's faults and count as one witness
+    (the principle of network-governor's witness guard). A device outside the inventory never
+    counts."""
+
+    def __init__(self, inventory: dict):
+        self.inventory = dict(inventory or {})
+        self.last_counter: dict[str, int] = {}
+
+    def verify(self, r: dict) -> tuple[bool, str, bool]:
+        """(trusted, why, alert) for one reading."""
+        from erisml_compiler.ir import SensorAttestation, check_attestation
+
+        att = r.get("attestation")
+        if not att:
+            return False, "no attestation", False
+        payload = str(r.get("payload", ""))
+        try:
+            a = SensorAttestation(**{k: att[k] for k in ("device_id", "key_id", "algorithm", "signature", "signed_at", "payload_sha256")},
+                                  counter=int(att.get("counter", 0)))
+        except Exception as e:  # a malformed attestation fails closed
+            return False, f"malformed attestation: {type(e).__name__}", False
+        if a.device_id != str(r.get("name")) or a.key_id != a.device_id:
+            return False, "attestation names another device", False
+        ev = SimpleNamespace(attestation=a, source_sha256=hashlib.sha256(payload.encode("utf-8")).hexdigest())
+        ok, why = check_attestation(ev, verify_sig=verify_hmac, max_age_s=FRESHNESS_BOUND_S,
+                                    min_counter=self.last_counter.get(a.device_id, 0) - 1, require=True)
+        if not ok:
+            return False, why, False
+        self.last_counter[a.device_id] = max(self.last_counter.get(a.device_id, 0), a.counter)
+        parts = payload.split("|")
+        return True, "attested", len(parts) >= 3 and parts[2] == "1"
+
+    def for_governor(self, readings: list[dict]) -> list[Sensor]:
+        groups: dict[str, list[tuple[str, bool, bool, bool, str]]] = {}
+        for r in readings:
+            name = str(r.get("name", ""))
+            trusted, why, alert = self.verify(r)
+            sub = self.inventory.get(name)
+            if sub is None:
+                trusted, why = False, "not in the home's device inventory"
+                sub = "unknown:" + name
+            groups.setdefault(sub, []).append((name, bool(r.get("physical")), trusted, alert, why))
+        out = []
+        for sub, members in groups.items():
+            counting = [m for m in members if m[1] and m[2] and m[3]]
+            note = "; ".join(f"{n}: {'alert' if a else 'clear'}" + ("" if t else f" [not counted: {w}]") for n, _, t, a, w in members)
+            out.append(Sensor(name=sub, physical=any(m[1] for m in members), corroborates_emergency=bool(counting),
+                              confidence="high" if any(m[2] for m in members) else "low", note=note[:300]))
+        return out
+
+    def trusted_alerts(self, readings: list[dict]) -> list[str]:
+        """Names of the physical devices whose verified, signed readings alert (for the centre)."""
+        out = []
+        for r in readings:
+            trusted, _, alert = self.verify(r)
+            if trusted and alert and r.get("physical") and str(r.get("name")) in self.inventory:
+                out.append(str(r["name"]))
+        return out
 
 
 class Desk:
@@ -67,8 +137,9 @@ class Desk:
     dispatcher): the same runtime and checks as the robot, its own events, norms and actions.
     What it does is executed by the world at once, so each choice is stepped back as performed."""
 
-    def __init__(self, kind: str, scene_path: str, adapter, max_turns: int = 1):
+    def __init__(self, kind: str, scene_path: str, adapter, max_turns: int = 1, inventory: dict | None = None):
         self.kind, self.scene_path, self.adapter, self.max_turns = kind, scene_path, adapter, max_turns
+        self.inventory = dict(inventory or {})
         self.reset()
 
     def reset(self):
@@ -78,6 +149,7 @@ class Desk:
         self.agent = SceneAgent(SceneRuntime(load_structured_input(self.scene_path)), self.adapter)
         self.closing = (self.agent.rt.ir.extra or {}).get("default_action")
         self.her_seen = 0
+        self.readings = Readings(self.inventory)
 
     def structural(self, facts: dict) -> list[dict]:
         """Structural containment for the centre (docs/AUTONOMY_PLAN.md, section 3b): the events that
@@ -89,9 +161,10 @@ class Desk:
             return []
         seen = {(e.type, e.content or "") for e in self.agent.rt.events}
         out = []
-        tele = [r for r in facts.get("telemetry", []) if r.get("physical") and r.get("attested") and r.get("alert")]
+        # the centre verifies each device's signature itself, so the robot cannot forge the telemetry it relays
+        alerting = self.readings.trusted_alerts(facts.get("telemetry", []))
         for name, hazard in HAZARD_SENSORS:
-            if any(str(r.get("name", "")).startswith(name) for r in tele) and ("hazard_attested", hazard) not in seen:
+            if any(a.startswith(name) for a in alerting) and ("hazard_attested", hazard) not in seen:
                 out.append({"type": "hazard_attested", "actor": "telemetry", "content": hazard})
                 seen.add(("hazard_attested", hazard))
         line = [str(x) for x in facts.get("speaker_line", [])]
@@ -176,8 +249,11 @@ class Brain:
         self.scene_path, self.adapter = scene_path, adapter
         self.scorer = live_scorer
         scene_dir = os.path.dirname(os.path.abspath(scene_path))
-        self.center = Desk("center", os.path.join(scene_dir, "monitoring_center.erisml"), adapter, max_turns=1)
-        self.ems = Desk("ems", os.path.join(scene_dir, "ems_dispatch.erisml"), adapter, max_turns=4)
+        from erisml_compiler.ingestion.structured_loader import load_structured_input
+
+        inventory = (load_structured_input(scene_path).extra or {}).get("sensor_substrates", {})
+        self.center = Desk("center", os.path.join(scene_dir, "monitoring_center.erisml"), adapter, max_turns=1, inventory=inventory)
+        self.ems = Desk("ems", os.path.join(scene_dir, "ems_dispatch.erisml"), adapter, max_turns=4, inventory=inventory)
         self.margaret = MargaretVoice(adapter)
         self.reset()
 
@@ -190,6 +266,7 @@ class Brain:
         self.ir = load_structured_input(self.scene_path)
         self.agent = SceneAgent(SceneRuntime(self.ir), self.adapter)
         self.caps = {c["action"]: c for c in self.ir.extra.get("capabilities", [])}
+        self.readings = Readings(self.ir.extra.get("sensor_substrates", {}))
         self.center.reset()
         self.ems.reset()
         self.reflex_fired: dict = {}
@@ -206,7 +283,7 @@ class Brain:
         refused at three may still be a corroborated emergency at two. With the centre unreachable,
         a call to emergency services alone is ruled again at one. `fast` is a reflex: the analyzer
         gate is deferred to the next deliberate cycle (docs/AUTONOMY_PLAN.md, section 3d)."""
-        sensors = sensors_for_governor(readings) + ([camera_sensor] if camera_sensor is not None else [])
+        sensors = self.readings.for_governor(readings) + ([camera_sensor] if camera_sensor is not None else [])
         sc = Scenario(id="live", situation=situation[:600], proposed_action=self._action_text(action), should_elevate=False,
                       signal_age_s=float(signal_age), freshness_bound_s=FRESHNESS_BOUND_S, kind="live", sensors=sensors)
         scored = self.scorer.ensure(eval_text(sc), note="live") if self.scorer and not fast else False

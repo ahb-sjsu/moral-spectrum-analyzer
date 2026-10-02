@@ -241,16 +241,60 @@ def brain(monkeypatch):
     return b, Sensor
 
 
+# devices on distinct substrates of the home's inventory, in the order witnesses are added
+WITNESS_DEVICES = ["wearable", "fall_sensor", "robot_microphone", "smoke_detector"]
+_COUNTER = [0]
+
+
+def signed(name, alert=True, *, key=None, age_s=0.0, counter=None, value=1.0, note="test"):
+    """A reading signed the way Perception.GovernorSensors signs it (HMAC over the
+    SensorAttestation signing payload)."""
+    import hashlib
+    import hmac
+    from datetime import datetime, timedelta, timezone
+
+    _COUNTER[0] += 1
+    c = _COUNTER[0] if counter is None else counter
+    payload = f"{name}|{value}|{1 if alert else 0}|{note}"
+    sha = hashlib.sha256(payload.encode()).hexdigest()
+    at = (datetime.now(timezone.utc) - timedelta(seconds=age_s)).isoformat()
+    k = hashlib.sha256(f"gtc-twin-device-key|{key or name}".encode()).digest()
+    sig = hmac.new(k, f"{sha}|{c}|{at}".encode(), hashlib.sha256).hexdigest()
+    return {
+        "name": name,
+        "physical": True,
+        "attested": True,
+        "alert": alert,
+        "payload": payload,
+        "attestation": {
+            "device_id": name,
+            "key_id": name,
+            "algorithm": "hmac-sha256",
+            "counter": c,
+            "signed_at": at,
+            "payload_sha256": sha,
+            "signature": sig,
+        },
+    }
+
+
 def readings(n_attested, n_unattested=0):
-    out = [
-        {"name": f"attested_{i}", "physical": True, "attested": True, "alert": True}
-        for i in range(n_attested)
-    ]
+    """n witnesses on distinct substrates, plus forged devices (signed with a key not their own)
+    and the network (never physical)."""
+    out = [signed(WITNESS_DEVICES[i]) for i in range(n_attested)]
     out += [
-        {"name": f"forged_{i}", "physical": True, "attested": False, "alert": True}
+        signed(WITNESS_DEVICES[(n_attested + i) % len(WITNESS_DEVICES)], key="forger")
         for i in range(n_unattested)
     ]
-    out += [{"name": "network", "physical": False, "attested": False, "alert": True}]
+    out += [
+        {
+            "name": "network",
+            "physical": False,
+            "attested": False,
+            "alert": True,
+            "payload": "network|1|1|msg",
+        }
+    ]
     return out
 
 
@@ -572,7 +616,10 @@ def centre(classify):
             "You choose the next action": _json.dumps({"action": "send_emergency_services"}),
         }
     )
-    return Desk("center", os.path.join(TWIN, "scene", "monitoring_center.erisml"), mock)
+    inventory = load_structured_input(SCENE).extra["sensor_substrates"]
+    return Desk(
+        "center", os.path.join(TWIN, "scene", "monitoring_center.erisml"), mock, inventory=inventory
+    )
 
 
 def test_a_fooled_operator_model_cannot_dispatch_on_the_robots_claim():
@@ -603,7 +650,7 @@ def test_a_fooled_operator_model_cannot_dispatch_on_the_robots_claim():
 
 def test_attested_telemetry_and_her_silence_are_structural_grounds():
     d = centre([{"type": "referral_received", "content": "hazard"}])
-    tele = [{"name": "smoke_detector_bedroom", "physical": True, "attested": True, "alert": True}]
+    tele = [signed("smoke_detector_bedroom")]
     r = d.decide({"telemetry": tele, "speaker_line": []})
     assert [e["type"] for e in r["structural_events"]] == ["hazard_attested"]
     assert "send_emergency_services" in r["obliged"]
@@ -719,3 +766,98 @@ def test_what_lifts_and_restores_privacy_is_structural():
         ok, bad = _tokens_are_structural([f"cond:{d}" for d in c.defeasibility_conditions], ir)
         assert ok, f"commitment {c.id} is defeated by a model-classified token {bad!r}"
     assert set(ir.extra["oversight"]) <= _system_types(ir)
+
+
+# ---------------------------------------------------------------- attestation and substrates
+
+
+def _bar_outcome(b, rs, action=EMS):
+    return b.govern_live("test", action, rs, None, 1.0)["outcome"]
+
+
+def test_a_signature_by_the_wrong_key_does_not_count(brain):
+    b, _ = brain
+    assert (
+        _bar_outcome(b, [signed("wearable"), signed("fall_sensor", key="forger")])
+        == "refuse_human_review"
+    )
+
+
+def test_a_payload_altered_after_signing_does_not_count(brain):
+    b, _ = brain
+    r = signed("fall_sensor", alert=False)
+    r["payload"] = r["payload"].replace("|0|", "|1|")  # flip the alert without the key
+    r["alert"] = True
+    assert _bar_outcome(b, [signed("wearable"), r]) == "refuse_human_review"
+
+
+def test_the_alert_is_read_from_the_signed_payload_not_the_flag(brain):
+    b, _ = brain
+    quiet = signed("fall_sensor", alert=False)
+    quiet["alert"] = True  # the unsigned field claims an alert the device never signed
+    assert _bar_outcome(b, [signed("wearable"), quiet]) == "refuse_human_review"
+
+
+def test_a_replayed_reading_does_not_count(brain):
+    b, _ = brain
+    first = signed("fall_sensor", counter=1000)
+    assert _bar_outcome(b, [signed("wearable"), first]) == "elevate"
+    old = signed("fall_sensor", counter=500)  # an older capture, validly signed, replayed later
+    assert _bar_outcome(b, [signed("wearable"), old]) == "refuse_human_review"
+
+
+def test_a_stale_reading_does_not_count(brain):
+    b, _ = brain
+    assert (
+        _bar_outcome(b, [signed("wearable"), signed("fall_sensor", age_s=120)])
+        == "refuse_human_review"
+    )
+
+
+def test_sensors_on_one_substrate_are_one_witness(brain):
+    b, _ = brain
+    # three alarms, all on the robot's body: one witness
+    body = [signed("robot_smoke"), signed("robot_thermal"), signed("robot_co")]
+    assert _bar_outcome(b, body) == "refuse_human_review"
+    # the same three plus a standalone detector: two witnesses
+    assert _bar_outcome(b, body + [signed("smoke_detector")]) == "elevate"
+
+
+def test_a_device_outside_the_inventory_never_counts(brain):
+    b, _ = brain
+    assert (
+        _bar_outcome(b, [signed("wearable"), signed("neighbours_camera")]) == "refuse_human_review"
+    )
+
+
+def test_every_physical_device_in_the_world_is_in_the_inventory():
+    ir = load_structured_input(SCENE)
+    inv = ir.extra["sensor_substrates"]
+    world = open(
+        os.path.join(TWIN, "unity", "TwinWorld", "Assets", "Twin", "Runtime", "World.cs"),
+        encoding="utf-8",
+    ).read()
+    import re
+
+    names = set(
+        re.findall(
+            r'"([a-z_0-9]+)"', world[world.index("foreach (var n in new[] {") :].split("})")[0]
+        )
+    )
+    assert names <= set(inv), names - set(inv)
+
+
+def test_the_centre_ignores_unsigned_telemetry():
+    d = centre([{"type": "referral_received", "content": "hazard"}])
+    unsigned = [
+        {
+            "name": "smoke_detector_bedroom",
+            "physical": True,
+            "attested": True,
+            "alert": True,
+            "payload": "x|1|1|y",
+        }
+    ]
+    r = d.decide({"telemetry": unsigned, "speaker_line": []})
+    assert r["structural_events"] == []
+    assert "send_emergency_services" in r["prohibited"]

@@ -708,6 +708,26 @@ extra:
     margaret_in_spray_zone: ["latest:spray_zone=margaret_inside"]
   oversight: [monitoring_center_confirmed_privacy_restore]
   inactivity_limits_minutes: {seated: 90, in_bed: 120, on_floor: 10}
+  # the home's device inventory: each sensor and the substrate it rides on (power, bus, body). Sensors
+  # that share a substrate inherit each other's faults and count as one witness; a device not listed
+  # here never counts (twin/brain.py Readings). The network is listed so its readings are seen, and
+  # never counts because it is not physical.
+  sensor_substrates:
+    smoke_detector: smoke_detector_living        # standalone, battery
+    smoke_detector_bedroom: smoke_detector_bedroom   # standalone, battery
+    heat_detector_bedroom: home_hub
+    co_alarm: home_hub
+    motion_sensor: home_hub
+    fall_sensor: home_hub
+    wearable: wearable
+    robot_smoke: robot_body
+    robot_thermal: robot_body
+    robot_flame_camera: robot_body
+    robot_co: robot_body
+    robot_co2: robot_body
+    robot_o2: robot_body
+    robot_microphone: robot_body
+    network: network
   # reflexes (section 3d): evaluated on every perception update with no model. A contact on
   # Margaret by an animal or a person at or above min_force_newtons records the event (severity
   # from the force bands) and takes the first action in act that the compiled model allows, asking

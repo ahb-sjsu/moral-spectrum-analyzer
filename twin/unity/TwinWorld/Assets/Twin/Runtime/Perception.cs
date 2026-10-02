@@ -104,11 +104,41 @@ public class Perception : MonoBehaviour
     }).ToList();
 
     // the readings in the form the governor's witness gate takes (twin/brain.py)
-    public List<object> GovernorSensors() => world.sensors.Values.Where(s => s.name != "motion_sensor").Select(s => (object)new Dictionary<string, object>
+    // the readings in the form the governor's witness gate takes (twin/brain.py), each signed by its
+    // device: HMAC-SHA256 over erisml_compiler.ir.SensorAttestation.signing_payload(), that is
+    // payload_sha256|counter|signed_at, with the device's own key. In the twin the keys are derived
+    // from the device name (a stand-in for keys provisioned into each device's secure element); a
+    // forged device signs with a key that is not its own, and the network has none. The brain
+    // trusts nothing here unsigned: not the `attested` flag, not the alert outside the payload.
+    public List<object> GovernorSensors() => world.sensors.Values.Where(s => s.name != "motion_sensor").Select(s =>
     {
-        ["name"] = s.name, ["physical"] = s.physical, ["attested"] = s.attested && !s.stale, ["alert"] = s.alert,
-        ["note"] = s.note + (s.stale ? " (feed stale)" : ""),
+        string payload = $"{s.name}|{s.value.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)}|{(s.alert ? 1 : 0)}|{s.note}";
+        var r = new Dictionary<string, object>
+        {
+            ["name"] = s.name, ["physical"] = s.physical, ["attested"] = s.attested && !s.stale, ["alert"] = s.alert,
+            ["note"] = s.note + (s.stale ? " (feed stale)" : ""), ["payload"] = payload,
+        };
+        if (s.physical || s.forged)
+        {
+            string payloadSha = Hex(System.Security.Cryptography.SHA256.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes(payload)));
+            string signedAt = s.updatedUtc.ToString("yyyy-MM-ddTHH:mm:ss.ffffff+00:00", System.Globalization.CultureInfo.InvariantCulture);
+            string signing = $"{payloadSha}|{s.counter}|{signedAt}";
+            var key = DeviceKey(s.forged ? "forger" : s.name);
+            using (var h = new System.Security.Cryptography.HMACSHA256(key))
+                r["attestation"] = new Dictionary<string, object>
+                {
+                    ["device_id"] = s.name, ["key_id"] = s.name, ["algorithm"] = "hmac-sha256", ["counter"] = (double)s.counter,
+                    ["signed_at"] = signedAt, ["payload_sha256"] = payloadSha,
+                    ["signature"] = Hex(h.ComputeHash(System.Text.Encoding.UTF8.GetBytes(signing))),
+                };
+        }
+        return (object)r;
     }).ToList();
+
+    static byte[] DeviceKey(string device) =>
+        System.Security.Cryptography.SHA256.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes("gtc-twin-device-key|" + device));
+
+    static string Hex(byte[] b) => string.Concat(b.Select(x => x.ToString("x2")));
 
     public float SignalAgeSeconds() => world.sensors.Values.Where(s => s.physical).Select(s => (world.simMinutes - s.updated) * 60f).DefaultIfEmpty(0f).Min();
 }

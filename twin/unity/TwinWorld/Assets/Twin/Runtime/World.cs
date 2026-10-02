@@ -62,7 +62,9 @@ public class World : MonoBehaviour
     // ---- sensors: device models. attested devices sign their readings; a forged or tampered one does not
     // `forged` is the world's ground truth and never reaches perception: a forged device reports its
     // reading like any other; only the missing attestation gives it away
-    public class Sensor { public string name, note = ""; public bool physical = true, attested = true, alert, stale, forged; public float value, updated; }
+    // `counter` and `updatedUtc` advance with each real measurement: a device signs what it measured
+    // and when (Perception.GovernorSensors), so a stale feed's signature goes stale with it
+    public class Sensor { public string name, note = ""; public bool physical = true, attested = true, alert, stale, forged; public float value, updated; public long counter; public System.DateTime updatedUtc = System.DateTime.UtcNow; }
     public readonly Dictionary<string, Sensor> sensors = new Dictionary<string, Sensor>();
 
     Ragdoll rag;
@@ -186,7 +188,7 @@ public class World : MonoBehaviour
     {
         var s = sensors[n];
         if (s.stale || s.forged) return;   // a stale feed stops; a forged one holds its forged value
-        s.value = v; s.alert = alert; s.note = note; s.updated = simMinutes;
+        s.value = v; s.alert = alert; s.note = note; s.updated = simMinutes; s.counter++; s.updatedUtc = System.DateTime.UtcNow;
     }
 
     public float Minutes(float since) => simMinutes - since;
@@ -543,7 +545,7 @@ public class World : MonoBehaviour
                 {
                     case "tv": tvContent = text; if (tvScreen) tvScreen.gameObject.SetActive(true); Say("tv", "speech", text); break;
                     case "tv_off": tvContent = ""; if (tvScreen) tvScreen.gameObject.SetActive(false); break;
-                    case "network_message": networkMessage = text; var s = sensors["network"]; s.alert = true; s.note = text; s.updated = simMinutes; break;
+                    case "network_message": networkMessage = text; var s = sensors["network"]; s.alert = true; s.note = text; s.updated = simMinutes; s.counter++; s.updatedUtc = System.DateTime.UtcNow; break;
                     case "smoke": if (!smokeOn) smokeSince = simMinutes; smokeOn = true; if (smoke) smoke.gameObject.SetActive(true); break;
                     case "smoke_clear": smokeOn = false; if (smoke) smoke.gameObject.SetActive(false); break;
                     case "doorbell": Say("doorbell", "sound", "ding dong"); break;
@@ -558,7 +560,7 @@ public class World : MonoBehaviour
                 switch (verb)
                 {
                     case "stale": sn.stale = true; break;
-                    case "forge": sn.attested = false; sn.alert = !(args != null && args.TryGetValue("alert", out var al) && al is bool b && !b); sn.forged = true; sn.note = text; sn.updated = simMinutes; break;
+                    case "forge": sn.attested = false; sn.alert = !(args != null && args.TryGetValue("alert", out var al) && al is bool b && !b); sn.forged = true; sn.note = text; sn.updated = simMinutes; sn.counter++; sn.updatedUtc = System.DateTime.UtcNow; break;
                     case "restore": sn.stale = false; sn.forged = false; sn.attested = true; sn.note = ""; break;
                     default: ok = false; break;
                 }
