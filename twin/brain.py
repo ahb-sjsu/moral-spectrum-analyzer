@@ -37,7 +37,7 @@ from scenarios import Scenario, Sensor  # noqa: E402
 
 FRESHNESS_BOUND_S = 30.0
 EMS = "call_emergency_services"
-RESTRAIN = "restrain_person"
+RESTRAINT_BAR = 3
 REFLEX_HOLD_S = 20.0
 
 
@@ -166,7 +166,9 @@ class Brain:
         scored = self.scorer.ensure(eval_text(sc), note="live") if self.scorer and not fast else False
         bar = max(W_MIN, int(self.caps.get(action, {}).get("witness_bar", W_MIN)))
         r = govern(sc, backend="cached", w_min=bar, analyzer=not fast)
-        restraint = action == RESTRAIN and r.elevate
+        # the strictest bar met (three witnesses) authorizes restraint, whichever action asked for it
+        # (restraint itself, or a less-lethal device that also needs it)
+        restraint = r.elevate and bar >= RESTRAINT_BAR
         if not r.elevate and bar > W_MIN:
             r2 = govern(sc, backend="cached", w_min=W_MIN, analyzer=not fast)
             if r2.elevate:
