@@ -147,8 +147,8 @@ check(tv.allOk, `twin log: ${twin.length} records verify (hash, canonical form, 
 const tamperedTwin = twin.map((r, i) => i === Math.floor(twin.length / 2)
   ? { ...r, canonical: r.canonical.replace(/"seq":(\d+)/, (m, n) => `"seq":${Number(n) + 1}`) } : r);
 check(!(await verifyTwinChain(tamperedTwin)).allOk, "twin log: one edited record is rejected");
-const reordered = [twin[1], twin[0], ...twin.slice(2)];
-check(!(await verifyTwinChain(reordered)).allOk, "twin log: reordered records are rejected");
+const twinReordered = [twin[1], twin[0], ...twin.slice(2)];
+check(!(await verifyTwinChain(twinReordered)).allOk, "twin log: reordered records are rejected");
 
 console.log(failures === 0
   ? "\nALL PASS. The browser verifier agrees with Python and rejects tampering."
