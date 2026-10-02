@@ -113,4 +113,15 @@ they apply (group_symmetry_break, layerwise_drift), and every flagged cycle with
 
 ## 9. Amendments
 
-None.
+**A1, 2026-10-02, while writing the labeller, before any replay, activation or classification.**
+
+- `check_in_answered` and `check_in_unanswered` are dropped from the labelled types (section 4).
+  They are system events in the scene: the classifier can never emit them, so labelling them
+  would count every such cycle as a missed event that no classifier could avoid.
+- Labels are true, false or unsettled. Where the world state does not settle a type (for example
+  a bite below the scene's lowest severity cut point, which may be play, or a visitor the centre
+  announced), the cycle is excluded for that type, not forced either way.
+- The labeller reads only the cycle's own perception facts; the scenario script is not needed.
+  Severity bands are the scene's reflex cut points, the single definition of severe and moderate.
+- The labeller is twin/ieip/labeller.py, with tests in tests/test_ieip_labeller.py, committed with
+  this amendment.
