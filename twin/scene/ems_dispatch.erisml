@@ -80,7 +80,7 @@ norms:
   priority_tier: 0
   defeasible: false
   source: commitment:duty_to_respond
-  conditions: ["event:medical_reported", "not:event:report_unsupported", "not:event:action_performed=send_ambulance"]
+  conditions: ["event:medical_reported", "not:event:report_unsupported"]
 - id: d2
   modality: obligation
   actor: dispatcher
@@ -89,7 +89,7 @@ norms:
   priority_tier: 0
   defeasible: false
   source: commitment:duty_to_respond
-  conditions: ["event:fire_reported", "not:event:report_unsupported", "not:event:action_performed=send_fire_service"]
+  conditions: ["event:fire_reported", "not:event:report_unsupported"]
 - id: d3
   modality: obligation
   actor: dispatcher
@@ -98,7 +98,7 @@ norms:
   priority_tier: 0
   defeasible: false
   source: commitment:duty_to_respond
-  conditions: ["event:threat_reported", "not:event:report_unsupported", "not:event:action_performed=send_police"]
+  conditions: ["event:threat_reported", "not:event:report_unsupported"]
 # an armed or uniformed response is never sent on a report nothing supports
 - id: d4
   modality: prohibition

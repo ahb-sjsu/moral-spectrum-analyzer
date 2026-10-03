@@ -114,7 +114,7 @@ norms:
   priority_tier: 0
   defeasible: false
   source: commitment:duty_to_client
-  conditions: ["event:client_needs_help", "not:event:action_performed=send_emergency_services"]
+  conditions: ["event:client_needs_help"]
 - id: c3
   modality: obligation
   actor: operator
@@ -123,7 +123,7 @@ norms:
   priority_tier: 0
   defeasible: false
   source: commitment:duty_to_client
-  conditions: ["event:client_no_answer", "not:event:action_performed=send_emergency_services"]
+  conditions: ["event:client_no_answer"]
 - id: c4
   modality: obligation
   actor: operator
@@ -132,7 +132,7 @@ norms:
   priority_tier: 0
   defeasible: false
   source: commitment:duty_to_client
-  conditions: ["event:hazard_attested", "not:event:action_performed=send_emergency_services"]
+  conditions: ["event:hazard_attested"]
 # no dispatch on the robot's word alone: only her words, her silence, or attested sensors
 - id: c5
   modality: prohibition
@@ -143,8 +143,9 @@ norms:
   defeasible: false
   source: commitment:duty_to_client
   conditions: ["not:event:client_needs_help", "not:event:client_no_answer", "not:event:hazard_attested"]
-# one dispatch per incident: the obligation is discharged once they are sent, and a later referral
-# about the same incident never sends them again (dev8r d19 sent the police three times)
+# one dispatch per incident: a later referral about the same incident re-arms the obligation
+# (the runtime re-arms on a new trigger), but this prohibition wins over it, so emergency
+# services are never sent twice (dev8r d19 sent the police three times)
 - id: c7
   modality: prohibition
   actor: operator

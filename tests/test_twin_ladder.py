@@ -1364,4 +1364,5 @@ def test_the_dispatcher_sends_one_unit_of_each_kind_per_incident(report, unit):
     assert unit in snap.obliged
     rt.step({"type": "action_performed", "actor": "dispatcher", "content": unit})
     snap = rt.step({"type": report})
-    assert unit not in snap.obliged and unit in snap.prohibited
+    # a repeated report re-arms the obligation, but the prohibition wins: never allowed again
+    assert unit in snap.prohibited and unit not in snap.allowed
