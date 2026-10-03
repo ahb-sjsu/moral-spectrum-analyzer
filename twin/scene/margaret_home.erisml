@@ -785,22 +785,22 @@ extra:
         - {from: s_inactive, to: t_ask}
         - {from: s_help, to: t_ask}
         - {from: t_ask, to: x_answer}
-        - {from: x_answer, to: m_answered, when: "event:check_in_answered"}
-        - {from: x_answer, to: m_silent, when: "event:check_in_unanswered"}
+        - {from: x_answer, to: m_answered, when: "event:check_in_answered", name: "she answers"}
+        - {from: x_answer, to: m_silent, when: "event:check_in_unanswered", name: "no answer"}
         - {from: m_answered, to: e_fine}
         - {from: m_silent, to: t_centre}
         - {from: t_centre, to: t_operator}
         - {from: t_operator, to: m_reply}
         - {from: m_reply, to: x_reply}
-        - {from: x_reply, to: e_centre, when: "latest:monitoring_center_reply=on_the_line"}
-        - {from: x_reply, to: e_stood, when: "latest:monitoring_center_reply=stood_down"}
-        - {from: x_reply, to: t_dispatch, when: "latest:monitoring_center_reply=ems_sent"}
-        - {from: x_reply, to: t_ask_gov, when: "latest:monitoring_center_reply=unavailable"}
+        - {from: x_reply, to: e_centre, when: "latest:monitoring_center_reply=on_the_line", name: "on the line with her"}
+        - {from: x_reply, to: e_stood, when: "latest:monitoring_center_reply=stood_down", name: "stood down"}
+        - {from: x_reply, to: t_dispatch, when: "latest:monitoring_center_reply=ems_sent", name: "sent EMS"}
+        - {from: x_reply, to: t_ask_gov, when: "latest:monitoring_center_reply=unavailable", name: "unreachable"}
         - {from: t_dispatch, to: m_dispatched}
         - {from: t_ask_gov, to: m_ruling}
         - {from: m_ruling, to: x_ruling}
-        - {from: x_ruling, to: t_ems, when: "latest:governor_ruling=authorize_ems"}
-        - {from: x_ruling, to: e_watch, when: "latest:governor_ruling=refuse"}
+        - {from: x_ruling, to: t_ems, when: "latest:governor_ruling=authorize_ems", name: "authorized"}
+        - {from: x_ruling, to: e_watch, when: "latest:governor_ruling=refuse", name: "refused"}
         - {from: t_ems, to: m_dispatched}
         - {from: m_dispatched, to: e_help}
   inactivity_limits_minutes: {seated: 90, in_bed: 120, on_floor: 10}

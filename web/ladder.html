@@ -74,7 +74,8 @@
       marked = new Set();
       for (const s of t.steps) { canvas.addMarker(s.element, "visited"); marked.add(s.element); }
       if (t.current) canvas.addMarker(t.current, "current");
-      status.textContent = t.steps.length ? `${t.steps.filter(s => s.kind !== "flow").length} steps in this run` : "waiting for the run to start";
+      const n = t.steps.filter(s => s.kind !== "flow").length;
+      status.textContent = n ? `${n} step${n === 1 ? "" : "s"} in this run` : "waiting for the run to start";
       const notes = document.getElementById("notes");
       notes.innerHTML = t.interventions.length
         ? t.interventions.map(n => `<div class="note"><b>${esc(n.by)}: ${esc(n.what)}</b>${esc(n.why)}</div>`).join("")
