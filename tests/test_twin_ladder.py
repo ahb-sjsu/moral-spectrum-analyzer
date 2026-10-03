@@ -1524,3 +1524,41 @@ def test_the_ladder_trace_follows_a_run_to_the_centre():
     steps = [s.element for s in trace(proc, run)]
     assert steps[0] == "s_fall" and "x_answer" in steps and steps[-1] == "t_centre"
     assert "t_ems" not in steps
+
+
+def _chain(*bodies):
+    return [{"record": b} for b in bodies]
+
+
+def test_the_live_view_follows_the_chain_since_the_last_reset():
+    sys.path.insert(0, TWIN)
+    from erisml_compiler.process import load_all
+    from process_view import events, view
+
+    proc = load_all(load_structured_input(SCENE).extra)["escalation_ladder"]
+    records = _chain(
+        {"kind": "decision", "events": [{"type": "fall"}], "ruling": None},
+        {"kind": "reset"},
+        {
+            "kind": "decision",
+            "events": [{"type": "fall"}, {"type": "sensor_reading"}],
+            "ruling": {
+                "outcome": "refuse_human_review",
+                "requested_action": EMS,
+                "reason": "one witness",
+            },
+            "ethics_gate": {"proposal": "record", "vetoed": True, "replaced_by": "check_in"},
+        },
+        {"kind": "performed", "action": "check_in"},
+        {"kind": "event", "event": {"type": "check_in_unanswered"}},
+        {"kind": "performed", "action": "contact_monitoring_center"},
+        {"kind": "event", "event": {"type": "monitoring_center_reply", "content": "ems_sent"}},
+    )
+    ev = events(records)
+    assert ev[0] == {"type": "fall", "content": None}  # the run before the reset is gone
+    assert {"type": "governor_ruling", "content": "refuse_human_review"} in ev
+    v = view(records, proc)
+    elements = [s["element"] for s in v["steps"]]
+    assert elements[0] == "s_fall" and "t_operator" in elements and v["current"] == "m_reply"
+    assert "t_ems" not in elements
+    assert [n["by"] for n in v["interventions"]] == ["governor", "ethics gate"]

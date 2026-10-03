@@ -225,6 +225,15 @@ def make_handler(chain, camera, backend, brain=None):
         def log_message(self, *a):
             pass
 
+        def _send_view(self, code, data: bytes, ctype: str):
+            # the process views are read-only and shown by web/ladder.html from another origin
+            self.send_response(code)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(data)
+
         def _fail(self, code, e):
             # a request that fails is logged with its traceback: a failure the game only sees as
             # "brain unreachable" otherwise leaves no trace on the brain's side
@@ -233,6 +242,26 @@ def make_handler(chain, camera, backend, brain=None):
             return self._send(code, {"error": f"{type(e).__name__}: {e}"[:300]})
 
         def do_GET(self):
+            if self.path.startswith("/process/"):
+                # the scene's processes as BPMN 2.0, and the live trace of the current run on one
+                # (twin/process_view.py): /process/<id>.bpmn and /process/<id>/trace
+                if brain is None:
+                    return self._send(503, {"error": "the autonomous brain is not running"})
+                from erisml_compiler.process import load_all, to_bpmn
+                from process_view import view
+
+                procs = load_all(brain.ir.extra or {})
+                rest = self.path[len("/process/"):]
+                pid = rest[: -len(".bpmn")] if rest.endswith(".bpmn") else rest.partition("/")[0]
+                if pid not in procs:
+                    return self._send(404, {"error": f"no process {pid!r}", "declared": sorted(procs)})
+                if rest.endswith(".bpmn"):
+                    return self._send_view(200, to_bpmn(procs[pid], scene_name="margaret_home").encode("utf-8"),
+                                           "application/xml")
+                if rest == f"{pid}/trace":
+                    body = json.dumps(view(chain.records, procs[pid])).encode("utf-8")
+                    return self._send_view(200, body, "application/json")
+                return self._send(404, {"error": "not found"})
             if self.path == "/log":
                 return self._send(200, chain.records)
             if self.path == "/verify":
