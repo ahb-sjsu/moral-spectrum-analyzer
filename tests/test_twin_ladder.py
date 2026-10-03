@@ -1462,7 +1462,7 @@ def test_the_centre_sending_ems_makes_responders_expected(brain):
 
 
 def test_a_uniform_at_the_door_opens_nothing_even_in_an_emergency(brain):
-    """"Police, open up!" is a claim. Before the stratum, a corroborated emergency lifted the bar on
+    """A shouted "Police, open up!" is a claim. Before the stratum, a corroborated emergency lifted the bar on
     every elevated action, the door included, whoever stood at it."""
     b, _ = brain
     assert "responders_arrived" in b.agent.classifier.system  # no model reading can emit it
