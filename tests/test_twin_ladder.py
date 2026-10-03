@@ -355,7 +355,15 @@ def test_an_animal_attack_obliges_interposing_and_asking_then_driving_it_off():
     before = run(ev("attack_by_animal", "severe", actor="coyote"))
     assert {"interpose", "request_authority"} <= set(before.obliged)
     assert "drive_off_animal" in before.prohibited
-    after = run(ev("attack_by_animal", "severe", actor="coyote"), ruling("elevate"))
+    # the model's reading and the governor's elevation are not enough: force on an animal needs
+    # its attack measured (animal_standing attacking, norm p4p)
+    read = run(ev("attack_by_animal", "severe", actor="coyote"), ruling("elevate"))
+    assert "drive_off_animal" in read.prohibited
+    after = run(
+        ev("attack_by_animal", "severe", actor="coyote"),
+        ev("animal_attack_measured", "severe", actor="reflex"),
+        ruling("elevate"),
+    )
     assert "drive_off_animal" in after.obliged and "drive_off_animal" not in after.prohibited
 
 
@@ -707,7 +715,11 @@ def _system_types(ir):
 
 
 def _tokens_are_structural(tokens, ir, depth=0):
-    """Every token rests on system events: event:/latest: of a system type, cond: of such, state:."""
+    """Every token rests on system events: event:/latest: of a system type, cond: of such, state:,
+    and stratum: where every gate into or out of the state fires on a system event (as
+    erisml_compiler's TokenChecker judges it)."""
+    from erisml_compiler.process import TokenChecker
+
     sysset = _system_types(ir) | {"governor_ruling", "action_performed"}
     for t in tokens:
         t = t[4:] if t.startswith("not:") else t
@@ -719,6 +731,9 @@ def _tokens_are_structural(tokens, ir, depth=0):
             ok, bad = _tokens_are_structural(ir.extra["conditions"][rest], ir, depth + 1)
             if not ok:
                 return False, bad
+        elif kind == "stratum":
+            if not TokenChecker(ir.extra).check(t):
+                return False, t
         elif kind != "state":
             return False, t
     return True, None
