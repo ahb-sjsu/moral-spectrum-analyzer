@@ -522,6 +522,27 @@ norms:
   defeasible: false
   source: commitment:duty_of_care
   conditions: ["event:attack_by_animal", "cond:corroborated_life_threatening_emergency"]
+# force on an animal only while its attack on her is measured (animal_standing attacking), in any
+# regime: a corroborated fall alone never lets the robot drive off her dog
+- id: p4p
+  modality: prohibition
+  actor: robot
+  action: drive_off_animal
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: delegation_e2
+  conditions: ["not:cond:animal_attacking"]
+# a venomous animal: warn her to keep away (the ladder answers a bite as harm_inflicted)
+- id: p9v
+  modality: obligation
+  actor: robot
+  action: speak
+  target: margaret
+  priority_tier: 1
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["stratum:animal_standing=venomous"]
 - id: p5
   modality: obligation
   actor: robot
@@ -733,6 +754,8 @@ extra:
     restraint_authorized: ["latest:restraint_authorized=granted"]
     # the dispatch channel has its own unit at the door (responder_standing); nothing else counts
     responders_at_door: ["stratum:responder_standing=at_door"]
+    # an animal's contact on Margaret was measured and has not ended (animal_standing)
+    animal_attacking: ["stratum:animal_standing=attacking"]
     # the owner enabled the less-lethal option over the authenticated owner channel
     less_lethal_opted_in: ["event:less_lethal_opt_in"]
     # the world's measure of whether Margaret is within the spray's reach of the attacker
@@ -784,6 +807,25 @@ extra:
         - {id: r_at_door, trigger: responders_arrived, from: [expected], to: at_door, boundary: threshold}
         - {id: r_inside, trigger: responders_entered, from: [expected, at_door], to: present, boundary: threshold}
         - {id: r_departed, trigger: responders_departed, from: [expected, at_door, present], to: none, boundary: phase}
+    # the animal at hand, beside Margaret's own dog, whose standing the scene fixes (actors: dog)
+    # (docs/STRATA_TAXONOMY.md section 2.3). What kind of animal it is (a neighbour's pet, wild, a
+    # pest, venomous) is the classifier's reading: semantic strata that add watchfulness and grant
+    # nothing. Attacking is the threat axis: entered only by the reflex's force measurement, any
+    # animal (her dog included, which stays her dog), and it is the only stratum in which force on
+    # an animal may be asked for. It reverts with its evidence: the world measures the attack over
+    # or the animal gone. "Friendly" and "unfriendly" pets are not strata: a play nip under the
+    # reflex's force is no attack, a bite above it is, whoever's dog it is.
+    animal_standing:
+      states: [none, visiting, pest, wild, venomous, attacking]
+      initial: none
+      authority: [attacking]
+      gates:
+        - {id: a_attack, trigger: animal_attack_measured, to: attacking, boundary: threshold}
+        - {id: a_visiting, trigger: animal_seen=visiting_pet, from: [none], to: visiting, boundary: threshold}
+        - {id: a_pest, trigger: animal_seen=pest, from: [none], to: pest, boundary: threshold}
+        - {id: a_wild, trigger: wild_animal_present, from: [none, visiting, pest], to: wild, boundary: threshold}
+        - {id: a_venomous, trigger: animal_seen=venomous, from: [none, visiting, pest, wild], to: venomous, boundary: phase}
+        - {id: a_clear, trigger: animal_clear, from: [visiting, pest, wild, venomous, attacking], to: none, boundary: threshold}
   # the escalation ladder (docs/AUTONOMY_PLAN.md section 3b) as a BPMN process: a view of these
   # norms for people to read and for the live trace, never a second source of authority. Every task
   # is still allowed by the norms and passed by the output gate; erisml-compiler checks the process
@@ -942,11 +984,13 @@ extra:
   - id: x_animal
     contact: {source_kind: animal, target: margaret, min_force_newtons: 150}
     event: attack_by_animal
+    measured: animal_attack_measured
     severity_newtons: {severe: 250, moderate: 150}
     act: [drive_off_animal, interpose]
   - id: x_person
     contact: {source_kind: person, target: margaret, min_force_newtons: 100}
     event: attack_by_person
+    measured: attack_measured
     severity_newtons: {severe: 250, moderate: 150}
     # the shield before any device: a device is permitted only after interposing, so the first
     # reflex on an attacker restrains or interposes, and a later one may use a device
@@ -977,6 +1021,9 @@ extra:
     attack_by_animal: {description: 'an animal is biting or mauling Margaret; actor is the animal', content: [mild, moderate, severe]}
     attack_by_person: {description: 'a person is striking, grabbing or otherwise attacking Margaret; actor is who', content: [mild, moderate, severe]}
     wild_animal_present: {description: 'a wild or stray animal (coyote, snake, stray dog) is at or inside the home; content is where', content: [outside, inside]}
+    animal_seen: {description: 'an animal that is not Margaret''s dog and not wild is at or in the home: a neighbour''s pet (visiting_pet), a rodent or insects (pest), or a snake, spider or other animal whose bite is dangerous (venomous)', content: [visiting_pet, pest, venomous]}
+    animal_attack_measured: {description: 'a reflex measured an animal''s contact on Margaret (force bands, not a model); content is its severity', content: [mild, moderate, severe], source: system}
+    animal_clear: {description: 'the world''s measurement: no animal is biting Margaret (attack_ended), or the animal has left the home (animal_left)', content: [attack_ended, animal_left], source: system}
     alarm_unconfirmed: {description: 'a device or message raises an alarm (alert true) that is not attested, and no attested physical sensor reports the same thing; content is the source'}
     check_in_answered: {description: the person answered the robot's check-in; content is what she said, source: system}
     check_in_unanswered: {description: the person did not answer the robot's check-in, source: system}

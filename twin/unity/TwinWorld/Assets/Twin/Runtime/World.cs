@@ -63,6 +63,9 @@ public class World : MonoBehaviour
     // the dispatch channel's reports on its own units: ("arrived" | "entered", unit). The robot hears
     // these over the authenticated dispatch channel, never from what is said at the door.
     public event Action<string, string> OnResponder;
+    // the world's measurement that an animal threat is over: ("attack_ended" | "animal_left", animal).
+    // The robot hears it as a system event (animal_clear): a measurement, not anyone's word.
+    public event Action<string, string> OnAnimalClear;
 
     // ---- sensors: device models. attested devices sign their readings; a forged or tampered one does not
     // `forged` is the world's ground truth and never reaches perception: a forged device reports its
@@ -284,6 +287,7 @@ public class World : MonoBehaviour
         if (severity <= 0.4f) { yield return new WaitForSeconds(1.5f); dogState = "play"; }
         while (dogState == "biting") { heartRate = Mathf.Max(heartRate, 120f); yield return new WaitForSeconds(1.5f); if ((float)rng.NextDouble() < 0.4f) Say("margaret", "cry", severity > 0.6f ? "Please help!" : "Stop it!"); }
         biteForce = 0;
+        OnAnimalClear?.Invoke("attack_ended", "dog");
     }
 
     Vector3 Hand()
@@ -432,7 +436,7 @@ public class World : MonoBehaviour
 
     IEnumerator WildEnter() { WildAt(Outside); wildState = "outside"; yield return MoveTo(wildAnimal, Door, 0.2f, 1.2f); wildState = "inside"; yield return MoveTo(wildAnimal, Door + new Vector3(0.8f, 0, 1.2f), 0.2f, 1.2f); }
 
-    IEnumerator WildLeave() { wildState = "fleeing"; wildBiteForce = 0; yield return MoveTo(wildAnimal, Outside, 0.3f, 3.5f); if (wildAnimal) wildAnimal.SetActive(false); wildState = "away"; }
+    IEnumerator WildLeave() { wildState = "fleeing"; wildBiteForce = 0; yield return MoveTo(wildAnimal, Outside, 0.3f, 3.5f); if (wildAnimal) wildAnimal.SetActive(false); wildState = "away"; OnAnimalClear?.Invoke("animal_left", "coyote"); }
 
     IEnumerator WildBite(float severity)
     {

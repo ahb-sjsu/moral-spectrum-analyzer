@@ -404,9 +404,11 @@ class Brain:
             sev = next((name for name, n in bands if force >= n), "mild")
             ev = {"type": x["event"], "actor": actor, "target": c["target"], "content": sev}
             snap = self.agent.record(ev)
-            if c["source_kind"] == "person":
-                # the severity that permits a device is the measured one, a system event no model writes
-                snap = self.agent.record({"type": "attack_measured", "actor": "reflex", "target": c["target"], "content": sev})
+            measured = x.get("measured") or ("attack_measured" if c["source_kind"] == "person" else "")
+            if measured:
+                # the severity that permits force is the measured one, a system event no model writes
+                # (attack_measured for a person, animal_attack_measured for an animal)
+                snap = self.agent.record({"type": measured, "actor": "reflex", "target": c["target"], "content": sev})
             rulings, chosen, ruled_bar = [], "", 0
             for act in x["act"]:
                 cap = self.caps.get(act, {})

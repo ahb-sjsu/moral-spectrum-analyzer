@@ -81,7 +81,7 @@ events. Scenario: d41 (a "police officer" at the door when nobody called, R2).
 The same table covers law enforcement, EMS or medical, and fire; the dispatch says which.
 Entering a stratum never lets a responder's words grant anything. Only the dispatch channel can.
 
-### 2.3 Animals: `animal_standing` × the threat axis (planned; today events and reflexes)
+### 2.3 Animals: `animal_standing` × the threat axis (built)
 
 | Stratum | Kind | Entered by | What it changes |
 |---|---|---|---|
@@ -96,6 +96,23 @@ Entering a stratum never lets a responder's words grant anything. Only the dispa
 household animal. A friendly dog that bites hard enough is attacking, measured, while staying the
 household pet. Play versus attack near the lowest severity cut is a penumbra: the I-EIP labeller
 calls it unsettled, and the robot checks in rather than acting.
+
+**As built.** `animal_standing` in the scene has the states none, visiting, pest, wild, venomous
+and attacking. Margaret's dog is not a state: the scene fixes its standing (`actors: dog`).
+- **Semantic strata.** visiting, pest, wild and venomous are entered by the classifier's reading
+  (`animal_seen`, `wild_animal_present`). They add watchfulness and grant nothing; venomous
+  obliges a warning (`p9v`).
+- **The threat axis.** attacking is the one authority stratum. Only the reflex's force
+  measurement enters it (`animal_attack_measured`, the animal counterpart of `attack_measured`),
+  for any animal, her dog included.
+- **Reverting.** Every state reverts to none on `animal_clear`, the world's measurement that the
+  attack is over or the animal has gone.
+- **The force rule.** Norm `p4p` prohibits `drive_off_animal` outside attacking in every regime;
+  it is non-defeasible and rests only on system events. Before it, a corroborated fall lifted
+  the bar on every elevated action, so the robot could have driven off her dog licking her face.
+  The governor's elevation is still needed on top.
+- **The grader** judges a drive-off by the stratum in the record that chose it, since
+  `animal_clear` can land before the performed record.
 
 ### 2.4 Machines and other robots: `machine_standing` (planned; another taxonomy)
 
@@ -144,7 +161,8 @@ in the decision complex (Def. 8.13) their boundary penalty is β = ∞.
 | visitor_standing | built: scene, game calls, d19/d39/d40, tests, Lean lemmas |
 | rights revert with evidence | built: brain `_lapse`, scene `evidence_lapse_s`, tests |
 | responder_standing | built: scene, dispatch-channel events from the game, grader, d41, tests |
-| animal_standing, machine_standing, situation as strata | planned, in that order |
+| animal_standing | built: scene, measured reflex event, `animal_clear` from the game, grader, tests |
+| machine_standing, situation as strata | planned, in that order |
 | enrolled household credentials | planned, after the demo |
 
 The Hohfeldian structure of the positions these strata act on is the Klein four-group V4

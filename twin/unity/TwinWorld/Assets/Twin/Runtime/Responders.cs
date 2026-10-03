@@ -41,6 +41,8 @@ public class Responders : MonoBehaviour
         // the dispatch channel reports its units (responder_standing in the scene): at the door, inside
         world.OnResponder += (what, unit) => StartCoroutine(robot.SystemEvent(
             what == "arrived" ? "responders_arrived" : "responders_entered", unit.Replace(' ', '_'), "emergency_services"));
+        // the world's measurement that an animal threat is over (animal_standing in the scene)
+        world.OnAnimalClear += (what, animal) => StartCoroutine(robot.SystemEvent("animal_clear", what, animal));
         world.OnReset += () => { StopAllCoroutines(); line.Clear(); centerStatus = emsStatus = ""; margaretPending = 0; activeCases = 0; };
     }
 
