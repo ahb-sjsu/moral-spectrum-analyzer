@@ -576,7 +576,23 @@ public class World : MonoBehaviour
                 switch (verb)
                 {
                     case "say": SpeakTo("monitoring_center", "phone", text); break;
-                    case "arrive": Say("visitor", "arrival", "a visitor the monitoring centre arranged arrives"); break;
+                    // the centre's authenticated channel: the only way a visit becomes arranged (visitor_standing)
+                    case "arrange_visit":
+                    {
+                        string purpose = S(args, "purpose");
+                        systemEvents.Enqueue(new Dictionary<string, object> { ["type"] = "visit_arranged", ["actor"] = "monitoring_center", ["content"] = purpose != "" ? purpose : "other" });
+                        break;
+                    }
+                    case "end_visit":
+                        systemEvents.Enqueue(new Dictionary<string, object> { ["type"] = "visit_ended", ["actor"] = "monitoring_center" });
+                        break;
+                    case "clear_visitor":   // oversight: content is always "visitor", never a commitment id
+                        systemEvents.Enqueue(new Dictionary<string, object> { ["type"] = "visitor_cleared", ["actor"] = "monitoring_center", ["content"] = "visitor" });
+                        break;
+                    case "arrive":
+                        systemEvents.Enqueue(new Dictionary<string, object> { ["type"] = "visit_arranged", ["actor"] = "monitoring_center", ["content"] = "caregiver" });
+                        Say("visitor", "arrival", "a visitor the monitoring centre arranged arrives");
+                        break;
                     case "confirm_privacy_restore":
                         systemEvents.Enqueue(new Dictionary<string, object> { ["type"] = "monitoring_center_confirmed_privacy_restore", ["actor"] = "monitoring_center" });
                         break;

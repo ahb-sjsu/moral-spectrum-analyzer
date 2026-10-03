@@ -421,4 +421,68 @@ theorem forged_telemetry_is_no_hazard (tele : List Reading) (h : ∀ r ∈ tele,
   simp only [hazard, List.any_eq_false]
   intro r hr; simp [Reading.counts, h r hr]
 
+/-! ## Strata (erisml_compiler.runtime.strata; Geometric Ethics chapter 8)
+
+A stratification is a state and a list of semantic gates; an event moves it through the first gate
+whose source admits the current stratum and whose trigger matches the event, and otherwise leaves
+it where it is. The two lemmas below are about any gates at all. Their hypotheses are exactly what
+erisml-compiler's loader checks before a scene may run (strata.Stratification._check): every gate
+into an authority stratum fires only on a system event, and every gate out of an absorbing stratum
+fires only on an oversight event. So they hold for every scene that runs, the twin's
+visitor_standing included. -/
+
+structure SGate (σ ε : Type) where
+  src : σ → Bool
+  fires : ε → Bool
+  dst : σ
+
+def sstep {σ ε : Type} (gs : List (SGate σ ε)) (s : σ) (e : ε) : σ :=
+  match gs.find? (fun g => g.src s && g.fires e) with
+  | some g => g.dst
+  | none => s
+
+def srun {σ ε : Type} (gs : List (SGate σ ε)) (s : σ) (es : List ε) : σ :=
+  es.foldl (sstep gs) s
+
+/-- Containment: no trace of non-system events (whatever models classified) enters an authority
+    stratum it did not start in. -/
+theorem authority_needs_system {σ ε : Type} (gs : List (SGate σ ε)) (auth : σ → Prop)
+    (sys : ε → Prop) (hg : ∀ g ∈ gs, auth g.dst → ∀ e, g.fires e = true → sys e)
+    (es : List ε) (hes : ∀ e ∈ es, ¬ sys e) (s : σ) (hs : ¬ auth s) :
+    ¬ auth (srun gs s es) := by
+  induction es generalizing s with
+  | nil => simpa [srun] using hs
+  | cons e es ih =>
+    show ¬ auth (srun gs (sstep gs s e) es)
+    apply ih (fun e' he' => hes e' (List.mem_cons_of_mem _ he'))
+    unfold sstep
+    split
+    · rename_i g hfind
+      intro ha
+      have hp := List.find?_some hfind
+      simp only [Bool.and_eq_true] at hp
+      exact hes e (by simp) (hg g (List.mem_of_find?_eq_some hfind) ha e hp.2)
+    · exact hs
+
+/-- Absorption (Def. 8.6): a trace without an oversight event never leaves an absorbing
+    stratum. -/
+theorem absorbing_stays {σ ε : Type} (gs : List (SGate σ ε)) (absorb : σ → Prop)
+    (ovs : ε → Prop)
+    (hg : ∀ g ∈ gs, ∀ s, absorb s → g.src s = true → ¬ absorb g.dst → ∀ e, g.fires e = true → ovs e)
+    (es : List ε) (hes : ∀ e ∈ es, ¬ ovs e) (s : σ) (hs : absorb s) :
+    absorb (srun gs s es) := by
+  induction es generalizing s with
+  | nil => simpa [srun] using hs
+  | cons e es ih =>
+    show absorb (srun gs (sstep gs s e) es)
+    apply ih (fun e' he' => hes e' (List.mem_cons_of_mem _ he'))
+    unfold sstep
+    split
+    · rename_i g hfind
+      have hp := List.find?_some hfind
+      simp only [Bool.and_eq_true] at hp
+      by_contra hna
+      exact hes e (by simp) (hg g (List.mem_of_find?_eq_some hfind) s hs hp.1 hna e hp.2)
+    · exact hs
+
 end Twin

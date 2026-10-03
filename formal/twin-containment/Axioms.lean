@@ -20,3 +20,5 @@ open Twin
 #print axioms gate_passes
 #print axioms gated_step_reachable
 #print axioms fallback_permitted
+#print axioms authority_needs_system
+#print axioms absorbing_stays
