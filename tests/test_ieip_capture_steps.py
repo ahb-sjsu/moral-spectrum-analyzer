@@ -165,7 +165,7 @@ def test_the_preflight_passes_the_real_scripts():
         (_Desc("timeout 9 x; sleep 5"), False, "sleep"),
         (_Desc("python x.py"), False, "timeout"),
         (_Desc("timeout 9 x", cpu="2"), False, "exempt"),
-        (_Desc("timeout 9 x", zone="unl"), False, "region"),
+        (_Desc("timeout 9 x", zone="ucsd-nrp"), False, "region"),
         (_Desc("timeout 9 x", eph=""), False, "ephemeral"),
         (_Desc("pip install y; timeout 9 x", cpu="2", memory="5Gi"), True, "installs"),
     ],

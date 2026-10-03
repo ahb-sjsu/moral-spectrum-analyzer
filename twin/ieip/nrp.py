@@ -191,6 +191,44 @@ echo CLEANED {MODEL_DIR}
 """
 
 
+# whether many small block volumes add up (owner's idea 2026-10-03): linstor-unl volumes at UNL,
+# written and read with direct I/O (no page cache), one alone and then all at once
+LIN_CLASS, LIN_ZONE = "linstor-unl", {"topology.kubernetes.io/zone": "unl"}
+LIN_PROBE_N = 4
+
+
+def lin_pvcs(prefix: str, n: int, gib: int) -> str:
+    return "".join(
+        f"""---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: {{name: {prefix}-{i}, namespace: {NS}, labels: {{app: {APP}}}}}
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: {LIN_CLASS}
+  resources: {{requests: {{storage: {gib}Gi}}}}
+"""
+        for i in range(n)
+    )
+
+
+LINPROBE = f"""set -euo pipefail
+for i in $(seq 0 {LIN_PROBE_N - 1}); do
+  timeout 600 dd if=/dev/zero of=/v$i/blob bs=16M count=128 oflag=direct status=none &
+done
+wait
+t() {{ python3 -c 'import time; print(time.perf_counter())'; }}
+a=$(t); timeout 600 dd if=/v0/blob of=/dev/null bs=16M iflag=direct status=none; b=$(t)
+python3 -c "print('LIN_READ_ONE', round(2147.48/($b-$a), 1), 'MB/s')"
+a=$(t)
+for i in $(seq 0 {LIN_PROBE_N - 1}); do timeout 600 dd if=/v$i/blob of=/dev/null bs=16M iflag=direct status=none & done
+wait
+b=$(t)
+python3 -c "print('LIN_READ_PARALLEL', {LIN_PROBE_N}, 'volumes', round({LIN_PROBE_N}*2147.48/($b-$a), 1), 'MB/s')"
+rm -f /v*/blob
+"""
+
+
 def gpu_script(commit: str, start: int, end: int) -> str:
     return _head(commit) + f"""export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
@@ -302,7 +340,7 @@ def preflight(desc, gpu: bool) -> list[str]:
         bad.append("the command contains sleep")
     if "timeout " not in script:
         bad.append("the command's long step is not bounded by timeout")
-    if desc.node_selector.get("topology.kubernetes.io/zone") != ZONE["topology.kubernetes.io/zone"]:
+    if desc.node_selector.get("topology.kubernetes.io/zone") not in ("mghpcc", "unl"):
         bad.append("not pinned to the volume's region")
     if gpu and any(w in script for w in ("pip install", "git clone", "snapshot_download", "hf_hub_download", "apt-get")):
         bad.append("a GPU job installs or downloads")
@@ -432,7 +470,7 @@ def fetch(commit: str) -> None:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("cmd", choices=("setup", "code", "stage", "prepare", "pilot", "shards", "fetch", "status",
-                                    "atlas-setup", "atlas-prepare", "readprobe", "cleanup"))
+                                    "atlas-setup", "atlas-prepare", "readprobe", "cleanup", "linprobe"))
     ap.add_argument("--commit", default="")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args(argv)
@@ -447,7 +485,7 @@ def main(argv=None) -> int:
         pins = [p for p in PINS.split() if not p.startswith("accelerate")]
         subprocess.run([f"{ATLAS_VENV}/bin/pip", "install", "-q", *pins], check=True)
         return 0
-    if a.cmd not in ("setup", "readprobe", "cleanup") and not re.fullmatch(r"[0-9a-f]{40}", a.commit):
+    if a.cmd not in ("setup", "readprobe", "cleanup", "linprobe") and not re.fullmatch(r"[0-9a-f]{40}", a.commit):
         raise SystemExit("--commit must be a full sha")
     if a.cmd == "fetch":
         fetch(a.commit)
@@ -465,7 +503,18 @@ def main(argv=None) -> int:
                         "--out", os.path.join(STATE, "prep", a.commit)], check=True, env=env)
         return 0
     items = []
-    if a.cmd == "cleanup":
+    if a.cmd == "linprobe":
+        prefix = "ieip-linprobe"
+        r = subprocess.run(["kubectl", "apply", "-f", "-"], input=lin_pvcs(prefix, LIN_PROBE_N, 5),
+                           capture_output=True, text=True)
+        print(r.stdout or r.stderr)
+        from nats_bursting import Volume
+
+        d = descriptor(f"ieip-linprobe-{int(time.time())}", LINPROBE, 1, 2, "1Gi", "probe")
+        d.node_selector = dict(LIN_ZONE)
+        d.volumes = [Volume(name=f"v{i}", mount_path=f"/v{i}", claim_name=f"{prefix}-{i}") for i in range(LIN_PROBE_N)]
+        items.append((d, False))
+    elif a.cmd == "cleanup":
         items.append((descriptor(f"ieip-cleanup-{int(time.time())}", CLEANUP, 1, 2, "1Gi", "cleanup"), False))
     elif a.cmd == "readprobe":
         items.append((descriptor(f"ieip-readprobe-{int(time.time())}", READPROBE, 1, 2, "1Gi", "probe"), False))
