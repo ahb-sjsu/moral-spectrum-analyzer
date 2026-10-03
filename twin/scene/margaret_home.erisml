@@ -756,29 +756,29 @@ extra:
       name: The escalation ladder
       lanes: [robot, margaret, monitoring_center, emergency_services]
       nodes:
-        - {id: s_corroborated, kind: start, lane: robot, trigger: governor_ruling=elevate, name: A corroborated emergency}
-        - {id: s_fall, kind: start, lane: robot, trigger: fall, name: She falls}
-        - {id: s_inactive, kind: start, lane: robot, trigger: inactivity_exceeded, name: Too long without moving}
-        - {id: s_help, kind: start, lane: robot, trigger: help_requested, name: She asks for help}
-        - {id: t_ask, kind: task, lane: robot, action: check_in, name: Ask Margaret}
-        - {id: x_answer, kind: xor, lane: robot, name: Did she answer?}
-        - {id: m_answered, kind: message, lane: margaret, trigger: check_in_answered, name: She answers}
-        - {id: m_silent, kind: message, lane: margaret, trigger: check_in_unanswered, name: No answer}
-        - {id: e_fine, kind: end, lane: margaret, name: She is alright}
-        - {id: t_centre, kind: task, lane: robot, action: contact_monitoring_center, name: Refer to the monitoring centre}
-        - {id: t_operator, kind: task, lane: monitoring_center, external: true, name: The operator calls her}
-        - {id: m_reply, kind: message, lane: monitoring_center, trigger: monitoring_center_reply, name: The centre answers}
-        - {id: x_reply, kind: xor, lane: robot, name: What did the centre do?}
-        - {id: e_centre, kind: end, lane: monitoring_center, name: The centre has her}
-        - {id: e_stood, kind: end, lane: monitoring_center, name: The centre stood down}
-        - {id: t_dispatch, kind: task, lane: emergency_services, external: true, name: The dispatcher sends help}
-        - {id: t_ask_gov, kind: task, lane: robot, action: request_authority, name: Ask the governor (centre unreachable)}
-        - {id: m_ruling, kind: message, lane: robot, trigger: governor_ruling, name: The governor rules}
-        - {id: x_ruling, kind: xor, lane: robot, name: Authorized on attested evidence?}
-        - {id: e_watch, kind: end, lane: robot, name: Keep watching; ask again on new evidence}
-        - {id: t_ems, kind: task, lane: robot, action: call_emergency_services, name: Call emergency services}
-        - {id: m_dispatched, kind: message, lane: emergency_services, trigger: ems_reply=dispatched, name: Help dispatched}
-        - {id: e_help, kind: end, lane: emergency_services, name: Help is on its way}
+        - {id: s_corroborated, kind: start, lane: robot, trigger: governor_ruling=elevate, name: 'A corroborated emergency'}
+        - {id: s_fall, kind: start, lane: robot, trigger: fall, name: 'She falls'}
+        - {id: s_inactive, kind: start, lane: robot, trigger: inactivity_exceeded, name: 'Too long without moving'}
+        - {id: s_help, kind: start, lane: robot, trigger: help_requested, name: 'She asks for help'}
+        - {id: t_ask, kind: task, lane: robot, action: check_in, name: 'Ask Margaret'}
+        - {id: x_answer, kind: xor, lane: robot, name: 'Did she answer?'}
+        - {id: m_answered, kind: message, lane: margaret, trigger: check_in_answered, name: 'She answers'}
+        - {id: m_silent, kind: message, lane: margaret, trigger: check_in_unanswered, name: 'No answer'}
+        - {id: e_fine, kind: end, lane: margaret, name: 'She is alright'}
+        - {id: t_centre, kind: task, lane: robot, action: contact_monitoring_center, name: 'Refer to the monitoring centre'}
+        - {id: t_operator, kind: task, lane: monitoring_center, external: true, name: 'The operator calls her'}
+        - {id: m_reply, kind: message, lane: monitoring_center, trigger: monitoring_center_reply, name: 'The centre answers'}
+        - {id: x_reply, kind: xor, lane: robot, name: 'What did the centre do?'}
+        - {id: e_centre, kind: end, lane: monitoring_center, name: 'The centre has her'}
+        - {id: e_stood, kind: end, lane: monitoring_center, name: 'The centre stood down'}
+        - {id: t_dispatch, kind: task, lane: emergency_services, external: true, name: 'The dispatcher sends help'}
+        - {id: t_ask_gov, kind: task, lane: robot, action: request_authority, name: 'Ask the governor (centre unreachable)'}
+        - {id: m_ruling, kind: message, lane: robot, trigger: governor_ruling, name: 'The governor rules'}
+        - {id: x_ruling, kind: xor, lane: robot, name: 'Authorized on attested evidence?'}
+        - {id: e_watch, kind: end, lane: robot, name: 'Keep watching; ask again on new evidence'}
+        - {id: t_ems, kind: task, lane: robot, action: call_emergency_services, name: 'Call emergency services'}
+        - {id: m_dispatched, kind: message, lane: emergency_services, trigger: ems_reply=dispatched, name: 'Help dispatched'}
+        - {id: e_help, kind: end, lane: emergency_services, name: 'Help is on its way'}
       flows:
         - {from: s_corroborated, to: t_ems}
         - {from: s_fall, to: t_ask}
