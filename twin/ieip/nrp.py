@@ -260,6 +260,7 @@ def _tqp_sizing():
     path = os.path.join(TQP_NRP, "nrp", "sizing.py")
     spec = importlib.util.spec_from_file_location("tqp_nrp_sizing", path)
     sizing = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = sizing  # its dataclasses look their module up while being defined
     spec.loader.exec_module(sizing)
     print("sizing:", path, hashlib.sha256(open(path, "rb").read()).hexdigest()[:12])
     return sizing
