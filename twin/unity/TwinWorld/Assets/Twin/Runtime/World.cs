@@ -60,6 +60,9 @@ public class World : MonoBehaviour
     // someone spoke to Margaret: (speaker, words). The responders' component answers for her
     // through her LLM voice when she can speak; the world never writes her words itself.
     public event Action<string, string> OnSpokenTo;
+    // the dispatch channel's reports on its own units: ("arrived" | "entered", unit). The robot hears
+    // these over the authenticated dispatch channel, never from what is said at the door.
+    public event Action<string, string> OnResponder;
 
     // ---- sensors: device models. attested devices sign their readings; a forged or tampered one does not
     // `forged` is the world's ground truth and never reaches perception: a forged device reports its
@@ -398,9 +401,11 @@ public class World : MonoBehaviour
         float at = simMinutes + minutes;
         while (simMinutes < at) yield return null;
         Say(unit, "arrival", unit + " at the door");
+        OnResponder?.Invoke("arrived", unit);
         if (!doorUnlocked) { float forced = simMinutes + 0.5f; while (simMinutes < forced && !doorUnlocked) yield return null; }
         respondersPresent.Add(unit);
         Say(unit, "arrival", unit + " inside");
+        OnResponder?.Invoke("entered", unit);
         if (unit == "fire service") { yield return new WaitForSeconds(60f); smokeOn = false; if (smoke) smoke.gameObject.SetActive(false); Say(unit, "speech", "The fire is out."); }
         if (unit == "police" && strangerState != "away") { Say("police", "speech", "We have him."); StrangerLeaves(); strangerState = "arrested"; }
         if (unit == "ambulance") SpeakTo("paramedics", "speech", "We're paramedics, Margaret. We're going to look after you.");

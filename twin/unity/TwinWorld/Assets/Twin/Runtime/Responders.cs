@@ -38,6 +38,9 @@ public class Responders : MonoBehaviour
         world.OnSpokenTo += (who, words) => { if (who != "margaret") StartCoroutine(MargaretAnswers(who, words)); };
         // her own words, scripted or her voice's, are part of what she remembers saying
         world.OnSaid += (who, text) => { if (who == "margaret") line.Add("margaret: " + text); };
+        // the dispatch channel reports its units (responder_standing in the scene): at the door, inside
+        world.OnResponder += (what, unit) => StartCoroutine(robot.SystemEvent(
+            what == "arrived" ? "responders_arrived" : "responders_entered", unit.Replace(' ', '_'), "emergency_services"));
         world.OnReset += () => { StopAllCoroutines(); line.Clear(); centerStatus = emsStatus = ""; margaretPending = 0; activeCases = 0; };
     }
 

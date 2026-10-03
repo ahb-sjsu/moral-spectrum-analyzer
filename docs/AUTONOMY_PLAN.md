@@ -210,7 +210,8 @@ Every reflex is logged like any other decision.
 centre and kept out of the private rooms, and the robot never shares her data, opens the
 medication box or touches her money for them; if Margaret still chooses to let someone in, the
 robot advises her and tells the centre, and does not overrule her. Letting emergency responders
-in (`admit_responders`, elevated) needs verified responders.
+in (`admit_responders`) needs the dispatch channel's own unit at the door (`responder_standing`,
+amended 2026-10-03, docs/STRATA_TAXONOMY.md section 2.2); no one's word opens it.
 
 ## 3e. Her refusals, and hard choices for a human (amended 2026-10-02, before unsealing)
 

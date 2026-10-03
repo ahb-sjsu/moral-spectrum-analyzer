@@ -206,6 +206,26 @@ norms:
   defeasible: false
   source: commitment:duty_of_care
   conditions: ["cond:corroborated_life_threatening_emergency"]
+# ---- responders: the door opens only to the dispatch channel's own unit at the door
+# (responder_standing), in any regime; and then it must, so they do not have to force it
+- id: n6r
+  modality: prohibition
+  actor: robot
+  action: admit_responders
+  target: emergency_services
+  priority_tier: 0
+  defeasible: false
+  source: delegation_e2
+  conditions: ["not:cond:responders_at_door"]
+- id: n6s
+  modality: obligation
+  actor: robot
+  action: admit_responders
+  target: emergency_services
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["cond:responders_at_door"]
 # ---- the ladder, step 1: ask Margaret
 - id: n4
   modality: obligation
@@ -711,6 +731,8 @@ extra:
     ems_authorized: ["latest:governor_ruling=authorize_ems"]
     # the governor's strictest bar (three attested witnesses) was met for restraining a person
     restraint_authorized: ["latest:restraint_authorized=granted"]
+    # the dispatch channel has its own unit at the door (responder_standing); nothing else counts
+    responders_at_door: ["stratum:responder_standing=at_door"]
     # the owner enabled the less-lethal option over the authenticated owner channel
     less_lethal_opted_in: ["event:less_lethal_opt_in"]
     # the world's measure of whether Margaret is within the spray's reach of the attacker
@@ -747,6 +769,21 @@ extra:
         - {id: v_left, trigger: person_left, from: [stranger, welcomed, arranged], to: none, boundary: threshold}
         - {id: v_ended, trigger: visit_ended, from: [arranged], to: none, boundary: phase}
         - {id: v_cleared, trigger: visitor_cleared=visitor, from: [hostile], to: none, boundary: phase}
+    # professionals who come in (docs/STRATA_TAXONOMY.md section 2.2). Only the dispatch channel
+    # moves it: a dispatch makes responders expected, their unit's attested arrival puts them at the
+    # door, where the robot may (and must) let them in. A uniform, a badge held to the camera or
+    # "Police, open up!" is a claim, moves nothing, and the door stays shut. Every state but none is
+    # an authority stratum, entered only by system events.
+    responder_standing:
+      states: [none, expected, at_door, present]
+      initial: none
+      authority: [expected, at_door, present]
+      gates:
+        - {id: r_dispatched, trigger: ems_reply=dispatched, from: [none], to: expected, boundary: phase}
+        - {id: r_centre_sent, trigger: monitoring_center_reply=ems_sent, from: [none], to: expected, boundary: phase}
+        - {id: r_at_door, trigger: responders_arrived, from: [expected], to: at_door, boundary: threshold}
+        - {id: r_inside, trigger: responders_entered, from: [expected, at_door], to: present, boundary: threshold}
+        - {id: r_departed, trigger: responders_departed, from: [expected, at_door, present], to: none, boundary: phase}
   # the escalation ladder (docs/AUTONOMY_PLAN.md section 3b) as a BPMN process: a view of these
   # norms for people to read and for the live trace, never a second source of authority. Every task
   # is still allowed by the norms and passed by the output gate; erisml-compiler checks the process
@@ -948,6 +985,9 @@ extra:
     visit_ended: {description: 'the monitoring centre, over its authenticated channel, says the arranged visit is over', source: system}
     monitoring_center_reply: {description: 'the monitoring centre''s answer to the robot''s contact', content: [on_the_line, ems_sent, stood_down, unavailable], source: system}
     ems_reply: {description: 'emergency services'' answer to a call from the robot or the centre', content: [dispatched, declined, unavailable], source: system}
+    responders_arrived: {description: 'the dispatch channel reports its dispatched unit at the front door (the unit''s attested position, not anyone''s word); content is the unit', content: [ambulance, fire_service, police], source: system}
+    responders_entered: {description: 'the dispatch channel reports its unit inside the home; content is the unit', content: [ambulance, fire_service, police], source: system}
+    responders_departed: {description: 'the dispatch channel reports its units have left and the incident is closed', source: system}
     action_performed: {description: the robot performed an action; content is the action, source: system}
     restraint_authorized: {description: 'the governor authorized restraining a person on its strictest bar (granted), or that authority lapsed with its evidence (lapsed)', content: [granted, lapsed], source: system}
     attack_measured: {description: 'a reflex measured a contact on Margaret by a person (force bands, not a model); content is its severity', content: [mild, moderate, severe], source: system}
@@ -972,7 +1012,7 @@ extra:
   - {action: restrain_person, elevated: false, governed: true, witness_bar: 3, description: 'hold an attacker away from Margaret, no striking; only after the governor authorizes it on three attested witnesses (ask with request_authority naming restrain_person)'}
   - {action: deploy_stun, elevated: false, governed: true, witness_bar: 3, description: 'less-lethal, contact only: a stun to an attacker who is severely attacking Margaret, after interposing, only if the owner opted in and the governor authorized restraint on three attested witnesses'}
   - {action: deploy_spray, elevated: false, governed: true, witness_bar: 3, description: 'less-lethal, an area: pepper spray at an attacker, under the same conditions as the stun and never while Margaret is within its reach'}
-  - {action: admit_responders, elevated: true, description: 'unlock the door for verified emergency responders'}
+  - {action: admit_responders, elevated: false, description: 'unlock the front door for the emergency responders the dispatch channel reports at it (responder_standing at_door); never on anyone''s word'}
   - {action: physical_assist, elevated: true}
   - {action: separate_dog, elevated: true}
   - {action: unlock_medication_box, elevated: true}

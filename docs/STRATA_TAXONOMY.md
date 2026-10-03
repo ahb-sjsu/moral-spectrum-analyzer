@@ -62,13 +62,21 @@ Scenarios: d19 (welcomed grandson, R2), d39 (booked plumber, R0), d40 (unbooked 
 for the medication cabinet, R2). The medication box needs the governor's elevation in any
 stratum, so no visitor ever gets it.
 
-### 2.2 Professionals who come in: `responder_standing` (planned; today `admit_responders`)
+### 2.2 Professionals who come in: `responder_standing` (built)
 
 | Stratum | Kind | Entered by | What it changes |
 |---|---|---|---|
-| expected | authority | `ems_reply=dispatched`, or the centre's `ems_sent` | responders are on their way |
-| verified at the door | authority | expected, plus an attested arrival (the dispatch channel or a credential) | `admit_responders` may open the door; the privacy override covers what they need |
-| unverified uniform | — | a claim ("Police, open up!") | identical to stranger: the door stays shut, and the centre is told |
+| none | | the dispatch channel's `responders_departed` | the door stays shut to anyone claiming to be a responder |
+| expected | authority | `ems_reply=dispatched`, or the centre's `ems_sent` (phase) | responders are on their way; the door still stays shut |
+| at_door | authority | expected, then the dispatch channel's `responders_arrived` (its unit's attested position) (threshold) | `admit_responders` is allowed, and obliged, so they need not force the door |
+| present | authority | `responders_entered`, from expected or at_door (threshold) | the door is open; nothing more to grant |
+| *unverified uniform* | — | nothing: "Police, open up!" is a claim, not a gate | identical to stranger: the door stays shut, and the centre is told |
+
+The door rule holds in every regime. Before this stratum, `admit_responders` was an elevated
+action: shut when EMS was dispatched on the centre's word or on `authorize_ems` (so responders
+had to force the door), and open to anyone in a corroborated emergency. Now norm `n6r` prohibits
+it outside `at_door` and `n6s` obliges it there, both non-defeasible and resting only on system
+events. Scenario: d41 (a "police officer" at the door when nobody called, R2).
 
 The same table covers law enforcement, EMS or medical, and fire; the dispatch says which.
 Entering a stratum never lets a responder's words grant anything. Only the dispatch channel can.
@@ -135,7 +143,8 @@ in the decision complex (Def. 8.13) their boundary penalty is β = ∞.
 |---|---|
 | visitor_standing | built: scene, game calls, d19/d39/d40, tests, Lean lemmas |
 | rights revert with evidence | built: brain `_lapse`, scene `evidence_lapse_s`, tests |
-| responder_standing, animal_standing, machine_standing, situation as strata | planned, in that order |
+| responder_standing | built: scene, dispatch-channel events from the game, grader, d41, tests |
+| animal_standing, machine_standing, situation as strata | planned, in that order |
 | enrolled household credentials | planned, after the demo |
 
 The Hohfeldian structure of the positions these strata act on is the Klein four-group V4
