@@ -481,6 +481,7 @@ def main(argv=None) -> int:
                                     "atlas-setup", "atlas-prepare", "linprobe", "latte-cleanup"))
     ap.add_argument("--commit", default="")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--ranges", default="", help="shards: only these START-END ranges (a failed shard's rerun)")
     a = ap.parse_args(argv)
     if a.cmd == "status":
         print(kubectl("get", "jobs", "-l", f"app={APP}").stdout, kubectl("get", "pvc", "-l", f"app={APP}").stdout)
@@ -550,7 +551,12 @@ def main(argv=None) -> int:
                 raise SystemExit("the pilot has not finished")
             cpu, mem, why = shard_request(a.commit, pilot)
             todo = list(enumerate(rest))
-            names = [job_name("shards", a.commit, s, e) for s, e in rest]
+            if a.ranges:
+                keep = {tuple(int(x) for x in r.split("-")) for r in a.ranges.split(",")}
+                if keep - set(rest):
+                    raise SystemExit(f"no such shard ranges: {sorted(keep - set(rest))}; shards are {rest}")
+                todo = [(s, r) for s, r in todo if r in keep]
+            names = [job_name("shards", a.commit, lo, hi) for _, (lo, hi) in todo]
         if gpu_pods_in_namespace() + len(todo) > MAX_GPU_PODS:
             raise SystemExit(f"PREFLIGHT VETO: more than {MAX_GPU_PODS} GPU pods in the namespace")
         for name, (s, (lo, hi)) in zip(names, todo, strict=True):
