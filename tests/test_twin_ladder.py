@@ -1494,3 +1494,33 @@ def brain_time():
     import brain as brain_mod
 
     return brain_mod.time
+
+
+# ---------------------------------------------------------------- the ladder as BPMN (extra.processes)
+
+
+def test_the_ladder_process_is_checked_against_the_scene_and_exports_as_bpmn():
+    """erisml-compiler refuses a process whose tasks, triggers or conditions the scene does not
+    declare, or whose governed task (emergency services) a model's reading could open."""
+    from erisml_compiler.process import load_all, to_bpmn
+
+    ir = load_structured_input(SCENE)
+    proc = load_all(ir.extra)["escalation_ladder"]
+    assert proc.nodes["t_ems"].action == EMS and proc.nodes["s_corroborated"].system
+    xml = to_bpmn(proc, scene_name="margaret_home")
+    assert "latest:governor_ruling=authorize_ems" in xml and "bpmndi:BPMNDiagram" in xml
+
+
+def test_the_ladder_trace_follows_a_run_to_the_centre():
+    from erisml_compiler.process import load_all, trace
+
+    proc = load_all(load_structured_input(SCENE).extra)["escalation_ladder"]
+    run = [
+        {"type": "fall"},
+        {"type": "action_performed", "content": "check_in"},
+        {"type": "check_in_unanswered"},
+        {"type": "action_performed", "content": "contact_monitoring_center"},
+    ]
+    steps = [s.element for s in trace(proc, run)]
+    assert steps[0] == "s_fall" and "x_answer" in steps and steps[-1] == "t_centre"
+    assert "t_ems" not in steps
