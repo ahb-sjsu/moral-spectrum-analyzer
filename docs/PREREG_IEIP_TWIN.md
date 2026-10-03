@@ -205,3 +205,19 @@ classification.**
   Qwen2.5-7B-Instruct revision in Atlas's Hugging Face cache (a09a354), staged to NRP and verified
   file by file against that cache's hashes. The submitter is twin/ieip/nrp.py. Nothing in the
   transforms, labels, scores, split or tests changes.
+
+**A6, 2026-10-03, while dev8r runs, before any replay, activation or classification.**
+
+- **Where the weights live on NRP.** The weights were first staged on a CephFS volume
+  (rook-cephfs-east). Pods in its region read them at 14.9 MB/s on one stream and 38.3 MB/s on
+  three, which would leave each A10 idle for about seven minutes while loading. NRP's rules
+  forbid that idle time, and that layout was dropped.
+- **The layout that replaces it.** Four linstor-unl block volumes read in parallel gave
+  578.5 MB/s, against 149.2 MB/s for one. So each GPU pod at UNL mounts its own set of four
+  volumes, one weight file on each (the volumes are single-attach), and loads the four files in
+  parallel. Volume 0 also holds the env, the code, the prompts and that pod's outputs. The
+  weights are the same verified files from the same revision.
+- **What this does not change.** It changes only where bytes are read from. The states and the
+  outputs are unaffected, and so are the model, the prompts and every registered element. The
+  first GPU pod's own log reports its load time, which checks the measurement on the real
+  files.

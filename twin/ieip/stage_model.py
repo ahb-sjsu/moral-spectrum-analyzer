@@ -22,8 +22,10 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
@@ -65,7 +67,23 @@ def main() -> int:
     ap.add_argument("--revision", default=None)
     ap.add_argument("--dest", required=True)
     ap.add_argument("--expect", required=True, help="JSON file: {path: sha256 or git sha1}")
+    ap.add_argument(
+        "--shard-dests",
+        default="",
+        help="comma list: weight file k of n (model-0000k-of-0000n.safetensors) goes to the k-th "
+        "directory, one per volume, so a pod can read them in parallel; the rest go to --dest",
+    )
     a = ap.parse_args()
+    shard_dests = [Path(d) for d in a.shard_dests.split(",") if d]
+
+    def where(f: str) -> Path:
+        m = re.fullmatch(r"model-(\d+)-of-(\d+)\.safetensors", f)
+        if shard_dests and m:
+            if int(m.group(2)) != len(shard_dests):
+                raise SystemExit(f"{f}: {m.group(2)} weight files, {len(shard_dests)} shard dests")
+            return shard_dests[int(m.group(1)) - 1] / f
+        return dest / f
+
     expect = json.load(open(a.expect, encoding="utf-8"))
     dest = Path(a.dest)
     dest.mkdir(parents=True, exist_ok=True)
@@ -92,12 +110,13 @@ def main() -> int:
         p = Path(
             hf_hub_download(a.model_id, f, revision=info.sha, local_dir=str(local))
         )
-        (dest / f).parent.mkdir(parents=True, exist_ok=True)
+        where(f).parent.mkdir(parents=True, exist_ok=True)
         t1 = time.time()
-        size, sha, git_sha1 = copy_bounded(p, dest / f)
+        size, sha, git_sha1 = copy_bounded(p, where(f))
         if expect[f] not in (sha, git_sha1):
             raise SystemExit(f"{f}: sha256 {sha} / git sha1 {git_sha1}, expected {expect[f]}")
-        manifest["files"][f] = {"bytes": size, "sha256": sha, "git_sha1": git_sha1, "verified": True}
+        manifest["files"][f] = {"bytes": size, "sha256": sha, "git_sha1": git_sha1, "verified": True,
+                                "path": str(where(f))}
         total += size
         p.unlink()
         print(
@@ -107,17 +126,24 @@ def main() -> int:
     shutil.rmtree(local, ignore_errors=True)
     manifest["seconds"] = round(time.time() - t0, 1)
     manifest["bytes"] = total
-    big = max(manifest["files"], key=lambda k: manifest["files"][k]["bytes"])
+    # the read speed the GPU pods will see: every weight file at once, as they load them
+    weights = [where(f) for f in manifest["files"] if f.endswith(".safetensors")]
+
+    def read(path: Path) -> int:
+        n = 0
+        with open(path, "rb") as fi:
+            while True:
+                b = fi.read(CHUNK)
+                if not b:
+                    return n
+                n += len(b)
+                os.posix_fadvise(fi.fileno(), n - len(b), len(b), os.POSIX_FADV_DONTNEED)
+
     t1 = time.time()
-    n = 0
-    with open(dest / big, "rb") as fi:
-        while True:
-            b = fi.read(CHUNK)
-            if not b:
-                break
-            n += len(b)
-            os.posix_fadvise(fi.fileno(), n - len(b), len(b), os.POSIX_FADV_DONTNEED)
+    with ThreadPoolExecutor(len(weights)) as ex:
+        n = sum(ex.map(read, weights))
     manifest["read_mb_per_s"] = round(n / 1e6 / max(time.time() - t1, 1e-3), 1)
+    manifest["read_streams"] = len(weights)
     json.dump(manifest, open(dest / "STAGED.json.part", "w"), indent=1)
     os.replace(dest / "STAGED.json.part", dest / "STAGED.json")
     print(

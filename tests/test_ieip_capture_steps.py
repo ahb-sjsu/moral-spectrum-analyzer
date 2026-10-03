@@ -149,14 +149,23 @@ class _Desc:
 def test_the_preflight_passes_the_real_scripts():
     sha = "a" * 40
     for script in (
-        nrp.SETUP,
-        nrp.code_script(sha),
         nrp.stage_script(sha),
-        nrp.prepare_script(sha),
-        nrp.fetch_script(sha, 0),
+        nrp.prepare_script(sha, nrp.SETS),
+        nrp.fetch_script(sha, 0, 0),
+        nrp.LINPROBE,
+        nrp.LATTE_CLEANUP,
     ):
-        assert nrp.preflight(_Desc(script), gpu=False) == [], script[:60]
-    assert nrp.preflight(_Desc(nrp.gpu_script(sha, 0, 10), cpu="2", memory="5Gi"), gpu=True) == []
+        assert nrp.preflight(_Desc(script, zone="unl"), gpu=False) == [], script[:60]
+    gpu = _Desc(nrp.gpu_script(sha, 0, 10), cpu="2", memory="5Gi", zone="unl")
+    assert nrp.preflight(gpu, gpu=True) == []
+
+
+def test_a_gpu_pod_reads_the_four_weight_files_from_four_volumes_in_parallel():
+    script = nrp.gpu_script("a" * 40, 0, 10)
+    assert "HF_ENABLE_PARALLEL_LOADING=true" in script
+    assert "ln -s /w?/shards/*.safetensors /tmp/model/" in script
+    assert [m for _, m in nrp.set_volumes(2)] == ["/w0", "/w1", "/w2", "/w3"]
+    assert nrp.set_volumes(2)[3][0] == "ieip-w2-3"
 
 
 @pytest.mark.parametrize(
@@ -176,4 +185,5 @@ def test_the_preflight_vetoes_what_the_rules_forbid(desc, gpu, why):
 
 def test_a_gpu_job_never_downloads_the_model():
     assert "hf_hub_download" not in nrp.gpu_script("a" * 40, 0, 10)
+    assert "urlopen" not in nrp.gpu_script("a" * 40, 0, 10)
     assert "HF_HUB_OFFLINE=1" in nrp.gpu_script("a" * 40, 0, 10)
