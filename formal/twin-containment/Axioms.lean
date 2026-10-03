@@ -19,3 +19,4 @@ open Twin
 #print axioms gate_permitted
 #print axioms gate_passes
 #print axioms gated_step_reachable
+#print axioms fallback_permitted

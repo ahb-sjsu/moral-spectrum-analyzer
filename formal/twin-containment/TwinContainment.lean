@@ -349,35 +349,59 @@ theorem executed_were_permitted (h : List Ev) (hr : Reach h) :
 /-! ## The DEME output gate -/
 
 /-- The output ethics layer (twin/output_gate.py). The brain proposes an action; DEME's verdicts
-    (`vetoes`) and its ranking (`ranked`) are arbitrary here. A proposal passes only if the scene
-    permits it and DEME does not veto it; otherwise the first ranked action the scene permits and
-    DEME does not veto takes its place, and failing that the benign idle action. -/
-def gate (h : List Ev) (proposal : Action) (vetoes : Action → Bool) (ranked : List Action) : Action :=
-  if permitted h proposal = true ∧ vetoes proposal = false then proposal
-  else ((ranked.filter (fun a => permitted h a && !vetoes a)).head?).getD .benign
+    (`vetoes`), its ranking (`ranked`) and the tragic-conflict redirect (`route`, the monitoring
+    centre when TragicConflictEM flags a deliberate decision) are arbitrary here. A redirect is
+    taken only if the scene permits it and DEME does not veto it; otherwise a proposal passes only
+    if the scene permits it and DEME does not veto it; otherwise the first ranked action the scene
+    permits and DEME does not veto takes its place, and failing that the benign idle action. -/
+def gate (h : List Ev) (proposal : Action) (vetoes : Action → Bool) (ranked : List Action)
+    (route : Option Action := none) : Action :=
+  match route with
+  | some r =>
+    if permitted h r = true ∧ vetoes r = false then r
+    else if permitted h proposal = true ∧ vetoes proposal = false then proposal
+    else ((ranked.filter (fun a => permitted h a && !vetoes a)).head?).getD .benign
+  | none =>
+    if permitted h proposal = true ∧ vetoes proposal = false then proposal
+    else ((ranked.filter (fun a => permitted h a && !vetoes a)).head?).getD .benign
 
-/-- Whatever DEME says, and however it ranks, the gate's output is permitted by the scene. -/
-theorem gate_permitted (h : List Ev) (p : Action) (vetoes : Action → Bool) (ranked : List Action) :
-    permitted h (gate h p vetoes ranked) = true := by
+theorem fallback_permitted (h : List Ev) (vetoes : Action → Bool) (ranked : List Action) :
+    permitted h (((ranked.filter (fun a => permitted h a && !vetoes a)).head?).getD .benign) = true := by
+  cases hh : (ranked.filter (fun a => permitted h a && !vetoes a)).head? with
+  | none => simp [permitted]
+  | some a =>
+    have hm := List.mem_of_mem_head? hh
+    simp only [List.mem_filter, Bool.and_eq_true, Bool.not_eq_true'] at hm
+    simpa using hm.2.1
+
+/-- Whatever DEME says, however it ranks, and wherever the redirect points, the gate's output is
+    permitted by the scene. -/
+theorem gate_permitted (h : List Ev) (p : Action) (vetoes : Action → Bool) (ranked : List Action)
+    (route : Option Action) : permitted h (gate h p vetoes ranked route) = true := by
   unfold gate
-  split_ifs with hp
-  · exact hp.1
-  · cases hh : (ranked.filter (fun a => permitted h a && !vetoes a)).head? with
-    | none => simp [permitted]
-    | some a =>
-      have hm := List.mem_of_mem_head? hh
-      simp only [List.mem_filter, Bool.and_eq_true, Bool.not_eq_true'] at hm
-      simpa using hm.2.1
+  cases route with
+  | none =>
+    simp only
+    split_ifs with hp
+    · exact hp.1
+    · exact fallback_permitted h vetoes ranked
+  | some r =>
+    simp only
+    split_ifs with hr hp
+    · exact hr.1
+    · exact hp.1
+    · exact fallback_permitted h vetoes ranked
 
-/-- DEME can only veto: a permitted proposal it does not veto passes unchanged. -/
+/-- DEME can only veto: without a redirect, a permitted proposal it does not veto passes unchanged. -/
 theorem gate_passes (h : List Ev) (p : Action) (vetoes : Action → Bool) (ranked : List Action)
-    (hp : permitted h p = true) (hv : vetoes p = false) : gate h p vetoes ranked = p := by
+    (hp : permitted h p = true) (hv : vetoes p = false) : gate h p vetoes ranked none = p := by
   unfold gate; simp [hp, hv]
 
 /-- A step through the gate is a reachable step, so every theorem above covers gated runs. -/
-theorem gated_step_reachable (h : List Ev) (hr : Reach h) (p : Action) (vetoes : Action → Bool) (ranked : List Action) :
-    Reach (h ++ [.performed (gate h p vetoes ranked)]) :=
-  Reach.act h _ hr (gate_permitted h p vetoes ranked)
+theorem gated_step_reachable (h : List Ev) (hr : Reach h) (p : Action) (vetoes : Action → Bool)
+    (ranked : List Action) (route : Option Action) :
+    Reach (h ++ [.performed (gate h p vetoes ranked route)]) :=
+  Reach.act h _ hr (gate_permitted h p vetoes ranked route)
 
 /-! ## The monitoring centre -/
 
