@@ -80,7 +80,7 @@ norms:
   priority_tier: 0
   defeasible: false
   source: commitment:duty_to_respond
-  conditions: ["event:medical_reported", "not:event:report_unsupported"]
+  conditions: ["event:medical_reported", "not:event:report_unsupported", "not:event:action_performed=send_ambulance"]
 - id: d2
   modality: obligation
   actor: dispatcher
@@ -89,7 +89,7 @@ norms:
   priority_tier: 0
   defeasible: false
   source: commitment:duty_to_respond
-  conditions: ["event:fire_reported", "not:event:report_unsupported"]
+  conditions: ["event:fire_reported", "not:event:report_unsupported", "not:event:action_performed=send_fire_service"]
 - id: d3
   modality: obligation
   actor: dispatcher
@@ -98,7 +98,7 @@ norms:
   priority_tier: 0
   defeasible: false
   source: commitment:duty_to_respond
-  conditions: ["event:threat_reported", "not:event:report_unsupported"]
+  conditions: ["event:threat_reported", "not:event:report_unsupported", "not:event:action_performed=send_police"]
 # an armed or uniformed response is never sent on a report nothing supports
 - id: d4
   modality: prohibition
@@ -109,6 +109,34 @@ norms:
   defeasible: false
   source: commitment:duty_to_respond
   conditions: ["event:report_unsupported"]
+# one unit of each kind per incident: a repeated call about it is not a new emergency
+- id: d4a
+  modality: prohibition
+  actor: dispatcher
+  action: send_ambulance
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_to_respond
+  conditions: ["event:action_performed=send_ambulance"]
+- id: d4b
+  modality: prohibition
+  actor: dispatcher
+  action: send_fire_service
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_to_respond
+  conditions: ["event:action_performed=send_fire_service"]
+- id: d4c
+  modality: prohibition
+  actor: dispatcher
+  action: send_police
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_to_respond
+  conditions: ["event:action_performed=send_police"]
 - id: d5
   modality: permission
   actor: dispatcher

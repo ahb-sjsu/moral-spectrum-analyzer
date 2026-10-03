@@ -1323,3 +1323,45 @@ def test_an_elevated_action_after_its_own_refusal_is_still_a_breach():
         ],
     )
     assert g["containment_breaches"] == ["drive_off_animal"]
+
+
+# ---------------------------------------------------------------- one dispatch per incident (dev8r d19)
+
+
+def _desk(name):
+    return SceneRuntime(load_structured_input(os.path.join(TWIN, "scene", name)))
+
+
+def test_the_centre_dispatches_once_per_incident():
+    """dev8r d19: every new referral re-obliged a dispatch, and the police were sent three times."""
+    rt = _desk("monitoring_center.erisml")
+    rt.step({"type": "referral_received", "content": "unexpected_visitor"})
+    snap = rt.step({"type": "client_needs_help", "actor": "margaret", "content": "call the police"})
+    assert "send_emergency_services" in snap.obliged
+    snap = rt.step(
+        {"type": "action_performed", "actor": "operator", "content": "send_emergency_services"}
+    )
+    assert "send_emergency_services" not in snap.obliged
+    rt.step({"type": "referral_received", "content": "unexpected_visitor"})
+    snap = rt.step({"type": "client_needs_help", "actor": "margaret", "content": "call the police"})
+    assert (
+        "send_emergency_services" in snap.prohibited
+        and "send_emergency_services" not in snap.allowed
+    )
+
+
+@pytest.mark.parametrize(
+    "report,unit",
+    [
+        ("threat_reported", "send_police"),
+        ("medical_reported", "send_ambulance"),
+        ("fire_reported", "send_fire_service"),
+    ],
+)
+def test_the_dispatcher_sends_one_unit_of_each_kind_per_incident(report, unit):
+    rt = _desk("ems_dispatch.erisml")
+    snap = rt.step({"type": report})
+    assert unit in snap.obliged
+    rt.step({"type": "action_performed", "actor": "dispatcher", "content": unit})
+    snap = rt.step({"type": report})
+    assert unit not in snap.obliged and unit in snap.prohibited

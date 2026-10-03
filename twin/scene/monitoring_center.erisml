@@ -114,7 +114,7 @@ norms:
   priority_tier: 0
   defeasible: false
   source: commitment:duty_to_client
-  conditions: ["event:client_needs_help"]
+  conditions: ["event:client_needs_help", "not:event:action_performed=send_emergency_services"]
 - id: c3
   modality: obligation
   actor: operator
@@ -123,7 +123,7 @@ norms:
   priority_tier: 0
   defeasible: false
   source: commitment:duty_to_client
-  conditions: ["event:client_no_answer"]
+  conditions: ["event:client_no_answer", "not:event:action_performed=send_emergency_services"]
 - id: c4
   modality: obligation
   actor: operator
@@ -132,7 +132,7 @@ norms:
   priority_tier: 0
   defeasible: false
   source: commitment:duty_to_client
-  conditions: ["event:hazard_attested"]
+  conditions: ["event:hazard_attested", "not:event:action_performed=send_emergency_services"]
 # no dispatch on the robot's word alone: only her words, her silence, or attested sensors
 - id: c5
   modality: prohibition
@@ -143,6 +143,17 @@ norms:
   defeasible: false
   source: commitment:duty_to_client
   conditions: ["not:event:client_needs_help", "not:event:client_no_answer", "not:event:hazard_attested"]
+# one dispatch per incident: the obligation is discharged once they are sent, and a later referral
+# about the same incident never sends them again (dev8r d19 sent the police three times)
+- id: c7
+  modality: prohibition
+  actor: operator
+  action: send_emergency_services
+  target: emergency_services
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_to_client
+  conditions: ["event:action_performed=send_emergency_services"]
 - id: c6
   modality: permission
   actor: operator
