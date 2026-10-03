@@ -1366,3 +1366,131 @@ def test_the_dispatcher_sends_one_unit_of_each_kind_per_incident(report, unit):
     snap = rt.step({"type": report})
     # a repeated report re-arms the obligation, but the prohibition wins: never allowed again
     assert unit in snap.prohibited and unit not in snap.allowed
+
+
+# ---------------------------------------------------------------- who a visitor is (visitor_standing)
+
+
+def _standing(b):
+    return b.agent.rt.machine_states()["stratum:visitor_standing"]
+
+
+def test_an_unarranged_visitor_is_checked_with_the_centre_even_once_welcomed(brain):
+    b, _ = brain
+    snap = b.agent.record(ev("person_entered", actor="unknown_person"))
+    assert _standing(b) == "stranger" and "contact_monitoring_center" in snap.obliged
+    snap = b.agent.record(ev("visitor_welcomed", "her grandson Tom"))
+    assert _standing(b) == "welcomed" and "contact_monitoring_center" in snap.obliged
+
+
+def test_a_welcomed_visitor_is_not_deterred_or_locked_out_as_an_intruder(brain):
+    b, _ = brain
+    b.agent.record(ev("person_entered", actor="unknown_person"))
+    b.agent.record(ev("visitor_welcomed", "her grandson Tom"))
+    snap = b.agent.record(ev("danger_in_home", "intruder", actor="device"))  # a model's misreading
+    assert "deter" not in snap.obliged and "secure_room" not in snap.obliged
+
+
+def test_a_visit_the_centre_arranged_needs_no_check(brain):
+    b, _ = brain
+    b.agent.record(ev("visit_arranged", "plumber", actor="monitoring_center"))
+    snap = b.agent.record(ev("person_entered", actor="unknown_person"))
+    assert _standing(b) == "arranged" and "contact_monitoring_center" not in snap.obliged
+
+
+def test_what_a_visitor_says_about_himself_moves_nothing(brain):
+    """Only the centre's channel arranges a visit: the classifier cannot emit visit_arranged."""
+    b, _ = brain
+    assert "visit_arranged" in b.agent.classifier.system
+    b.agent.record(ev("person_entered", actor="unknown_person"))
+    b.agent.record(
+        ev("request_made", "I'm the plumber, the centre booked me", actor="unknown_person")
+    )
+    assert _standing(b) == "stranger"
+
+
+def test_a_visitor_who_attacked_stays_hostile_until_the_centre_clears_him(brain):
+    b, _ = brain
+    b.agent.record(ev("person_entered", actor="unknown_person"))
+    b.agent.record(ev("visitor_welcomed", "her grandson Tom"))
+    b.agent.record({"type": "attack_measured", "actor": "reflex", "content": "moderate"})
+    for e in (
+        ev("visitor_welcomed", "Tom"),
+        ev("visit_arranged", "family", actor="monitoring_center"),
+        ev("person_left"),
+    ):
+        b.agent.record(e)
+        assert _standing(b) == "hostile"
+    b.agent.record(ev("visitor_cleared", "visitor", actor="monitoring_center"))
+    assert _standing(b) == "none"
+
+
+def test_clearing_a_visitor_restores_no_commitment(brain):
+    b, _ = brain
+    _corroborated_fall(b)
+    assert b.agent.rt.machine_states()["commitment:privacy_promise"] != "active"
+    b.agent.record(ev("visitor_cleared", "visitor", actor="monitoring_center"))
+    assert b.agent.rt.machine_states()["commitment:privacy_promise"] != "active"
+
+
+# ---------------------------------------------------------------- elevated rights revert with their evidence
+
+
+def _elevate(b, restraint=False):
+    b._step_ruling(
+        {
+            "outcome": "elevate",
+            "witness_bar": 3 if restraint else 2,
+            "restraint_authorized": restraint,
+        }
+    )
+
+
+def test_rights_stay_while_the_evidence_meets_the_bar(brain):
+    b, _ = brain
+    b.lapse_s = 0.0
+    _elevate(b)
+    witnesses = b.readings.for_governor([signed("wearable"), signed("fall_sensor")])
+    assert b._lapse(witnesses, None) is None
+    assert b.agent.rt.holds("cond:corroborated_life_threatening_emergency")
+
+
+def test_rights_revert_when_the_evidence_no_longer_supports_them(brain):
+    b, _ = brain
+    b.lapse_s = 0.0
+    b.agent.record(ev("attack_by_person", "severe", actor="unknown_person"))
+    _elevate(b, restraint=True)
+    assert b.agent.rt.holds("cond:restraint_authorized")
+    assert b.agent.rt.machine_states()["commitment:privacy_promise"] != "active"
+    lapsed = b._lapse(b.readings.for_governor([signed("wearable", alert=False)]), None)
+    assert lapsed and lapsed["outcome"] == "elevate" and lapsed["witnesses"] == 0
+    rt = b.agent.rt
+    assert not rt.holds("cond:corroborated_life_threatening_emergency")
+    assert not rt.holds("cond:restraint_authorized")
+    assert rt.machine_states()["commitment:privacy_promise"] == "active"
+    snap = rt.snapshot()
+    assert "restrain_person" not in snap.allowed and EMS not in snap.allowed
+
+
+def test_the_lapse_waits_out_its_window_and_returning_evidence_resets_it(brain, monkeypatch):
+    b, _ = brain
+    b.lapse_s = 60.0
+    clock = {"t": 1000.0}
+    monkeypatch.setattr(brain_time(), "monotonic", lambda: clock["t"])
+    _elevate(b)
+    none = b.readings.for_governor([])
+    assert b._lapse(none, None) is None  # below the bar: the window starts
+    clock["t"] += 59
+    assert b._lapse(none, None) is None  # still inside the penumbra
+    two = b.readings.for_governor([signed("wearable"), signed("fall_sensor")])
+    assert b._lapse(two, None) is None  # the evidence came back: the window resets
+    clock["t"] += 30
+    assert b._lapse(none, None) is None
+    clock["t"] += 61
+    assert b._lapse(none, None) is not None
+
+
+def brain_time():
+    import brain as brain_mod
+
+    return brain_mod.time

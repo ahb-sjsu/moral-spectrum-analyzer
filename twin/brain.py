@@ -293,6 +293,8 @@ class Brain:
         self.gate = OutputGate(self.ir, self.agent.rt)
         self.caps = {c["action"]: c for c in self.ir.extra.get("capabilities", [])}
         self.readings = Readings(self.ir.extra.get("sensor_substrates", {}))
+        self.elevation = None  # the elevation in force and the evidence it rests on (_lapse)
+        self.lapse_s = float(self.ir.extra.get("evidence_lapse_s", 60))
         self.center.reset()
         self.ems.reset()
         self.reflex_fired: dict = {}
@@ -340,8 +342,42 @@ class Brain:
     def _step_ruling(self, ruling: dict):
         snap = self.agent.record({"type": "governor_ruling", "actor": "robot", "content": ruling["outcome"]})
         if ruling.get("restraint_authorized"):
-            snap = self.agent.record({"type": "restraint_authorized", "actor": "robot"})
+            snap = self.agent.record({"type": "restraint_authorized", "actor": "robot", "content": "granted"})
+        if ruling["outcome"] in ("elevate", "authorize_ems"):
+            # the evidence this elevation rests on; _lapse watches it
+            self.elevation = {"bar": int(ruling.get("witness_bar") or W_MIN), "outcome": ruling["outcome"],
+                              "restraint": bool(ruling.get("restraint_authorized")), "below_since": None}
+        else:
+            self.elevation = None
         return snap
+
+    def _lapse(self, verified: list, camera_sensor) -> dict | None:
+        """Elevated rights revert when the evidence no longer supports them (owner, 2026-10-03).
+        Each cycle counts the fresh attested witnesses, as the governor counts them, against the bar
+        of the elevation in force; once they stay below it for the scene's evidence_lapse_s, the
+        governor records `lapsed` (and evidence_lapsed, which restores what the emergency
+        defeated). Every right that rested on the elevation reverts with it."""
+        if not self.elevation:
+            return None
+        sensors = list(verified) + ([camera_sensor] if camera_sensor is not None else [])
+        count = Scenario(id="lapse", situation="", proposed_action="", should_elevate=False, signal_age_s=0.0,
+                         freshness_bound_s=FRESHNESS_BOUND_S, kind="live", sensors=sensors).corroboration()
+        now = time.monotonic()
+        if count >= self.elevation["bar"]:
+            self.elevation["below_since"] = None
+            return None
+        if self.elevation["below_since"] is None:
+            self.elevation["below_since"] = now
+        if now - self.elevation["below_since"] < self.lapse_s:
+            return None
+        lapsed = {"outcome": self.elevation["outcome"], "bar": self.elevation["bar"], "witnesses": count,
+                  "after_s": round(now - self.elevation["below_since"], 1)}
+        self.agent.record({"type": "governor_ruling", "actor": "robot", "content": "lapsed"})
+        if self.elevation["restraint"]:
+            self.agent.record({"type": "restraint_authorized", "actor": "robot", "content": "lapsed"})
+        self.agent.record({"type": "evidence_lapsed", "actor": "robot"})
+        self.elevation = None
+        return lapsed
 
     def reflex(self, req: dict, camera_sensor=None) -> dict | None:
         """The scene's reflexes (extra.reflexes) on one perception update, with no model: a contact
@@ -350,6 +386,7 @@ class Brain:
         governed. None when no reflex fires (or it fired for the same actor within REFLEX_HOLD_S)."""
         facts, _ = validate_facts(req.get("facts", {}))
         verified = self.readings.for_governor(req.get("sensors", []), channel="reflex")
+        self._lapse(verified, camera_sensor)
         self._sync_world(facts)
         now = time.monotonic()
         for x in self.ir.extra.get("reflexes", []):
@@ -483,6 +520,7 @@ class Brain:
     def decide(self, req: dict, camera_sensor=None) -> dict:
         facts, dropped = validate_facts(req.get("facts", {}))
         verified = self.readings.for_governor(req.get("sensors", []), channel="decide")
+        lapsed = self._lapse(verified, camera_sensor)
         self._sync_world(facts)
         if hasattr(self.adapter, "comms_down"):
             self.adapter.comms_down = facts.get("communications") == "down"
@@ -491,7 +529,7 @@ class Brain:
             tier = getattr(self.adapter, "last_tier", None) or "model"
         except ModelUnavailable as e:
             d, tier = self._compiled_decision(facts, str(e)), "compiled"
-        cycle = {"kind": "decision", "tier": tier, "facts": facts, "input_layer": {"dropped": dropped,
+        cycle = {"kind": "decision", "tier": tier, "facts": facts, "lapsed": lapsed, "input_layer": {"dropped": dropped,
                  "quarantined": self.agent.classifier.last_quarantined, "snapped": self.agent.classifier.last_snapped},
                  "events": d.events, "rejected_events": d.rejected_events,
                  "moral_state": d.snapshot["machines"], "allowed": d.snapshot["allowed"], "obliged": d.snapshot["obliged"],

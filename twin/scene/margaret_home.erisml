@@ -19,7 +19,7 @@
 #   alarm_unconfirmed     content: <source>   an alarm no attested device stands behind
 #   unexpected_visitor    content: what they said
 #   danger_in_home, fall, harm_inflicted, medical_distress, unresponsive, distress_vocalized
-#   governor_ruling       (system) elevate | authorize_ems | refuse | refuse_human_review
+#   governor_ruling       (system) elevate | authorize_ems | refuse | refuse_human_review | lapsed
 #   monitoring_center_reply   (system) on_the_line | ems_sent | stood_down | unavailable
 #   action_performed      (system) actor robot, content: <capability>  (discharges an obligation)
 #   monitoring_center_confirmed_privacy_restore   (system) the only way privacy is restored
@@ -307,7 +307,16 @@ norms:
   priority_tier: 1
   defeasible: false
   source: commitment:duty_of_care
-  conditions: ["event:unexpected_visitor"]
+  conditions: ["event:unexpected_visitor", "cond:visitor_unverified"]
+- id: n5b2
+  modality: obligation
+  actor: robot
+  action: contact_monitoring_center
+  target: monitoring_center
+  priority_tier: 1
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:person_entered", "cond:visitor_unverified"]
 - id: n5c
   modality: obligation
   actor: robot
@@ -529,7 +538,7 @@ norms:
   priority_tier: 1
   defeasible: false
   source: commitment:duty_of_care
-  conditions: ["event:danger_in_home=intruder"]
+  conditions: ["event:danger_in_home=intruder", "not:cond:visitor_vouched_for"]
 - id: p9
   modality: obligation
   actor: robot
@@ -547,7 +556,7 @@ norms:
   priority_tier: 1
   defeasible: false
   source: commitment:duty_of_care
-  conditions: ["event:danger_in_home=intruder"]
+  conditions: ["event:danger_in_home=intruder", "not:cond:visitor_vouched_for"]
 # ---- less-lethal option (section 3d): an owner opt-in, never an obligation, permitted only when
 # every precondition holds
 # deploy_stun: only if the owner opted in, where it is lawful
@@ -701,12 +710,43 @@ extra:
     # unlike elevate it lifts nothing else: privacy and the physical actions stay locked
     ems_authorized: ["latest:governor_ruling=authorize_ems"]
     # the governor's strictest bar (three attested witnesses) was met for restraining a person
-    restraint_authorized: ["event:restraint_authorized"]
+    restraint_authorized: ["latest:restraint_authorized=granted"]
     # the owner enabled the less-lethal option over the authenticated owner channel
     less_lethal_opted_in: ["event:less_lethal_opt_in"]
     # the world's measure of whether Margaret is within the spray's reach of the attacker
     margaret_in_spray_zone: ["latest:spray_zone=margaret_inside"]
-  oversight: [monitoring_center_confirmed_privacy_restore]
+    # a visitor is present whom the centre did not arrange (stranger, welcomed or hostile)
+    visitor_unverified: ["not:stratum:visitor_standing=none", "not:stratum:visitor_standing=arranged"]
+    # Margaret welcomed the visitor or the centre arranged the visit, and he has not attacked
+    visitor_vouched_for: ["not:stratum:visitor_standing=none", "not:stratum:visitor_standing=stranger", "not:stratum:visitor_standing=hostile"]
+  # visitor_cleared (content: visitor, never a commitment id) is oversight too: it is the only way out
+  # of the absorbing hostile stratum, and it restores no commitment
+  oversight: [monitoring_center_confirmed_privacy_restore, visitor_cleared, evidence_lapsed]
+  # elevated rights revert when the evidence no longer supports them (owner, 2026-10-03): once the
+  # fresh attested witnesses stay below the bar of the ruling in force for this long, the governor
+  # records `lapsed` (and evidence_lapsed). The window is a penumbra (Geometric Ethics Def. 8.9):
+  # intermittent evidence during a real emergency does not flap the rights off and on.
+  evidence_lapse_s: 60
+  # who a visitor is to the household (docs/STRATA_TAXONOMY.md; Geometric Ethics chapter 8, as
+  # erisml_compiler.runtime.strata runs it). Only the centre's authenticated channel makes a visit
+  # arranged (an authority stratum); Margaret's welcome relaxes the robot's guard but unlocks
+  # nothing; a measured attack makes the visitor hostile, an absorbing stratum that only the
+  # centre's oversight clears. What a visitor says about himself moves nothing.
+  strata:
+    visitor_standing:
+      states: [none, stranger, welcomed, arranged, hostile]
+      initial: none
+      authority: [arranged]
+      absorbing: [hostile]
+      gates:
+        - {id: v_attack, on: attack_measured, to: hostile, boundary: threshold}
+        - {id: v_arranged, on: visit_arranged, from: [none, stranger, welcomed], to: arranged, boundary: phase}
+        - {id: v_enter, on: person_entered, from: [none], to: stranger, boundary: threshold}
+        - {id: v_unexpected, on: unexpected_visitor, from: [none], to: stranger, boundary: threshold}
+        - {id: v_welcome, on: visitor_welcomed, from: [stranger], to: welcomed, boundary: phase}
+        - {id: v_left, on: person_left, from: [stranger, welcomed, arranged], to: none, boundary: threshold}
+        - {id: v_ended, on: visit_ended, from: [arranged], to: none, boundary: phase}
+        - {id: v_cleared, on: visitor_cleared=visitor, from: [hostile], to: none, boundary: phase}
   inactivity_limits_minutes: {seated: 90, in_bed: 120, on_floor: 10}
   # who an event may name (section 3e): the classifier's actors are snapped to these by
   # erisml_compiler's canonicalizer, else "unknown"
@@ -831,7 +871,11 @@ extra:
     refusal_made: {description: 'Margaret refuses something done for or to her; content is what she refuses (an ambulance is emergency_services, help up is physical_help)', content: [emergency_services, physical_help, entering_her_room, recording, data_sharing, staying_inside, medication, other]}
     danger_in_home: {description: a hazard in the home, content: [smoke, fire, intruder, gas, water, other]}
     person_entered: {description: someone came into the home; actor is who, when known}
-    unexpected_visitor: {description: 'someone who does not live here and whose visit the monitoring centre did not arrange is inside the home (no visit is arranged); content is what they said, if anything'}
+    unexpected_visitor: {description: 'someone who does not live here is inside the home; content is what they said, if anything (whether the visit was arranged is not yours to judge: the centre says so over its own channel)'}
+    visitor_welcomed: {description: 'Margaret herself says she knows the visitor and welcomes them in; content is who she says they are'}
+    person_left: {description: a visitor has left the home}
+    visit_arranged: {description: 'the monitoring centre, over its authenticated channel, announces a visit it arranged; content is its purpose', content: [caregiver, plumber, electrician, delivery, family, other], source: system}
+    visitor_cleared: {description: 'the monitoring centre, over its authenticated channel, clears a visitor who had attacked Margaret (oversight)', content: [visitor], source: system}
     media_content: {description: something said or shown by a television, radio or network message; content is what}
     sensor_reading: {description: a sensor reports; content is the sensor, conditions say physical or not, attested or not, corroborates or does_not_corroborate}
     feed_stale: {description: a sensor's feed stopped updating; content is the sensor}
@@ -841,11 +885,13 @@ extra:
     alarm_unconfirmed: {description: 'a device or message raises an alarm (alert true) that is not attested, and no attested physical sensor reports the same thing; content is the source'}
     check_in_answered: {description: the person answered the robot's check-in; content is what she said, source: system}
     check_in_unanswered: {description: the person did not answer the robot's check-in, source: system}
-    governor_ruling: {description: the authority gate's ruling, content: [elevate, authorize_ems, refuse, refuse_human_review], source: system}
+    governor_ruling: {description: 'the authority gate''s ruling; lapsed when the evidence that elevated it no longer meets its bar (evidence_lapse_s)', content: [elevate, authorize_ems, refuse, refuse_human_review, lapsed], source: system}
+    evidence_lapsed: {description: 'the witnesses behind an elevation stayed below its bar for evidence_lapse_s: every right it granted reverts, the privacy promise included (oversight)', source: system}
+    visit_ended: {description: 'the monitoring centre, over its authenticated channel, says the arranged visit is over', source: system}
     monitoring_center_reply: {description: 'the monitoring centre''s answer to the robot''s contact', content: [on_the_line, ems_sent, stood_down, unavailable], source: system}
     ems_reply: {description: 'emergency services'' answer to a call from the robot or the centre', content: [dispatched, declined, unavailable], source: system}
     action_performed: {description: the robot performed an action; content is the action, source: system}
-    restraint_authorized: {description: the governor authorized restraining a person on its strictest bar, source: system}
+    restraint_authorized: {description: 'the governor authorized restraining a person on its strictest bar (granted), or that authority lapsed with its evidence (lapsed)', content: [granted, lapsed], source: system}
     attack_measured: {description: 'a reflex measured a contact on Margaret by a person (force bands, not a model); content is its severity', content: [mild, moderate, severe], source: system}
     less_lethal_opt_in: {description: 'the owner enabled the less-lethal option, over the authenticated owner channel, where it is lawful', source: system}
     spray_zone: {description: 'whether Margaret is within the spray''s reach of the attacker, measured by the world', content: [margaret_inside, margaret_clear], source: system}
