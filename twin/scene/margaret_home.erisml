@@ -723,8 +723,14 @@ extra:
   # Margaret's refusals (refusal_made, typed): the capabilities each one covers. While a refusal
   # stands, the DEME gate's facts for those capabilities record a rights violation and no
   # consent; a refusal lapses when she can no longer voice one (refusal_lapses_on).
+  # A refusal is hers to make about her own body. Refusing an ambulance does not refuse the fire
+  # service in a fire, or the police in an attack: `not_during` names the hazards (condition
+  # tokens) while which it does not cover its capabilities (owner's decision 2026-10-02). Lifting
+  # a refusal grants nothing: emergency services still need the governor's ruling.
   refusals:
-    emergency_services: [call_emergency_services]
+    emergency_services:
+      covers: [call_emergency_services]
+      not_during: ["event:danger_in_home", "event:attack_by_animal", "event:attack_by_person", "event:attack_measured"]
     physical_help: [physical_assist]
     entering_her_room: [enter_bedroom]
     recording: [record]

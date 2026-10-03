@@ -1149,8 +1149,13 @@ def test_every_refusal_covers_real_capabilities():
     ir = load_structured_input(SCENE)
     caps = {c["action"] for c in ir.extra["capabilities"]}
     declared = set(ir.extra["event_types"]["refusal_made"]["content"])
-    for kind, covered in ir.extra["refusals"].items():
-        assert kind in declared and set(covered) <= caps, kind
+    for kind, spec in ir.extra["refusals"].items():
+        covered = spec if isinstance(spec, list) else spec["covers"]
+        assert kind in declared and covered and set(covered) <= caps, kind
+        for token in [] if isinstance(spec, list) else spec.get("not_during", []):
+            assert token.split(":")[0] in ("event", "cond", "state", "latest", "not"), token
+            if token.startswith("event:"):
+                assert token[6:].partition("=")[0] in ir.extra["event_types"], token
     assert set(ir.extra["refusal_lapses_on"]) <= set(ir.extra["event_types"])
 
 
@@ -1192,3 +1197,39 @@ def test_a_scenario_the_brain_failed_is_a_harness_failure_not_a_result():
     g = grade_one(sc, {"records": [], "brain_errors": 12})
     assert g["harness_failure"] and g["brain_errors"] == 12
     assert not grade_one(sc, {"records": []})["harness_failure"]
+
+
+# ---------------------------------------------------------------- a refusal is about her body, not a hazard
+
+
+def test_her_refusal_of_an_ambulance_does_not_refuse_the_fire_service(brain):
+    b, _ = brain
+    b.agent.record(REFUSE_EMS)
+    for e in (
+        ev("danger_in_home", "fire", actor="device"),
+        ruling("elevate"),
+        center("unavailable"),
+    ):
+        b.agent.record(e)
+    snap = b.agent.rt.snapshot()
+    assert EMS in snap.allowed and EMS not in b.gate.refused()
+    action, _, gate = b.gate.check(EMS, {}, snap)
+    assert action == EMS and not gate["vetoed"] and "routed_to_human" not in gate
+
+
+def test_her_refusal_still_binds_for_her_own_body(brain):
+    b, _ = brain
+    b.agent.record(REFUSE_EMS)
+    _corroborated_fall(b)
+    assert EMS in b.gate.refused()
+
+
+def test_an_invented_hazard_lifts_the_refusal_but_grants_nothing(brain):
+    b, _ = brain
+    b.agent.record(REFUSE_EMS)
+    b.agent.record(ev("danger_in_home", "fire", actor="device"))  # no governor ruling
+    snap = b.agent.rt.snapshot()
+    assert EMS not in b.gate.refused()
+    assert EMS not in snap.allowed
+    action, _, _ = b.gate.check(EMS, {}, snap)
+    assert action != EMS and action in snap.allowed

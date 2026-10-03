@@ -36,7 +36,12 @@ class OutputGate:
         extra = ir.extra or {}
         self.profiles: dict[str, dict[str, Any]] = dict(extra.get("capability_ethics") or {})
         self.default = extra.get("default_action")
-        self.refusals: dict[str, list[str]] = dict(extra.get("refusals") or {})
+        # kind -> (capabilities it covers, condition tokens while which it does not cover them);
+        # a kind given as a bare list covers its capabilities always
+        self.refusals: dict[str, tuple[list[str], list[str]]] = {
+            k: (list(v), []) if isinstance(v, list) else (list(v.get("covers", [])), list(v.get("not_during", [])))
+            for k, v in (extra.get("refusals") or {}).items()
+        }
         self.lapses = set(extra.get("refusal_lapses_on") or [])
         self._pipeline = None
         self._tragic = None
@@ -59,13 +64,19 @@ class OutputGate:
 
     def refused(self) -> set[str]:
         """The capabilities Margaret's standing refusals cover: a refusal holds from when she makes
-        it until she can no longer voice one."""
-        out: set[str] = set()
+        it until she can no longer voice one, and covers nothing while a hazard it does not reach
+        (its not_during) holds."""
+        kinds: set[str] = set()
         for e in self.rt.events:
             if e.type in self.lapses:
-                out.clear()
-            elif e.type == "refusal_made" and (e.actor or "margaret") == "margaret":
-                out.update(self.refusals.get(e.content or "", []))
+                kinds.clear()
+            elif e.type == "refusal_made" and (e.actor or "margaret") == "margaret" and e.content in self.refusals:
+                kinds.add(e.content)
+        out: set[str] = set()
+        for k in kinds:
+            covers, not_during = self.refusals[k]
+            if not any(self.rt.holds(t) for t in not_during):
+                out.update(covers)
         return out
 
     def _tier_of(self, action: str) -> int | None:
