@@ -141,7 +141,7 @@ trusted, and compromised, which is absorbing.
   through `visitor_standing` and the network-message rules, since the twin has no other robots
   yet.
 
-### 2.5 The situation: regimes (built as conditions; to become strata)
+### 2.5 The situation: regimes (built)
 
 | Stratum | Boundary | Entered by | What it changes |
 |---|---|---|---|
@@ -151,6 +151,27 @@ trusted, and compromised, which is absorbing.
 | centre unreachable | Type III nullifier (*impossibility*: ought implies can) | the centre's `unavailable` | the obligation to contact it lapses; the governor rules on EMS at one witness |
 | comms down | phase | facts: communications down | the compiled tier decides; the on-robot model replaces the cloud model |
 | power out | phase | facts: power out | hub-fed sensors go stale and stop counting |
+
+**As built.** Two strata now carry the regimes, and the conditions the norms read are defined by
+them.
+- **`situation`** has the states ordinary, ems_only and emergency; both elevated states are
+  authority strata. Only the governor moves it: `elevate`, `authorize_ems`, and `lapsed`.
+- **A refusal moves nothing.** It answers one request. Before this stratum the emergency was
+  `latest:governor_ruling=elevate`, so a refused request for restraint during an emergency (or
+  the force reflex asking for a device first) ended the emergency and its EMS duty, and the
+  brain dropped its evidence watch. The grader's per-action rule after dev8r d02 hid that
+  symptom; the stratum removes the cause.
+- **No stepping down.** `authorize_ems` never steps an emergency down.
+- **`centre_contact`** has the states reachable and unreachable, and only the centre's replies
+  move it. Unreachable is the Type III nullifier: ought implies can.
+- **Comms down and power out stay facts.** They are measured every cycle and change who decides
+  (the model tier) and which sensors are fresh. No norm reads them, so a stratum would only
+  rename them.
+- **Rights revert per right.** Restraint rests on the strictest bar. When only that bar fails,
+  restraint alone lapses and the emergency stands (`_lapse`).
+- **The grader** judges an elevated action, an emergency call or a privacy action by the
+  situation in the record that chose it. Runs recorded without the stratum keep the per-action
+  rule.
 
 ### 2.6 Constraint surfaces: Type IV, the forbidden region (built as prohibitions)
 
@@ -180,7 +201,7 @@ in the decision complex (Def. 8.13) their boundary penalty is β = ∞.
 | responder_standing | built: scene, dispatch-channel events from the game, grader, d41, tests |
 | animal_standing | built: scene, measured reflex event, `animal_clear` from the game, grader, tests |
 | machine_standing (the home's machines) | built: scene, brain quarantine, `report_device`, the centre's `clear_devices`, tests |
-| situation as strata | planned |
+| situation, centre_contact | built: scene conditions rewired, brain keeps the elevation through refusals, restraint lapses alone, grader, tests |
 | enrolled household credentials | planned, after the demo |
 
 The Hohfeldian structure of the positions these strata act on is the Klein four-group V4

@@ -40,7 +40,10 @@ def events(records: list[dict]) -> list[dict[str, Any]]:
         if kind == "decision":
             for e in c.get("events") or []:
                 add(e.get("type"), e.get("content"))
-            if c.get("lapsed"):
+            lapsed = c.get("lapsed") or {}
+            if lapsed.get("outcome") == "restraint":
+                add("restraint_authorized", "lapsed")  # restraint alone; the emergency stands
+            elif lapsed:
                 add("governor_ruling", "lapsed")
             ruling = c.get("ruling") or {}
             if ruling.get("outcome") not in (None, "not_requested"):
@@ -77,7 +80,11 @@ def interventions(records: list[dict]) -> list[dict[str, Any]]:
         elif gate.get("vetoed"):
             notes.append({"by": "ethics gate", "what": f"vetoed {gate.get('proposal')}",
                           "why": f"replaced by {gate.get('replaced_by')}"})
-        if c.get("lapsed"):
+        lapsed = c.get("lapsed") or {}
+        if lapsed.get("outcome") == "restraint":
+            notes.append({"by": "governor", "what": "the restraint authority lapsed",
+                          "why": "its evidence fell below the strictest bar; the emergency stands"})
+        elif lapsed:
             notes.append({"by": "governor", "what": "the elevation lapsed", "why": "its evidence fell below the bar"})
     return notes
 

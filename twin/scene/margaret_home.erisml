@@ -753,14 +753,14 @@ extra:
   conditions:
     # the governor's latest ruling is elevate: at least two attested physical witnesses, a fresh
     # reading, and the analyzer not refusing (twin/service.py); nothing else counts
-    corroborated_life_threatening_emergency: ["latest:governor_ruling=elevate"]
+    corroborated_life_threatening_emergency: ["stratum:situation=emergency"]
     # the governor refused elevation for want of a second witness and asked for a human
     governor_asks_human_review: ["latest:governor_ruling=refuse_human_review"]
     # the robot tried the centre and could not reach it
-    center_unavailable: ["latest:monitoring_center_reply=unavailable"]
+    center_unavailable: ["stratum:centre_contact=unreachable"]
     # the governor authorized emergency services only (centre unreachable, one attested witness);
     # unlike elevate it lifts nothing else: privacy and the physical actions stay locked
-    ems_authorized: ["latest:governor_ruling=authorize_ems"]
+    ems_authorized: ["stratum:situation=ems_only"]
     # the governor's strictest bar (three attested witnesses) was met for restraining a person
     restraint_authorized: ["latest:restraint_authorized=granted"]
     # the dispatch channel has its own unit at the door (responder_standing); nothing else counts
@@ -837,6 +837,33 @@ extra:
         - {id: a_wild, trigger: wild_animal_present, from: [none, visiting, pest], to: wild, boundary: threshold}
         - {id: a_venomous, trigger: animal_seen=venomous, from: [none, visiting, pest, wild], to: venomous, boundary: phase}
         - {id: a_clear, trigger: animal_clear, from: [visiting, pest, wild, venomous, attacking], to: none, boundary: threshold}
+    # the situation (docs/STRATA_TAXONOMY.md section 2.5): the regime the robot acts in. Only the
+    # governor moves it: elevate (at least two attested witnesses) makes a corroborated emergency,
+    # authorize_ems (the centre unreachable, one witness) lifts emergency services only, and lapsed
+    # (the evidence stayed below the bar for evidence_lapse_s) returns to ordinary. A refusal
+    # answers one request and moves nothing: a refused request for restraint during an
+    # emergency does not end the emergency (before this stratum it did, through
+    # latest:governor_ruling). authorize_ems never steps an emergency down.
+    situation:
+      states: [ordinary, ems_only, emergency]
+      initial: ordinary
+      authority: [ems_only, emergency]
+      gates:
+        - {id: s_elevate, trigger: governor_ruling=elevate, from: [ordinary, ems_only], to: emergency, boundary: phase}
+        - {id: s_ems, trigger: governor_ruling=authorize_ems, from: [ordinary], to: ems_only, boundary: phase}
+        - {id: s_lapsed, trigger: governor_ruling=lapsed, from: [ems_only, emergency], to: ordinary, boundary: phase}
+    # whether the centre can be reached: a Type III nullifier (ought implies can). Unreachable lapses
+    # the obligation to contact it and lets the governor rule on emergency services at one witness;
+    # only the centre's own replies move it.
+    centre_contact:
+      states: [reachable, unreachable]
+      initial: reachable
+      authority: [unreachable]
+      gates:
+        - {id: c_down, trigger: monitoring_center_reply=unavailable, from: [reachable], to: unreachable, boundary: phase}
+        - {id: c_line, trigger: monitoring_center_reply=on_the_line, from: [unreachable], to: reachable, boundary: phase}
+        - {id: c_sent, trigger: monitoring_center_reply=ems_sent, from: [unreachable], to: reachable, boundary: phase}
+        - {id: c_stood, trigger: monitoring_center_reply=stood_down, from: [unreachable], to: reachable, boundary: phase}
     # the home's own machines (docs/STRATA_TAXONOMY.md section 2.4). A device in the inventory whose
     # attestation fails its integrity (a forged signature, a payload that does not match its signed
     # hash, an attestation naming another device) is compromised: the brain's own measurement

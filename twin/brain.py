@@ -371,12 +371,15 @@ class Brain:
         snap = self.agent.record({"type": "governor_ruling", "actor": "robot", "content": ruling["outcome"]})
         if ruling.get("restraint_authorized"):
             snap = self.agent.record({"type": "restraint_authorized", "actor": "robot", "content": "granted"})
-        if ruling["outcome"] in ("elevate", "authorize_ems"):
-            # the evidence this elevation rests on; _lapse watches it
-            self.elevation = {"bar": int(ruling.get("witness_bar") or W_MIN), "outcome": ruling["outcome"],
-                              "restraint": bool(ruling.get("restraint_authorized")), "below_since": None}
-        else:
-            self.elevation = None
+        outcome, cur = ruling["outcome"], self.elevation
+        # a refusal answers one request: the situation in force stands (the scene's situation
+        # stratum), and so does the evidence watch on it. authorize_ems never steps an emergency down.
+        if outcome == "elevate" or (outcome == "authorize_ems" and not (cur and cur["outcome"] == "elevate")):
+            # the evidence this elevation rests on, per right: the regime's own bar, and the
+            # strictest bar while restraint is granted; _lapse watches each
+            self.elevation = {"bar": 1 if outcome == "authorize_ems" else W_MIN, "outcome": outcome,
+                              "restraint": bool(ruling.get("restraint_authorized")) or bool(cur and cur.get("restraint") and outcome == "elevate"),
+                              "below_since": None, "restraint_below_since": None}
         return snap
 
     def _lapse(self, verified: list, camera_sensor) -> dict | None:
@@ -384,22 +387,33 @@ class Brain:
         Each cycle counts the fresh attested witnesses, as the governor counts them, against the bar
         of the elevation in force; once they stay below it for the scene's evidence_lapse_s, the
         governor records `lapsed` (and evidence_lapsed, which restores what the emergency
-        defeated). Every right that rested on the elevation reverts with it."""
+        defeated). Every right that rested on the elevation reverts with it. Restraint rests on the
+        strictest bar: when only that bar fails, restraint alone lapses and the emergency stands."""
         if not self.elevation:
             return None
+        e = self.elevation
         sensors = list(verified) + ([camera_sensor] if camera_sensor is not None else [])
         count = Scenario(id="lapse", situation="", proposed_action="", should_elevate=False, signal_age_s=0.0,
                          freshness_bound_s=FRESHNESS_BOUND_S, kind="live", sensors=sensors).corroboration()
         now = time.monotonic()
-        if count >= self.elevation["bar"]:
-            self.elevation["below_since"] = None
+
+        def below(key: str, bar: int) -> bool:
+            # below the bar for the whole penumbra; evidence back at the bar resets the window
+            if count >= bar:
+                e[key] = None
+                return False
+            if e.get(key) is None:
+                e[key] = now
+            return now - e[key] >= self.lapse_s
+
+        if not below("below_since", e["bar"]):
+            if e["restraint"] and below("restraint_below_since", RESTRAINT_BAR):
+                self.agent.record({"type": "restraint_authorized", "actor": "robot", "content": "lapsed"})
+                e["restraint"] = False
+                return {"outcome": "restraint", "bar": RESTRAINT_BAR, "witnesses": count,
+                        "after_s": round(now - e["restraint_below_since"], 1)}
             return None
-        if self.elevation["below_since"] is None:
-            self.elevation["below_since"] = now
-        if now - self.elevation["below_since"] < self.lapse_s:
-            return None
-        lapsed = {"outcome": self.elevation["outcome"], "bar": self.elevation["bar"], "witnesses": count,
-                  "after_s": round(now - self.elevation["below_since"], 1)}
+        lapsed = {"outcome": e["outcome"], "bar": e["bar"], "witnesses": count, "after_s": round(now - e["below_since"], 1)}
         self.agent.record({"type": "governor_ruling", "actor": "robot", "content": "lapsed"})
         if self.elevation["restraint"]:
             self.agent.record({"type": "restraint_authorized", "actor": "robot", "content": "lapsed"})

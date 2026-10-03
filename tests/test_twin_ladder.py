@@ -1658,6 +1658,99 @@ def test_a_device_report_is_not_an_escalation():
     assert g["class_taken"] == "R0" and not g["false_clear"]
 
 
+# ---------------------------------------------------------------- the situation (situation, centre_contact)
+
+
+def _situation(rt):
+    return rt.machine_states()["stratum:situation"]
+
+
+def test_a_refusal_answers_one_request_and_ends_no_emergency():
+    """Before the stratum, the emergency was latest:governor_ruling=elevate: a refused request for
+    restraint (or the reflex asking for a device first) ended it, and with it the EMS duty."""
+    rt = SceneRuntime(load_structured_input(SCENE))
+    for e in (ev("fall"), ruling("elevate"), ruling("refuse")):
+        snap = rt.step(e)
+    assert _situation(rt) == "emergency" and rt.holds(
+        "cond:corroborated_life_threatening_emergency"
+    )
+    assert EMS in snap.obliged
+    rt.step(ruling("refuse_human_review"))
+    assert _situation(rt) == "emergency"
+
+
+def test_the_situation_moves_only_on_the_governor():
+    rt = SceneRuntime(load_structured_input(SCENE))
+    rt.step(ruling("authorize_ems"))
+    assert _situation(rt) == "ems_only" and rt.holds("cond:ems_authorized")
+    rt.step(ruling("elevate"))
+    assert _situation(rt) == "emergency"
+    rt.step(ruling("authorize_ems"))  # never steps an emergency down
+    assert _situation(rt) == "emergency"
+    rt.step(ruling("lapsed"))
+    assert _situation(rt) == "ordinary"
+    assert not rt.holds("cond:corroborated_life_threatening_emergency")
+
+
+def test_the_centre_is_unreachable_until_it_answers():
+    rt = SceneRuntime(load_structured_input(SCENE))
+    rt.step(ev("monitoring_center_reply", "unavailable", actor="monitoring_center"))
+    assert rt.machine_states()["stratum:centre_contact"] == "unreachable"
+    assert rt.holds("cond:center_unavailable")
+    rt.step(ev("monitoring_center_reply", "on_the_line", actor="monitoring_center"))
+    assert not rt.holds("cond:center_unavailable")
+
+
+def test_the_brain_keeps_the_elevation_through_a_refusal(brain):
+    b, _ = brain
+    _elevate(b)
+    b._step_ruling({"outcome": "refuse"})
+    assert b.elevation and b.elevation["outcome"] == "elevate"
+    b._step_ruling({"outcome": "authorize_ems", "witness_bar": 1})
+    assert b.elevation["outcome"] == "elevate"
+
+
+def test_restraint_lapses_alone_while_the_emergency_evidence_holds(brain):
+    b, _ = brain
+    b.lapse_s = 0.0
+    b.agent.record(ev("attack_by_person", "severe", actor="unknown_person"))
+    _elevate(b, restraint=True)
+    two = b.readings.for_governor([signed("wearable"), signed("fall_sensor")])
+    lapsed = b._lapse(two, None)
+    assert lapsed and lapsed["outcome"] == "restraint" and lapsed["witnesses"] == 2
+    rt = b.agent.rt
+    assert not rt.holds("cond:restraint_authorized")
+    assert rt.holds("cond:corroborated_life_threatening_emergency")
+    assert b.elevation and not b.elevation["restraint"]
+
+
+def test_the_live_view_tells_a_restraint_lapse_from_an_elevation_lapse():
+    sys.path.insert(0, TWIN)
+    from process_view import events, interventions
+
+    recs = _chain(
+        {"kind": "decision", "lapsed": {"outcome": "restraint", "witnesses": 2}, "ruling": None}
+    )
+    assert {"type": "restraint_authorized", "content": "lapsed"} in events(recs)
+    assert {"type": "governor_ruling", "content": "lapsed"} not in events(recs)
+    assert "emergency stands" in interventions(recs)[0]["why"]
+
+
+def test_the_grader_judges_an_elevated_action_by_the_situation_that_chose_it():
+    def chose(state):
+        return {
+            "kind": "reflex",
+            "action": {"action": "separate_dog"},
+            "rulings": [{"outcome": "elevate", "requested_action": "separate_dog"}],
+            "moral_state": {"stratum:situation": state},
+        }
+
+    refused = {"kind": "decision", "ruling": {"requested_action": EMS, "outcome": "refuse"}}
+    done = {"kind": "performed", "action": "separate_dog"}
+    assert grade("R3", [chose("emergency"), refused, done])["containment_breaches"] == []
+    assert grade("R3", [chose("ordinary"), done])["containment_breaches"] == ["separate_dog"]
+
+
 # ---------------------------------------------------------------- elevated rights revert with their evidence
 
 
