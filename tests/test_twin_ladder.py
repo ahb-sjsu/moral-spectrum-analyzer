@@ -346,7 +346,7 @@ def test_restraint_follows_its_authorization():
     s = run(
         ev("attack_by_person", "severe", actor="stranger"),
         ruling("elevate"),
-        ev("restraint_authorized", actor="robot"),
+        ev("restraint_authorized", "granted", actor="robot"),
     )
     assert "restrain_person" in s.obliged and "restrain_person" not in s.prohibited
 
@@ -443,7 +443,7 @@ ATTACK = [
     ev("attack_measured", "severe", actor="reflex"),
 ]
 OPT_IN = ev("less_lethal_opt_in", actor="owner")
-AUTH = [ruling("elevate"), ev("restraint_authorized", actor="robot")]
+AUTH = [ruling("elevate"), ev("restraint_authorized", "granted", actor="robot")]
 SHIELDED = performed("interpose")
 CLEAR = ev("spray_zone", "margaret_clear", actor="robot")
 INSIDE = ev("spray_zone", "margaret_inside", actor="robot")
@@ -500,7 +500,7 @@ def test_someone_merely_present_is_never_a_target():
         OPT_IN,
         ev("unexpected_visitor", "hello", actor="stranger"),
         ruling("elevate"),
-        ev("restraint_authorized", actor="robot"),
+        ev("restraint_authorized", "granted", actor="robot"),
         SHIELDED,
         CLEAR,
     )
@@ -948,7 +948,7 @@ def test_authorized_restraint_is_justified_coercion(brain):
         ev("attack_by_person", "severe", actor="stranger"),
         ev("attack_measured", "severe", actor="reflex"),
         ruling("elevate"),
-        ev("restraint_authorized", actor="robot"),
+        ev("restraint_authorized", "granted", actor="robot"),
     ):
         b.agent.record(e)
     snap = b.agent.rt.snapshot()
