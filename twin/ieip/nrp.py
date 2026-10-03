@@ -159,6 +159,28 @@ timeout 3600 python /tmp/code/twin/ieip/analysis.py prepare {inputs} --tokenizer
 """
 
 
+READPROBE = f"""set -euo pipefail
+# how fast a pod in this region reads the staged weights: one stream, then the four shards at once
+cd {MODEL_DIR}
+timeout 1200 python3 - <<'EOF'
+import glob, os, threading, time
+def read(f):
+    with open(f, "rb", buffering=0) as fh:
+        while fh.read(16 << 20):
+            pass
+fs = sorted(glob.glob("model-0000?-of-00004.safetensors"))
+t = time.perf_counter(); read(fs[0]); dt = time.perf_counter() - t
+print(f"READ_ONE {{os.path.getsize(fs[0]) / 1e6 / dt:.1f}} MB/s", flush=True)
+rest = fs[1:]
+t = time.perf_counter()
+th = [threading.Thread(target=read, args=(f,)) for f in rest]
+[x.start() for x in th]; [x.join() for x in th]
+dt = time.perf_counter() - t
+print(f"READ_PARALLEL {{len(rest)}} streams {{sum(map(os.path.getsize, rest)) / 1e6 / dt:.1f}} MB/s", flush=True)
+EOF
+"""
+
+
 def gpu_script(commit: str, start: int, end: int) -> str:
     return _head(commit) + f"""export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
@@ -400,7 +422,7 @@ def fetch(commit: str) -> None:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("cmd", choices=("setup", "code", "stage", "prepare", "pilot", "shards", "fetch", "status",
-                                    "atlas-setup", "atlas-prepare"))
+                                    "atlas-setup", "atlas-prepare", "readprobe"))
     ap.add_argument("--commit", default="")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args(argv)
@@ -415,7 +437,7 @@ def main(argv=None) -> int:
         pins = [p for p in PINS.split() if not p.startswith("accelerate")]
         subprocess.run([f"{ATLAS_VENV}/bin/pip", "install", "-q", *pins], check=True)
         return 0
-    if a.cmd != "setup" and not re.fullmatch(r"[0-9a-f]{40}", a.commit):
+    if a.cmd not in ("setup", "readprobe") and not re.fullmatch(r"[0-9a-f]{40}", a.commit):
         raise SystemExit("--commit must be a full sha")
     if a.cmd == "fetch":
         fetch(a.commit)
@@ -433,7 +455,9 @@ def main(argv=None) -> int:
                         "--out", os.path.join(STATE, "prep", a.commit)], check=True, env=env)
         return 0
     items = []
-    if a.cmd == "setup":
+    if a.cmd == "readprobe":
+        items.append((descriptor(f"ieip-readprobe-{int(time.time())}", READPROBE, 1, 2, "1Gi", "probe"), False))
+    elif a.cmd == "setup":
         items.append((descriptor(f"ieip-setup-{os.path.basename(ENV_TAR)[:10]}", SETUP, 1, 2, "12Gi", "setup"), False))
     elif a.cmd == "code":
         items.append((descriptor(job_name("code", a.commit), code_script(a.commit), 1, 2, "2Gi", "code",
