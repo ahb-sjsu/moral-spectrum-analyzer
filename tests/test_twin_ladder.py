@@ -1511,6 +1511,21 @@ def test_the_ladder_process_is_checked_against_the_scene_and_exports_as_bpmn():
     assert "latest:governor_ruling=authorize_ems" in xml and "bpmndi:BPMNDiagram" in xml
 
 
+def test_the_ladder_survives_a_modeler_and_its_containment_does_too():
+    """BPMN phase 2: the exported ladder imports back to the identical checked process, so it can
+    be edited in bpmn.io or Camunda Modeler; an edit that puts emergency services behind the
+    robot's own reading of a cry for help is refused on import, as it would be in the scene."""
+    from erisml_compiler.process import import_bpmn, load_all, to_bpmn
+
+    extra = load_structured_input(SCENE).extra
+    proc = load_all(extra)["escalation_ladder"]
+    xml = to_bpmn(proc, scene_name="margaret_home")
+    assert import_bpmn(xml, extra)[0] == proc
+    opened = xml.replace("latest:governor_ruling=authorize_ems", "event:help_requested")
+    with pytest.raises(ValueError, match="governed"):
+        import_bpmn(opened, extra)
+
+
 def test_the_ladder_trace_follows_a_run_to_the_centre():
     from erisml_compiler.process import load_all, trace
 

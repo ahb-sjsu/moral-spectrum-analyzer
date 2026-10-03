@@ -750,7 +750,9 @@ extra:
   # the escalation ladder (docs/AUTONOMY_PLAN.md section 3b) as a BPMN process: a view of these
   # norms for people to read and for the live trace, never a second source of authority. Every task
   # is still allowed by the norms and passed by the output gate; erisml-compiler checks the process
-  # against this scene when it loads (eris-compile bpmn twin/scene/margaret_home.erisml).
+  # against this scene when it loads (eris-compile bpmn twin/scene/margaret_home.erisml). It can be
+  # edited in any BPMN modeler and brought back with eris-compile bpmn-import FILE --scene this file,
+  # which emits the declaration below only if the edit passes the same checks.
   processes:
     escalation_ladder:
       name: The escalation ladder
