@@ -41,7 +41,13 @@ PCA_K = 32  # amendment A2
 FLAG_Z = 3.0
 SEED = 20261002
 BOOT = 10_000
-CALIBRATION = {f"d{i:02d}" for i in range(1, 22, 2)}  # d01, d03, ..., d21
+
+
+# the split by scenario id parity, odd to calibration, even to test (section 5, amendment A4)
+def in_calibration(scenario: str) -> bool:
+    return scenario.startswith("d") and scenario[1:].isdigit() and int(scenario[1:]) % 2 == 1
+
+
 MIN_CYCLES, MIN_ERRORS, MIN_FLAGGED = 50, 5, 5
 MAX_PROMPT_TOKENS = 8192  # amendment A2: the source's default of 512 would cut the facts off
 MAX_NEW_TOKENS = 512
@@ -279,7 +285,7 @@ def score(states: np.ndarray, meta: list[dict]) -> list[dict]:
     for i, m in enumerate(meta):
         by.setdefault(m["hash"], {})[m["transform"]] = i
     hashes = [h for h, d in by.items() if set(d) == {"x", *TRANSFORMS}]
-    calib = [h for h in hashes if meta[by[h]["x"]]["scenario"] in CALIBRATION]
+    calib = [h for h in hashes if in_calibration(meta[by[h]["x"]]["scenario"])]
     n_layers = states.shape[1]
     proj = [
         _project(states[[by[h]["x"] for h in calib], layer], PCA_K) for layer in range(n_layers)
@@ -326,7 +332,7 @@ def score(states: np.ndarray, meta: list[dict]) -> list[dict]:
                 "output_invariant": len({_event_key(e) for e in evs}) == 1,
                 "events": evs[0],
                 "facts": m["facts"],
-                "calibration": m["scenario"] in CALIBRATION,
+                "calibration": in_calibration(m["scenario"]),
             }
         )
     return out

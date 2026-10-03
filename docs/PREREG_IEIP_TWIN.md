@@ -163,3 +163,15 @@ classification.**
 - **Undefined is inconclusive.** A test half with no flagged or no unflagged cycles leaves the
   difference undefined; that is graded inconclusive, not fail.
 
+**A4, 2026-10-03, before any replay, activation or classification.**
+
+- **Richer development scenarios, and the split continued by parity.** dev7 produced 26 decision
+  cycles across 21 scenarios, so dev7 and dev8 together would leave the test half far below the
+  50-cycle floor of section 6 and H1 would be inconclusive by rule. Eight longer scenarios
+  (d22 to d29, a stretch of Margaret's day each, eight to twelve events) were added to the
+  development set. Section 5 sent every scenario added later to the test half; that would leave
+  the calibration half with about 30 cycles, fewer than the 32 components rho is fitted in
+  (A2). The registered parity rule is continued instead: odd-numbered scenarios calibrate,
+  even-numbered ones test, for every scenario. The assignment is fixed by id, before any run of
+  the new scenarios, so it cannot be tuned.
+
