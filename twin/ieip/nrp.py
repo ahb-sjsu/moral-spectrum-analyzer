@@ -181,6 +181,16 @@ EOF
 """
 
 
+# the weights come off the volume again (owner's decision 2026-10-03, after READPROBE measured
+# 14.9 MB/s one stream and 38.3 MB/s three: the capture runs on Atlas GPU 1 instead, A6)
+CLEANUP = f"""set -euo pipefail
+ls -la {MODEL_DIR}
+timeout 600 rm -rf {MODEL_DIR}
+df -h /data | tail -1
+echo CLEANED {MODEL_DIR}
+"""
+
+
 def gpu_script(commit: str, start: int, end: int) -> str:
     return _head(commit) + f"""export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
@@ -422,7 +432,7 @@ def fetch(commit: str) -> None:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("cmd", choices=("setup", "code", "stage", "prepare", "pilot", "shards", "fetch", "status",
-                                    "atlas-setup", "atlas-prepare", "readprobe"))
+                                    "atlas-setup", "atlas-prepare", "readprobe", "cleanup"))
     ap.add_argument("--commit", default="")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args(argv)
@@ -437,7 +447,7 @@ def main(argv=None) -> int:
         pins = [p for p in PINS.split() if not p.startswith("accelerate")]
         subprocess.run([f"{ATLAS_VENV}/bin/pip", "install", "-q", *pins], check=True)
         return 0
-    if a.cmd not in ("setup", "readprobe") and not re.fullmatch(r"[0-9a-f]{40}", a.commit):
+    if a.cmd not in ("setup", "readprobe", "cleanup") and not re.fullmatch(r"[0-9a-f]{40}", a.commit):
         raise SystemExit("--commit must be a full sha")
     if a.cmd == "fetch":
         fetch(a.commit)
@@ -455,7 +465,9 @@ def main(argv=None) -> int:
                         "--out", os.path.join(STATE, "prep", a.commit)], check=True, env=env)
         return 0
     items = []
-    if a.cmd == "readprobe":
+    if a.cmd == "cleanup":
+        items.append((descriptor(f"ieip-cleanup-{int(time.time())}", CLEANUP, 1, 2, "1Gi", "cleanup"), False))
+    elif a.cmd == "readprobe":
         items.append((descriptor(f"ieip-readprobe-{int(time.time())}", READPROBE, 1, 2, "1Gi", "probe"), False))
     elif a.cmd == "setup":
         items.append((descriptor(f"ieip-setup-{os.path.basename(ENV_TAR)[:10]}", SETUP, 1, 2, "12Gi", "setup"), False))
