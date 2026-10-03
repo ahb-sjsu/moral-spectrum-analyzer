@@ -306,8 +306,9 @@ def job_name(kind: str, commit: str, start: int | None = None, end: int | None =
     return n + (f"-{start}-{end}" if start is not None else "")
 
 
-def descriptor(name, script, cpu, mem_gib, eph, role, gpu=0, volumes=(), zone=None):
-    """`volumes`: (pvc, mount path) pairs."""
+def descriptor(name, script, cpu, mem_gib, eph, role, gpu=0, volumes=(), zone=None, node=""):
+    """`volumes`: (pvc, mount path) pairs. `node`: pin to one host (nats-bursting has a
+    nodeSelector but no anti-affinity, so a bad node is avoided by naming a good one)."""
     from nats_bursting import JobDescriptor, Resources, Volume
 
     return JobDescriptor(
@@ -316,7 +317,11 @@ def descriptor(name, script, cpu, mem_gib, eph, role, gpu=0, volumes=(), zone=No
         command=["/bin/bash", "-lc", script],
         resources=Resources(cpu=str(cpu), memory=f"{mem_gib}Gi", gpu=gpu, ephemeral_storage=eph),
         labels={"app": APP, "atlas.io/batch": BATCH, "atlas.io/role": role},
-        node_selector={**(zone or ZONE), **({"nvidia.com/gpu.product": GPU_PRODUCT} if gpu else {})},
+        node_selector={
+            **(zone or ZONE),
+            **({"nvidia.com/gpu.product": GPU_PRODUCT} if gpu else {}),
+            **({"kubernetes.io/hostname": node} if node else {}),
+        },
         backoff_limit=0,
         volumes=[Volume(name=f"v{i}", mount_path=m, claim_name=c) for i, (c, m) in enumerate(volumes)],
     )
@@ -482,6 +487,10 @@ def main(argv=None) -> int:
     ap.add_argument("--commit", default="")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--ranges", default="", help="shards: only these START-END ranges (a failed shard's rerun)")
+    # 2026-10-03: three shards failed with CUBLAS_STATUS_INTERNAL_ERROR 41-63 min in, all on
+    # hcc-nrp-shor-c6017.unl.edu, while the same workload completed on c5825; a rerun names a
+    # node that has run it cleanly
+    ap.add_argument("--node", default="", help="pilot/shards: run the GPU jobs on this host only")
     a = ap.parse_args(argv)
     if a.cmd == "status":
         print(kubectl("get", "jobs", "-l", f"app={APP}").stdout, kubectl("get", "pvc", "-l", f"app={APP}").stdout)
@@ -560,8 +569,9 @@ def main(argv=None) -> int:
         if gpu_pods_in_namespace() + len(todo) > MAX_GPU_PODS:
             raise SystemExit(f"PREFLIGHT VETO: more than {MAX_GPU_PODS} GPU pods in the namespace")
         for name, (s, (lo, hi)) in zip(names, todo, strict=True):
-            d = descriptor(name, gpu_script(a.commit, lo, hi), cpu, mem, "24Gi", a.cmd, gpu=1, volumes=set_volumes(s))
-            print(d.name, f"set {s} [{lo}, {hi})", cpu, f"{mem}Gi", GPU_PRODUCT, "|", why)
+            d = descriptor(name, gpu_script(a.commit, lo, hi), cpu, mem, "24Gi", a.cmd, gpu=1,
+                           volumes=set_volumes(s), node=a.node)
+            print(d.name, f"set {s} [{lo}, {hi})", cpu, f"{mem}Gi", GPU_PRODUCT, a.node or "any node", "|", why)
             items.append((d, True))
     bad = {d.name: preflight(d, g) for d, g in items}
     if any(bad.values()):
