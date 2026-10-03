@@ -1078,3 +1078,77 @@ def test_offline_rules_fire_once_while_they_hold(brain):
     b.decide({"facts": FALL_FACTS, "sensors": readings(0)})
     again = b.decide({"facts": FALL_FACTS, "sensors": readings(0)})
     assert again["events"] == []
+
+
+# ---------------------------------------------------------------- her refusals, tragic conflicts, fail-closed DEME
+
+REFUSE_EMS = ev("refusal_made", "emergency_services")
+
+
+def _corroborated_fall(b):
+    for e in (ev("fall"), ruling("elevate")):
+        b.agent.record(e)
+
+
+def test_against_her_refusal_an_ems_call_is_a_tragic_conflict_for_a_human(brain):
+    b, _ = brain
+    _corroborated_fall(b)
+    b.agent.record(REFUSE_EMS)
+    snap = b.agent.rt.snapshot()
+    assert EMS in snap.obliged  # the scene alone would call
+    f = b.gate.facts(EMS, snap)
+    assert f.rights_and_duties.violates_rights and not f.rights_and_duties.has_valid_consent
+    action, args, gate = b.gate.check(EMS, {}, snap)
+    assert gate["tragic"]["high"] and gate["routed_to_human"]
+    assert (
+        action == "contact_monitoring_center"
+        and action in snap.allowed
+        and "tragic" in args["message"]
+    )
+
+
+def test_a_refusal_she_can_no_longer_voice_does_not_bind(brain):
+    b, _ = brain
+    _corroborated_fall(b)
+    b.agent.record(REFUSE_EMS)
+    b.agent.record(ev("unresponsive"))
+    snap = b.agent.rt.snapshot()
+    assert EMS not in b.gate.refused()
+    action, _, gate = b.gate.check(EMS, {}, snap)
+    assert action == EMS and not gate["vetoed"]
+
+
+def test_a_reflex_against_a_refusal_is_not_redirected_but_deme_still_vetoes_it(brain):
+    b, _ = brain
+    _corroborated_fall(b)
+    b.agent.record(REFUSE_EMS)
+    snap = b.agent.rt.snapshot()
+    action, _, gate = b.gate.check(EMS, {}, snap, deliberate=False)
+    assert (
+        "routed_to_human" not in gate
+        and gate["vetoed"]
+        and action != EMS
+        and action in snap.allowed
+    )
+
+
+def test_every_gate_record_carries_the_tragic_index(brain):
+    b, _ = brain
+    gate = b.decide({"facts": {"margaret": {"pose": "upright"}}})["ethics_gate"]
+    assert set(gate["tragic"]) == {"index", "high", "triggers"} and gate["em_failures"] == {}
+
+
+def test_the_gates_deme_runs_fail_closed(brain):
+    b, _ = brain
+    pipeline = b.gate._deme()
+    assert pipeline.tactical.config.fail_closed
+    assert any(getattr(em, "em_name", "") == "tragic_conflict" for em in pipeline.tactical.ems)
+
+
+def test_every_refusal_covers_real_capabilities():
+    ir = load_structured_input(SCENE)
+    caps = {c["action"] for c in ir.extra["capabilities"]}
+    declared = set(ir.extra["event_types"]["refusal_made"]["content"])
+    for kind, covered in ir.extra["refusals"].items():
+        assert kind in declared and set(covered) <= caps, kind
+    assert set(ir.extra["refusal_lapses_on"]) <= set(ir.extra["event_types"])

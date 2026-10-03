@@ -720,6 +720,18 @@ extra:
     emergency_services: emergency services, paramedics, firefighters or police, responders
     media: a television, radio or network message, a screen or broadcast
     device: a sensor, detector, alarm, wearable or other device in the home
+  # Margaret's refusals (refusal_made, typed): the capabilities each one covers. While a refusal
+  # stands, the DEME gate's facts for those capabilities record a rights violation and no
+  # consent; a refusal lapses when she can no longer voice one (refusal_lapses_on).
+  refusals:
+    emergency_services: [call_emergency_services]
+    physical_help: [physical_assist]
+    entering_her_room: [enter_bedroom]
+    recording: [record]
+    data_sharing: [share_data]
+    staying_inside: [secure_room]
+    medication: [unlock_medication_box]
+  refusal_lapses_on: [unresponsive, check_in_unanswered]
   # each capability's ethical profile for the DEME output gate (twin/output_gate.py): expected
   # physical harm to someone (0 to 1), whether it is coercive and the conditions that justify the
   # coercion, whether it touches privacy or Margaret's body. Unlisted capabilities are benign.
@@ -810,7 +822,7 @@ extra:
     distress_vocalized: {description: a scream, cry or call for help; content is what was said}
     help_requested: {description: 'Margaret asks for help, or says she is hurt or unwell; content is what she said'}
     request_made: {description: a person asks for something else; content is the request}
-    refusal_made: {description: a person refuses something; content is what is refused}
+    refusal_made: {description: 'Margaret refuses something done for or to her; content is what she refuses (an ambulance is emergency_services, help up is physical_help)', content: [emergency_services, physical_help, entering_her_room, recording, data_sharing, staying_inside, medication, other]}
     danger_in_home: {description: a hazard in the home, content: [smoke, fire, intruder, gas, water, other]}
     person_entered: {description: someone came into the home; actor is who, when known}
     unexpected_visitor: {description: 'someone who does not live here and whose visit the monitoring centre did not arrange is inside the home (no visit is arranged); content is what they said, if anything'}

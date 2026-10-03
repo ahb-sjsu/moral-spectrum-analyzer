@@ -369,7 +369,7 @@ class Brain:
                     break
             gate = None
             if chosen:
-                chosen, _, gate = self.gate.check(chosen, {}, snap)
+                chosen, _, gate = self.gate.check(chosen, {}, snap, deliberate=False)
             return {"kind": "reflex", "reflex": x["id"], "facts": facts, "event": ev, "force_newtons": force, "rulings": rulings,
                     "allowed": snap.allowed, "obliged": snap.obliged, "prohibited": snap.prohibited, "moral_state": snap.machines,
                     "ethics_gate": gate, "action": {"action": chosen, "args": {}, "reason": f"reflex {x['id']}: {actor} attack, {sev}"}}
