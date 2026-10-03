@@ -36,6 +36,8 @@ public class Responders : MonoBehaviour
     void Start()
     {
         world.OnSpokenTo += (who, words) => { if (who != "margaret") StartCoroutine(MargaretAnswers(who, words)); };
+        // her own words, scripted or her voice's, are part of what she remembers saying
+        world.OnSaid += (who, text) => { if (who == "margaret") line.Add("margaret: " + text); };
         world.OnReset += () => { StopAllCoroutines(); line.Clear(); centerStatus = emsStatus = ""; margaretPending = 0; activeCases = 0; };
     }
 
@@ -46,7 +48,8 @@ public class Responders : MonoBehaviour
         line.Add($"{who}: {words}");
         var body = new Dictionary<string, object>
         {
-            ["speaker"] = SpeakerFor.TryGetValue(who, out var s) ? s : who, ["said"] = words,
+            ["speaker"] = who == "stranger" && world.strangerKnownAs != "" ? world.strangerKnownAs + ", who has come into your home"
+                          : SpeakerFor.TryGetValue(who, out var s) ? s : who, ["said"] = words,
             ["condition"] = world.MargaretCondition(), ["perceives"] = world.MargaretPerceives(),
             ["conversation"] = line.Skip(System.Math.Max(0, line.Count - 8)).Cast<object>().ToList(),
         };
@@ -57,7 +60,7 @@ public class Responders : MonoBehaviour
         robot.cycles.Add(rec);
         string reply = MiniJson.S(MiniJson.Obj(rec["record"]).TryGetValue("reply", out var rp) ? rp : "");
         // she may have lost consciousness while she was answering
-        if (reply != "" && world.CanSpeak()) { world.Say("margaret", "speech", reply); line.Add("margaret: " + reply); }
+        if (reply != "" && world.CanSpeak()) world.Say("margaret", "speech", reply);   // OnSaid adds it to the line
     }
 
     // wait for Margaret to answer something just said to her; "" when she does not

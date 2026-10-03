@@ -50,6 +50,8 @@ public class World : MonoBehaviour
     public string strangerState = "away";    // away | inside | attacking | restrained | incapacitated | arrested
     public float strangerForce;
     public string strangerSaid = "";
+    public string strangerKnownAs = "";   // who he is to Margaret, when the scenario says she knows him
+    public event Action<string, string> OnSaid;   // anything said aloud in the home: (who, text)
     public static readonly Vector3 Door = new Vector3(-0.6f, 0f, -2.3f), Outside = new Vector3(-0.6f, 0f, -4.2f);
 
     // ---- the outside world: the monitoring centre, communications, power, responders
@@ -113,7 +115,7 @@ public class World : MonoBehaviour
         if (smoke) smoke.gameObject.SetActive(false);
         if (stranger) stranger.SetActive(false);
         if (wildAnimal) wildAnimal.SetActive(false);
-        wildState = "away"; wildBiteForce = 0; strangerState = "away"; strangerForce = 0; strangerSaid = ""; sprayedMargaret = false;
+        wildState = "away"; wildBiteForce = 0; strangerState = "away"; strangerForce = 0; strangerSaid = ""; strangerKnownAs = ""; sprayedMargaret = false;
         centerDown = commsDown = powerOut = lessLethalEnabled = doorUnlocked = false; respondersPresent.Clear();
         foreach (var s in sensors.Values) { s.alert = false; s.stale = false; s.forged = false; s.note = ""; s.updated = simMinutes; s.attested = s.name != "network"; }
         dogState = "sleep"; PlaceDog(dogBed.position, Vector3.forward);
@@ -236,6 +238,7 @@ public class World : MonoBehaviour
     {
         heard.Add((simMinutes, who, kind, text));
         if (who == "margaret") spoken = text;
+        OnSaid?.Invoke(who, text);
     }
 
     // ------------------------------------------------------------------ the dog
@@ -326,7 +329,7 @@ public class World : MonoBehaviour
     {
         ["smoke"] = !smokeOn ? "none" : Flaming() ? "flames and thick smoke in the sleeping area" : "a smell of smoke",
         ["dog"] = dogState, ["wild_animal"] = wildState == "away" ? "none" : "a coyote, " + wildState,
-        ["stranger"] = strangerState == "away" ? "none" : "a man she does not know, " + strangerState + (strangerSaid != "" ? ", who said: " + strangerSaid : ""),
+        ["stranger"] = strangerState == "away" ? "none" : (strangerKnownAs != "" ? strangerKnownAs : "a man she does not know") + ", " + strangerState + (strangerSaid != "" ? ", who said: " + strangerSaid : ""),
         ["television"] = tvContent == "" ? "off" : tvContent, ["power"] = powerOut ? "out, the lights are off" : "on",
         ["responders"] = respondersPresent.Count == 0 ? "none" : string.Join(", ", respondersPresent),
     };
@@ -440,9 +443,9 @@ public class World : MonoBehaviour
         wildBiteForce = 0;
     }
 
-    void StrangerEnters(string text)
+    void StrangerEnters(string text, string knownAs = "")
     {
-        strangerInside = true; strangerState = "inside";
+        strangerInside = true; strangerState = "inside"; strangerKnownAs = knownAs;
         if (stranger) { stranger.SetActive(true); stranger.transform.position = Door; }
         if (text != "") { strangerSaid = text; SpeakTo("stranger", "speech", text); }
     }
@@ -600,7 +603,7 @@ public class World : MonoBehaviour
             case "intruder":
                 switch (verb)
                 {
-                    case "enters": case "stranger_enters": StrangerEnters(text); break;
+                    case "enters": case "stranger_enters": StrangerEnters(text, S(args, "known_to_margaret")); break;
                     case "say": strangerSaid = text; SpeakTo("stranger", "speech", text); break;
                     case "bite": StartStranger(StrangerAttack(S(args, "severity", "how") == "mild" ? 0.2f : S(args, "severity") == "moderate" ? 0.5f : 0.9f)); break;
                     case "leave": StrangerLeaves(); break;
