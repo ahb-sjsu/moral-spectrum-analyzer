@@ -175,3 +175,33 @@ classification.**
   even-numbered ones test, for every scenario. The assignment is fixed by id, before any run of
   the new scenarios, so it cannot be tuned.
 
+
+**A5, 2026-10-03, while dev8r and dev9r run, before any replay, activation or classification.**
+
+- **The data.** Section 2's inputs are dev7 and the development runs made before the replay
+  starts. dev8 and dev9 (2026-10-02) are void: the brain on Atlas ran a stale erisml-lib whose
+  DEME gate raised on every request, the robot never acted, and their results files hold no
+  decision cycles (0 and 0, counted). They were rerun as dev8r (d01 to d21) and dev9r (d22 to
+  d38) on the fixed stack. The inputs are dev7, dev8r and dev9r, in that order. Their results files
+  are committed to twin/ieip/inputs/ with their sha256 after dev9r ends and before the replay
+  starts, and the replay reads them only from that commit.
+- **dev7's prompt.** dev7 ran before the scene agent was isolated, so its live classifier prompt
+  differed from the robot's prompt now. The replay builds every cycle's prompt, dev7's included,
+  with the current isolated `ObservationClassifier`, as A2 specifies. A2's byte-identity with the
+  live prompt therefore holds for dev8r and dev9r, not for dev7. What is tested is the robot's
+  classifier as it is now, on the facts each cycle actually saw.
+- **Where and how the capture runs.** On NRP A10s (section 8, step 3), in three steps:
+  1. Prompts are built on CPU (`analysis.py prepare`), once on NRP and once on Atlas from the same
+     commit. They must match byte for byte (sha256) before any GPU job is sent.
+  2. GPU shards run `gpu_capture.py`. The model is loaded once. erisml-compiler's
+     `HuggingFaceActivationSource` wraps that model's base model (erisml-compiler #26, 888c075),
+     the same hooks and forward pass as A2's first pass, without a second copy of the weights.
+     #26's test shows the capture is identical either way. Generation is A2's second pass,
+     unchanged.
+  3. The shards are merged on CPU (`analysis.py collect`). Every prompt must be covered exactly
+     once, by shards of those very prompts.
+
+  The states are stored as their exact bf16 bit patterns, checked to be exact. The run uses the
+  Qwen2.5-7B-Instruct revision in Atlas's Hugging Face cache (a09a354), staged to NRP and verified
+  file by file against that cache's hashes. The submitter is twin/ieip/nrp.py. Nothing in the
+  transforms, labels, scores, split or tests changes.

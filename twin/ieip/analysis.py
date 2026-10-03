@@ -2,7 +2,10 @@
 """The I-EIP analysis on the twin (docs/PREREG_IEIP_TWIN.md, sections 3 to 6, amendments A1, A2).
 
   python twin/ieip/analysis.py dryrun OUT_DIR                     # synthetic activations, no model
-  python twin/ieip/analysis.py capture RESULTS.jsonl... --out D   # on a GPU host: prompts, states, outputs
+  python twin/ieip/analysis.py capture RESULTS.jsonl... --out D   # on one GPU host: all three steps
+  python twin/ieip/analysis.py prepare RESULTS.jsonl... --out P   # CPU: the chat-templated prompts
+  python twin/ieip/gpu_capture.py --prompts P/prompts.jsonl ...   # GPU: states and replies, a shard
+  python twin/ieip/analysis.py collect P RUN --out D              # CPU: merge, validate replies
   python twin/ieip/analysis.py grade D --out RESULTS.json         # rho, scores, labels, H1/H2
 
 `capture` replays the perception facts of every robot decision cycle in the given ScenarioRunner
@@ -18,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import hashlib
 import json
 import os
 import random
@@ -199,53 +203,98 @@ def prompts_for(facts: dict, indent: int | None):
     return cap.prompt, clf
 
 
-def capture(results_files: list[str], out_dir: str):
-    import torch
-    from erisml_compiler.monitor.huggingface_source import HuggingFaceActivationSource
-    from transformers import AutoModelForCausalLM, AutoTokenizer
+def _sha256(path: str) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for b in iter(lambda: fh.read(1 << 20), b""):
+            h.update(b)
+    return h.hexdigest()
 
+
+def prepare(results_files: list[str], out_dir: str, tokenizer: str = MODEL) -> dict:
+    """Step 1 (CPU): every replayed prompt, chat-templated, one per line of prompts.jsonl, in
+    the order the results files are given. The GPU step receives finished text and builds
+    nothing, so a GPU pod reaches GPU work at once. Returns the manifest written beside it."""
+    from transformers import AutoTokenizer
+
+    tok = AutoTokenizer.from_pretrained(tokenizer)
     os.makedirs(out_dir, exist_ok=True)
-    tok = AutoTokenizer.from_pretrained(MODEL)
-    cyc = cycles(results_files)
-    texts, meta = [], []
-    for c in cyc:
-        for name, (f, indent) in transformed(c["facts"], int(c["hash"][:12], 16)).items():
-            (system, user), _ = prompts_for(f, indent)
-            text = tok.apply_chat_template(
-                [{"role": "system", "content": system}, {"role": "user", "content": user}],
-                tokenize=False,
-                add_generation_prompt=True,
-            )
-            texts.append(text)
-            meta.append(
-                {"scenario": c["scenario"], "hash": c["hash"], "transform": name, "facts": f}
-            )
-    # pass 1: hidden states
-    from transformers import AutoConfig
+    path = os.path.join(out_dir, "prompts.jsonl")
+    n, per_file = 0, {}
+    with open(path, "w", encoding="utf-8", newline="\n") as fh:
+        for rf in results_files:
+            cyc = cycles([rf])
+            per_file[os.path.basename(rf)] = {"sha256": _sha256(rf), "cycles": len(cyc)}
+            for c in cyc:
+                for name, (f, indent) in transformed(c["facts"], int(c["hash"][:12], 16)).items():
+                    (system, user), _ = prompts_for(f, indent)
+                    text = tok.apply_chat_template(
+                        [{"role": "system", "content": system}, {"role": "user", "content": user}],
+                        tokenize=False,
+                        add_generation_prompt=True,
+                    )
+                    row = {"i": n, "scenario": c["scenario"], "hash": c["hash"], "transform": name,
+                           "facts": f, "text": text}
+                    fh.write(json.dumps(row, ensure_ascii=False) + "\n")
+                    n += 1
+    manifest = {"prompts": n, "prompts_sha256": _sha256(path), "inputs": per_file}
+    with open(os.path.join(out_dir, "manifest.json"), "w", encoding="utf-8") as fh:
+        json.dump(manifest, fh, indent=1)
+    return manifest
 
-    n_layers = AutoConfig.from_pretrained(MODEL).num_hidden_layers
-    layers = sorted({int(d * n_layers) for d in DEPTHS})
-    src = HuggingFaceActivationSource(MODEL, layers=layers, max_tokens=MAX_PROMPT_TOKENS)
-    states = np.zeros((len(texts), len(layers), src.hidden_dim), dtype=np.float32)
-    for i, t in enumerate(texts):
-        capt = src.capture(t, layers=layers)
-        for j, la in enumerate(capt.layers):
-            states[i, j] = np.asarray(la.hidden[-1], dtype=np.float32)
-    del src
-    torch.cuda.empty_cache()
-    # pass 2: the classification, generated greedily from the same text
-    lm = AutoModelForCausalLM.from_pretrained(MODEL, dtype=torch.bfloat16).to("cuda").eval()
-    outputs = []
-    for t, m in zip(texts, meta, strict=True):
-        ids = tok(t, return_tensors="pt", truncation=True, max_length=MAX_PROMPT_TOKENS).to("cuda")
-        with torch.no_grad():
-            gen = lm.generate(**ids, max_new_tokens=MAX_NEW_TOKENS, do_sample=False)
-        reply = tok.decode(gen[0, ids["input_ids"].shape[1] :], skip_special_tokens=True)
-        outputs.append(events_from(reply, m["facts"]))
+
+def collect(prep_dir: str, run_dir: str, out_dir: str) -> dict:
+    """Step 3 (CPU): the GPU shards (gpu_capture.py) merged in prompt order, every prompt
+    covered exactly once and by shards of these very prompts, each reply validated by the
+    classifier's own rules; writes the states.npy and meta.jsonl that `grade` reads."""
+    import glob
+
+    manifest = json.load(open(os.path.join(prep_dir, "manifest.json"), encoding="utf-8"))
+    prompts = [json.loads(line) for line in open(os.path.join(prep_dir, "prompts.jsonl"), encoding="utf-8")]
+    if _sha256(os.path.join(prep_dir, "prompts.jsonl")) != manifest["prompts_sha256"]:
+        raise SystemExit("prompts.jsonl does not match its manifest")
+    states, replies, layers = None, {}, None
+    for done in sorted(glob.glob(os.path.join(run_dir, "shard-*.done.json"))):
+        d = json.load(open(done, encoding="utf-8"))
+        if d["prompts_sha256"] != manifest["prompts_sha256"]:
+            raise SystemExit(f"{done}: captured from other prompts")
+        if layers is not None and d["layers"] != layers:
+            raise SystemExit(f"{done}: other layers {d['layers']} than {layers}")
+        layers = d["layers"]
+        part = np.load(os.path.join(run_dir, d["states"]))
+        if d.get("states_dtype") == "bf16-as-uint16":  # exact: bf16 is the top half of float32
+            part = (part.astype(np.uint32) << 16).view(np.float32)
+        if states is None:
+            states = np.full((len(prompts), *part.shape[1:]), np.nan, dtype=np.float32)
+        for k, line in enumerate(open(os.path.join(run_dir, d["replies"]), encoding="utf-8")):
+            r = json.loads(line)
+            if r["i"] in replies:
+                raise SystemExit(f"prompt {r['i']} captured twice")
+            replies[r["i"]] = r
+            states[r["i"]] = part[k]
+    missing = [i for i in range(len(prompts)) if i not in replies]
+    if missing or states is None or np.isnan(states).any():
+        raise SystemExit(f"{len(missing)} prompts not captured (first: {missing[:5]})")
+    os.makedirs(out_dir, exist_ok=True)
     np.save(os.path.join(out_dir, "states.npy"), states)
-    with open(os.path.join(out_dir, "meta.jsonl"), "w", encoding="utf-8") as fh:
-        for m, ev in zip(meta, outputs, strict=True):
-            fh.write(json.dumps({**m, "events": ev, "layers": layers}, ensure_ascii=False) + "\n")
+    with open(os.path.join(out_dir, "meta.jsonl"), "w", encoding="utf-8", newline="\n") as fh:
+        for p in prompts:
+            r = replies[p["i"]]
+            m = {k: p[k] for k in ("scenario", "hash", "transform", "facts")}
+            fh.write(json.dumps({**m, "events": events_from(r["reply"], p["facts"]), "layers": layers,
+                                 "reply": r["reply"], "n_input_tokens": r["n_input_tokens"]},
+                                ensure_ascii=False) + "\n")
+    return {"prompts": len(prompts), "layers": layers, "states": list(states.shape)}
+
+
+def capture(results_files: list[str], out_dir: str, model: str = MODEL):
+    """The three steps on one GPU host: prepare, gpu_capture (all prompts), collect."""
+    import gpu_capture
+
+    prep, run = os.path.join(out_dir, "prep"), os.path.join(out_dir, "run")
+    n = prepare(results_files, prep, model)["prompts"]
+    gpu_capture.run(os.path.join(prep, "prompts.jsonl"), 0, n, model, run)
+    return collect(prep, run, out_dir)
 
 
 def events_from(reply: str, facts: dict) -> list[dict]:
@@ -458,6 +507,15 @@ def main():
     b = sub.add_parser("capture")
     b.add_argument("results", nargs="+")
     b.add_argument("--out", required=True)
+    b.add_argument("--model", default=MODEL)
+    p = sub.add_parser("prepare")
+    p.add_argument("results", nargs="+")
+    p.add_argument("--out", required=True)
+    p.add_argument("--tokenizer", default=MODEL)
+    k = sub.add_parser("collect")
+    k.add_argument("prep")
+    k.add_argument("run")
+    k.add_argument("--out", required=True)
     c = sub.add_parser("grade")
     c.add_argument("dir")
     c.add_argument("--out", required=True)
@@ -465,7 +523,11 @@ def main():
     if args.cmd == "dryrun":
         print(json.dumps(dryrun(args.out), indent=1)[:2000])
     elif args.cmd == "capture":
-        capture(args.results, args.out)
+        print(json.dumps(capture(args.results, args.out, args.model)))
+    elif args.cmd == "prepare":
+        print("PREPARED", json.dumps(prepare(args.results, args.out, args.tokenizer)))
+    elif args.cmd == "collect":
+        print("COLLECTED", json.dumps(collect(args.prep, args.run, args.out)))
     else:
         from erisml_compiler.ingestion.structured_loader import load_structured_input
 
