@@ -321,6 +321,9 @@ class Brain:
         self.gate = OutputGate(self.ir, self.agent.rt)
         self.caps = {c["action"]: c for c in self.ir.extra.get("capabilities", [])}
         self.readings = Readings(self.ir.extra.get("sensor_substrates", {}))
+        # the enrolled household: the key a member's phone signs with -> the member (scene extra.household)
+        self.household = {str(v["key"]): m for m, v in (self.ir.extra.get("household") or {}).items()}
+        self.revoked: set[str] = set()
         self.elevation = None  # the elevation in force and the evidence it rests on (_lapse)
         self.lapse_s = float(self.ir.extra.get("evidence_lapse_s", 60))
         self.center.reset()
@@ -473,6 +476,21 @@ class Brain:
                     "ethics_gate": gate, "action": {"action": chosen, "args": {}, "reason": f"reflex {x['id']}: {actor} attack, {sev}"}}
         return None
 
+    def _credentials(self, creds: list) -> None:
+        """An enrolled member's credential, verified as a device's reading is (signature, payload
+        hash, freshness, replay counter), records household_verified: a system event, the
+        visitor_standing stratum's way into household. A forged, stale, replayed, unenrolled or
+        revoked credential records nothing; what anyone says about who they are never does."""
+        for c in list(creds)[:4]:
+            if not isinstance(c, dict):
+                continue
+            member = self.household.get(str(c.get("name", "")))
+            if not member or member in self.revoked:
+                continue
+            ok, _, _ = self.readings.verify(c, channel="credential")
+            if ok and self.agent.rt.machine_states().get("stratum:visitor_standing") != "household":
+                self.agent.record({"type": "household_verified", "actor": "robot", "content": member})
+
     def _record_compromised(self) -> None:
         """A device whose attestation failed its integrity is compromised: the brain's own
         measurement, recorded as a system event (machine_standing; no model writes it)."""
@@ -572,6 +590,7 @@ class Brain:
         facts, dropped = validate_facts(req.get("facts", {}))
         verified = self.readings.for_governor(req.get("sensors", []), channel="decide")
         self._record_compromised()
+        self._credentials(req.get("credentials") or [])
         lapsed = self._lapse(verified, camera_sensor)
         self._sync_world(facts)
         if hasattr(self.adapter, "comms_down"):
@@ -614,4 +633,6 @@ class Brain:
         snap = self.agent.record(ev)
         if ev.get("type") == "device_cleared":
             self.readings.clear_quarantine()  # the centre's oversight: the devices count again
+        if ev.get("type") == "credential_revoked":
+            self.revoked.add(str(ev.get("content", "")))  # never accepted again in this world
         return {"kind": "event", "event": ev, "obliged": snap.obliged, "allowed": snap.allowed, "moral_state": snap.machines}

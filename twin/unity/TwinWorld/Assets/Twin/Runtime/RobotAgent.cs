@@ -139,6 +139,7 @@ public class RobotAgent : MonoBehaviour
         var body = new Dictionary<string, object>
         {
             ["facts"] = facts, ["sensors"] = perception.GovernorSensors(), ["signal_age_s"] = Mathf.Round(perception.SignalAgeSeconds()),
+            ["credentials"] = perception.Credentials(),
             ["camera_frames"] = roomFrames.Select(b => (object)Convert.ToBase64String(b)).ToList(),
         };
         Dictionary<string, object> rec = null;

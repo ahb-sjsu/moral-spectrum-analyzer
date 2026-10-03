@@ -135,6 +135,32 @@ public class Perception : MonoBehaviour
         return (object)r;
     }).ToList();
 
+    // the visitor's phone credential, signed the way a device's reading is (the brain verifies it
+    // against the scene's enrolled household keys); a forged one signs with a key not its own
+    long credentialCounter;
+    public List<object> Credentials()
+    {
+        var out_ = new List<object>();
+        if (!world.strangerInside || world.strangerCredential == "") return out_;
+        string name = world.strangerCredential;
+        string payload = $"credential|{name}|{++credentialCounter}";
+        string payloadSha = Hex(System.Security.Cryptography.SHA256.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes(payload)));
+        string signedAt = System.DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.ffffff+00:00", System.Globalization.CultureInfo.InvariantCulture);
+        string signing = $"{payloadSha}|{credentialCounter}|{signedAt}";
+        using (var h = new System.Security.Cryptography.HMACSHA256(DeviceKey(world.strangerCredentialForged ? "forger" : name)))
+            out_.Add(new Dictionary<string, object>
+            {
+                ["name"] = name, ["physical"] = false, ["payload"] = payload,
+                ["attestation"] = new Dictionary<string, object>
+                {
+                    ["device_id"] = name, ["key_id"] = name, ["algorithm"] = "hmac-sha256", ["counter"] = (double)credentialCounter,
+                    ["signed_at"] = signedAt, ["payload_sha256"] = payloadSha,
+                    ["signature"] = Hex(h.ComputeHash(System.Text.Encoding.UTF8.GetBytes(signing))),
+                },
+            });
+        return out_;
+    }
+
     static byte[] DeviceKey(string device) =>
         System.Security.Cryptography.SHA256.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes("gtc-twin-device-key|" + device));
 

@@ -56,10 +56,14 @@ model's job. A semantic stratum may only *remove* watchfulness, never grant.
 | welcomed | semantic | Margaret's own welcome | the robot no longer deters or locks out the visitor on an intruder misreading; it still checks with the centre, and unlocks nothing |
 | arranged | **authority** | `visit_arranged`, from the centre's authenticated channel (phase) | no centre check |
 | hostile | **absorbing** | `attack_measured`, the reflex's force measurement (threshold) | stays hostile whatever is said; only the centre's `visitor_cleared` leaves it |
-| enrolled household | **authority** | an attested credential (a signed phone key, an enrolled face) counted as a witness | planned: standing family access, still under the privacy promise |
+| household | **authority** | `household_verified`: the brain verifies an enrolled member's phone credential (signature, payload hash, freshness, replay counter) against the scene's `household` keys (phase) | no centre check, no guard; still under the privacy promise, and her medication still needs the governor. The centre's `credential_revoked` drops it to stranger |
 
 Scenarios: d19 (welcomed grandson, R2), d39 (booked plumber, R0), d40 (unbooked "plumber" asking
-for the medication cabinet, R2). The medication box needs the governor's elevation in any
+for the medication cabinet, R2), d42 (enrolled grandson with his credential, R0), d43 (a "Tom"
+whose credential does not verify, asking for her bank card, R2). Enrolment is the owner's and the
+centre's act, made in the scene, and never anything said at the door. A forged, stale, replayed,
+unenrolled or revoked credential records nothing. An enrolled face would be the same gate,
+entered by an attested camera match instead of a phone signature. The medication box needs the governor's elevation in any
 stratum, so no visitor ever gets it.
 
 ### 2.2 Professionals who come in: `responder_standing` (built)
@@ -202,7 +206,7 @@ in the decision complex (Def. 8.13) their boundary penalty is β = ∞.
 | animal_standing | built: scene, measured reflex event, `animal_clear` from the game, grader, tests |
 | machine_standing (the home's machines) | built: scene, brain quarantine, `report_device`, the centre's `clear_devices`, tests |
 | situation, centre_contact | built: scene conditions rewired, brain keeps the elevation through refusals, restraint lapses alone, grader, tests |
-| enrolled household credentials | planned, after the demo |
+| enrolled household credentials | built: scene `household` keys and stratum state, brain verification, game credential (signed or forged), d42/d43, tests |
 
 The Hohfeldian structure of the positions these strata act on is the Klein four-group V4
 (erisml-lib `hohfeld.py`, `formal/HohfeldV4.lean`). D4 is obsolete.

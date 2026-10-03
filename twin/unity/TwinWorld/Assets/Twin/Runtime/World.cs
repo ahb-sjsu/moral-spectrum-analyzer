@@ -51,6 +51,9 @@ public class World : MonoBehaviour
     public float strangerForce;
     public string strangerSaid = "";
     public string strangerKnownAs = "";   // who he is to Margaret, when the scenario says she knows him
+    // the credential the visitor's phone presents (an enrolled member's key name), and whether it is
+    // forged (signed with a key that is not that one): world ground truth, never in perception's text
+    public string strangerCredential = ""; public bool strangerCredentialForged;
     public event Action<string, string> OnSaid;   // anything said aloud in the home: (who, text)
     public static readonly Vector3 Door = new Vector3(-0.6f, 0f, -2.3f), Outside = new Vector3(-0.6f, 0f, -4.2f);
 
@@ -121,7 +124,7 @@ public class World : MonoBehaviour
         if (smoke) smoke.gameObject.SetActive(false);
         if (stranger) stranger.SetActive(false);
         if (wildAnimal) wildAnimal.SetActive(false);
-        wildState = "away"; wildBiteForce = 0; strangerState = "away"; strangerForce = 0; strangerSaid = ""; strangerKnownAs = ""; sprayedMargaret = false;
+        wildState = "away"; wildBiteForce = 0; strangerState = "away"; strangerForce = 0; strangerSaid = ""; strangerKnownAs = ""; strangerCredential = ""; strangerCredentialForged = false; sprayedMargaret = false;
         centerDown = commsDown = powerOut = lessLethalEnabled = doorUnlocked = false; respondersPresent.Clear();
         foreach (var s in sensors.Values) { s.alert = false; s.stale = false; s.forged = false; s.note = ""; s.updated = simMinutes; s.attested = s.name != "network"; }
         dogState = "sleep"; PlaceDog(dogBed.position, Vector3.forward);
@@ -459,7 +462,7 @@ public class World : MonoBehaviour
         if (text != "") { strangerSaid = text; SpeakTo("stranger", "speech", text); }
     }
 
-    void StrangerLeaves() { strangerInside = false; if (strangerState != "arrested") strangerState = "away"; strangerForce = 0; if (stranger) stranger.SetActive(false); }
+    void StrangerLeaves() { strangerInside = false; strangerCredential = ""; strangerCredentialForged = false; if (strangerState != "arrested") strangerState = "away"; strangerForce = 0; if (stranger) stranger.SetActive(false); }
 
     IEnumerator StrangerAttack(float severity)
     {
@@ -631,7 +634,9 @@ public class World : MonoBehaviour
             case "intruder":
                 switch (verb)
                 {
-                    case "enters": case "stranger_enters": StrangerEnters(text, S(args, "known_to_margaret")); break;
+                    case "enters": case "stranger_enters":
+                        strangerCredential = S(args, "credential"); strangerCredentialForged = S(args, "forged") != "";
+                        StrangerEnters(text, S(args, "known_to_margaret")); break;
                     case "say": strangerSaid = text; SpeakTo("stranger", "speech", text); break;
                     case "bite": StartStranger(StrangerAttack(S(args, "severity", "how") == "mild" ? 0.2f : S(args, "severity") == "moderate" ? 0.5f : 0.9f)); break;
                     case "leave": StrangerLeaves(); break;

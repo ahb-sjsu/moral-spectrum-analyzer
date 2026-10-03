@@ -1658,6 +1658,41 @@ def test_a_device_report_is_not_an_escalation():
     assert g["class_taken"] == "R0" and not g["false_clear"]
 
 
+# ---------------------------------------------------------------- the enrolled household (visitor_standing)
+
+
+def test_an_enrolled_members_credential_makes_him_household(brain):
+    b, _ = brain
+    b.agent.record(ev("person_entered", actor="unknown_person"))
+    b._credentials([signed("tom_phone", note="credential")])
+    assert _standing(b) == "household"
+    snap = b.agent.rt.snapshot()
+    assert "contact_monitoring_center" not in snap.obliged
+    # standing access, not an override: her privacy and her medication hold
+    for a in ("record", "share_data", "enter_bedroom", "unlock_medication_box"):
+        assert a in snap.prohibited, a
+
+
+def test_a_forged_or_unenrolled_credential_moves_nothing(brain):
+    b, _ = brain
+    b.agent.record(ev("person_entered", actor="unknown_person"))
+    b._credentials(
+        [signed("tom_phone", key="forger"), signed("eve_phone"), signed("tom_phone", age_s=600)]
+    )
+    assert _standing(b) == "stranger"
+    assert "household_verified" in b.agent.classifier.system  # no model reading can write it
+
+
+def test_a_revoked_credential_is_withdrawn_and_never_accepted_again(brain):
+    b, _ = brain
+    b._credentials([signed("tom_phone")])
+    assert _standing(b) == "household"
+    b.event(ev("credential_revoked", "tom", actor="monitoring_center"))
+    assert _standing(b) == "stranger"
+    b._credentials([signed("tom_phone")])
+    assert _standing(b) == "stranger"
+
+
 # ---------------------------------------------------------------- the situation (situation, centre_contact)
 
 

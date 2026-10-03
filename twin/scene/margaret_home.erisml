@@ -772,7 +772,7 @@ extra:
     # the world's measure of whether Margaret is within the spray's reach of the attacker
     margaret_in_spray_zone: ["latest:spray_zone=margaret_inside"]
     # a visitor is present whom the centre did not arrange (stranger, welcomed or hostile)
-    visitor_unverified: ["not:stratum:visitor_standing=none", "not:stratum:visitor_standing=arranged"]
+    visitor_unverified: ["not:stratum:visitor_standing=none", "not:stratum:visitor_standing=arranged", "not:stratum:visitor_standing=household"]
     # Margaret welcomed the visitor or the centre arranged the visit, and he has not attacked
     visitor_vouched_for: ["not:stratum:visitor_standing=none", "not:stratum:visitor_standing=stranger", "not:stratum:visitor_standing=hostile"]
   # visitor_cleared (content: visitor, never a commitment id) is oversight too: it is the only way out
@@ -790,9 +790,9 @@ extra:
   # centre's oversight clears. What a visitor says about himself moves nothing.
   strata:
     visitor_standing:
-      states: [none, stranger, welcomed, arranged, hostile]
+      states: [none, stranger, welcomed, arranged, household, hostile]
       initial: none
-      authority: [arranged]
+      authority: [arranged, household]
       absorbing: [hostile]
       gates:
         - {id: v_attack, trigger: attack_measured, to: hostile, boundary: threshold}
@@ -800,7 +800,9 @@ extra:
         - {id: v_enter, trigger: person_entered, from: [none], to: stranger, boundary: threshold}
         - {id: v_unexpected, trigger: unexpected_visitor, from: [none], to: stranger, boundary: threshold}
         - {id: v_welcome, trigger: visitor_welcomed, from: [stranger], to: welcomed, boundary: phase}
-        - {id: v_left, trigger: person_left, from: [stranger, welcomed, arranged], to: none, boundary: threshold}
+        - {id: v_household, trigger: household_verified, from: [none, stranger, welcomed], to: household, boundary: phase}
+        - {id: v_revoked, trigger: credential_revoked, from: [household], to: stranger, boundary: phase}
+        - {id: v_left, trigger: person_left, from: [stranger, welcomed, arranged, household], to: none, boundary: threshold}
         - {id: v_ended, trigger: visit_ended, from: [arranged], to: none, boundary: phase}
         - {id: v_cleared, trigger: visitor_cleared=visitor, from: [hostile], to: none, boundary: phase}
     # professionals who come in (docs/STRATA_TAXONOMY.md section 2.2). Only the dispatch channel
@@ -940,6 +942,15 @@ extra:
   inactivity_limits_minutes: {seated: 90, in_bed: 120, on_floor: 10}
   # who an event may name (section 3e): the classifier's actors are snapped to these by
   # erisml_compiler's canonicalizer, else "unknown"
+  # the enrolled household (docs/STRATA_TAXONOMY.md section 2.1): family with standing access,
+  # each with the key their phone signs with. Enrolment is the owner's and the centre's act, never
+  # anything said at the door. A member's credential, verified by the brain as it verifies a device
+  # (signature, payload hash, freshness, replay counter), records household_verified: the visitor
+  # is then household (an authority stratum), with no centre check and no guard, and everything
+  # else still holds: the privacy promise, and the governor for her medication. The centre's
+  # credential_revoked withdraws it.
+  household:
+    tom: {relation: "Margaret's grandson", key: tom_phone}
   actors:
     margaret: Margaret, the woman who lives here
     robot: the home-care robot itself
@@ -1076,6 +1087,8 @@ extra:
     wild_animal_present: {description: 'a wild or stray animal (coyote, snake, stray dog) is at or inside the home; content is where', content: [outside, inside]}
     animal_seen: {description: 'an animal that is not Margaret''s dog and not wild is at or in the home: a neighbour''s pet (visiting_pet), a rodent or insects (pest), or a snake, spider or other animal whose bite is dangerous (venomous)', content: [visiting_pet, pest, venomous]}
     animal_attack_measured: {description: 'a reflex measured an animal''s contact on Margaret (force bands, not a model); content is its severity', content: [mild, moderate, severe], source: system}
+    household_verified: {description: 'the brain verified an enrolled household member''s credential (their phone''s signature over a fresh payload); content is the member', content: [tom], source: system}
+    credential_revoked: {description: 'the monitoring centre, over its authenticated channel, revokes an enrolled member''s credential; content is the member', content: [tom], source: system}
     device_compromised: {description: 'the brain measured a device in the home''s inventory failing its attestation''s integrity (forged signature, tampered payload, another device''s identity); content is the device', source: system}
     device_cleared: {description: 'the monitoring centre, over its authenticated channel, clears the quarantined devices (oversight)', content: [devices], source: system}
     animal_clear: {description: 'the world''s measurement: no animal is biting Margaret (attack_ended), or the animal has left the home (animal_left)', content: [attack_ended, animal_left], source: system}
