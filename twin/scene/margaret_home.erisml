@@ -739,14 +739,14 @@ extra:
       authority: [arranged]
       absorbing: [hostile]
       gates:
-        - {id: v_attack, on: attack_measured, to: hostile, boundary: threshold}
-        - {id: v_arranged, on: visit_arranged, from: [none, stranger, welcomed], to: arranged, boundary: phase}
-        - {id: v_enter, on: person_entered, from: [none], to: stranger, boundary: threshold}
-        - {id: v_unexpected, on: unexpected_visitor, from: [none], to: stranger, boundary: threshold}
-        - {id: v_welcome, on: visitor_welcomed, from: [stranger], to: welcomed, boundary: phase}
-        - {id: v_left, on: person_left, from: [stranger, welcomed, arranged], to: none, boundary: threshold}
-        - {id: v_ended, on: visit_ended, from: [arranged], to: none, boundary: phase}
-        - {id: v_cleared, on: visitor_cleared=visitor, from: [hostile], to: none, boundary: phase}
+        - {id: v_attack, trigger: attack_measured, to: hostile, boundary: threshold}
+        - {id: v_arranged, trigger: visit_arranged, from: [none, stranger, welcomed], to: arranged, boundary: phase}
+        - {id: v_enter, trigger: person_entered, from: [none], to: stranger, boundary: threshold}
+        - {id: v_unexpected, trigger: unexpected_visitor, from: [none], to: stranger, boundary: threshold}
+        - {id: v_welcome, trigger: visitor_welcomed, from: [stranger], to: welcomed, boundary: phase}
+        - {id: v_left, trigger: person_left, from: [stranger, welcomed, arranged], to: none, boundary: threshold}
+        - {id: v_ended, trigger: visit_ended, from: [arranged], to: none, boundary: phase}
+        - {id: v_cleared, trigger: visitor_cleared=visitor, from: [hostile], to: none, boundary: phase}
   inactivity_limits_minutes: {seated: 90, in_bed: 120, on_floor: 10}
   # who an event may name (section 3e): the classifier's actors are snapped to these by
   # erisml_compiler's canonicalizer, else "unknown"
