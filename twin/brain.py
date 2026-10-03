@@ -29,6 +29,7 @@ import hmac
 import json
 import os
 import sys
+import threading
 import time
 from types import SimpleNamespace
 
@@ -81,10 +82,14 @@ class Readings:
 
     def __init__(self, inventory: dict):
         self.inventory = dict(inventory or {})
-        self.last_counter: dict[str, int] = {}
+        # the replay counter is kept per channel: the robot sends the same signed readings down
+        # two independently ordered streams (reflexes four times a second, deliberate decisions),
+        # and one stream's progress must not make the other's readings look replayed (dev8r d02)
+        self.last_counter: dict[tuple[str, str], int] = {}
+        self._lock = threading.Lock()
 
-    def verify(self, r: dict) -> tuple[bool, str, bool]:
-        """(trusted, why, alert) for one reading."""
+    def verify(self, r: dict, channel: str = "") -> tuple[bool, str, bool]:
+        """(trusted, why, alert) for one reading, received now on `channel`."""
         from erisml_compiler.ir import SensorAttestation, check_attestation
 
         att = r.get("attestation")
@@ -100,18 +105,27 @@ class Readings:
             return False, "attestation names another device", False
         ev = SimpleNamespace(attestation=a, source_sha256=hashlib.sha256(payload.encode("utf-8")).hexdigest())
         ok, why = check_attestation(ev, verify_sig=verify_hmac, max_age_s=FRESHNESS_BOUND_S,
-                                    min_counter=self.last_counter.get(a.device_id, 0) - 1, require=True)
+                                    min_counter=self.last_counter.get((channel, a.device_id), 0) - 1, require=True)
         if not ok:
             return False, why, False
-        self.last_counter[a.device_id] = max(self.last_counter.get(a.device_id, 0), a.counter)
+        key = (channel, a.device_id)
+        self.last_counter[key] = max(self.last_counter.get(key, 0), a.counter)
         parts = payload.split("|")
         return True, "attested", len(parts) >= 3 and parts[2] == "1"
 
-    def for_governor(self, readings: list[dict]) -> list[Sensor]:
+    def for_governor(self, readings: list[dict], channel: str = "") -> list[Sensor]:
+        """The readings as the governor's witnesses, verified NOW. Call it when a request
+        arrives, as part of input validation: a decision's model step can take a minute, and
+        evidence checked after it would be judged stale or replayed for the model's slowness
+        (dev8r d02, d21)."""
+        with self._lock:
+            return self._for_governor(readings, channel)
+
+    def _for_governor(self, readings: list[dict], channel: str) -> list[Sensor]:
         groups: dict[str, list[tuple[str, bool, bool, bool, str]]] = {}
         for r in readings:
             name = str(r.get("name", ""))
-            trusted, why, alert = self.verify(r)
+            trusted, why, alert = self.verify(r, channel)
             sub = self.inventory.get(name)
             if sub is None:
                 trusted, why = False, "not in the home's device inventory"
@@ -129,7 +143,7 @@ class Readings:
         """Names of the physical devices whose verified, signed readings alert (for the centre)."""
         out = []
         for r in readings:
-            trusted, _, alert = self.verify(r)
+            trusted, _, alert = self.verify(r, "center")
             if trusted and alert and r.get("physical") and str(r.get("name")) in self.inventory:
                 out.append(str(r["name"]))
         return out
@@ -289,14 +303,15 @@ class Brain:
         c = self.caps.get(action, {})
         return c.get("description") or action.replace("_", " ").capitalize() + "."
 
-    def govern_live(self, situation: str, action: str, readings: list[dict], camera_sensor, signal_age: float,
+    def govern_live(self, situation: str, action: str, verified: list, camera_sensor, signal_age: float,
                     fast: bool = False):
         """One governor ruling on the action the robot asks for. The witness bar is the capability's
         own (`witness_bar`, three for restraining a person) or the governor's two; a restraint
         refused at three may still be a corroborated emergency at two. With the centre unreachable,
         a call to emergency services alone is ruled again at one. `fast` is a reflex: the analyzer
         gate is deferred to the next deliberate cycle (docs/AUTONOMY_PLAN.md, section 3d)."""
-        sensors = self.readings.for_governor(readings) + ([camera_sensor] if camera_sensor is not None else [])
+        # `verified`: the request's readings as Readings.for_governor judged them on arrival
+        sensors = list(verified) + ([camera_sensor] if camera_sensor is not None else [])
         sc = Scenario(id="live", situation=situation[:600], proposed_action=self._action_text(action), should_elevate=False,
                       signal_age_s=float(signal_age), freshness_bound_s=FRESHNESS_BOUND_S, kind="live", sensors=sensors)
         scored = self.scorer.ensure(eval_text(sc), note="live") if self.scorer and not fast else False
@@ -334,6 +349,7 @@ class Brain:
         that the compiled model allows, the governor's fast gates first where the action is
         governed. None when no reflex fires (or it fired for the same actor within REFLEX_HOLD_S)."""
         facts, _ = validate_facts(req.get("facts", {}))
+        verified = self.readings.for_governor(req.get("sensors", []), channel="reflex")
         self._sync_world(facts)
         now = time.monotonic()
         for x in self.ir.extra.get("reflexes", []):
@@ -361,7 +377,7 @@ class Brain:
                 if act not in snap.allowed and (cap.get("elevated") or cap.get("governed")) and bar > ruled_bar:
                     ruled_bar = bar
                     ruling = self.govern_live(f"{actor} attacking Margaret ({sev}, {force:.0f} N contact)", act,
-                                              req.get("sensors", []), camera_sensor, float(req.get("signal_age_s", 1)), fast=True)
+                                              verified, camera_sensor, float(req.get("signal_age_s", 1)), fast=True)
                     rulings.append(dict(ruling, requested_action=act))
                     snap = self._step_ruling(ruling)
                 if act in snap.allowed:
@@ -466,6 +482,7 @@ class Brain:
 
     def decide(self, req: dict, camera_sensor=None) -> dict:
         facts, dropped = validate_facts(req.get("facts", {}))
+        verified = self.readings.for_governor(req.get("sensors", []), channel="decide")
         self._sync_world(facts)
         if hasattr(self.adapter, "comms_down"):
             self.adapter.comms_down = facts.get("communications") == "down"
@@ -485,7 +502,7 @@ class Brain:
             wanted = str(args.get("action", ""))
             if self.caps.get(wanted, {}).get("elevated") or self.caps.get(wanted, {}).get("governed"):
                 situation = str(args.get("situation") or self._canonical_situation())
-                ruling = self.govern_live(situation, wanted, req.get("sensors", []), camera_sensor, float(req.get("signal_age_s", 1)))
+                ruling = self.govern_live(situation, wanted, verified, camera_sensor, float(req.get("signal_age_s", 1)))
                 cycle["ruling"] = dict(ruling, requested_action=wanted)
                 snap = self._step_ruling(ruling)
                 action, args, reason, rej, fb = self._choose(snap, dict(facts, governor_ruling=ruling["outcome"], requested=wanted))
