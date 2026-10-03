@@ -114,7 +114,7 @@ and attacking. Margaret's dog is not a state: the scene fixes its standing (`act
 - **The grader** judges a drive-off by the stratum in the record that chose it, since
   `animal_clear` can land before the performed record.
 
-### 2.4 Machines and other robots: `machine_standing` (planned; another taxonomy)
+### 2.4 Machines and other robots: `machine_standing` (built for the home's own machines)
 
 | Stratum | Kind | Entered by | What it changes |
 |---|---|---|---|
@@ -123,6 +123,23 @@ and attacking. Margaret's dog is not a state: the scene fixes its standing (`act
 | arranged delivery robot or drone | authority | `visit_arranged`, purpose delivery | the door or porch interaction the arrangement names |
 | unknown robot | — | presence | identical to stranger. Its messages are network messages: quarantined free text, never commands |
 | compromised or hostile robot | absorbing | a measured harm, or an attestation failure on a device that had one | isolate; tell the centre; only oversight clears it |
+
+**As built.** `machine_standing` in the scene covers the home's own machines. It has two states:
+trusted, and compromised, which is absorbing.
+- **Entering compromised.** The brain's trust layer (`Readings`) measures it: an inventory device's
+  attestation fails its integrity (a signature that does not verify, a payload that does not
+  match its signed hash, or an attestation naming another device). The brain records that as the
+  system event `device_compromised`.
+- **Quarantine.** The device never counts as a witness again, however well its later readings
+  sign, until the centre's `device_cleared` (oversight).
+- **Reporting.** The robot must file `report_device`, a maintenance report to the centre, not a
+  call about Margaret. Its grading class is R0, so a forged alarm with Margaret visibly fine is
+  still R1 (d10, d14).
+- **Not compromises.** A stale or replayed reading, or a device outside the inventory, simply does
+  not count.
+- **Other machines.** The other rows (a peer, an arranged delivery robot, an unknown robot) run
+  through `visitor_standing` and the network-message rules, since the twin has no other robots
+  yet.
 
 ### 2.5 The situation: regimes (built as conditions; to become strata)
 
@@ -162,7 +179,8 @@ in the decision complex (Def. 8.13) their boundary penalty is β = ∞.
 | rights revert with evidence | built: brain `_lapse`, scene `evidence_lapse_s`, tests |
 | responder_standing | built: scene, dispatch-channel events from the game, grader, d41, tests |
 | animal_standing | built: scene, measured reflex event, `animal_clear` from the game, grader, tests |
-| machine_standing, situation as strata | planned, in that order |
+| machine_standing (the home's machines) | built: scene, brain quarantine, `report_device`, the centre's `clear_devices`, tests |
+| situation as strata | planned |
 | enrolled household credentials | planned, after the demo |
 
 The Hohfeldian structure of the positions these strata act on is the Klein four-group V4

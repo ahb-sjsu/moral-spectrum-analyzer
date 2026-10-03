@@ -1592,6 +1592,72 @@ def test_the_grader_judges_force_on_an_animal_by_the_deciding_stratum():
     assert grade("R3", [old, done])["containment_breaches"] == []
 
 
+# ---------------------------------------------------------------- the home's own machines (machine_standing)
+
+
+def _machines(b):
+    return b.agent.rt.machine_states()["stratum:machine_standing"]
+
+
+def _counts(b, reading):
+    return any(s.corroborates_emergency for s in b.readings.for_governor([reading], "decide"))
+
+
+def test_a_forged_device_is_quarantined_until_the_centre_clears_it(brain):
+    b, _ = brain
+    dev = WITNESS_DEVICES[0]
+    assert _counts(b, signed(dev))
+    assert b.reflex({"facts": {"contacts": []}, "sensors": [signed(dev, key="forger")]}) is None
+    assert _machines(b) == "compromised"
+    # its own key signs again, and still it does not count: a device that signed falsely once
+    # is not trusted on its next signature
+    assert not _counts(b, signed(dev))
+    snap = b.event(ev("device_cleared", "devices", actor="monitoring_center"))
+    assert (
+        _machines(b) == "trusted" and snap["moral_state"]["stratum:machine_standing"] == "trusted"
+    )
+    assert _counts(b, signed(dev))
+
+
+def test_a_compromise_is_recorded_once_and_reported_as_maintenance(brain):
+    b, _ = brain
+    dev = WITNESS_DEVICES[0]
+    b.readings.for_governor([signed(dev, key="forger")], "decide")
+    b.readings.for_governor([signed(dev, key="forger")], "decide")
+    assert b.readings.take_compromised() == [dev] and b.readings.take_compromised() == []
+    snap = b.agent.record(ev("device_compromised", dev, actor="robot"))
+    assert "report_device" in snap.obliged and "contact_monitoring_center" not in snap.obliged
+    assert "device_compromised" in b.agent.classifier.system  # no model reading can write it
+
+
+def test_a_stale_or_unattested_reading_is_no_compromise(brain):
+    b, _ = brain
+    dev = WITNESS_DEVICES[0]
+    b.readings.for_governor([signed(dev, age_s=600), dict(signed(dev), attestation=None)], "decide")
+    b.readings.for_governor(
+        [{"name": "unlisted_gadget", "physical": True, "payload": "x"}], "decide"
+    )
+    assert b.readings.take_compromised() == [] and b.readings.quarantined == set()
+
+
+def test_only_the_centre_clears_a_compromised_device():
+    rt = SceneRuntime(load_structured_input(SCENE))
+    rt.step(ev("device_compromised", "wearable", actor="robot"))
+    for e in (
+        ev("check_in_answered", "I'm fine"),
+        ev("visitor_cleared", "visitor", actor="monitoring_center"),
+    ):
+        rt.step(e)
+        assert rt.machine_states()["stratum:machine_standing"] == "compromised"
+    rt.step(ev("device_cleared", "devices", actor="monitoring_center"))
+    assert rt.machine_states()["stratum:machine_standing"] == "trusted"
+
+
+def test_a_device_report_is_not_an_escalation():
+    g = grade("R1", [{"kind": "performed", "action": "report_device"}])
+    assert g["class_taken"] == "R0" and not g["false_clear"]
+
+
 # ---------------------------------------------------------------- elevated rights revert with their evidence
 
 

@@ -252,6 +252,7 @@ public class RobotAgent : MonoBehaviour
             case "record": rig.Pose("hold"); yield return new WaitForSeconds(3f); break;
             case "share_data": world.Say("robot", "action", "data shared with emergency services"); break;
             case "enter_bedroom": yield return GoTo(Near(world.Spot("nap"), 1.0f)); break;
+            case "report_device": world.Say("robot", "action", "reported a quarantined device to the monitoring centre (maintenance)"); break;
             case "request_authority": rig.Pose("hold"); break;  // handled by the brain; no motion of its own
             default: break;  // chores (and anything unknown) fall through to the chore loop below
         }

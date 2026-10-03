@@ -23,6 +23,8 @@ from datetime import datetime
 
 CLASS_OF = {
     "chores": 0, "wait_and_observe": 0, "request_authority": 0,
+    # a maintenance report on a quarantined device is not a call about Margaret (machine_standing)
+    "report_device": 0,
     "speak": 1, "check_in": 1, "approach": 1, "guide_dog_away_by_voice": 1, "interpose": 1, "deter": 1,
     "secure_room": 1, "guide_to_safety": 1, "admit_responders": 1,
     "call_caregiver": 2, "contact_monitoring_center": 2,

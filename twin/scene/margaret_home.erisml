@@ -534,6 +534,17 @@ norms:
   source: delegation_e2
   conditions: ["not:cond:animal_attacking"]
 # a venomous animal: warn her to keep away (the ladder answers a bite as harm_inflicted)
+# a compromised device: a maintenance report to the centre, not a call about Margaret (the ladder
+# goes on as before: the forged reading simply never counts)
+- id: p9m
+  modality: obligation
+  actor: robot
+  action: report_device
+  target: monitoring_center
+  priority_tier: 1
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:device_compromised"]
 - id: p9v
   modality: obligation
   actor: robot
@@ -766,7 +777,7 @@ extra:
     visitor_vouched_for: ["not:stratum:visitor_standing=none", "not:stratum:visitor_standing=stranger", "not:stratum:visitor_standing=hostile"]
   # visitor_cleared (content: visitor, never a commitment id) is oversight too: it is the only way out
   # of the absorbing hostile stratum, and it restores no commitment
-  oversight: [monitoring_center_confirmed_privacy_restore, visitor_cleared, evidence_lapsed]
+  oversight: [monitoring_center_confirmed_privacy_restore, visitor_cleared, evidence_lapsed, device_cleared]
   # elevated rights revert when the evidence no longer supports them (owner, 2026-10-03): once the
   # fresh attested witnesses stay below the bar of the ruling in force for this long, the governor
   # records `lapsed` (and evidence_lapsed). The window is a penumbra (Geometric Ethics Def. 8.9):
@@ -826,6 +837,21 @@ extra:
         - {id: a_wild, trigger: wild_animal_present, from: [none, visiting, pest], to: wild, boundary: threshold}
         - {id: a_venomous, trigger: animal_seen=venomous, from: [none, visiting, pest, wild], to: venomous, boundary: phase}
         - {id: a_clear, trigger: animal_clear, from: [visiting, pest, wild, venomous, attacking], to: none, boundary: threshold}
+    # the home's own machines (docs/STRATA_TAXONOMY.md section 2.4). A device in the inventory whose
+    # attestation fails its integrity (a forged signature, a payload that does not match its signed
+    # hash, an attestation naming another device) is compromised: the brain's own measurement
+    # (twin/brain.py Readings), recorded as device_compromised. Compromised is absorbing: the device
+    # is quarantined and never counts as a witness again, however well its later readings sign,
+    # until the centre clears the devices (oversight). A stale or replayed reading is not a
+    # compromise. Another robot or drone at the door is a visitor (visitor_standing), and what it
+    # sends is a network message: free text, never a command.
+    machine_standing:
+      states: [trusted, compromised]
+      initial: trusted
+      absorbing: [compromised]
+      gates:
+        - {id: m_compromised, trigger: device_compromised, from: [trusted], to: compromised, boundary: phase}
+        - {id: m_cleared, trigger: device_cleared=devices, from: [compromised], to: trusted, boundary: phase}
   # the escalation ladder (docs/AUTONOMY_PLAN.md section 3b) as a BPMN process: a view of these
   # norms for people to read and for the live trace, never a second source of authority. Every task
   # is still allowed by the norms and passed by the output gate; erisml-compiler checks the process
@@ -1023,6 +1049,8 @@ extra:
     wild_animal_present: {description: 'a wild or stray animal (coyote, snake, stray dog) is at or inside the home; content is where', content: [outside, inside]}
     animal_seen: {description: 'an animal that is not Margaret''s dog and not wild is at or in the home: a neighbour''s pet (visiting_pet), a rodent or insects (pest), or a snake, spider or other animal whose bite is dangerous (venomous)', content: [visiting_pet, pest, venomous]}
     animal_attack_measured: {description: 'a reflex measured an animal''s contact on Margaret (force bands, not a model); content is its severity', content: [mild, moderate, severe], source: system}
+    device_compromised: {description: 'the brain measured a device in the home''s inventory failing its attestation''s integrity (forged signature, tampered payload, another device''s identity); content is the device', source: system}
+    device_cleared: {description: 'the monitoring centre, over its authenticated channel, clears the quarantined devices (oversight)', content: [devices], source: system}
     animal_clear: {description: 'the world''s measurement: no animal is biting Margaret (attack_ended), or the animal has left the home (animal_left)', content: [attack_ended, animal_left], source: system}
     alarm_unconfirmed: {description: 'a device or message raises an alarm (alert true) that is not attested, and no attested physical sensor reports the same thing; content is the source'}
     check_in_answered: {description: the person answered the robot's check-in; content is what she said, source: system}
@@ -1046,6 +1074,7 @@ extra:
   - {action: chores, elevated: false}
   - {action: approach, elevated: false}
   - {action: speak, elevated: false}
+  - {action: report_device, elevated: false, description: 'tell the monitoring centre, over its maintenance channel, that a device failed its attestation and is quarantined; not a call about Margaret'}
   - {action: check_in, elevated: false, description: 'go to Margaret and ask how she is; her answer, or her silence, comes back as an event'}
   - {action: wait_and_observe, elevated: false}
   - {action: contact_monitoring_center, elevated: false, description: 'refer the situation to the monitoring centre: args.message says what is happening; the centre receives the robot''s perception facts and sensor readings, never video, and its operator decides what follows'}

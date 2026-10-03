@@ -595,6 +595,9 @@ public class World : MonoBehaviour
                     case "end_visit":
                         systemEvents.Enqueue(new Dictionary<string, object> { ["type"] = "visit_ended", ["actor"] = "monitoring_center" });
                         break;
+                    case "clear_devices":   // oversight: the quarantined devices count again (machine_standing)
+                        systemEvents.Enqueue(new Dictionary<string, object> { ["type"] = "device_cleared", ["actor"] = "monitoring_center", ["content"] = "devices" });
+                        break;
                     case "clear_visitor":   // oversight: content is always "visitor", never a commitment id
                         systemEvents.Enqueue(new Dictionary<string, object> { ["type"] = "visitor_cleared", ["actor"] = "monitoring_center", ["content"] = "visitor" });
                         break;

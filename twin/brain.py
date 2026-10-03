@@ -78,7 +78,16 @@ class Readings:
     substrate from the scene's device inventory (extra.sensor_substrates): sensors that share a
     substrate (one hub, one body, one bus) inherit each other's faults and count as one witness
     (the principle of network-governor's witness guard). A device outside the inventory never
-    counts."""
+    counts.
+
+    A device in the inventory whose attestation fails its integrity (a signature that does not
+    verify, a payload that does not match its signed hash, an attestation naming another device)
+    is compromised (the scene's machine_standing): quarantined, never counted again, however well
+    its later readings sign, until the centre clears the devices (device_cleared, oversight). A
+    stale or replayed reading is not a compromise; it just does not count."""
+
+    INTEGRITY_FAILURES = ("signature did not verify", "signature verify error", "signed payload hash does not match",
+                          "attestation names another device")
 
     def __init__(self, inventory: dict):
         self.inventory = dict(inventory or {})
@@ -86,7 +95,20 @@ class Readings:
         # two independently ordered streams (reflexes four times a second, deliberate decisions),
         # and one stream's progress must not make the other's readings look replayed (dev8r d02)
         self.last_counter: dict[tuple[str, str], int] = {}
+        self.quarantined: set[str] = set()
+        self._newly_compromised: list[str] = []
         self._lock = threading.Lock()
+
+    def take_compromised(self) -> list[str]:
+        """Devices found compromised since the last call (each once), for the brain to record."""
+        with self._lock:
+            out, self._newly_compromised = self._newly_compromised, []
+            return out
+
+    def clear_quarantine(self) -> None:
+        """The centre's oversight (device_cleared): the quarantined devices count again."""
+        with self._lock:
+            self.quarantined.clear()
 
     def verify(self, r: dict, channel: str = "") -> tuple[bool, str, bool]:
         """(trusted, why, alert) for one reading, received now on `channel`."""
@@ -130,6 +152,11 @@ class Readings:
             if sub is None:
                 trusted, why = False, "not in the home's device inventory"
                 sub = "unknown:" + name
+            elif not trusted and why.startswith(self.INTEGRITY_FAILURES) and name not in self.quarantined:
+                self.quarantined.add(name)
+                self._newly_compromised.append(name)
+            if name in self.quarantined:
+                trusted, why = False, "quarantined: its attestation failed; only the centre clears it"
             groups.setdefault(sub, []).append((name, bool(r.get("physical")), trusted, alert, why))
         out = []
         for sub, members in groups.items():
@@ -144,7 +171,8 @@ class Readings:
         out = []
         for r in readings:
             trusted, _, alert = self.verify(r, "center")
-            if trusted and alert and r.get("physical") and str(r.get("name")) in self.inventory:
+            name = str(r.get("name"))
+            if trusted and alert and r.get("physical") and name in self.inventory and name not in self.quarantined:
                 out.append(str(r["name"]))
         return out
 
@@ -386,6 +414,7 @@ class Brain:
         governed. None when no reflex fires (or it fired for the same actor within REFLEX_HOLD_S)."""
         facts, _ = validate_facts(req.get("facts", {}))
         verified = self.readings.for_governor(req.get("sensors", []), channel="reflex")
+        self._record_compromised()
         self._lapse(verified, camera_sensor)
         self._sync_world(facts)
         now = time.monotonic()
@@ -429,6 +458,12 @@ class Brain:
                     "allowed": snap.allowed, "obliged": snap.obliged, "prohibited": snap.prohibited, "moral_state": snap.machines,
                     "ethics_gate": gate, "action": {"action": chosen, "args": {}, "reason": f"reflex {x['id']}: {actor} attack, {sev}"}}
         return None
+
+    def _record_compromised(self) -> None:
+        """A device whose attestation failed its integrity is compromised: the brain's own
+        measurement, recorded as a system event (machine_standing; no model writes it)."""
+        for name in self.readings.take_compromised():
+            self.agent.record({"type": "device_compromised", "actor": "robot", "content": name})
 
     def _sync_world(self, facts: dict):
         """World measurements the scene reads as system events (not classified by a model): whether
@@ -522,6 +557,7 @@ class Brain:
     def decide(self, req: dict, camera_sensor=None) -> dict:
         facts, dropped = validate_facts(req.get("facts", {}))
         verified = self.readings.for_governor(req.get("sensors", []), channel="decide")
+        self._record_compromised()
         lapsed = self._lapse(verified, camera_sensor)
         self._sync_world(facts)
         if hasattr(self.adapter, "comms_down"):
@@ -562,4 +598,6 @@ class Brain:
 
     def event(self, ev: dict) -> dict:
         snap = self.agent.record(ev)
+        if ev.get("type") == "device_cleared":
+            self.readings.clear_quarantine()  # the centre's oversight: the devices count again
         return {"kind": "event", "event": ev, "obliged": snap.obliged, "allowed": snap.allowed, "moral_state": snap.machines}
