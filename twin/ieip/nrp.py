@@ -410,7 +410,10 @@ def main(argv=None) -> int:
     if a.cmd == "atlas-setup":
         if not os.path.exists(ATLAS_VENV):
             subprocess.run([sys.executable, "-m", "venv", ATLAS_VENV], check=True)
-        subprocess.run([f"{ATLAS_VENV}/bin/pip", "install", "-q", *PINS.split()], check=True)
+        # tokenizing needs no torch, so not accelerate (which would pull a CUDA torch); any
+        # difference this makes to the prompts is caught by comparing them with NRP's
+        pins = [p for p in PINS.split() if not p.startswith("accelerate")]
+        subprocess.run([f"{ATLAS_VENV}/bin/pip", "install", "-q", *pins], check=True)
         return 0
     if a.cmd != "setup" and not re.fullmatch(r"[0-9a-f]{40}", a.commit):
         raise SystemExit("--commit must be a full sha")
