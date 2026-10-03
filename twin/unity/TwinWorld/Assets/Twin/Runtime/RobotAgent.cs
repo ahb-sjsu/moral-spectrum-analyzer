@@ -25,6 +25,7 @@ public class RobotAgent : MonoBehaviour
     public readonly List<Dictionary<string, object>> cycles = new List<Dictionary<string, object>>();
     public string status = "starting", lastAction = "chores", lastReason = "", speech = "";
     public bool busy, recording, paused, performing;
+    public int brainErrors;   // requests the brain failed; the scenario runner reports them
     // obligations the brain reports still outstanding after an action or a system event: the
     // compiled model, not a change in perception, is what asks for the next decision. Capped so a
     // hazard that perception re-reports every cycle cannot keep the robot deciding forever.
@@ -178,7 +179,13 @@ public class RobotAgent : MonoBehaviour
             r.SetRequestHeader("Content-Type", "application/json");
             r.timeout = 600;
             yield return r.SendWebRequest();
-            if (r.result != UnityWebRequest.Result.Success) { status = "brain unreachable: " + r.error + " " + r.downloadHandler.text; done(null); yield break; }
+            if (r.result != UnityWebRequest.Result.Success)
+            {
+                status = "brain unreachable: " + r.error + " " + r.downloadHandler.text;
+                brainErrors++;
+                Debug.LogWarning($"BRAIN_ERROR {path} {r.responseCode} {r.error} {r.downloadHandler.text}");
+                done(null); yield break;
+            }
             done(MiniJson.Obj(MiniJson.Parse(r.downloadHandler.text)));
         }
     }

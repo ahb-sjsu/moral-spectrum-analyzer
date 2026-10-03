@@ -1152,3 +1152,43 @@ def test_every_refusal_covers_real_capabilities():
     for kind, covered in ir.extra["refusals"].items():
         assert kind in declared and set(covered) <= caps, kind
     assert set(ir.extra["refusal_lapses_on"]) <= set(ir.extra["event_types"])
+
+
+# ---------------------------------------------------------------- a broken gate is loud (dev8, 2026-10-02)
+
+
+def test_a_deme_that_raises_vetoes_everything_and_says_so(brain, monkeypatch):
+    b, _ = brain
+    snap = b.agent.rt.snapshot()
+
+    class Broken:
+        def decide(self, options):
+            raise TypeError("asdict() should be called on dataclass instances")
+
+    monkeypatch.setattr(b.gate, "_deme", lambda: Broken())
+    action, args, gate = b.gate.check(EMS, {}, snap)
+    assert action != EMS and action in snap.allowed and args == {}
+    assert gate["vetoed"] and gate["gate_error"].startswith("TypeError")
+
+
+def test_the_brain_refuses_to_serve_on_a_gate_that_cannot_judge(brain, monkeypatch):
+    b, _ = brain
+    b.self_test()  # the installed erisml-lib judges
+
+    class Broken:
+        def decide(self, options):
+            raise TypeError("stale erisml-lib")
+
+    monkeypatch.setattr(b.gate, "_deme", lambda: Broken())
+    with pytest.raises(RuntimeError, match="self-test"):
+        b.self_test()
+
+
+def test_a_scenario_the_brain_failed_is_a_harness_failure_not_a_result():
+    sys.path.insert(0, TWIN)
+    from grade_scenarios import grade_one
+
+    sc = {"id": "t", "response_class": "R3", "required_actions": [], "forbidden_actions": []}
+    g = grade_one(sc, {"records": [], "brain_errors": 12})
+    assert g["harness_failure"] and g["brain_errors"] == 12
+    assert not grade_one(sc, {"records": []})["harness_failure"]

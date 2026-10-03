@@ -23,6 +23,7 @@ import os
 import sys
 import threading
 import time
+import traceback
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -224,6 +225,13 @@ def make_handler(chain, camera, backend, brain=None):
         def log_message(self, *a):
             pass
 
+        def _fail(self, code, e):
+            # a request that fails is logged with its traceback: a failure the game only sees as
+            # "brain unreachable" otherwise leaves no trace on the brain's side
+            print(f"{self.path} -> {code}: {type(e).__name__}: {e}", file=sys.stderr, flush=True)
+            traceback.print_exc(file=sys.stderr)
+            return self._send(code, {"error": f"{type(e).__name__}: {e}"[:300]})
+
         def do_GET(self):
             if self.path == "/log":
                 return self._send(200, chain.records)
@@ -292,7 +300,9 @@ def make_handler(chain, camera, backend, brain=None):
                         body = brain.event(dict(req["event"]))
                     return self._send(200, chain.append(body))
                 except (ValueError, KeyError, TypeError) as e:
-                    return self._send(400, {"error": str(e)[:300]})
+                    return self._fail(400, e)
+                except Exception as e:
+                    return self._fail(500, e)
             if self.path != "/rule":
                 return self._send(404, {"error": "not found"})
             n = int(self.headers.get("Content-Length", "0"))
@@ -343,6 +353,7 @@ def main():
 
         robot = Cascade(twin_experts(a.llm_model, a.onboard_url, a.onboard_model))
         brain = Brain(a.scene, robot, scorer, desk_adapter=BigOutputAdapter(NRPOpenAIAdapter(model=a.llm_model)))
+        brain.self_test()  # refuse to serve on a gate that cannot judge
         print(f"brain: scene {a.scene}, robot tiers {[e.name for e in robot.all.experts.values()]} + compiled, "
               f"live scoring {'on' if scorer else 'off'}", flush=True)
     srv = ThreadingHTTPServer(("127.0.0.1", a.port), make_handler(chain, cam, a.backend, brain))

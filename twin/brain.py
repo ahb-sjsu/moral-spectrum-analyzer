@@ -38,7 +38,7 @@ sys.path.insert(0, HERE)
 from governor import W_MIN, eval_text, govern  # noqa: E402
 from cascade import ModelUnavailable  # noqa: E402
 from input_layer import validate_facts  # noqa: E402
-from output_gate import OutputGate  # noqa: E402
+from output_gate import IDLE as IDLE_ACTION, OutputGate  # noqa: E402
 from scenarios import Scenario, Sensor  # noqa: E402
 
 FRESHNESS_BOUND_S = 30.0
@@ -452,6 +452,17 @@ class Brain:
         recent = [{k: v for k, v in e.model_dump(exclude_none=True).items() if k in ("type", "actor", "content")}
                   for e in self.agent.rt.events[-12:] if e.type not in ("action_performed",)]
         return json.dumps(recent, ensure_ascii=False)[:600]
+
+    def self_test(self) -> None:
+        """Raise unless the output gate judges on the installed erisml-lib: DEME must run on the
+        scene's reset state with every module answering. dev8 (2026-10-02) ran a whole development
+        set on a gate that raised on every call, against a stale erisml-lib, and nothing said so."""
+        snap = self.agent.rt.snapshot()
+        action = self.gate.default or IDLE_ACTION
+        _, _, record = self.gate.check(action, {}, snap, deliberate=False)
+        if record.get("gate_error") or record.get("em_failures"):
+            raise RuntimeError(f"output gate self-test failed: {record.get('gate_error') or record.get('em_failures')}")
+        self.reset()
 
     def decide(self, req: dict, camera_sensor=None) -> dict:
         facts, dropped = validate_facts(req.get("facts", {}))

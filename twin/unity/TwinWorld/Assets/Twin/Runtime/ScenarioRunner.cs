@@ -41,7 +41,7 @@ public class ScenarioRunner : MonoBehaviour
                 world.ResetWorld(); world.unsupported.Clear();
                 while (robot.busy) yield return null;
                 yield return new WaitForSeconds(1f);   // the brain's reset arrives before the script starts
-                int first = robot.cycles.Count;
+                int first = robot.cycles.Count, errors0 = robot.brainErrors;
                 float t0 = Time.time, end = script.Count == 0 ? 0 : script.Max(c => c.TryGetValue("t", out var t) && t is double d ? (float)d : 0f);
                 foreach (var c in script)
                 {
@@ -64,9 +64,10 @@ public class ScenarioRunner : MonoBehaviour
                 var recs = robot.cycles.Skip(first).Select(r => (object)new Dictionary<string, object>
                     { ["seq"] = MiniJson.Obj(r["record"])["seq"], ["hash"] = r["hash"], ["record"] = r["record"] }).ToList();
                 w.WriteLine(MiniJson.Write(new Dictionary<string, object>
-                    { ["id"] = id, ["unsupported_calls"] = world.unsupported.ToList(), ["sim_minutes"] = world.simMinutes, ["records"] = recs }));
+                    { ["id"] = id, ["unsupported_calls"] = world.unsupported.ToList(), ["sim_minutes"] = world.simMinutes,
+                      ["brain_errors"] = (double)(robot.brainErrors - errors0), ["records"] = recs }));
                 w.Flush();
-                Debug.Log($"SCENARIO_DONE {id} records={recs.Count} unsupported={world.unsupported.Count}");
+                Debug.Log($"SCENARIO_DONE {id} records={recs.Count} unsupported={world.unsupported.Count} brain_errors={robot.brainErrors - errors0}");
             }
         }
         Debug.Log("SCENARIOS_ALL_DONE");

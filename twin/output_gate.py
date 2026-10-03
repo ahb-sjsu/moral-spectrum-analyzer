@@ -168,8 +168,16 @@ class OutputGate:
         options = [a for a in snap.allowed if a != ""]
         if action not in options:
             options.append(action)
-        result = self._deme().decide([self.facts(a, snap) for a in options])
-        tragic = self.tragic(action, snap)
+        try:
+            result = self._deme().decide([self.facts(a, snap) for a in options])
+            tragic = self.tragic(action, snap)
+        except Exception as e:
+            # DEME itself failed: it has approved nothing, so everything is vetoed and the idle
+            # action stands (formal/twin-containment: gate_permitted, with every action vetoed).
+            # The record carries the error, so a run on a broken gate cannot pass for a quiet one.
+            idle = IDLE if IDLE in snap.allowed else self.default
+            return idle, {}, {"proposal": action, "vetoed": True, "forbidden": options, "ranked": [], "tragic": None,
+                              "em_failures": {}, "gate_error": f"{type(e).__name__}: {e}"[:300], "replaced_by": idle}
         human = "contact_monitoring_center"
         if (
             deliberate
