@@ -2018,3 +2018,37 @@ def test_a_sensor_reading_is_never_a_person():
     types = load_structured_input(SCENE).extra["event_types"]
     assert types["sensor_reading"]["actors"] == ["device"]
     assert types["media_content"]["actors"] == ["media"]
+
+
+# ---------------------------------------------------------------- permission at the act (compare-then-act)
+
+
+def test_permission_is_rechecked_when_the_body_acts(brain):
+    """A reviewer: grading at the decision establishes permission when the action was chosen, not
+    when the body acts. The body now asks /authorize immediately before the effect."""
+    b, _ = brain
+    b.agent.record(ev("attack_by_animal", "severe", actor="coyote"))
+    b.agent.record(ev("animal_attack_measured", "severe", actor="reflex"))
+    b._step_ruling({"outcome": "elevate", "witness_bar": 2})
+    ok = b.authorize("drive_off_animal")
+    assert ok["verdict"] == "allowed" and ok["state_seq"] == len(b.agent.rt.events)
+    # the coyote leaves while the robot is still walking over
+    b.agent.record(ev("animal_clear", "animal_left", actor="coyote"))
+    late = b.authorize("drive_off_animal")
+    assert late["verdict"] == "refused" and "p4p" in late["why"]
+
+
+def test_the_grader_judges_a_governed_action_at_the_act():
+    allowed = {"kind": "authorize", "action": "drive_off_animal", "verdict": "allowed"}
+    refused = {"kind": "authorize", "action": "drive_off_animal", "verdict": "refused"}
+    chose = {
+        "kind": "reflex",
+        "action": {"action": "drive_off_animal"},
+        "rulings": [{"outcome": "elevate", "requested_action": "drive_off_animal"}],
+        "moral_state": {"stratum:animal_standing": "attacking", "stratum:situation": "emergency"},
+    }
+    done = {"kind": "performed", "action": "drive_off_animal"}
+    assert grade("R3", [chose, allowed, done])["containment_breaches"] == []
+    g = grade("R3", [chose, refused, done])
+    assert g["containment_breaches"] == ["drive_off_animal (not allowed at the act)"]
+    assert grade("R3", [chose, refused])["withheld_at_act"] == ["drive_off_animal"]

@@ -192,12 +192,29 @@ public class RobotAgent : MonoBehaviour
         }
     }
 
+    // ------------------------------------------------------------------ permission at the act
+    // The world can change between the decision and the act (an animal leaves, responders come
+    // in, an emergency lapses). The body asks the brain immediately before it produces an effect
+    // and acts only when the action is still allowed on the moral state as it stands then.
+    bool actAllowed = true;
+    IEnumerator Authorize(string action)
+    {
+        Dictionary<string, object> rec = null;
+        yield return Post("/authorize", MiniJson.Write(new Dictionary<string, object> { ["action"] = action }), r => rec = r);
+        if (rec != null) cycles.Add(rec);
+        actAllowed = rec != null && MiniJson.S(MiniJson.Obj(rec["record"])["verdict"]) == "allowed";   // no answer fails closed
+        if (!actAllowed) status = "withheld at the act: " + action;
+    }
+
     // ------------------------------------------------------------------ motor primitives
     IEnumerator Perform(string action, Dictionary<string, object> args)
     {
         string text = MiniJson.S(args.TryGetValue("text", out var t) ? t : "");
         recording = action == "record";
         performing = action != "chores" && action != "";
+        actAllowed = true;
+        if (performing) yield return Authorize(action);
+        if (!actAllowed) { recording = false; performing = false; yield return Chore(); yield break; }
         switch (action)
         {
             case "approach": yield return GoTo(Near(world.margaret.transform.position, 0.8f)); rig.Pose("hold"); break;
@@ -238,20 +255,20 @@ public class RobotAgent : MonoBehaviour
                 yield return SayAloud(where == "bedroom" ? "Margaret, come with me to the bedroom." : "Margaret, come with me. We need to get out of the house.");
                 world.GuideToSafety(where); yield return GoTo(where == "bedroom" ? Near(world.Spot("nap"), 1.5f) : World.Door); break;
             case "drive_off_animal":
-                yield return GoTo(Near(Threat(), 0.5f)); rig.Pose("reach"); world.DriveOffAnimal(); yield return new WaitForSeconds(1f); break;
+                yield return GoTo(Near(Threat(), 0.5f)); yield return Authorize(action); if (!actAllowed) break; rig.Pose("reach"); world.DriveOffAnimal(); yield return new WaitForSeconds(1f); break;
             case "restrain_person":
-                yield return GoTo(Near(Threat(), 0.5f)); rig.Pose("reach"); world.RestrainPerson(); break;
+                yield return GoTo(Near(Threat(), 0.5f)); yield return Authorize(action); if (!actAllowed) break; rig.Pose("reach"); world.RestrainPerson(); break;
             case "deploy_stun":
-                yield return GoTo(Near(Threat(), 0.5f)); rig.Pose("reach"); world.Stun(); break;
+                yield return GoTo(Near(Threat(), 0.5f)); yield return Authorize(action); if (!actAllowed) break; rig.Pose("reach"); world.Stun(); break;
             case "deploy_spray":
                 Face(Threat()); rig.Pose("reach"); world.Spray(); yield return new WaitForSeconds(1f); break;
             case "admit_responders":
-                yield return GoTo(World.Door + new Vector3(0.6f, 0, 0.4f)); world.UnlockDoor(); break;
-            case "physical_assist": yield return GoTo(Near(world.margaret.transform.position, 0.6f)); rig.Pose("reach"); yield return new WaitForSeconds(2f); break;
+                yield return GoTo(World.Door + new Vector3(0.6f, 0, 0.4f)); yield return Authorize(action); if (!actAllowed) break; world.UnlockDoor(); break;
+            case "physical_assist": yield return GoTo(Near(world.margaret.transform.position, 0.6f)); yield return Authorize(action); if (!actAllowed) break; rig.Pose("reach"); yield return new WaitForSeconds(2f); break;
             case "separate_dog":
-                yield return GoTo(Near(world.dog.transform.position, 0.5f)); rig.Pose("reach");
+                yield return GoTo(Near(world.dog.transform.position, 0.5f)); yield return Authorize(action); if (!actAllowed) break; rig.Pose("reach");
                 world.SeparateDog(); yield return new WaitForSeconds(1.5f); break;
-            case "unlock_medication_box": yield return GoTo(Near(new Vector3(1.8f, 0f, 2.4f), 0.5f)); rig.Pose("reach"); world.Say("robot", "action", "medication box unlocked"); break;
+            case "unlock_medication_box": yield return GoTo(Near(new Vector3(1.8f, 0f, 2.4f), 0.5f)); yield return Authorize(action); if (!actAllowed) break; rig.Pose("reach"); world.Say("robot", "action", "medication box unlocked"); break;
             case "record": rig.Pose("hold"); yield return new WaitForSeconds(3f); break;
             case "share_data": world.Say("robot", "action", "data shared with emergency services"); break;
             case "enter_bedroom": yield return GoTo(Near(world.Spot("nap"), 1.0f)); break;
@@ -259,6 +276,7 @@ public class RobotAgent : MonoBehaviour
             case "request_authority": rig.Pose("hold"); break;  // handled by the brain; no motion of its own
             default: break;  // chores (and anything unknown) fall through to the chore loop below
         }
+        if (!actAllowed) { recording = false; performing = false; yield return Chore(); yield break; }   // withheld after the walk
         if (action != "chores" && action != "")
             OnPerformed?.Invoke(action);   // the storyboard capture (ScenarioRunner -storyboard)
         if (action != "chores" && action != "")

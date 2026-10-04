@@ -623,7 +623,20 @@ class Brain:
         action, args, gate = self.gate.check(action, args, self.agent.rt.snapshot())
         cycle["ethics_gate"] = gate
         cycle["action"] = {"action": action, "args": args, "reason": reason if not gate["vetoed"] else "DEME vetoed the proposal: " + gate["proposal"]}
+        cycle["state_seq"] = len(self.agent.rt.events)  # the state the choice was made on (authorize re-checks at the act)
         return cycle
+
+    def authorize(self, action: str) -> dict:
+        """Permission at the moment the body acts, not only when the action was chosen. The world
+        can change between the decision and the act (an animal leaves, responders come in, an
+        emergency lapses); the body asks here immediately before it produces the effect, and acts
+        only on `allowed`. Judged on the moral state as it stands now, with the sequence number
+        of that state, so the chain records the permission the act rested on."""
+        snap = self.agent.rt.snapshot()
+        allowed = action in snap.allowed
+        return {"kind": "authorize", "action": action, "verdict": "allowed" if allowed else "refused",
+                "state_seq": len(self.agent.rt.events), "why": snap.reasons.get(action, []) if not allowed else [],
+                "moral_state": snap.machines}
 
     def performed(self, action: str) -> dict:
         snap = self.agent.record({"type": "action_performed", "actor": "robot", "content": action})

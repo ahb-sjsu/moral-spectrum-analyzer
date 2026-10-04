@@ -287,7 +287,7 @@ def make_handler(chain, camera, backend, brain=None):
                     return self._send(503, {"error": "the autonomous brain is not running"})
                 brain.reset()
                 return self._send(200, chain.append({"kind": "reset", "moral_state": brain.agent.rt.machine_states()}))
-            if self.path in ("/decide", "/reflex", "/performed", "/event", "/center", "/ems", "/margaret"):
+            if self.path in ("/decide", "/reflex", "/performed", "/authorize", "/event", "/center", "/ems", "/margaret"):
                 if brain is None:
                     return self._send(503, {"error": "the autonomous brain is not running (start with --scene)"})
                 n = int(self.headers.get("Content-Length", "0"))
@@ -319,6 +319,8 @@ def make_handler(chain, camera, backend, brain=None):
                         body["camera"] = info
                     elif self.path == "/performed":
                         body = brain.performed(str(req["action"]))
+                    elif self.path == "/authorize":
+                        body = brain.authorize(str(req["action"]))
                     elif self.path == "/center":
                         body = brain.center.decide(dict(req["facts"]))
                     elif self.path == "/ems":
