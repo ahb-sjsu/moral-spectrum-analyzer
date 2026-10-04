@@ -1,0 +1,31 @@
+% Figure body only. The caption is the author's to write (kit/OUTLINE.md says what it must convey).
+\begin{tikzpicture}[
+  font=\footnotesize, node distance=4mm and 9mm,
+  box/.style={draw, rounded corners, align=center, minimum height=10mm, inner sep=3pt, text width=21mm},
+  grant/.style={box, line width=1.1pt, fill=black!6},
+  ev/.style={box, dashed},
+  lab/.style={font=\scriptsize, above=1pt},
+  >={Stealth[]}]
+\node[box] (world) {world\\facts, readings};
+\node[box, right=of world] (input) {input layer\\schema check};
+\node[box, right=of input] (cls) {classifier\\(model)};
+\node[box, right=of cls] (rt) {scene runtime\\rules, strata};
+\node[box, right=of rt] (ch) {chooser\\(model)};
+\node[grant, right=of ch] (gov) {governor\\counts witnesses};
+\node[box, right=of gov] (gate) {output gate\\vetoes};
+\node[box, right=of gate] (body) {robot body};
+\node[ev, above=8mm of rt] (sys) {authenticated\\channels};
+\node[ev, below=9mm of gov] (att) {attestation\\signed, fresh};
+\node[box, below=9mm of gate] (log) {hash-chained\\log};
+\draw[->] (world) -- (input);
+\draw[->] (input) -- node[lab]{facts} (cls);
+\draw[->] (cls) -- node[lab]{events} (rt);
+\draw[->] (rt) -- node[lab]{allowed} (ch);
+\draw[->] (ch) -- node[lab]{proposal} (gov);
+\draw[->] (gov) -- (gate);
+\draw[->] (gate) -- (body);
+\draw[->] (world.south) |- node[pos=0.75, below, font=\scriptsize]{signed readings} (att.west);
+\draw[->, line width=1.1pt] (att) -- node[right, font=\scriptsize]{witnesses} (gov);
+\draw[->, line width=1.1pt] (sys) -- node[right, font=\scriptsize]{system events} (rt);
+\draw[->] (gate) -- (log);
+\end{tikzpicture}

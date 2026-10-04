@@ -5,14 +5,21 @@ Draft of a paper on the GTC home-care twin for AIES (AAAI/ACM AI, Ethics and Soc
 
 ## Status
 
-- Text: abstract, introduction (novelty paragraph pending), home, architecture, proof, protocol,
-  calibration table, discussion. Related work pending `prior_art.md`.
-- Template: plain `article` until the AIES 2027 call confirms the format (`prior_art.md`, section
-  "AIES 2027"). Swap the class then; the text does not depend on it.
-- Results: every `\RESULT{...}` box is a slot. The build must not ship while any remain:
-  `grep -c RESULT main.tex` must be 0 (the macro definition aside) before submission.
+- **AI-use rule.** AIES 2026 prohibits LLM-generated paper text (editing author-written text with an
+  LLM is allowed). Owner decision 2026-10-04: the author writes the prose; Claude supplies the
+  kit and may edit the author's text. Nothing Claude wrote is in `main.tex`.
+- `main.tex`: skeleton (preamble, section labels, figure inputs, empty captions). Author writes.
+- `figures/`: the two TikZ figure bodies (authority path, visitor stratum); captions are the
+  author's, `kit/OUTLINE.md` says what each must convey.
+- `kit/OUTLINE.md`: claim and evidence notes per section, including the credits prior art requires.
+- `kit/FACTS.md`: every number with its source. `kit/CALIBRATION.md`: the calibration table as data.
+- `prior_art.md`, `references.bib` (52 entries, five fields `% verify`).
+- `kit/claude_draft_NOT_FOR_SUBMISSION.tex`: the earlier Claude draft, notes only, never input.
+- Results: `\RESULT{...}` slots, filled only from graded records.
 
 ## Where each number comes from
+
+See `kit/FACTS.md` for the full sheet.
 
 | Number | Source |
 |---|---|
