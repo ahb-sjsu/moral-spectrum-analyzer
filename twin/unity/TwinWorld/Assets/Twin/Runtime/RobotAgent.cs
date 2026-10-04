@@ -24,6 +24,7 @@ public class RobotAgent : MonoBehaviour
 
     public readonly List<Dictionary<string, object>> cycles = new List<Dictionary<string, object>>();
     public string status = "starting", lastAction = "chores", lastReason = "", speech = "";
+    public event Action<string> OnPerformed;   // an action the body just finished
     public bool busy, recording, paused, performing;
     public int brainErrors;   // requests the brain failed; the scenario runner reports them
     // obligations the brain reports still outstanding after an action or a system event: the
@@ -257,6 +258,8 @@ public class RobotAgent : MonoBehaviour
             case "request_authority": rig.Pose("hold"); break;  // handled by the brain; no motion of its own
             default: break;  // chores (and anything unknown) fall through to the chore loop below
         }
+        if (action != "chores" && action != "")
+            OnPerformed?.Invoke(action);   // the storyboard capture (ScenarioRunner -storyboard)
         if (action != "chores" && action != "")
             yield return Post("/performed", MiniJson.Write(new Dictionary<string, object> { ["action"] = action }), Keep);
         recording = false; performing = false;
