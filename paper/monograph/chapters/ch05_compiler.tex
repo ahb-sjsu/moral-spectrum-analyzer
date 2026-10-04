@@ -572,9 +572,12 @@ extreme vulnerability and at least one stakeholder with the protector role, it r
 $v = 0.7$ with confidence $0.75$. Otherwise it returns zero.
 % src: src/erisml_compiler/em_dag/modules/care.py:20-61
 
-The \emph{repair} module measures the moral debt left after an act. Let
-$N = \{\,d \in \{\mathrm{harm}, \mathrm{externality}, \mathrm{fidelity}\} : v_d < 0\,\}$ be the
-upstream modules with negative scores. Then
+The \emph{repair} module measures the moral debt left after an act. Let $N$ be the set of upstream
+modules with negative scores,
+\[
+  N = \{\, d \in \{\mathrm{harm}, \mathrm{externality}, \mathrm{fidelity}\} \mid v_d < 0 \,\}.
+\]
+Then
 \begin{equation}
 v_{\mathrm{rep}} =
 \begin{cases}

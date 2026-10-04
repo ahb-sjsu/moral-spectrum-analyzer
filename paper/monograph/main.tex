@@ -15,7 +15,13 @@
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.17}
 \input{figures/housestyle}
+\usepackage[htt]{hyphenat}
 \usepackage[hidelinks]{hyperref}
+% long code identifiers (active_but_defeasible) cannot hyphenate: let a line break after any
+% underscore, and give paragraphs room to stretch instead of running into the margin
+\let\oldunderscore\_
+\renewcommand{\_}{\oldunderscore\allowbreak}
+\setlength{\emergencystretch}{3em}
 
 \lstset{basicstyle=\ttfamily\footnotesize, breaklines=true, columns=fullflexible, frame=single,
   framerule=0.3pt, xleftmargin=2pt, xrightmargin=2pt}
@@ -25,9 +31,10 @@
 \newtheorem{definition}[theorem]{Definition}
 
 % a number not yet graded; none may remain at release
-\newcommand{\RESULT}[1]{\fbox{\scriptsize RESULT: #1}}
+% (wrapping text, not a box: a box cannot break a line and ran into the margin)
+\newcommand{\RESULT}[1]{{\sffamily\small\textcolor{hsBlue}{[RESULT. #1]}}}
 % something the source did not settle; none may remain at release
-\newcommand{\TODO}[1]{\fbox{\scriptsize TODO: #1}}
+\newcommand{\TODO}[1]{{\sffamily\small\textcolor{hsOrange}{[TODO. #1]}}}
 \newcommand{\code}[1]{\texttt{#1}}
 \newcommand{\erisml}{ErisML}
 \newcommand{\deme}{DEME}
