@@ -1,0 +1,64 @@
+% Chapter 10. Which lemmas each result of TwinContainment.lean uses in its proof.
+% src: formal/twin-containment/TwinContainment.lean (proof bodies: 99, 112, 185-190, 196, 271-278,
+%      290-291, 301-304, 321-347, 387, 393, 404)
+\begin{tikzpicture}[house,
+  lem/.style={detail, font=\ttfamily\scriptsize, text=hsText, text width=34mm, minimum height=6mm},
+  res/.style={lem, draw=hsGreyLine, line width=0.5pt},
+  dep/.style={flow, line width=1.1pt}]
+% one ruling
+\node[lem] (tlb) at (12mm, 14mm) {two\_le\_bar};
+\node[res] (nww) at (12mm, 26mm) {nothing\_without\_\\a\_witness};
+\node[res] (ent) at (24mm, 0mm) {elevate\_needs\_two};
+\node[res] (aem) at (24mm, -13mm) {authorize\_ems\_only\_\\when\_ladder\_exhausted};
+\node[res] (rnt) at (24mm, -26mm) {restraint\_needs\_three};
+% every reachable run
+\node[res] (ers) at (80mm, 0mm) {elevated\_rests\_on\_two};
+\node[res] (eme) at (80mm, -13mm) {ems\_rests\_on\_evidence};
+\node[res] (rrt) at (80mm, -26mm) {restraint\_rests\_on\_three};
+\node[res] (ewp) at (80mm, -39mm) {executed\_were\_permitted};
+\node[res] (rag) at (130mm, -13mm) {rulings\_are\_governed};
+\node[lem] (lm) at (130mm, 4mm) {latest\_mem};
+\node[lem] (psn) at (130mm, -39mm) {prefix\_snoc};
+
+\begin{scope}[on background layer]
+  \node[panel=Blue, fit=(tlb)(nww)(ent)(aem)(rnt), inner sep=3mm, label={[stepname=Blue]north:One ruling}] {};
+  \node[panel=Purple, fit=(ers)(ewp)(rag)(lm)(psn), inner sep=3mm, label={[stepname=Purple]north:Every reachable run}] {};
+\end{scope}
+
+\draw[dep] (tlb) -- (nww);
+\draw[dep] (tlb) -- (ent);
+\draw[dep] (ent) -- (ers);
+\draw[dep] (ent) -- (eme);
+\draw[dep] (aem) -- (eme);
+\draw[dep] (rnt) -- (rrt);
+\draw[dep] (rag) -- (ers);
+\draw[dep] (rag) -- (eme);
+\draw[dep] (rag) -- (rrt);
+\draw[dep] (lm) -- (ers);
+\draw[dep] (lm) -- (eme);
+\draw[dep] (psn) -- (ewp);
+
+% non-interference and the gate
+\node[lem] (fms) at (12mm, -66mm) {filterMap\_strip};
+\node[lem] (ans) at (12mm, -78mm) {any\_strip};
+\node[res] (nmi) at (50mm, -72mm) {no\_model\_influence};
+\node[res] (rch) at (50mm, -86mm) {reasoning\_cannot\_help};
+\node[res] (fbp) at (100mm, -66mm) {fallback\_permitted};
+\node[res] (gpm) at (138mm, -66mm) {gate\_permitted};
+\node[res] (gsr) at (138mm, -80mm) {gated\_step\_reachable};
+\node[res] (gps) at (100mm, -80mm) {gate\_passes};
+\begin{scope}[on background layer]
+  \node[panel=Teal, fit=(fms)(ans)(nmi)(rch), inner sep=3mm, label={[stepname=Teal]north:Non-interference}] {};
+  \node[panel=Green, fit=(fbp)(gpm)(gsr)(gps), inner sep=3mm, label={[stepname=Green]north:Output gate}] {};
+\end{scope}
+\draw[dep] (fms) -- (nmi);
+\draw[dep] (ans) -- (nmi);
+\draw[dep] (nmi) -- (rch);
+\draw[dep] (fbp) -- (gpm);
+\draw[dep] (gpm) -- (gsr);
+
+% results proved directly from the definitions
+\node[panel=Grey, text width=150mm, anchor=north, label={[stepname=Grey]north:Proved from the definitions alone}] at (75mm, -100mm)
+  {\ttfamily\scriptsize junk\_adds\_no\_witness\quad unattested\_never\_counts\quad repeat\_adds\_no\_witness\quad analyzer\_can\_only\_refuse\\[2pt]
+   dispatch\_ignores\_the\_robot\quad forged\_telemetry\_is\_no\_hazard\quad authority\_needs\_system\quad absorbing\_stays};
+\end{tikzpicture}

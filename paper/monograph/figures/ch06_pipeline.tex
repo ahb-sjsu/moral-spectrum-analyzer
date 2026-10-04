@@ -1,0 +1,51 @@
+% Chapter 6. The DEMEPipeline as six numbered panels.
+% src: erisml-lib (origin/main 2d584e8) src/erisml/ethics/layers/pipeline.py:132-322
+% src: gtc-prototype twin/output_gate.py:179-250 (panel 5)
+\begin{tikzpicture}[house,
+  pan/.style={minimum width=38mm, minimum height=44mm},
+  dtl/.style={detail, text width=34mm, anchor=south}]
+% row 1
+\node[panel=Purple, pan] (p1) at (0,0) {};
+\node[panel=Blue, pan] (p2) at (46mm,0) {};
+\node[panel=Green, pan] (p3) at (92mm,0) {};
+% row 2 (runs right to left so the flow snakes)
+\node[panel=Orange, pan] (p4) at (92mm,-50mm) {};
+\node[panel=Red, pan] (p5) at (46mm,-50mm) {};
+\node[panel=Teal, pan] (p6) at (0,-50mm) {};
+% panel 1
+\node[step=Purple] at ([yshift=-5.5mm]p1.north) {1};
+\node[stepname=Purple] at ([yshift=-12mm]p1.north) {Facts in};
+\node[desc, text width=35mm] at ([yshift=-17.5mm]p1.north) {one EthicalFacts\\per candidate option};
+\node[dtl] at ([yshift=2mm]p1.south) {consequences\\rights and duties\\justice, autonomy\\privacy, epistemic\\optional maxim};
+% panel 2
+\node[step=Blue] at ([yshift=-5.5mm]p2.north) {2};
+\node[stepname=Blue] at ([yshift=-12mm]p2.north) {Reflex veto};
+\node[desc, text width=35mm] at ([yshift=-17.5mm]p2.north) {cheap checks on\\each option alone};
+\node[dtl] at ([yshift=2mm]p2.south) {VetoRule list\\deontic maxim gate\\a rule that raises\\vetoes (fail\_open off)};
+% panel 3
+\node[step=Green] at ([yshift=-5.5mm]p3.north) {3};
+\node[stepname=Green] at ([yshift=-12mm]p3.north) {Tactical vector};
+\node[desc, text width=35mm] at ([yshift=-17.5mm]p3.north) {every module judges\\the surviving options};
+\node[dtl] at ([yshift=2mm]p3.south) {nine dimensions each\\tier-weighted mean\\veto from tiers 0 to 2\\fail\_closed on error};
+% panel 4
+\node[step=Orange] at ([yshift=-5.5mm]p4.north) {4};
+\node[stepname=Orange] at ([yshift=-12mm]p4.north) {Ranking};
+\node[desc, text width=35mm] at ([yshift=-17.5mm]p4.north) {unflagged options by\\scalar collapse};
+\node[dtl] at ([yshift=2mm]p4.south) {harm inverted\\weighted mean of nine\\best first\\forbidden list kept};
+% panel 5
+\node[step=Red] at ([yshift=-5.5mm]p5.north) {5};
+\node[stepname=Red] at ([yshift=-12mm]p5.north) {Veto or replace};
+\node[desc, text width=35mm] at ([yshift=-17.5mm]p5.north) {the twin's output gate\\acts on the result};
+\node[dtl] at ([yshift=2mm]p5.south) {pass if not forbidden\\else best allowed\\else wait and observe\\tragic goes to a human};
+% panel 6
+\node[step=Teal] at ([yshift=-5.5mm]p6.north) {6};
+\node[stepname=Teal] at ([yshift=-12mm]p6.north) {Proof out};
+\node[desc, text width=35mm] at ([yshift=-17.5mm]p6.north) {DecisionProof with\\a SHA-256 hash};
+\node[dtl] at ([yshift=2mm]p6.south) {facts hash\\layer outputs\\module judgements\\ranked and forbidden};
+% flow
+\draw[flow] (p1.east) -- (p2.west);
+\draw[flow] (p2.east) -- (p3.west);
+\draw[flow] (p3.south) -- node[flowlabel, right]{landscape} (p4.north);
+\draw[flow] (p4.west) -- (p5.east);
+\draw[flow] (p5.west) -- (p6.east);
+\end{tikzpicture}

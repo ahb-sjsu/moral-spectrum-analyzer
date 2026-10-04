@@ -1,0 +1,87 @@
+% Technical monograph on ErisML, DEME and the home-care twin. AI drafting disclosed (front matter).
+% Rules for every chapter: STYLE_AND_OUTLINE.md. Build: pdflatex main; bibtex main; pdflatex x2.
+\documentclass[11pt,openany]{report}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,calc,shapes.geometric,backgrounds}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.17}
+\input{figures/housestyle}
+\usepackage[hidelinks]{hyperref}
+
+\lstset{basicstyle=\ttfamily\footnotesize, breaklines=true, columns=fullflexible, frame=single,
+  framerule=0.3pt, xleftmargin=2pt, xrightmargin=2pt}
+
+\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}[theorem]{Definition}
+
+% a number not yet graded; none may remain at release
+\newcommand{\RESULT}[1]{\fbox{\scriptsize RESULT: #1}}
+% something the source did not settle; none may remain at release
+\newcommand{\TODO}[1]{\fbox{\scriptsize TODO: #1}}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\erisml}{ErisML}
+\newcommand{\deme}{DEME}
+
+\title{Authority by Structure\\[6pt]
+\large ErisML, DEME and a Home-Care Robot Whose Language Models Cannot Grant Themselves Permission}
+\author{Andrew H. Bond\\San Jos\'e State University\\\texttt{agi.hpc@gmail.com}}
+\date{Technical report, draft of \today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\input{chapters/abstract}
+\end{abstract}
+
+\chapter*{Use of AI in this report}
+Language-model assistants drafted most of the text of this report, its figures and the code it
+describes, under the author's direction and review. The robot, the monitoring centre, the
+dispatcher and Margaret's voice in the system are language models by design. Every number in the
+report comes from a source file, a test or a graded record named beside it in the source of the
+report. Where a result was not yet graded the report shows a marked slot.
+
+\tableofcontents
+
+\part{Foundations}
+\input{chapters/ch01_introduction}
+\input{chapters/ch02_philosophy_engineering}
+\input{chapters/ch03_geometric_ethics}
+
+\part{The ErisML Stack}
+\input{chapters/ch04_erisml_language}
+\input{chapters/ch05_compiler}
+\input{chapters/ch06_deme}
+\input{chapters/ch07_scene_runtime}
+
+\part{The Embodied Twin}
+\input{chapters/ch08_margarets_home}
+\input{chapters/ch09_containment}
+\input{chapters/ch10_lean_proofs}
+
+\part{Evaluation}
+\input{chapters/ch11_evaluation}
+\input{chapters/ch12_ieip_study}
+
+\part{Context}
+\input{chapters/ch13_related_work}
+\input{chapters/ch14_limits}
+
+\appendix
+\input{chapters/appA_scenarios}
+\IfFileExists{chapters/appB_strata_catalogue.tex}{\input{chapters/appB_strata_catalogue}}{}
+\input{chapters/appC_theorems}
+
+\bibliographystyle{plain}
+\bibliography{references}
+\end{document}

@@ -1,0 +1,31 @@
+% Chapter 7. The isolated scene agent: two models, the checks between them, and the runtime they read.
+% Dashed grey edges carry what a model wrote. The red edge carries system events, the only input
+% that can move an authority stratum.
+% src: erisml-compiler src/erisml_compiler/runtime/agent.py:84-201 (ObservationClassifier)
+% src: erisml-compiler src/erisml_compiler/runtime/agent.py:204-275 (ActionChooser, canonical view, fallback)
+% src: erisml-compiler src/erisml_compiler/runtime/agent.py:278-309 (SceneAgent.decide, record)
+\begin{tikzpicture}[house]
+\def\tw{23mm}
+\foreach \i/\c/\x/\name/\what/\det in {
+  1/Grey/0/Facts/{perception, any JSON}/{readings, poses,\\words heard,\\text on a screen},
+  2/Orange/31/Classifier/{a model proposes\\events}/{scene text,\\vocabulary,\\last 8 events,\\facts},
+  3/Blue/62/Checks/{reject, snap,\\quarantine}/{bad types and\\contents rejected,\\actors snapped,\\free text\\quarantined},
+  4/Green/93/Runtime/{steps the canonical\\events}/{allowed,\\obliged by urgency,\\prohibited,\\machines},
+  5/Orange/124/Chooser/{a model proposes\\one action}/{last 16 events,\\moral state,\\never the facts}} {
+  \node[panel=\c, text width=\tw, minimum height=38mm, anchor=north] (p\i) at (\x mm, 0) {};
+  \node[step=\c] (s\i) at ([yshift=-5mm]p\i.north) {\i};
+  \node[stepname=\c, below=0.8mm of s\i] (n\i) {\name};
+  \node[desc, below=0.2mm of n\i, text width=\tw] (d\i) {\what};
+  \node[detail, below=1mm of d\i, text width=\tw-2mm] {\det};
+}
+\draw[flow] (p1.east) -- (p2.west);
+\draw[untrusted] (p2.east) -- node[flowlabel, above]{events} (p3.west);
+\draw[flow] (p3.east) -- (p4.west);
+\draw[flow] (p4.east) -- (p5.west);
+\node[panel=Red, text width=32mm, below=9mm of p4, xshift=-8mm] (sys) {\textcolor{hsRed}{\bfseries system events}\\{\scriptsize\color{hsTextMid}rulings, channel replies,\\actions performed}};
+\draw[grant] (sys.north -| p4.south) -- (p4.south);
+\node[panel=Teal, text width=31mm, below=9mm of p5, xshift=1mm] (gate) {\textcolor{hsTeal}{\bfseries allowed?}\\{\scriptsize\color{hsTextMid}else the most urgent\\allowed obligation,\\else the default}};
+\draw[untrusted] (p5.south) -- node[flowlabel, right]{proposal} (gate.north -| p5.south);
+\node[panel=Grey, text width=30mm, below=9mm of p2] (rej) {\textcolor{hsGrey}{\bfseries reports}\\{\scriptsize\color{hsTextMid}rejected events, snapped\\actors, quarantined text}};
+\draw[flow] (p3.south) |- (rej.east);
+\end{tikzpicture}

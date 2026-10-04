@@ -1,0 +1,22 @@
+% Chapter 4. What Margaret's scene declares, counted from the file (twin/scene/margaret_home.erisml).
+% Counts taken 2026-10-03 by loading the file with PyYAML and counting list entries:
+% norms 65 (45 obligation, 19 prohibition, 1 permission); events 4; stakeholders 4; commitments 3;
+% event_types 48 (24 with source: system); capabilities 25 (7 elevated, 4 governed);
+% strata 7; extra.conditions 12; processes 1 (escalation_ladder, 23 nodes, 23 flows).
+\begin{tikzpicture}[house]
+\def\tw{33mm}
+\foreach \c/\x/\y/\num/\what/\more in {
+  Purple/0/0/4/stakeholders/{Margaret, the robot,\\the centre,\\emergency services},
+  Purple/40/0/3/commitments/{duty of care,\\privacy promise,\\household chores},
+  Blue/80/0/65/norms/{45 obligations,\\19 prohibitions,\\1 permission},
+  Blue/120/0/4/standing events/{consent refused,\\role assigned,\\authority delegated,\\an activity started},
+  Teal/0/-33/48/event types/{24 of them from\\the system},
+  Green/40/-33/25/capabilities/{7 elevated,\\4 governed},
+  Teal/80/-33/7/stratifications/{12 named\\conditions},
+  Orange/120/-33/1/process/{the escalation ladder,\\23 nodes, 23 flows}} {
+  \node[panel=\c, text width=\tw, minimum height=30mm, anchor=north] (p) at (\x mm, \y mm) {};
+  \node[font=\sffamily\bfseries\Large, text=hs\c, below=1.5mm of p.north] (n) {\num};
+  \node[stepname=\c, below=0mm of n] (w) {\what};
+  \node[detail, below=1mm of w, text width=\tw-2mm] {\more};
+}
+\end{tikzpicture}

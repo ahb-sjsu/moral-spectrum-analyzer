@@ -1,0 +1,55 @@
+% Chapter 9. The escalation ladder as declared in the scene's BPMN process (simplified: the
+% process has 23 nodes and 23 flows; message events and gateways are drawn as labelled flows).
+% Every task in it is still allowed by the norms and passed by the output gate.
+% src: twin/scene/margaret_home.erisml:923-980 (processes.escalation_ladder)
+\begin{tikzpicture}[house,
+  lane/.style={panel=#1, minimum width=163mm, anchor=west, rounded corners=3pt},
+  lname/.style={stepname=#1, rotate=90, anchor=center},
+  task/.style={detail, fill opacity=1, draw=hsGreyLine, line width=0.6pt, font=\sffamily\scriptsize, text=hsText, minimum height=6mm, text width=21mm},
+  ev/.style={step=#1, minimum size=3.6mm},
+  lab/.style={flowlabel, font=\sffamily\scriptsize}]
+% lanes
+\node[lane=Green, minimum height=30mm] (L1) at (0,0) {};
+\node[lane=Purple, minimum height=14mm, below=1.2mm of L1.south west, anchor=north west] (L2) {};
+\node[lane=Blue, minimum height=18mm, below=1.2mm of L2.south west, anchor=north west] (L3) {};
+\node[lane=Orange, minimum height=14mm, below=1.2mm of L3.south west, anchor=north west] (L4) {};
+\node[lname=Green] at ([xshift=4mm]L1.west) {robot};
+\node[lname=Purple] at ([xshift=4mm]L2.west) {Margaret};
+\node[lname=Blue] at ([xshift=4mm]L3.west) {centre};
+\node[lname=Orange] at ([xshift=4mm]L4.west) {EMS};
+% robot lane
+\node[ev=Green] (sc) at (16mm,9mm) {};
+\node[lab, anchor=west] at (19mm,11.5mm) {a corroborated emergency};
+\node[ev=Green] (so) at (16mm,-5mm) {};
+\node[lab, anchor=north, align=center] at (16mm,-7.5mm) {fall, inactivity\\or a request};
+\node[task] (ask) at (40mm,-5mm) {Ask Margaret};
+\node[task] (ref) at (76mm,-5mm) {Refer to the centre};
+\node[task] (gov) at (110mm,-5mm) {Ask the governor};
+\node[task] (ems) at (149mm,-1mm) {Call emergency services};
+\node[ev=Green] (watch) at (130mm,-11mm) {};
+\node[lab, anchor=north] at (130mm,-12.5mm) {keep watching};
+% Margaret lane
+\node[ev=Purple] (fine) at (40mm,0 |- L2.center) {};
+\node[lab, anchor=west] at ([xshift=2mm]fine.east) {she is alright};
+% centre lane
+\node[task] (op) at (76mm,0 |- L3.center) {The operator calls her};
+\node[ev=Blue] (has) at (46mm,0 |- L3.center) {};
+\node[lab, anchor=north, align=center] at ([yshift=-1mm]has.south) {has her, or stood down};
+% EMS lane
+\node[task] (disp) at (76mm,0 |- L4.center) {The dispatcher sends help};
+\node[ev=Orange] (help) at (128mm,0 |- L4.center) {};
+\node[lab, anchor=north west] at ([xshift=0.5mm, yshift=-0.3mm]help.south east) {help on its way};
+% flows
+\draw[flow] (so) -- (ask);
+\draw[flow] (ask) -- node[lab, right]{answers} (fine);
+\draw[flow] (ask) -- node[lab, above]{no answer} (ref);
+\draw[flow] (ref) -- (op);
+\draw[flow] (op) -- (has);
+\draw[flow] (op) -- node[lab, right]{sent EMS} (disp);
+\draw[flow] (op.east) -| node[lab, right, pos=0.75]{unreachable} (gov.south);
+\draw[grant] (gov.east) -- node[lab, above, sloped]{authorized} (ems.west);
+\draw[flow] (gov.south east) -- node[lab, above, pos=0.6]{refused} (watch);
+\draw[grant] (sc) -| node[lab, above, pos=0.25]{elevate} (ems.north);
+\draw[flow] (ems.south) |- (help.east);
+\draw[flow] (disp) -- (help);
+\end{tikzpicture}

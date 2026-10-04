@@ -1,0 +1,45 @@
+% Chapter 8. The four parties of the twin, each played by a language model, and what passes
+% between them. Red edges grant authority and come from authenticated channels. Dashed grey edges
+% carry text that a model reads or writes.
+% src: docs/AUTONOMY_PLAN.md:74-123 (sections 3b)
+% src: twin/brain.py:180-306 (Desk, structural events, MargaretVoice, Brain)
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/Responders.cs:97-205 (centre case, EMS call)
+% src: paper/aies2027/kit/FACTS.md:9-17 (rule and capability counts)
+\begin{tikzpicture}[house,
+  d/.style={detail, text width=#1, anchor=south},
+  lab/.style={flowlabel, sloped, above}]
+\node[panel=Purple, minimum width=30mm, minimum height=34mm, text width=28mm] (M) at (0,0) {};
+\node[panel=Green, minimum width=40mm, minimum height=38mm, text width=38mm] (R) at (52mm,0) {};
+\node[panel=Blue, minimum width=42mm, minimum height=32mm, text width=40mm] (O) at (120mm,25mm) {};
+\node[panel=Orange, minimum width=42mm, minimum height=32mm, text width=40mm] (E) at (120mm,-25mm) {};
+% Margaret's voice
+\node[stepname=Purple] at ([yshift=-5mm]M.north) {Margaret's voice};
+\node[desc, text width=27mm] at ([yshift=-10mm]M.north) {a person, not a\\governed agent};
+\node[d=26mm] at ([yshift=1.5mm]M.south) {in character, from\\her true condition\\silent when she\\cannot speak};
+% the robot
+\node[stepname=Green] at ([yshift=-5mm]R.north) {The robot};
+\node[desc, text width=37mm] at ([yshift=-9.5mm]R.north) {\code{margaret\_home.erisml}};
+\node[d=36mm] at ([yshift=1.5mm]R.south) {65 rules, 25 capabilities\\cloud, on-robot or\\compiled tier\\governor and output gate};
+% the centre's operator
+\node[stepname=Blue] at ([yshift=-5mm]O.north) {Centre operator};
+\node[desc, text width=39mm] at ([yshift=-9.5mm]O.north) {\code{monitoring\_center.erisml}};
+\node[d=38mm] at ([yshift=1.5mm]O.south) {7 rules, 4 capabilities\\telemetry only, no video\\robot's message is a claim};
+% the dispatcher
+\node[stepname=Orange] at ([yshift=-5mm]E.north) {EMS dispatcher};
+\node[desc, text width=39mm] at ([yshift=-9.5mm]E.north) {\code{ems\_dispatch.erisml}};
+\node[d=38mm] at ([yshift=1.5mm]E.south) {9 rules, 5 capabilities\\one unit of each kind\\police only on a crime};
+% robot and Margaret
+\draw[flow] ([yshift=5mm]R.west) -- node[lab]{speech} ([yshift=5mm]M.east);
+\draw[untrusted] ([yshift=-5mm]M.east) -- node[flowlabel, below]{her answer} ([yshift=-5mm]R.west);
+% robot and centre
+\draw[untrusted] ([yshift=17mm]R.east) -- node[lab]{message, a claim} ([yshift=5mm]O.west);
+\draw[flow] ([yshift=10mm]R.east) -- node[lab]{signed telemetry} ([yshift=-4mm]O.west);
+\draw[grant] ([yshift=-13mm]O.west) -- node[flowlabel, sloped, below]{replies, visits, restore} ([yshift=2mm]R.east);
+% robot and dispatcher
+\draw[flow] ([yshift=-6mm]R.east) -- node[lab]{call, on a ruling} ([yshift=12mm]E.west);
+\draw[grant] ([yshift=2mm]E.west) -- node[flowlabel, sloped, below]{units at the door} ([yshift=-15mm]R.east);
+% centre to dispatcher
+\draw[flow] (O.south) -- node[flowlabel, right]{sends EMS} (E.north);
+% Margaret to the operator, through the robot's speaker line
+\draw[untrusted] (M.north) |- node[flowlabel, above, pos=0.75]{her own words on the speaker line, read alone} ([yshift=8mm]O.west);
+\end{tikzpicture}

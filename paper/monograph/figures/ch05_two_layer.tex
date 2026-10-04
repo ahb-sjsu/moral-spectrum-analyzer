@@ -1,0 +1,29 @@
+% Chapter 5. The two-layer split: one descriptive substrate, four theory-bound projections.
+% src: C:\source\erisml-compiler-monitor\docs\architecture.md:46-73, 156-186
+% src: C:\source\erisml-compiler-monitor\src\erisml_compiler\pipeline\orchestrator.py:437-454
+\begin{tikzpicture}[house]
+% the substrate
+\node[panel=Teal, minimum width=128mm, minimum height=27mm] (sub) {};
+\node[stepname=Teal, anchor=north] at ($(sub.north)+(0,-2mm)$) {Moral substrate, a typed MoralGraph};
+\node[desc, anchor=north] at ($(sub.north)+(0,-6.5mm)$) {descriptive, who did what to whom, under what authority and commitments};
+\node[detail, text width=36mm] at ($(sub.south)+(-42mm,6.5mm)$) {6 node kinds\\stakeholder, act, maxim,\\commitment, fact, norm};
+\node[detail, text width=38mm] at ($(sub.south)+(0,6.5mm)$) {11 typed edge kinds\\imposes\_on, consents\_to,\\treats\_as, coerces, \dots};
+\node[detail, text width=36mm] at ($(sub.south)+(42mm,6.5mm)$) {canonical SHA-256\\$h_G$ into the\\audit record};
+% the four projections
+\node[panel=Green, text width=25mm, minimum height=24mm, below=11mm of sub.south west, anchor=north west] (con)
+  {\textcolor{hsGreen}{\scriptsize\textbf{Consequentialist}}\\[1pt]{\scriptsize EM-DAG, tensor,\\DEME verdict, Gini}\\[1pt]{\scriptsize permit, escalate}};
+\node[panel=Blue, text width=25mm, minimum height=24mm, right=2mm of con] (deo)
+  {\textcolor{hsBlue}{\scriptsize\textbf{Deontic}}\\[1pt]{\scriptsize 4 gates, Z3\\universalizability}\\[1pt]{\scriptsize permit, forbid, escalate}};
+\node[panel=Purple, text width=25mm, minimum height=24mm, right=2mm of deo] (vir)
+  {\textcolor{hsPurple}{\scriptsize\textbf{Virtue}}\\[1pt]{\scriptsize 3 findings, character,\\commitments, asymmetry}\\[1pt]{\scriptsize permit, escalate}};
+\node[panel=Orange, text width=25mm, minimum height=24mm, right=2mm of vir] (car)
+  {\textcolor{hsOrange}{\scriptsize\textbf{Care}}\\[1pt]{\scriptsize 3 findings, relations,\\dependence}\\[1pt]{\scriptsize permit, escalate}};
+\foreach \p in {con,deo,vir,car} { \draw[flow] (sub.south -| \p.north) -- (\p.north); }
+% comparison and record
+\node[panel=Amber, text width=44mm, anchor=north] (cmp) at ($(deo.south)!0.5!(vir.south)+(0,-10mm)$)
+  {\textcolor{hsAmber}{\textbf{Compare polarities}}\\[1pt]{\scriptsize more than one non-neutral polarity}};
+\node[panel=Grey, text width=34mm, right=5mm of cmp] (rec)
+  {\textcolor{hsGrey}{\textbf{Disagreement record}}\\[1pt]{\scriptsize all verdicts, no winner,\\choice left to the caller}};
+\foreach \p in {con,deo,vir,car} { \draw[flow] (\p.south) -- (cmp.north); }
+\draw[flow] (cmp) -- (rec);
+\end{tikzpicture}

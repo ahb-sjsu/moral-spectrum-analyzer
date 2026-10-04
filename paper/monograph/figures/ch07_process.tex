@@ -1,0 +1,27 @@
+% Chapter 7. A scene's process: declared, checked, exported to BPMN 2.0, edited, imported under the same
+% checks, and traced against a run.
+% src: erisml-compiler src/erisml_compiler/process/model.py:1-34, 139-251
+% src: erisml-compiler src/erisml_compiler/process/bpmn.py:1-18, 163-320
+% src: erisml-compiler src/erisml_compiler/process/importer.py:1-25, 36-52, 90-99, 255-294
+% src: erisml-compiler src/erisml_compiler/process/trace.py:1-10, 28-75
+\begin{tikzpicture}[house]
+\def\tw{26mm}
+\foreach \i/\c/\x/\name/\what/\det in {
+  1/Purple/0/Declared/{\texttt{extra.processes}}/{lanes, nodes,\\flows with\\condition tokens},
+  2/Blue/33/Checked/{\texttt{model.load}}/{capabilities, types,\\system messages,\\timers from \texttt{extra},\\containment,\\reachability},
+  3/Green/66/Exported/{\texttt{to\_bpmn}}/{BPMN 2.0 with\\diagram interchange\\\texttt{erisml:binding}\\token conditions},
+  4/Grey/99/Edited/{any BPMN modeler}/{bpmn-js,\\Camunda Modeler},
+  5/Orange/132/Imported/{\texttt{import\_bpmn}}/{refuses parallel and\\other gateways,\\scripts, foreign\\expressions, DTDs,\\edited durations}} {
+  \node[panel=\c, text width=\tw, minimum height=41mm, anchor=north] (p\i) at (\x mm, 0) {};
+  \node[step=\c] (s\i) at ([yshift=-5mm]p\i.north) {\i};
+  \node[stepname=\c, below=0.8mm of s\i] (n\i) {\name};
+  \node[desc, below=0.2mm of n\i, text width=\tw] (d\i) {\what};
+  \node[detail, below=1mm of d\i, text width=\tw-2mm] {\det};
+}
+\foreach \a/\b in {1/2, 2/3, 3/4, 4/5} { \draw[flow] (p\a.east) -- (p\b.west); }
+\draw[flow] (p5.north) .. controls +(0,12mm) and +(0,12mm) .. node[flowlabel, above]{the same checks again} (p2.north);
+\node[panel=Teal, text width=60mm, below=8mm of p2, xshift=16mm] (tr) {\textcolor{hsTeal}{\bfseries Trace}\\{\scriptsize\color{hsTextMid}records of a run activate starts, messages and tasks\\gateways, timers and other parties' tasks fill the path\\a view of what happened, it decides nothing}};
+\draw[flow] (p2.south) -- (p2.south |- tr.north);
+\node[panel=Grey, text width=28mm, below=8mm of p5] (run) {\textcolor{hsGrey}{\bfseries agent records}\\{\scriptsize\color{hsTextMid}events stepped,\\actions performed}};
+\draw[flow] (run.west) -- (tr.east);
+\end{tikzpicture}

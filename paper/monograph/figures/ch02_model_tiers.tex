@@ -1,0 +1,27 @@
+% The twin's model tiers (layer L0) and the gates every tier's proposal passes.
+% src: C:\source\gtc-prototype\twin\cascade.py:1-13
+% src: C:\source\gtc-prototype\twin\brain.py:3-22, 541-570 (compiled tier)
+% src: C:\source\gtc-prototype\twin\output_gate.py:1-9
+\begin{tikzpicture}[house,
+  tier/.style={panel=#1, minimum width=31mm, minimum height=27mm},
+  dd/.style={desc, text width=27mm}]
+\node[tier=Blue]  (t1) at (0,0)   {};
+\node[tier=Teal]  (t2) at (4.3,0) {};
+\node[tier=Grey]  (t3) at (8.6,0) {};
+\node[step=Blue] at (0,0.95)   {1};
+\node[step=Teal] at (4.3,0.95) {2};
+\node[step=Grey] at (8.6,0.95) {3};
+\node[stepname=Blue] at (0,0.3)   {Cloud expert};
+\node[stepname=Teal] at (4.3,0.3) {On-robot expert};
+\node[stepname=Grey] at (8.6,0.3) {No model};
+\node[dd] at (0,-0.6)   {hosted on NRP, skipped while the robot's communications are down};
+\node[dd] at (4.3,-0.6) {a local endpoint, when one is configured};
+\node[dd] at (8.6,-0.6) {the highest-priority obligation in force that is allowed};
+\draw[flow] (t1) -- node[above, flowlabel, align=center] {no\\answer} (t2);
+\draw[flow] (t2) -- node[above, flowlabel, align=center] {no\\answer} (t3);
+\node[panel=Red, minimum width=118mm, minimum height=10mm] (gate) at (4.3,-2.5) {};
+\node[stepname=Red, text width=110mm, align=center] at (4.3,-2.5) {every tier proposes from the allowed set, every action passes the DEME output gate, and an elevated request passes the governor};
+\draw[untrusted] (t1.south) -- (t1.south |- gate.north);
+\draw[untrusted] (t2.south) -- (t2.south |- gate.north);
+\draw[flow] (t3.south) -- (t3.south |- gate.north);
+\end{tikzpicture}

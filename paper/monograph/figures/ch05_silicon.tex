@@ -1,0 +1,30 @@
+% Chapter 5. What eris-compile silicon-emit produces and where each file stands.
+% src: C:\source\erisml-compiler-monitor\src\erisml_compiler\cli.py:613-660
+% src: C:\source\erisml-compiler-monitor\src\erisml_compiler\silicon\hls_emit.py:115-419
+% src: C:\source\erisml-compiler-monitor\docs\silicon_target.md:107-117
+\begin{tikzpicture}[house,
+  file/.style={panel=#1, text width=38mm, minimum height=12mm}]
+% sources
+\node[panel=Teal, text width=30mm, minimum height=16mm] (fsmsrc) at (0,6mm)
+  {\textcolor{hsTeal}{\textbf{FSM tables}}\\{\scriptsize three Python\\transition dicts}};
+\node[panel=Teal, text width=30mm, minimum height=16mm] (dagsrc) at (0,-24mm)
+  {\textcolor{hsTeal}{\textbf{EM-DAG profile}}\\{\scriptsize \texttt{default.yaml}\\topological order}};
+% emitter
+\node[panel=Purple, text width=26mm, minimum height=56mm] (emit) at (40mm,-10.5mm)
+  {\textcolor{hsPurple}{\textbf{silicon-emit}}\\[2pt]{\scriptsize fixed point\\\texttt{ap\_fixed<16,4>}\\by default}};
+\node[step=Purple] at (emit.north west) {1};
+% emitted files
+\node[file=Green] (f1) at (84mm,12mm) {\textcolor{hsGreen}{\textbf{erisml\_fsm.cpp}}\\{\scriptsize cases generated from the tables}};
+\node[file=Amber] (f2) at (84mm,-3mm) {\textcolor{hsAmber}{\textbf{erisml\_em\_dag.cpp}}\\{\scriptsize skeleton, every score is 0}};
+\node[file=Amber] (f3) at (84mm,-18mm) {\textcolor{hsAmber}{\textbf{erisml\_top.cpp}}\\{\scriptsize packed verdict set to 0}};
+\node[file=Grey] (f4) at (84mm,-33mm) {\textcolor{hsGrey}{\textbf{Makefile}}\\{\scriptsize \texttt{v++} for the Alveo U55C}};
+\node[step=Green] at (f1.north west) {2};
+\draw[flow] (fsmsrc.east) -- (emit.west |- fsmsrc.east);
+\draw[flow] (dagsrc.east) -- (emit.west |- dagsrc.east);
+\foreach \f in {f1,f2,f3,f4} { \draw[flow] (emit.east |- \f.west) -- (\f.west); }
+% status row
+\node[panel=Grey, text width=118mm, anchor=north west] (status) at (-19mm,-48mm)
+  {\textcolor{hsGrey}{\textbf{Status recorded in the silicon-target document}}\\[2pt]
+   {\scriptsize emitted sources build \quad bit-exact equivalence with Python not done \quad FPGA synthesis blocked \quad formal equivalence future work}};
+\node[step=Grey] at (status.north west) {3};
+\end{tikzpicture}

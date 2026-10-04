@@ -1,0 +1,448 @@
+\chapter{Philosophy Engineering and the seven-layer stack}\label{ch:pe}
+% Author: agent A. Every claim carries a source comment. Paths are local clones.
+% Brochure = C:\Users\abptl\Documents\Philosophy-Engineering-Brochure.pdf (3 pages).
+% Foundation = C:\source\erisml-lib\docs\papers\foundations\Philosophy_Engineering_Foundation_v1.0.tex
+% Textbook = C:\source\erisml-lib\docs\papers\foundations\Philosophy_Engineering_Textbook.tex
+% Compiler architecture = C:\source\erisml-compiler-monitor\docs\architecture.md (v0.9.0)
+
+This chapter places the system of this monograph inside the discipline it was built to exemplify.
+Philosophy Engineering asks that a philosophical commitment become a contract that a machine can
+be checked against. The chapter states the discipline as its foundation document defines it,
+together with the four commitments that govern how its claims are made. It then lays out the
+seven layers of the stack that the discipline's brochure draws, from a base language model at the
+bottom to a hash-chained ledger at the top. For each layer it names the component that implements
+it, first in the ErisML and DEME software and then in the embodied twin of Part~III. The twin adds
+one structure the brochure does not draw. It is a plane of physical evidence beside the stack, and
+it is the only place from which the robot's authority can come.
+
+\section{Philosophy Engineering turns commitments into checkable contracts}\label{sec:pe-def}
+
+The foundation document defines Philosophy Engineering as the systematic discipline of translating
+philosophical commitments into computationally enforceable constraints on autonomous
+systems.\cite{bond2026pefoundation}
+% src: Foundation:98 (abstract, definition)
+It names three kinds of commitment. They are epistemic norms, ethical principles and requirements
+of logical consistency.
+% src: Foundation:98
+The method has four steps.
+% src: Foundation:121-127
+The engineer declares an equivalence relation over representations, which says when two inputs
+describe the same case. The engineer declares invariances, which say what must not matter. The
+engineer implements a canonicalization or quotient mechanism that enforces those invariances.
+Finally the engineer packages the evidence and the transformation trials into audit artifacts
+that a machine can check.
+
+The contracts that result have three properties.
+% src: Foundation:129
+They are falsifiable, because an invariance claim is a test that can fail. They are localizable,
+because a failure yields a minimal witness transformation that isolates its cause. They are
+non-trivial, because a judge that passes every invariance test by returning a constant output is
+detected and rejected.
+
+The document organizes what a practitioner must know into three tiers, on the model of the IEEE
+and ACM Software Engineering Body of Knowledge.
+% src: Foundation:144-148 (SWEBOK model), 202-221 (three tiers)
+The Substrate tier supplies the representational vocabulary. Its six knowledge areas are
+differential geometry, topology and stratified spaces, tensor algebra, group theory, analytical
+mechanics, and statistical mechanics with information theory. The Computation tier turns formal
+structures into executable procedures. Its five areas are algorithm design, formal semantics,
+formal verification, network topology with cybernetics, and AI alignment and safety engineering.
+The Values tier states what a system ought to respect. Its five areas are metaethics, normative
+ethics, epistemology, philosophy of mind, and political and legal philosophy.
+% src: Foundation:238-262 (knowledge area map, sixteen areas)
+The textbook draft keeps the same three tiers and sixteen areas.
+% src: Textbook:394-407
+This monograph draws on four of them most. Stratified spaces and group theory carry
+Chapter~\ref{ch:ge}. Formal verification carries Chapter~10. Safety engineering carries Part~III.
+
+Every formal statement in the discipline carries an epistemic status.
+% src: Foundation:150-160
+A definition is stipulated and is a modeling choice. An axiom is a substantive modeling
+assumption, motivated by evidence and not proved. A theorem holds only under its stated
+assumptions. A principle is a normative commitment raised to a formal constraint. The monograph
+keeps these labels. Chapter~\ref{ch:ge} marks which of its statements are proved, which are
+modeling axioms and which rest on measurement.
+
+\section{Four commitments govern how a claim is made}\label{sec:pe-commitments}
+
+The brochure states the method as four commitments, shown in
+Figure~\ref{fig:pe-commitments}.
+% src: Brochure p2 ("Methodology: Four Commitments of Philosophy Engineering"), p3 items 1-4
+
+\begin{figure}[t]
+\centering
+\input{figures/ch02_four_commitments}
+\caption{The four commitments of Philosophy Engineering, each with an instance from this
+monograph's sources. The fourth commitment closes the loop, since a revision is itself a declared
+modeling choice with a new version.}
+\label{fig:pe-commitments}
+\end{figure}
+
+The first is declared modeling choices. Every bridge from a moral claim to a computational object
+carries its epistemic status as a definition, an assumption, a conditional theorem or an
+empirical result. Proven and posited claims are not confused.
+% src: Brochure p3 item 1
+The Geometric Ethics manuscript applies this commitment in its ledger, which tags each
+definition of its stratification chapter as a formal definition or a modeling axiom.
+% src: C:\source\geometric-ethics-content\source\Geometric-Ethics-v1.24.tex:41955-41967
+
+The second is stated invariances. The transformations under which an evaluation must stay stable
+are meaning-preserving redescriptions. They are written down and tested, not assumed.
+% src: Brochure p3 item 2
+The brochure reports two such tests whose failures surfaced as invariance violations, a
+13.7\,percent shift under euphemistic rewording and a 16.1\,percent shift under dramatizing
+rewording.
+% src: Brochure p3 item 2 ("13.7% euphemistic shift, 16.1% dramatizing shift")
+\TODO{locate the run records behind the brochure's 13.7 and 16.1 percent figures}
+
+The third is extracted predictions. A claim is put in a form that a measurement can fail. The
+brochure lists inter-model reliability, test-retest correlation and drift under reframing and
+back-translation as predictions of this kind. It also notes that its formal gate is checked by an
+SMT solver only relative to a declared formalization.
+% src: Brochure p3 item 3
+\TODO{locate the run records behind the brochure's reliability and drift figures before quoting them}
+The twin of Part~III applies the commitment by sealing its held-out scenarios before the robot
+ran them.
+% src: C:\source\gtc-prototype\paper\aies2027\kit\FACTS.md:22 (held-out 30, sealed 2026-10-01)
+
+The fourth is versioned revision. When a prediction fails, the model is amended and the change is
+recorded. Negative results are reported with the same prominence as positive ones.
+% src: Brochure p3 item 4
+The brochure's example is a conjecture that placed the moral reference point at a Fr\'echet mean
+on a curved manifold and read a schism as a bifurcation beyond the Karcher and Afsari radius. It
+was tested on GlobalOpinionQA and on the Moral Machine data and failed. The diagnostic was kept
+and the conjecture was retired.
+% src: Brochure p3 item 4
+A second example sits in Chapter~\ref{ch:ge}. Earlier versions of Geometric Ethics claimed that
+the Hohfeldian transitions form the dihedral group $D_4$. On 3~October 2026 that claim was retired
+in favour of the Klein four-group $V_4$, with the reasons recorded beside the new statement.
+% src: C:\source\geometric-ethics-content\source\updates\sec8_4_hohfeld_v4.tex:1-3, 39-48
+
+\section{Invariance is the central contract}\label{sec:pe-invariance}
+
+Two principles carry the discipline's technical content. The Epistemic Invariance Principle (EIP)
+governs any judgment. The Bond Invariance Principle (BIP) specializes it to normative judgment.
+% src: Foundation:98 (abstract), C:\source\erisml-lib\docs\papers\foundations\Geometric_Ethics_Foundational_Paper.tex:362 ("The BIP is the EIP specialized to the moral domain")
+
+A domain is a quadruple $\mathcal{D} = (S, X, \rho, Y)$. Here $S$ is the set of world states, $X$
+the set of representations, $\rho \colon S \to X$ the map that encodes a state, and $Y$ the set of
+outputs. A judgment procedure is a map $J \colon X \to \Delta(Y)$ into probability distributions
+over outputs. A declared set $\mathcal{T}$ of transformations of $X$ generates a group
+$\langle \mathcal{T} \rangle$ under composition, inversion and the identity.
+% src: Foundation:399-401 (transformation group), 812-825 (domain, judgment procedure, equivalence)
+The procedure is EIP-compliant with respect to an output equivalence $\approx_Y$ when
+\begin{equation}
+\forall x \in X,\ \forall \tau \in \langle \mathcal{T} \rangle \qquad J(x) \approx_Y J(\tau(x)).
+\label{eq:pe-eip}
+\end{equation}
+% src: Foundation:829-835
+A constant procedure satisfies Equation~\eqref{eq:pe-eip} and is useless. The principle is
+therefore paired with non-degeneracy, which requires two inputs in different equivalence classes
+whose outputs differ.
+% src: Foundation:843-847
+
+BIP separates the facts of a case from the evaluative stance applied to them. A bond extractor
+$E \colon X \to \mathcal{B}$ maps a representation to its relational structure, meaning the
+entities, relations, dependencies and obligations that make up the facts. A lens $L$ holds the
+evaluative parameters. Lenses are versioned, hashed and auditable. The evaluator is
+$\Sigma_L(x) = F_L(E(x))$, and BIP requires
+\begin{equation}
+E(\tau(x)) \approx_{\mathcal{B}} E(x) \;\Longrightarrow\; \Sigma_L(\tau(x)) \approx_Y \Sigma_L(x).
+\label{eq:pe-bip}
+\end{equation}
+% src: Foundation:861-881
+The Accountability Theorem follows directly. If two judgments of a BIP-compliant evaluator
+differ, the difference comes from a change of bond, a change of lens, or both. A challenge to a
+judgment therefore reduces to two questions. One asks whether the facts were extracted
+correctly. The other asks whether the lens is appropriate.
+% src: Foundation:885-906 (theorem, proof, Audit Reducibility corollary)
+
+The foundation document turns EIP into a runtime and offline pipeline of six components, shown in
+Figure~\ref{fig:pe-eip}. It also names three runtime modes. A hard gate rejects an output whose
+invariance fails and asks for clarification or abstains. A soft gate lowers confidence. Self-repair
+re-runs the judgment with canonicalization or constrained decoding and tests it again.
+% src: Foundation:1021-1043
+Each run writes an audit artifact. Its core fields record the lens identifier and hash, the
+declared transformation registry, the canonicalizer version, the trials with their results, the
+witnesses and the uncertainty. For normative domains the artifact adds the bond extractor
+version, a hash of the extracted bond structure and an explicit attribution of any output change
+to the bond, the lens or both.
+% src: Foundation:1046-1077
+
+\begin{figure}[t]
+\centering
+\input{figures/ch02_eip_pipeline}
+\caption{The EIP enforcement pipeline of the foundation document and its three runtime modes.
+The canonicalizer sits before the judge, so a declared invariance is enforced before judgment
+rather than checked after it.}
+\label{fig:pe-eip}
+\end{figure}
+
+\section{A single score discards the structure the stack preserves}\label{sec:pe-scalar}
+
+The brochure opens with the problem the stack answers. Deployed systems collapse a moral
+assessment into one number, its example being ``0.83 safe''. That number discards who is harmed,
+under which maxim, with what consent and against whose rights. It also commits the system to one
+ethical theory while appearing neutral.
+% src: Brochure p1 (30-Second Pitch; The Problem)
+The brochure states the formal core as a scalar collapse theorem. No continuous injection maps
+$[0,1]^d$ into $\mathbb{R}$ when $d \geq 2$. It draws the engineering conclusion that a scalar is
+the last step of a decision and never its substrate.
+% src: Brochure p1 (2-Minute Pitch, last two sentences)
+Chapter~\ref{ch:ge} states the theorem with its proof, together with the information-theoretic
+form of the same result. The brochure grounds the critique in Williams on aggregation and in
+Ross on prima facie duties.
+% src: Brochure p1 ("Williams' critique of aggregation, Ross's prima facie duties")
+\cite{williams1985ethics}\cite{ross1930right}
+
+The brochure presents the stack as layered with preference training and not as its replacement.
+Reinforcement learning from human feedback and constitutional training shape what a model is
+disposed to say.\cite{christiano2017rlhf,bai2022constitutional} ErisML and DEME shape the
+accounting of a decision. The brochure calls the result defence in depth, in which a fast reflex
+veto can run first and the full graph and SMT checks run only on flagged cases of high stakes.
+% src: Brochure p1 (2-Minute Pitch, first sentences), p2 (Layered Safety paragraph)
+
+\section{The seven layers}\label{sec:pe-layers}
+
+The brochure numbers the upper layers in two ways. Its two-minute pitch lists L3 as DEME's graded
+valuation with the per-stakeholder tensor and the tier-0 Geneva veto, L4 as plural ethical
+theories under a worst-off or escalate policy, L5 as human review and L6 as the DecisionProof
+ledger. Its layered-safety figure lists L3 as the Moral Graph IR, L4 as the constitutional veto
+gate, L5 as the nine-dimensional moral vector and L6 as the hash-chained audit ledger. The two
+lists agree on L0 and L2. They name L1 as dispositional shaping and as RLHF shaping, which is
+the same layer.
+% src: Brochure p1 (2-Minute Pitch: L0..L6), p2 (figure legend: L0..L6)
+This monograph follows the figure's numbering. Figure~\ref{fig:pe-stack} draws the seven layers
+with the component of the twin that implements each one.
+
+\begin{figure}[t]
+\centering
+\input{figures/ch02_layer_stack}
+\caption{The seven layers in the brochure figure's numbering, each with the component of the twin
+that implements it, and the evidence plane the twin adds. The models write only events and
+proposals along the dashed edge, and authority enters only along the two red edges from the
+evidence plane.}
+\label{fig:pe-stack}
+\end{figure}
+
+\subsection*{L0, the base language model, is replaceable down to no model at all}
+
+The brochure's L0 is a transformer language model.
+% src: Brochure p2 (figure legend "L0 Base LLM (Transformer)")
+The twin uses its models for two tasks only. A model classifies perception facts into events of
+the home's scene, and a model chooses one action from the set the scene allows.
+% src: C:\source\gtc-prototype\twin\brain.py:3-11
+The robot's models form a cascade of three tiers, shown in Figure~\ref{fig:pe-tiers}.
+% src: C:\source\gtc-prototype\twin\cascade.py:1-13
+The first tier is a cloud model hosted on NRP, skipped while the robot's communications are down.
+The second is an on-robot model behind a local endpoint, when one is configured. When neither
+answers, the brain raises \code{ModelUnavailable} and acts with no model. It then takes the
+highest-priority obligation in force that the scene allows, still through DEME's output gate.
+% src: C:\source\gtc-prototype\twin\cascade.py:6-10; brain.py:541-570 (_compiled_choice, _compiled_decision, _choose)
+The service's default name for the cloud model is \code{gpt-oss}. The fact sheet records the
+on-robot model as a 4-bit GGUF build of gemma-4-26B-A4B served by llama.cpp.
+% src: C:\source\gtc-prototype\twin\service.py:357; C:\source\gtc-prototype\paper\aies2027\kit\FACTS.md:26
+% src: /proc/<brain pid>/environ on Atlas, 2026-10-04: no ERISML_LLM_MODEL set and no --llm-model flag
+The graded runs used that default, the model the NRP endpoint serves under the name \code{gpt-oss}.
+
+\begin{figure}[t]
+\centering
+\input{figures/ch02_model_tiers}
+\caption{The twin's three model tiers. The model tiers write proposals along dashed edges, the
+compiled tier needs no model, and every tier's action reaches the body only through the same
+gates.}
+\label{fig:pe-tiers}
+\end{figure}
+
+\subsection*{L1, preference shaping, is inherited}
+
+The brochure's L1 shapes model behaviour with a preference reward, as RLHF and constitutional
+training do.
+% src: Brochure p2 (figure legend "L1 RLHF Shaping (preference reward, behavior alignment)")
+The twin inherits this layer from the makers of the models it calls. It trains nothing. Its
+Python sources contain no training, fine-tuning or optimizer code.
+% src: grep of C:\source\gtc-prototype\twin\*.py for fine-tuning, LoRA, trainer, optimizer, backward(): no match (2026-10-03)
+Nothing above L1 assumes that this shaping works. The containment of Part~III holds for model
+outputs that are arbitrary.
+% src: C:\source\gtc-prototype\paper\aies2027\kit\OUTLINE.md:57 ("Lean model: model outputs arbitrary")
+
+\subsection*{L2, the compiler, turns a scene into typed structure and refuses to aggregate}
+
+The brochure's L2 is a structure-preserving compiler with six node kinds, eleven edge kinds and a
+canonical SHA-256 hash.
+% src: Brochure p1 (2-Minute Pitch, L2)
+The erisml-compiler implements it. Text or structured input compiles into a typed
+\code{MoralGraph}, a directed acyclic graph whose node kinds are stakeholder, act, maxim,
+commitment, fact and norm. Its eleven edge kinds include \code{performs}, \code{imposes\_on},
+\code{consents\_to}, \code{treats\_as} and \code{would\_violate\_if\_universalised}.
+% src: Compiler architecture:37-44, 75-100
+The canonical hash sorts nodes, edges, labels and payload keys before hashing, so the same content
+yields the same hash whatever order it was inserted in.
+% src: Compiler architecture:106-112
+Four projections read the graph, one each for consequentialist, Kantian, virtue and care
+analysis. When they disagree in polarity the compiler records the disagreement and names no
+winner, since choosing among them is itself a metaethical move.
+% src: Compiler architecture:46-73, 156-186
+Chapter~5 covers the pipeline in full.
+
+In the twin the compiler's role is narrower. The brain loads the home's scene file through the
+compiler's structured loader and runs it in the compiler's scene runtime.
+% src: C:\source\gtc-prototype\twin\brain.py:191-192, 312-313
+The runtime checks every stratification when the scene loads. It raises an error, and the scene
+does not run, if a gate leads into an authority stratum on an event that is not a system event,
+or if a gate leaves an absorbing stratum on an event that is not human oversight.
+% src: C:\source\erisml-compiler-monitor\src\erisml_compiler\runtime\strata.py:105-122
+
+\subsection*{L3, the intermediate representation, is the compiled scene}
+
+The brochure's L3 is the Moral Graph intermediate representation.
+% src: Brochure p2 (figure legend "L3 Moral Graph IR")
+In the twin the representation the models act on is the compiled scene of Margaret's home. At
+the fact sheet's count it holds 65 rules, of which 45 are obligations, 19 prohibitions and one a
+permission. It declares 48 event types, 24 of them system-only, and 25 robot capabilities. It has
+seven stratifications with 26 strata and 34 gates.
+% src: C:\source\gtc-prototype\paper\aies2027\kit\FACTS.md:3-11 (counted at commit 0f3193a)
+The robot's brain sees only this ErisML state. It proposes one action from the set the scene
+allows.
+% src: C:\source\gtc-prototype\twin\output_gate.py:3-4
+Chapters~4 and~7 describe the language and the runtime. Chapter~9 describes the strata of the
+home.
+
+\subsection*{L4, the veto gate, is split across three mechanisms}
+
+The brochure's L4 is a constitutional veto gate that blocks an action that violates a policy
+constraint.
+% src: Brochure p2 (figure legend "L4 Constitutional Veto Gate (policy constraints, blocks unsafe if violation)")
+In DEME the constitutional tier is tier~0. Its Geneva module cannot be disabled and always holds a
+veto.
+% src: C:\source\erisml-lib\src\erisml\ethics\modules\tier0\geneva_em.py:5-10, 27-33
+The twin implements L4 as three separate mechanisms.
+
+The first is the scene's hard prohibitions. Of the scene's 65 rules, 55 are non-defeasible.
+% src: FACTS.md:8
+Geometric Ethics treats such prohibitions as constraint surfaces. No gate leads into them, and in
+the decision complex the penalty for crossing one is infinite.
+% src: C:\source\geometric-ethics-content\source\updates\sec8_10b_executable_strata.tex:37-40
+
+The second is the governor, which rules whenever the robot requests authority for an elevated action. It has four gates, and each of
+the first three can only refuse. Gate one rejects an emergency reading older than its freshness
+bound. Gate two requires at least $W_{\min} = 2$ independent physical sensors to corroborate the
+emergency. Gate three is the analyzer, which may refuse a disproportionate action and can never
+grant one. Gate four elevates only when the first two pass and the third does not refuse.
+% src: C:\source\gtc-prototype\twin\governor.py:1-26, 43, 84-130
+The governor also gates every call the robot places to emergency services. When the scene says
+the monitoring centre cannot be reached, it rules again on a bar of one witness, and that ruling
+authorizes the call and nothing else.
+% src: C:\source\gtc-prototype\twin\brain.py:16-22
+
+The third is the output gate. Every action passes erisml-lib's DEME pipeline before the body acts.
+The pipeline runs a reflex veto layer and then a tactical layer over three modules. They are the
+Geneva module at tier~0, the autonomy and consent module at tier~2, and a tragic-conflict module
+that advises and never vetoes. A vetoed proposal is replaced by DEME's best-ranked allowed action,
+or by idling when DEME vetoes every option. A module that fails vetoes.
+% src: C:\source\gtc-prototype\twin\output_gate.py:1-22, 49-62
+The two-minute pitch puts human review in the stack as its own layer. In the twin a deliberate
+decision that the tragic-conflict module flags goes to the monitoring centre for review.
+% src: Brochure p1 (L5 Human review); output_gate.py:18-21
+
+\subsection*{L5, the moral vector, judges and never grants}
+
+The brochure's L5 is the nine-dimensional moral vector.
+% src: Brochure p2 (figure legend "L5 9-Dimensional Moral Vector")
+DEME's \code{MoralVector} holds one value per dimension, with veto flags and reason codes for the
+audit trail. Chapter~\ref{ch:ge} defines its dimensions.
+% src: C:\source\erisml-lib\src\erisml\ethics\moral_vector.py:45-120
+In the twin two components work at this layer, and neither can grant authority. DEME's modules
+judge each proposal on \code{EthicalFacts} derived from the canonical moral state and from each
+capability's declared ethical profile. No model writes those facts.
+% src: C:\source\gtc-prototype\twin\output_gate.py:11-15
+The governor's analyzer scores the situation as the canonical events state it, never the raw
+perception facts. It refuses when a hard channel fires, when it reads the action as a net
+violation, or when the satisfaction over the axes that carry signal falls below $-0.20$.
+% src: C:\source\gtc-prototype\twin\brain.py:572-576 (_canonical_situation); governor.py:45, 116-127
+
+\subsection*{L6, the ledger, chains every decision to the one before}
+
+The brochure's L6 is a hash-chained audit ledger that is append-only and tamper-evident.
+% src: Brochure p2 (figure legend "L6 Hash-Chained Audit Ledger (immutable, tamper-evident)")
+DEME's \code{DecisionProof} records the hash of the canonical input facts, the hash of the
+governance profile, the active modules, each layer's output and each module's judgement, and it
+links to the proof before it.
+% src: C:\source\erisml-lib\src\erisml\ethics\decision_proof.py:126-175, 386-410
+The compiler's audit record anchors the graph hash and the hash of the whole intermediate
+representation, so two compiles of the same case give identical records.
+% src: Compiler architecture:208-226
+In the twin each decision cycle is one record of the governor service's hash chain. The record
+holds the facts, the events, the rejected events, the moral state, the proposal, the ruling and
+the action.
+% src: C:\source\gtc-prototype\twin\brain.py:12-13
+Each record carries the hash of the record before it and the SHA-256 of its own canonical JSON. A
+third party can re-verify the chain link by link.
+% src: C:\source\gtc-prototype\twin\service.py:6-7, 49-83
+The hash of every DEME DecisionProof goes into the decision record.
+% src: C:\source\gtc-prototype\twin\output_gate.py:8-9
+
+\section{The twin adds an evidence plane beside the stack}\label{sec:pe-evidence}
+
+The brochure's stack has no layer for physical evidence. A model in a robot reads text from
+television, the network and strangers. The twin therefore keeps the source of authority out of
+every layer a model writes to. It places that source in a plane of its own, drawn at the right of
+Figure~\ref{fig:pe-stack}. The plane has five parts.
+% src: C:\source\gtc-prototype\paper\aies2027\kit\OUTLINE.md:12-13 (setting; authority only from signed sensor witnesses and authenticated channels)
+
+\paragraph{Attested sensors.} Each sensor reading must carry its device's attestation, checked by
+the compiler's \code{check\_attestation}. The signature is an HMAC over the payload, and a
+reading older than 30 seconds fails.
+% src: C:\source\gtc-prototype\twin\brain.py:45, 67-68, 74-90, 115-129
+A reading that is not attested is treated as low confidence, so it can never count as a witness.
+% src: brain.py:14-15
+A device whose attestation fails its integrity is recorded as compromised. That record is the
+brain's own measurement, a system event that no model writes, and it moves the device into an
+absorbing stratum that only the centre's oversight leaves.
+% src: brain.py:83-90, 494-499; C:\source\gtc-prototype\twin\scene\margaret_home.erisml:909-922
+
+\paragraph{Witness bars.} Each governed action names how many independent attested witnesses it
+needs. The bar is two to elevate, three for physical restraint, and one for an emergency call when
+the centre cannot be reached.
+% src: FACTS.md:17; brain.py:45-47, 351-359; governor.py:43; margaret_home.erisml:1168-1170
+
+\paragraph{Reflex measurement.} A reflex runs on each perception update with no model. When a
+contact on Margaret is measured, the reflex grades its severity from force bands in newtons. It
+records the result as a system event, \code{attack\_measured} for a person, and that event is the
+severity that can permit force.
+% src: brain.py:427-460
+
+\paragraph{System events.} The scene marks an event type as a system event when only the system
+may write it. Of the scene's 48 event types, 24 are system-only.
+% src: FACTS.md:9; margaret_home.erisml:1119-1148 (source: system)
+The loader check of L2 guarantees that only these events can move a stratification into an
+authority stratum.
+% src: strata.py:113-117
+
+\paragraph{Rights lapse.} A right granted on evidence lasts only while the evidence lasts. The
+governor recounts the fresh attested witnesses on every cycle. When they stay below the bar of
+the ruling in force for the scene's 60-second window, it records the lapse, and every right the
+ruling granted reverts.
+% src: brain.py:388-425; margaret_home.erisml:805-809; FACTS.md:19
+Margaret's refusals lapse on the same principle. A refusal stops binding when she becomes
+unresponsive or misses a check-in, and it binds again only after she has answered one.
+% src: margaret_home.erisml:1003-1020; output_gate.py:65-80
+Geometric Ethics states this rule as its Reversion axiom, treated in Chapter~\ref{ch:ge}.
+% src: C:\source\geometric-ethics-content\source\updates\sec8_10b_executable_strata.tex:68-78
+
+The evidence plane feeds the stack at two points only. System events enter L3 through the gates of
+authority strata, and attested witnesses enter L4 through the governor. Chapters~9 and~10 show the
+mechanism and the proof that these two edges are the only ones that grant.
+
+\section{What the stack does not claim}\label{sec:pe-limits}
+
+The compiler's architecture document states four limits, and they apply to the stack as a whole.
+% src: Compiler architecture:426-447
+The stack is not metaethically neutral, because the categories it extracts are themselves
+choices. It is not a moral authority, because it reports what several ethical theories find and
+refuses to choose when they disagree. Its Kantian, virtue and care analysers began as heuristic
+first versions, and the document lists what production versions would need. It does not replace
+human judgment. The out-of-band I-EIP monitor has one sanctioned output on failure, which is a
+request for human review, and it never overrules a verdict.
+% src: Compiler architecture:1-5 (v0.9.0 adds production Kantian and virtue analysers), 312-333, 437-447; Brochure p3 ("Out-of-band I-EIP monitor only sanctioned failure output: requires human review")
+Chapter~12 reports what that monitor measured in the twin.

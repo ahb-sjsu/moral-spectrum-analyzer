@@ -1,0 +1,38 @@
+% Chapter 11. The protocol from writing to grading.
+% src: docs/AUTONOMY_PLAN.md:3-4,57,69,137,181,216,264-296; docs/holdout/MANIFEST-v1.json
+\begin{tikzpicture}[house,
+  p/.style={minimum width=23mm, minimum height=44mm, text width=21mm, anchor=north},
+  d/.style={detail, text width=19mm}]
+% six panels
+\foreach \i/\col/\x in {1/Purple/0, 2/Blue/25.5, 3/Teal/51, 4/Green/76.5, 5/Amber/102, 6/Orange/127.5}{
+  \node[panel=\col, p] (P\i) at (\x mm,0) {};
+  \node[step=\col] at ([yshift=-5mm]P\i.north) {\i};
+}
+\node[stepname=Purple, below=10mm of P1.north] (n1) {Protocol};
+\node[desc, below=0mm of n1, text width=21mm] (e1) {classes, metrics\\two sets};
+\node[d, below=1.5mm of e1] {2026-10-01\\before the robot\\was built};
+
+\node[stepname=Blue, below=10mm of P2.north] (n2) {Seal};
+\node[desc, below=0mm of n2, text width=21mm] (e2) {30 held-out\\scenarios};
+\node[d, below=1.5mm of e2] {separate agent\\file outside\\repositories\\SHA-256 manifest};
+
+\node[stepname=Teal, below=10mm of P3.north] (n3) {Amend};
+\node[desc, below=0mm of n3, text width=21mm] (e3) {sections\\3a to 3e};
+\node[d, below=1.5mm of e3] {2026-10-01/02\\each dated\\before unsealing};
+
+\node[stepname=Green, below=10mm of P4.north] (n4) {Develop};
+\node[desc, below=0mm of n4, text width=21mm] (e4) {43 open\\scenarios};
+\node[d, below=1.5mm of e4] {runs dev8r\\to dev14\\calibration};
+
+\node[stepname=Amber, below=10mm of P5.north] (n5) {Freeze};
+\node[desc, below=0mm of n5, text width=21mm] (e5) {one commit};
+\node[d, below=1.5mm of e5] {code, model\\prompts\\thresholds};
+
+\node[stepname=Orange, below=10mm of P6.north] (n6) {Unseal};
+\node[desc, below=0mm of n6, text width=21mm] (e6) {grade once};
+\node[d, below=1.5mm of e6] {frozen grader\\all 30 listed\\good or bad};
+
+\foreach \a/\b in {1/2, 2/3, 3/4, 4/5, 5/6}{
+  \draw[flow] ([yshift=-22mm]P\a.north east) -- ([yshift=-22mm]P\b.north west);
+}
+\end{tikzpicture}

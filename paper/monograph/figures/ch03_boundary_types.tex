@@ -1,0 +1,34 @@
+% The four boundary types of Geometric Ethics section 8.3 and how the runtime realizes each.
+% src: C:\source\geometric-ethics-content\source\Geometric-Ethics-v1.24.tex:10849-11070 (Defs 8.4-8.7)
+% src: same file :12042-12055 (penalties beta_k by type, remark after Def 8.13)
+% src: C:\source\geometric-ethics-content\source\updates\sec8_10b_executable_strata.tex:18-41
+% src: C:\source\erisml-compiler-monitor\src\erisml_compiler\runtime\strata.py:43 (BOUNDARIES)
+\begin{tikzpicture}[house,
+  card/.style={panel=#1, minimum width=28mm, minimum height=60mm},
+  dd/.style={desc, text width=25mm},
+  rt/.style={detail, text width=24mm, minimum height=14mm}]
+\node[card=Blue]   at (0,0)    {};
+\node[card=Purple] at (3.15,0) {};
+\node[card=Red]    at (6.3,0)  {};
+\node[card=Grey]   at (9.45,0) {};
+\node[step=Blue]   at (0,2.5)    {I};
+\node[step=Purple] at (3.15,2.5) {II};
+\node[step=Red]    at (6.3,2.5)  {III};
+\node[step=Grey]   at (9.45,2.5) {IV};
+\node[stepname=Blue]   at (0,1.85)    {Threshold};
+\node[stepname=Purple] at (3.15,1.85) {Phase transition};
+\node[stepname=Red]    at (6.3,1.85)  {Absorbing stratum};
+\node[stepname=Grey]   at (9.45,1.85) {Constraint surface};
+\node[dd] at (0,0.95)    {a level set $\phi^{-1}(0)$ where $S$ or $g$ may jump};
+\node[dd] at (3.15,0.95) {the metric changes in rank or signature};
+\node[dd] at (6.3,0.95)  {near it $S$ depends only on the retraction to the stratum};
+\node[dd] at (9.45,0.95) {$S=-\infty$ on a closed forbidden set};
+\node[dd] at (0,0.0)    {penalty $\beta$ finite};
+\node[dd] at (3.15,0.0) {penalty $\beta$ large and finite};
+\node[dd] at (6.3,0.0)  {penalty $\beta=\infty$};
+\node[dd] at (9.45,0.0) {penalty $\beta=\infty$, no gate leads there};
+\node[rt] at (0,-1.6)    {runtime gate marked \texttt{threshold}};
+\node[rt] at (3.15,-1.6) {runtime gate marked \texttt{phase}};
+\node[rt] at (6.3,-1.6)  {left only on a human-oversight event};
+\node[rt] at (9.45,-1.6) {non-defeasible prohibition in the scene};
+\end{tikzpicture}

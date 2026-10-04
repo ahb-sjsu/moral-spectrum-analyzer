@@ -1,0 +1,33 @@
+% Chapter 11. The six calibration findings, harness first.
+% src: paper/aies2027/kit/CALIBRATION.md:6-13; paper/aies2027/kit/FACTS.md:23-25; git show 98d4a9a
+\begin{tikzpicture}[house,
+  p/.style={minimum width=48mm, minimum height=41mm, text width=46mm, anchor=north},
+  d/.style={detail, text width=43mm, align=left},
+  w/.style={font=\sffamily\scriptsize\bfseries, text=hsTextLight}]
+\newcommand{\finding}[8]{%
+  % #1 node, #2 colour, #3 x, #4 y, #5 number, #6 name, #7 evidence, #8 fix and where
+  \node[panel=#2, p] (#1) at (#3,#4) {};
+  \node[step=#2] (#1s) at ([yshift=-5mm]#1.north) {#5};
+  \node[stepname=#2, below=0.5mm of #1s, text width=46mm, align=center] (#1n) {#6};
+  \node[d, below=1mm of #1n] (#1e) {#7};
+  \node[d, below=1mm of #1e] {#8};
+}
+\finding{F1}{Orange}{0mm}{0mm}{1}{Lost answers, our test harness}
+  {44 of 63 unanswered check-ins followed her answer. Each sent the robot to the centre.}
+  {Count her words from before the question is spoken.\\[1pt] gtc 98d4a9a}
+\finding{F2}{Blue}{51mm}{0mm}{2}{Readings taken as strangers}
+  {30 readings tagged \texttt{unknown\_person}\\71 tagged \texttt{unknown}. A referral for an intruder who was not there.}
+  {An event type fixes its actor.\\[1pt] erisml-compiler \#37}
+\finding{F3}{Purple}{102mm}{0mm}{3}{A refusal read again}
+  {d27. Words said before she collapsed were read after it. 9 vetoes of an authorized call.}
+  {A lapsed refusal re-arms only after she answers.\\[1pt] output gate}
+\finding{F4}{Teal}{0mm}{-45mm}{4}{Unranked duties}
+  {d24. A fraud referral lost among routine check-ins.}
+  {Obligations reach the chooser by urgency.\\[1pt] erisml-compiler \#38}
+\finding{F5}{Green}{51mm}{-45mm}{5}{Duties never discharged}
+  {A call still owed after it was made, once the emergency was a stratum.}
+  {A stratum counts after a discharge only if entered again.\\[1pt] erisml-compiler \#36}
+\finding{F6}{Amber}{102mm}{-45mm}{6}{A refusal ended the emergency}
+  {A refused request for one action dropped the emergency-call duty and the evidence watch.}
+  {The situation moves only on grants and lapses.\\[1pt] situation stratum, brain}
+\end{tikzpicture}

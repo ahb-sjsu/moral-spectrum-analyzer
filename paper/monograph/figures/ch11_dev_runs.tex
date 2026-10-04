@@ -1,0 +1,31 @@
+% Chapter 11. Class-correct scenarios per development run.
+% src: /archive/unity/out/dev8r/grade.json (graded 2026-10-03/04)
+% src: /archive/unity/out/dev9r/grade.json (graded 2026-10-03/04)
+% src: /archive/unity/out/dev11a/grade.json (graded 2026-10-03/04)
+% src: /archive/unity/out/dev11b/grade.json (graded 2026-10-03/04)
+% src: /archive/unity/out/dev12a/grade.json (graded 2026-10-03/04)
+% dev13 and dev14 are RESULT slots and are not plotted.
+\begin{tikzpicture}[house]
+\begin{axis}[
+  ybar, bar width=10mm, width=125mm, height=62mm,
+  ymin=0, ymax=1.18, ytick={0,0.25,0.5,0.75,1},
+  ylabel={fraction class-correct}, ylabel style={text=hsTextMid},
+  symbolic x coords={dev8r,dev9r,dev11a,dev11b,dev12a},
+  xtick=data, enlarge x limits=0.14,
+  axis lines*=left, axis line style={draw=hsGreyLine},
+  tick style={draw=hsGreyLine}, tick label style={font=\sffamily\scriptsize, text=hsTextMid},
+  ymajorgrids, grid style={hsGreyFill},
+  point meta=explicit symbolic, nodes near coords,
+  nodes near coords style={font=\sffamily\scriptsize\bfseries, text=hsBlue},
+]
+\addplot[draw=hsBlueLine, fill=hsBlueFill, line width=0.9pt] coordinates {
+  (dev8r,0.650) [13/20]
+  (dev9r,0.625) [10/16]
+  (dev11a,0.667) [14/21]
+  (dev11b,0.667) [10/15]
+  (dev12a,0.762) [16/21]
+};
+\node[panel=Orange, anchor=north, font=\sffamily\scriptsize, text=hsOrange] at (rel axis cs:0.5,0.99)
+  {harness confounded in every run shown, fixed in gtc 98d4a9a before dev13};
+\end{axis}
+\end{tikzpicture}

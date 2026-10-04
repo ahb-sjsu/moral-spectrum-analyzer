@@ -1,0 +1,146 @@
+\chapter{Related Work}
+\label{ch:related}
+% src: paper/aies2027/prior_art.md (survey compiled 2026-10-03; records checked against Crossref,
+% arXiv and publisher pages). Keys refer to references.bib.
+
+The robot combines ideas from five lines of work. Each solved part of the problem first, and this
+chapter says which part, how the robot differs and what it does not claim. Figure~\ref{fig:trust}
+arranges the lines by where they place the trust that lets an action through.
+
+\begin{figure}[t]
+\centering
+\resizebox{\textwidth}{!}{\input{figures/ch13_trust_roots}}
+\caption{Where each line of work places the trust that lets an action through. Moving right, less
+of that trust passes through a language model. The robot puts it in a quorum of signed physical
+witnesses that lapses when they do.}
+\label{fig:trust}
+\end{figure}
+
+\section{Ethical governors}
+
+Arkin's ethical governor sits between a robot's behavioural controller and its actuators. It checks
+each proposed lethal action against constraints drawn from the laws of war and rules of
+engagement, suppresses what is impermissible and requires obligations to hold before force is
+allowed~\cite{arkin2008governing,arkin2009governing,arkin2009ethicalgovernor,arkin2012moral}.
+Shim, Arkin and Pettinatti carried the architecture into care, with a robot that mediates between
+people with Parkinson's disease and their caregivers and intervenes to protect both parties'
+dignity~\cite{shim2017intervening}. Bremner and colleagues joined Winfield's consequence engine to
+formal verification on a NAO robot and verified the governor~\cite{bremner2019proactive}.
+
+The robot's governor descends from this architecture, and the name is Arkin's. It differs in what
+it trusts. Arkin's constraints are evaluated over the robot's beliefs and do not ask where those
+beliefs came from. The robot's governor asks only that question. Its inputs are signed readings and
+authenticated messages, and it ignores what any model believes. Two critiques of the governor bear
+directly on this design. Sharkey argued that robots cannot reliably make the perceptual
+discriminations the rules presuppose~\cite{sharkey2010sayingno}. The robot does not ask a
+perceptual classifier to make them for authority at all. Matthias argued that legal codes are not
+morality and that a governor cannot dissent~\cite{matthias2011governor}. The same holds for the
+robot's hard prohibitions and DEME's rights module, which encode a written code rather than a moral
+judgement.
+
+\section{Machine ethics with formal guarantees}
+
+Bringsjord, Arkoudas and Bello proposed that a robot act only when a proof that the action is
+permissible exists in a deontic logic~\cite{bringsjord2006toward}. Dennis, Fisher, Slavkovik and
+Webster verified by model checking that an agent's ethical layer always selects the least
+unethical plan~\cite{dennis2016formal,dennis2016practical}. Anderson, Anderson and Berenz built an
+eldercare robot that weighs autonomy against harm and decides when to notify an overseer, with a
+principle learned from cases judged by ethicists~\cite{anderson2019eldercare}. It is the closest
+precedent for Margaret's scenarios. Tolmeijer and colleagues survey such implementations, and the
+robot belongs to their top-down, rule-based family~\cite{tolmeijer2021implementations}.
+
+The robot's Lean proofs say something narrower than these works. They do not prove that its choices
+are ethical. They prove that no event a model writes can reach an authority-granting stratum or a
+governed permission, for any set of gates that passes the loader. Winfield and colleagues offer the
+main alternative to a rule-based design, a consequence engine that simulates candidate actions and
+filters them by predicted outcome~\cite{winfield2014towards,vanderelst2018architecture}. The
+robot's Unity simulation is its test environment, not an internal model it consults. Vanderelst
+and Winfield also showed that the same ethical architecture becomes competitive or aggressive when
+its evaluation function is altered~\cite{vanderelst2018darkside}. That result is the strongest
+argument for keeping what authorizes action out of any component a model can influence. The
+robot's hash-chained log of readings, rulings and stratum crossings is an ethical black box in the
+sense of Winfield and Jirotka~\cite{winfield2017ebb,winfield2022ebbstandard,winfield2018governance}.
+
+\section{Norms for robots}
+
+Normative multi-agent systems give obligations, permissions, violations and sanctions an
+operational meaning~\cite{boella2006normative}. The SLEEC line of work defines a language of
+social, legal, ethical, empathetic and cultural rules of the form ``when an event occurs, respond,
+unless a defeater holds'', checks rule sets for conflicts and redundancy and verifies them against
+robot models, with assistive and care robots as running
+examples~\cite{getiryaman2023sleec,getiryaman2024sleectoolkit,getiryaman2025sleecjss,ribeiro2026sleecframework}.
+Feng and colleagues used language models to help write such requirements~\cite{feng2024normative}.
+De Sanctis and colleagues enforce SLEEC rules at run time with abstract state machines on an
+assistive robot~\cite{desanctis2026sleecruntime}. Joshi and colleagues govern the tool calls of
+language-model agents with a deontic policy language~\cite{joshi2026deontic}.
+
+ErisML's norms are close kin of these. The robot does not claim the norm language as new. What
+ErisML adds for the robot is the distinction between events a model may write and events only the
+system may write, strata whose authority-granting gates are checked against that distinction when
+the model loads, and obligations ranked by urgency for a model that chooses among them.
+
+\section{Shields and run-time verification}
+
+A shield synthesized from a temporal-logic specification sits before or after a learning agent and
+removes unsafe actions, with a guarantee relative to the specification and an abstraction of the
+environment~\cite{bloem2015shield,alshiekh2018shielding}. Run-time monitors generated from formal
+specifications can intercept and block a robot's messages~\cite{ferrando2020rosmonitoring}, and
+Luckcuck and colleagues survey formal methods for autonomous robots~\cite{luckcuck2019formal}.
+Dalrymple and colleagues frame safe AI as a world model, a specification and a verifier with a
+gatekeeper~\cite{dalrymple2024guaranteed}.
+
+The robot uses both shield positions. Letting the model choose only among allowed actions is a
+preemptive shield, and the DEME output gate is a post-posed one. Its guarantee differs in kind. It
+is not that the chosen action is safe in the state space. It is that no input a model wrote can
+make a governed action allowed.
+
+\section{Language models in agents and robots}
+
+Programmable rails~\cite{rebedea2023nemo}, safety classifiers~\cite{inan2023llamaguard} and
+training against a written constitution~\cite{bai2022constitutional} put the safety judgement in a
+model. The robot uses such models only where a mistake cannot grant authority. SayCan lets a model
+choose among skills scored by learned affordances~\cite{ahn2022saycan}, a precedent for choosing
+within a filtered set. Robey and colleagues jailbroke robots driven by language models into
+harmful physical actions~\cite{robey2025jailbreaking}, and Nakao and Takemoto found that language
+models controlling a simulated health-attendant robot complied with a large share of harmful
+instructions~\cite{nakao2026healthattendant}. These results are the threat model.
+
+Two responses come closest to the robot. Safety Chip translates natural-language constraints into
+temporal logic and blocks plans that violate them~\cite{yang2024safetychip}. RoboGuard uses a
+model shielded from user prompts to ground safety rules for the current scene and then synthesizes
+a controller that enforces them~\cite{ravichandran2026roboguard}. In RoboGuard a model still sits
+on the trust path, as the root of trust that writes the specification. In the robot no model
+output reaches the authority path.
+
+For software agents, Willison's dual-model pattern keeps a privileged model away from untrusted
+text and a quarantined model away from tools~\cite{willison2023dualllm}. CaMeL tracks the
+provenance and capabilities of every value from the user's trusted query and blocks flows that
+violate policy, so that security holds even if the model is compromised~\cite{debenedetti2026camel}.
+Beurer-Kellner and colleagues catalogue such patterns, among them the action selector the robot's
+chooser follows~\cite{beurerkellner2025patterns}. Progent and AgentSpec give deterministic
+privilege policies and rule languages for agent actions~\cite{shi2025progent,wang2026agentspec}.
+The principle that a model cannot grant itself authority because provenance is checked outside it
+is CaMeL's. The robot transfers it to an embodied setting where the trusted root is attested
+physical sensing rather than a user's request, where authority is graded by strata rather than
+granted or refused once, and where it lapses with its evidence.
+
+\section{Care-robot ethics}
+
+Sharkey and Sharkey named the central risks of robots in elder care, among them loss of privacy and
+loss of liberty through restraint~\cite{sharkey2012granny}. The robot's privacy metrics and its
+three-witness bar for restraint answer those two. Sparrow and Sparrow argued that robots cannot
+give real care~\cite{sparrow2006hands}. The robot addresses authority and harm, not care in their
+sense. Vandemeulebroucke and colleagues review the arguments on autonomy, consent and dignity in
+care robotics~\cite{vandemeulebroucke2018care}. We found no robotics work that treats a care robot
+as a mandatory reporter of suspected crime against the person it cares for, though our search was
+not systematic.
+
+\section{Trusted sensing and process models}
+
+Liu and colleagues proposed trusted sensors whose readings are signed so that a remote party can
+check their authenticity~\cite{liu2012trustedsensors}. The robot's attestation follows that idea and
+adds a quorum, freshness and replay rules tied to authority, and quarantine of a device whose
+signature fails. A wider survey of remote attestation would serve a security reader better than
+this chapter does. BPMN has been used to model and run multi-robot missions~\cite{corradini2023bpmn}.
+The robot uses BPMN~2.0~\cite{omg2011bpmn} only to show its escalation ladder and to import edits to
+it under the same checks, and claims nothing for it as research.

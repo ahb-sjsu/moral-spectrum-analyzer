@@ -1,0 +1,814 @@
+% Chapter 6. DEME, the ethics engine. Author: agent D.
+% Source conventions for the % src: comments below.
+%   lib: = C:\source\erisml-lib at origin/main 2d584e8 (2026-10-03), package erisml-lib 3.1.0.
+%          The local checkout of main is 7 commits behind origin/main. The tactical-layer
+%          fail_closed option and em_failures record exist only from 0da0b84 (PR #145) on, and
+%          the TragicConflictEM rounding from 8af9411 (PR #146) on. Line numbers are origin/main.
+%   gtc: = C:\source\gtc-prototype (working tree, 2026-10-03).
+\chapter{DEME, the ethics engine}\label{ch:deme}
+
+DEME is the part of the \erisml{} library that judges a set of candidate actions and says which
+of them may be taken. It reads a structured description of each candidate, runs a set of ethics
+modules over it, removes the candidates that any entitled module forbids, ranks the rest and
+writes a hashed record of the whole decision. In the home-care twin of Part~III it is the last
+check before the robot's body moves. This chapter describes the engine as the code defines it,
+gives the arithmetic of each step, lists every module that exists, and then shows how the twin
+wires the engine into its output gate. The chapter ends with a plain account of which parts are
+deterministic and which parts rest on a model.
+% src: lib:src/erisml/ethics/deme.py:1-3 (name "Democratic Ethics Module Engine")
+% src: lib:src/erisml/ethics/layers/pipeline.py:132-322 (DEMEPipeline.decide)
+% src: gtc:twin/output_gate.py:1-23
+
+\section{The engine is a three-layer pipeline over structured facts}\label{sec:deme-overview}
+
+The package docstring expands the name as Democratic Ethics Module Engine. The file
+\code{deme.py} holds a small class \code{DEME} whose \code{evaluate} method applies only the
+deontic maxim gate of Section~\ref{sec:deme-deontic} and otherwise returns \code{ALLOW}. Its own
+docstring points to the real engine, the class \code{DEMEPipeline} in
+\code{ethics/layers/pipeline.py}. The rest of this chapter is about that class and the parts it
+uses.
+% src: lib:src/erisml/ethics/deme.py:16-49
+
+The pipeline has three layers. The reflex layer runs cheap veto checks on each option alone. Its
+module docstring sets a target of under 100 microseconds and says that a production deployment
+would run it in hardware. The tactical layer runs every ethics module on each option that
+survived the reflex layer and combines their outputs into one moral vector per option. Its
+target is 10 to 100 milliseconds. The strategic layer works over many decisions. In the pipeline
+it only stores each finished decision proof in a history list for later analysis.
+Figure~\ref{fig:deme-pipeline} shows the six steps of one decision, including the step the twin
+adds after the pipeline returns.
+% src: lib:src/erisml/ethics/layers/__init__.py:5-15
+% src: lib:src/erisml/ethics/layers/reflex.py:5-12
+% src: lib:src/erisml/ethics/layers/tactical.py:5-12
+% src: lib:src/erisml/ethics/layers/strategic.py:389-396 (record_decision appends the proof)
+
+\begin{figure}[t]
+\centering
+\input{figures/ch06_pipeline}
+\caption{One DEME decision in six steps. Steps one to four and the proof run inside
+\code{DEMEPipeline.decide}, and step five is the twin's output gate acting on the result. Every
+step after the first can only remove or reorder options, so no step adds an option the caller
+did not offer.}
+\label{fig:deme-pipeline}
+\end{figure}
+
+The pipeline never sees raw sensor data, text or a model's output. Its only input is a list of
+\code{EthicalFacts} records, one per candidate option. The base module protocol states the
+contract directly. Ethics modules consume \code{EthicalFacts} and emit judgements, and they
+should reason only over those facts, without access to raw domain data, sensors or models. The
+facts are therefore the boundary of the engine. Whatever produced them carries the
+responsibility for their truth, and Section~\ref{sec:deme-twin} shows how the twin produces
+them.
+% src: lib:src/erisml/ethics/modules/base.py:1-9, 26-36
+
+\section{EthicalFacts describe one option in fixed blocks}\label{sec:deme-facts}
+
+An \code{EthicalFacts} record names one option by \code{option\_id} and describes it in typed
+blocks. Table~\ref{tab:deme-facts} lists the blocks the modules read. Every block except the
+option identifier is optional and defaults to \code{None}. Inside each block every field has a
+default. Two defaults matter for safety. The field \code{has\_valid\_consent} defaults to true,
+and \code{violates\_rights} defaults to false. A producer that omits a field therefore asserts
+the permissive value.
+% src: lib:src/erisml/ethics/facts.py:36-99 (blocks and defaults), 166-185 (EthicalFacts)
+
+\begin{table}[t]
+\centering
+\footnotesize
+\begin{tabularx}{\linewidth}{l X}
+\toprule
+Block & Fields read by the modules in this chapter \\
+\midrule
+\code{consequences} & \code{expected\_benefit}, \code{expected\_harm}, \code{urgency}, \code{affected\_count} \\
+\code{rights\_and\_duties} & \code{violates\_rights}, \code{has\_valid\_consent}, \code{violates\_explicit\_rule}, \code{role\_duty\_conflict} \\
+\code{justice\_and\_fairness} & \code{discriminates\_on\_protected\_attr}, \code{exploits\_vulnerable\_population}, \code{exacerbates\_power\_imbalance}, \code{prioritizes\_most\_disadvantaged} \\
+\code{autonomy\_and\_agency} & \code{has\_meaningful\_choice}, \code{coercion\_or\_undue\_influence}, \code{manipulative\_design\_present}, \code{can\_withdraw\_without\_penalty} \\
+\code{privacy\_and\_data} & \code{privacy\_invasion\_level}, \code{secondary\_use\_without\_consent}, \code{data\_minimization\_respected} \\
+\code{societal\_and\_environmental} & \code{environmental\_harm}, \code{long\_term\_societal\_risk}, \code{burden\_on\_vulnerable\_groups} \\
+\code{virtue\_and\_care} & \code{expresses\_compassion}, \code{respects\_person\_as\_end}, \code{betrays\_trust} \\
+\code{procedural\_and\_legitimacy} & \code{followed\_approved\_procedure}, \code{stakeholders\_consulted}, \code{decision\_explainable\_to\_public} \\
+\code{epistemic\_status} & \code{uncertainty\_level}, \code{evidence\_quality}, \code{novel\_situation\_flag} \\
+\code{maxim} & \code{action\_kind}, \code{polarity} \\
+\bottomrule
+\end{tabularx}
+\caption{The blocks of an \code{EthicalFacts} record and the fields the modules and the vector
+mapping read. The record also carries free \code{metadata}, \code{tags} and \code{extra}
+dictionaries that no module in this chapter reads.}
+\label{tab:deme-facts}
+\end{table}
+% src: lib:src/erisml/ethics/facts.py:9-185
+% src: lib:src/erisml/ethics/moral_vector.py:399-532 (fields read by from_ethical_facts)
+
+The last block, \code{Maxim}, mirrors a structure that the \erisml{} compiler extracts from text.
+It holds an action kind and a polarity, affirmed or negated. A negated maxim such as ``did not
+promise'' is the maxim of not performing the action.
+% src: lib:src/erisml/ethics/facts.py:151-163
+
+The file \code{facts\_v3.py} extends the record to many parties. \code{EthicalFactsV3} keeps one
+entry per party in each block (\code{PartyConsequences}, \code{PartyRights} and six more) and
+computes distribution statistics over them. One of these is the Gini coefficient. For party
+values sorted so that $x_{(1)} \le \dots \le x_{(n)}$ the code computes
+\begin{equation}
+G = \frac{2\sum_{i=1}^{n} i\, x_{(i)} - (n+1)\sum_{i=1}^{n} x_{(i)}}{n \sum_{i=1}^{n} x_{(i)}},
+\label{eq:deme-gini}
+\end{equation}
+and returns $0$ for fewer than two values or an all-zero list. A V3 record converts to a V2
+record and to a rank-2 moral tensor. The collapse function \code{collapse\_facts\_v3\_to\_v2}
+accepts a \code{worst\_case} strategy, but the code returns the same aggregate as the default
+strategy, and a comment calls this a simplified implementation. A reader should not assume a
+pessimistic collapse exists at the facts level.
+% src: lib:src/erisml/ethics/facts_v3.py:5-18, 49-70 (Gini), 79-123 (party blocks)
+% src: lib:src/erisml/ethics/facts_v3.py:971-1010, 1053, 1155 (EthicalFactsV3, to_v2, to_moral_tensor)
+% src: lib:src/erisml/ethics/facts_v3.py:1319-1348 (worst_case returns facts.to_v2())
+
+\section{The moral vector has nine dimensions in a three by three grid}\label{sec:deme-vector}
+
+Every module in DEME version 2 returns a \code{MoralVector}. It has nine named dimensions, each a
+number in $[0,1]$. The constructor rejects any value outside that interval. For eight of the
+dimensions one means good. For \code{physical\_harm} one means severe harm. The vector also
+carries a list of veto flags, a list of reason codes and an optional dictionary of extension
+dimensions.
+% src: lib:src/erisml/ethics/moral_vector.py:46-136
+
+The nine dimensions come from a three by three matrix. One axis is scope (individual, relational,
+collective). The other axis is mode (what matters, who decides, what we know).
+Figure~\ref{fig:deme-vector} places each dimension in its cell with its index $k$ in the tensor
+order and its default weight in the scalar collapse below. The canonical names are defined once
+in the compiler package \code{erisml\_compiler.ir.v3.dimensions}. \code{moral\_tensor.py}
+imports them and keeps a literal copy only as a fallback when the compiler is not installed. A
+consistency test in the compiler guards the copy.
+% src: lib:docs/moralvector_v2_architecture.md:27-44 (the 3x3 matrix)
+% src: lib:docs/moralvector_reference.md:8-29
+% src: lib:src/erisml/ethics/moral_tensor.py:16-25, 45-77 (single source of truth and fallback)
+
+\begin{figure}[t]
+\centering
+\input{figures/ch06_moral_vector}
+\caption{The nine moral vector dimensions placed by scope and mode, each with its tensor index
+and its default weight in the scalar collapse. Only \code{physical\_harm} counts upward as worse,
+so the collapse inverts it before weighting.}
+\label{fig:deme-vector}
+\end{figure}
+
+The reference document for the vector describes each tensor cell as a signed valence in
+$[-1,+1]$ with confidence and source metadata. That is the compiler's \code{DimensionScore}. The
+library's \code{MoralVector} uses $[0,1]$ and validates it. The two scales differ, and a value
+passed from one to the other needs a mapping.
+% src: lib:docs/moralvector_reference.md:31-33
+% src: lib:src/erisml/ethics/moral_vector.py:122-136 (bounds check [0,1])
+
+\paragraph{Scalar collapse.} Ranking needs one number per option. For a vector $v$ with
+components $v_d$ and weights $\alpha_d$, \code{to\_scalar} computes
+\begin{equation}
+s(v) = \frac{\sum_{d} \alpha_d\, \tilde v_d}{\sum_{d} \alpha_d},
+\qquad
+\tilde v_d =
+\begin{cases}
+1 - v_d & d = \code{physical\_harm},\\
+v_d & \text{otherwise.}
+\end{cases}
+\label{eq:deme-scalar}
+\end{equation}
+The default weights are $1.0$ for harm, rights, fairness, autonomy, privacy and legitimacy,
+$0.8$ for societal and environmental effects, $0.7$ for virtue and care, and $0.5$ for epistemic
+quality. Extension dimensions enter only when the weight dictionary names them. If all weights
+are zero the function returns $0.5$.
+% src: lib:src/erisml/ethics/moral_vector.py:29-43 (DEFAULT_DIMENSION_WEIGHTS), 161-203 (to_scalar)
+
+\paragraph{Dominance.} A vector $u$ Pareto-dominates $v$ when it is no worse on every dimension
+and strictly better on at least one, with lower harm counted as better. The method
+\code{dominates} implements this test, and \code{MoralLandscape.pareto\_frontier} uses it. The
+pipeline does not use the frontier. It ranks by the scalar of Equation~\eqref{eq:deme-scalar}.
+% src: lib:src/erisml/ethics/moral_vector.py:209-240
+% src: lib:src/erisml/ethics/moral_landscape.py:136 (pareto_frontier), 268-287 (rank_by_scalar)
+
+\paragraph{The standard mapping from facts.} \code{MoralVector.from\_ethical\_facts} gives a
+default reading of a facts record. A rights violation sets rights respect to $0$ and adds the
+flag \code{RIGHTS\_VIOLATION}. Discrimination on a protected attribute sets fairness to $0$ and
+adds \code{DISCRIMINATION}. Missing consent without a violation sets rights respect to $0.5$.
+Coercion sets autonomy to $0.2$. Privacy is $1 - \code{privacy\_invasion\_level}$, halved for
+secondary use without consent. Epistemic quality is $1 - \code{uncertainty\_level}$, capped at
+$0.3$ for low evidence and $0.6$ for medium evidence. The tactical layer uses this mapping only
+when it is disabled.
+% src: lib:src/erisml/ethics/moral_vector.py:398-532
+% src: lib:src/erisml/ethics/layers/tactical.py:142-160 (disabled layer returns from_ethical_facts)
+
+\paragraph{Measured dimensions.} The reference document reports learned encoders, called xBSE
+feeders, that score single dimensions from text. It reports cross-dataset AUROC between $0.622$
+and $0.853$ for seven of the nine dimensions and none yet for \code{rights\_respect} and
+\code{societal\_environmental}. The decision proof has a record type that binds such a feeder's
+checkpoint hash and pre-registered bar into the proof. No feeder runs in the twin. Every vector
+in the twin is computed by the rules below.
+% src: lib:docs/moralvector_reference.md:48-62 (feeder table)
+% src: lib:src/erisml/ethics/decision_proof.py:80-122 (FeederValidationRecord)
+
+\section{Ethics modules are sorted into five tiers}\label{sec:deme-modules}
+
+An ethics module (EM) is any object with a name, a stakeholder and a \code{judge} method. The
+version 1 protocol returns an \code{EthicalJudgement} with a verdict and one normative score in
+$[0,1]$. The version 2 protocol, \code{EthicsModuleV2}, adds an integer tier and returns an
+\code{EthicalJudgementV2} whose score is a \code{MoralVector}. A verdict is one of
+\code{strongly\_prefer}, \code{prefer}, \code{neutral}, \code{avoid} and \code{forbid}. A
+version 2 judgement counts as a veto when its verdict is \code{forbid} or its vector carries a
+veto flag.
+% src: lib:src/erisml/ethics/modules/base.py:26-55 (V1), 154-198 (V2), 277-309 (veto_triggered)
+% src: lib:src/erisml/ethics/judgement.py:19-20 (Verdict), 23-89 (V1), 118-182 (V2)
+
+The tier sets both the module's weight in aggregation and whether its veto counts.
+Figure~\ref{fig:deme-tiers} gives the defaults of the tactical layer and the modules that exist
+at each tier. The tier packages state their intent. Tier 0 modules encode constraints that
+governance profiles cannot disable. Tier 1 is for physical safety, tier 2 for rights and
+fairness, tier 3 for soft values and tier 4 for checks on the governance system itself. The
+packages for tiers 1, 3 and 4 contain no modules. Each holds a comment that names planned modules
+(\code{CorePhysicalSafetyEM}, \code{ProxemicsSafetyEM}, \code{BeneficenceEM},
+\code{EnvironmentalImpactEM}, \code{PatternGuardEM}, \code{ProfileIntegrityEM}) and an empty
+export list.
+% src: lib:src/erisml/ethics/layers/tactical.py:46-66 (tier_weights, tier_veto_enabled)
+% src: lib:src/erisml/ethics/modules/tier0/__init__.py:5-17
+% src: lib:src/erisml/ethics/modules/tier1/__init__.py:5-24, tier3/__init__.py:5-24, tier4/__init__.py:5-24
+
+\begin{figure}[t]
+\centering
+\input{figures/ch06_tiers}
+\caption{The five module tiers with their default aggregation weights, whether their vetoes
+count, and the modules that exist at each tier. Tiers 1, 3 and 4 hold no modules of their own,
+and the twin places the advisory tragic-conflict module at tier 3.}
+\label{fig:deme-tiers}
+\end{figure}
+
+\subsection{GenevaEMV2 holds the hard constraints at tier 0}
+
+\code{GenevaEMV2} is registered at tier 0 with weight $10.0$ and veto capability. It starts from
+a vector of ones with harm equal to the facts' expected harm. Three facts are hard vetoes. A
+rights violation sets $\code{rights\_respect}=0$ and the flag \code{RIGHTS\_VIOLATION}.
+Discrimination on a protected attribute sets $\code{fairness\_equity}=0$ and the flag
+\code{DISCRIMINATION}. An explicit rule violation sets $\code{legitimacy\_trust}=0$ and the flag
+\code{RULE\_VIOLATION}. Four other facts are penalties without a veto. Writing $[\,\cdot\,]$ for
+an indicator that is $1$ when its condition holds, the module computes
+\begin{align}
+\code{autonomy\_respect} &= 0.5^{[\neg\,\text{consent}]},\\
+\code{legitimacy\_trust} &= [\neg\,\text{rule violation}]\cdot 0.7^{[\text{role duty conflict}]},\\
+\code{fairness\_equity} &= [\neg\,\text{discrimination}]\cdot 0.5^{[\text{exploits vulnerable}]}\cdot 0.8^{[\text{power imbalance}]},\\
+\code{epistemic\_quality} &= (1-u)\cdot q,\qquad q \in \{0.5, 0.8, 1\}\ \text{for low, medium, other evidence},
+\end{align}
+where $u$ is the uncertainty level. Without an epistemic block the epistemic quality is $1$. The
+consent penalty applies only when the field
+\code{strict\_consent} is true, which is its default. The verdict is \code{forbid} when any flag
+is set. Otherwise it is \code{strongly\_prefer} or \code{prefer} when rights, fairness and
+legitimacy all exceed $0.7$ (the first when harm is below $0.2$), \code{neutral} when they all
+exceed $0.5$, and \code{avoid} otherwise.
+% src: lib:src/erisml/ethics/modules/tier0/geneva_em.py:27-32 (registration), 45-56
+% src: lib:src/erisml/ethics/modules/tier0/geneva_em.py:73-186 (evaluate_vector)
+
+The module also defines a \code{reflex\_check} that returns true on the same three hard
+conditions. No layer of the pipeline calls it. The pipeline's reflex layer runs its own rule
+list, described in Section~\ref{sec:deme-pipeline}.
+% src: lib:src/erisml/ethics/modules/tier0/geneva_em.py:58-71
+% src: lib:src/erisml/ethics/layers/ (no call site of reflex_check; checked with git grep on origin/main)
+
+Matthias argued that an ethical governor built on legal codes cannot express moral
+dissent~\cite{matthias2011governor}. \code{GenevaEMV2} is a constraint set of that kind. Its name
+refers to the Geneva conventions, and its content is the three hard flags and four penalties
+above.
+
+\subsection{AutonomyConsentEMV2 multiplies autonomy penalties at tier 2}
+
+\code{AutonomyConsentEMV2} is registered at tier 2 with weight $2.0$ and veto capability. It
+computes one autonomy score as a product of penalties,
+\begin{equation}
+a = 0.2^{[\text{coercion}]}\cdot 0.4^{[\text{manipulative design}]}\cdot 0.6^{[\neg\,\text{choice}]}\cdot 0.8^{[\neg\,\text{withdrawal}]}\cdot 0.5^{[\neg\,\text{consent}]},
+\label{eq:deme-autonomy}
+\end{equation}
+where the first four factors apply only when an \code{autonomy\_and\_agency} block is present. If
+$a < 0.3$ it adds the flag \code{AUTONOMY\_VIOLATION} and the verdict is \code{forbid}. Coercion
+with missing consent gives $a = 0.1$ and so a veto. Coercion alone gives $0.2$, also a veto. The
+module sets six dimensions to a fixed $0.8$ (fairness, privacy, societal and environmental
+effects, virtue and care, legitimacy, and epistemic quality), sets rights respect to $1$ or $0.5$
+by consent, and copies harm from the facts.
+% src: lib:src/erisml/ethics/modules/tier2/autonomy_consent_em.py:26-31, 34-53, 56-133
+
+\subsection{TragicConflictEM measures how much every option costs}
+
+\code{TragicConflictEM} is a version 1 module. Its docstring says it measures how tragic a choice
+is and never vetoes. It sums fixed weights over triggers read from the facts,
+\begin{equation}
+\begin{aligned}
+\tau = \operatorname{round}_6\Bigl(\min\bigl(1,\ &0.20[u_r \ge 0.75] + h_w + 0.15[b \ge 0.6 \wedge h \ge 0.6]\\
+&+ 0.25[R] + 0.15[L] + 0.10[\neg C] + 0.15[D]\bigr)\Bigr),
+\end{aligned}
+\label{eq:deme-tragic}
+\end{equation}
+where $u_r$ is urgency, $b$ expected benefit, $h$ expected harm, $h_w$ is $0.35$ when
+$h \ge 0.8$, $0.25$ when $0.6 \le h < 0.8$ and $0$ otherwise, and $R$, $L$, $C$, $D$ stand for a
+rights violation, a rule violation, valid consent and discrimination. The verdict is
+\code{neutral} when $\tau \ge 0.55$ and \code{prefer} otherwise, the normative score is
+$\max(0,\, 0.85 - 0.6\,\tau)$, and the metadata carries $\tau$, the trigger names and the flag
+\code{tragic\_conflict\_high} $= [\tau \ge 0.55]$.
+% src: lib:src/erisml/ethics/modules/greek_tragedy_tragic_conflict_em.py:54-142
+
+The rounding to six decimals was added on 2026-10-02. The weights are decimal hundredths, and
+summed in binary floating point they drift. The commit message gives $0.20+0.15+0.10$, which
+evaluates to $0.44999999999999996$. Near the threshold of $0.55$ such drift would decide the flag
+by rounding error.
+% src: lib commit 8af9411 "TragicConflictEM: the index is the decimal sum of its weights"
+% src: lib:src/erisml/ethics/modules/greek_tragedy_tragic_conflict_em.py:111-115 (comment and round)
+
+\subsection{Adapters let version 1 modules join a version 2 pipeline}
+
+\code{V1ToV2Adapter} wraps a version 1 module and assigns it a tier, $2$ by default. It converts
+each judgement with \code{judgement\_v1\_to\_v2}. A score $\sigma$ becomes a vector with every
+value dimension equal to $\sigma$, harm equal to $1-\sigma$ and epistemic quality $0.8$. A
+\code{forbid} verdict becomes harm $1$, rights respect $0$, the flag \code{V1\_FORBID} and a veto.
+The converted judgement carries confidence $0.8$ and a \code{\_migrated\_from\_v1} mark.
+\code{V2ToV1Adapter} goes the other way and collapses the vector with the weights of
+\code{DEFAULT\_V2\_WEIGHTS}. A version 1 module added to a version 2 pipeline without the adapter
+fails, because it has no tier. Before 2026-10-02 the tactical layer dropped that failure
+silently.
+% src: lib:src/erisml/ethics/modules/base.py:322-386 (adapters)
+% src: lib:src/erisml/ethics/judgement.py:107-115, 200-279
+% src: lib commit 0da0b84 message; lib:tests/test_tactical_em_failures.py:57-63
+
+One consequence follows for the twin. Wrapped this way, \code{TragicConflictEM} reports
+$\sigma = 0.85 - 0.6\,\tau$, so even with $\tau = 0$ its converted vector has harm
+$0.15$. This vector enters the weighted mean of Equation~\eqref{eq:deme-aggregate} at the tier 3
+weight.
+
+\subsection{The other modules}
+
+Table~\ref{tab:deme-modules} lists every ethics module in \code{ethics/modules} and what each
+does. There are two registries. The dictionary \code{EM\_REGISTRY} in the package
+\code{\_\_init\_\_} maps four identifiers to version 1 classes. The class \code{EMRegistry}
+collects version 2 and version 3 classes through a decorator that records tier, default weight
+and veto capability.
+% src: lib:src/erisml/ethics/modules/__init__.py:5-31
+% src: lib:src/erisml/ethics/modules/registry.py:1-60
+
+\begin{table}[t]
+\centering
+\footnotesize
+\begin{tabularx}{\linewidth}{l c X}
+\toprule
+Module & Tier & What it does \\
+\midrule
+\code{GenevaEMV2} & 0 & three hard vetoes, four penalties (above) \\
+\code{GenevaEMV3} & 0 & the same constraints per party over a moral tensor, with per-party veto locations \\
+\code{AutonomyConsentEMV2} & 2 & product of autonomy penalties, veto below $0.3$ (above) \\
+\code{TriageEMV3} & 2 & per-party triage score with vulnerability weights, Gini and maximin metrics \\
+\code{RightsFirstEMV3} & 2 & per-party version of \code{RightsFirstEM} \\
+\code{CaseStudy1TriageEM} & V1 & forbids rights or rule violations, else a weighted score of benefit $0.35$, harm $0.25$, urgency $0.20$, priority for the disadvantaged $0.15$ and procedure $0.05$, with an epistemic penalty \\
+\code{RightsFirstEM} & V1 & forbids rights or rule violations, else \code{prefer} at $0.8$ \\
+\code{GenevaBaseEM}, \code{GenevaBaselineEM} & V1 & Geneva scoring with configurable penalty weights (\code{GenevaWeights}) \\
+\code{TragicConflictEM} & V1 & tragic-conflict index, never vetoes (above) \\
+\bottomrule
+\end{tabularx}
+\caption{Every ethics module in the library's \code{modules} package. V1 marks a version 1
+module, which has no tier until an adapter gives it one.}
+\label{tab:deme-modules}
+\end{table}
+% src: lib:src/erisml/ethics/modules/tier0/geneva_em_v3.py:1-16, 39-69
+% src: lib:src/erisml/ethics/modules/triage_em_v3.py:1-16, 40-72, 506-526
+% src: lib:src/erisml/ethics/modules/triage_em.py:11-31 (weights), 164-210
+% src: lib:src/erisml/ethics/modules/geneva_base_em.py:1-11, 27-45, 72-79, 149-157
+% src: lib:src/erisml/ethics/modules/base_v3.py:1-12, 303-325, 372-396 (V3 interfaces and adapters)
+
+\section{The pipeline vetoes first and ranks what remains}\label{sec:deme-pipeline}
+
+\subsection{The reflex layer}
+
+The reflex layer holds a list of \code{VetoRule} objects. Each rule is a name, a category and a
+predicate on the facts. The layer checks the rules in order and returns at the first that fires.
+If a rule raises an exception the option is vetoed, unless the configuration sets
+\code{fail\_open}, which defaults to false. A failure of the whole layer is handled the same way.
+% src: lib:src/erisml/ethics/layers/reflex.py:26-104 (categories, VetoRule, config), 150-207 (check)
+
+The layer has three default rules, for rights violation, discrimination and explicit rule
+violation. They are installed only when the layer is built with no configuration.
+\code{PipelineConfig} always passes a fresh \code{ReflexLayerConfig}, whose rule list is empty.
+A \code{DEMEPipeline} built with the default configuration therefore runs no reflex rules. We
+checked this by constructing both objects, and the pipeline's reflex layer held zero rules while
+a bare \code{ReflexLayer()} held three. In such a pipeline the three hard vetoes still take
+effect, but in the tactical layer, through \code{GenevaEMV2}.
+% src: lib:src/erisml/ethics/layers/reflex.py:114-148 (defaults only when config is None)
+% src: lib:src/erisml/ethics/layers/pipeline.py:44-50 (PipelineConfig default_factory)
+% src: checked 2026-10-03 with python, len(DEMEPipeline().reflex.config.veto_rules) == 0
+
+In the same phase the pipeline applies the deontic maxim gate to each option. An option whose
+maxim fails the gate joins the reflex-vetoed set, and the reason is recorded.
+% src: lib:src/erisml/ethics/layers/pipeline.py:155-170
+
+\subsection{The deontic maxim gate}\label{sec:deme-deontic}
+
+The gate in \code{deontic\_gate.py} applies a universalizability test in the manner of
+Kant~\cite{kant1998groundwork} to an action kind and its polarity. It mirrors a knowledge base in
+the compiler and copies it so that the library does not depend on the compiler. The knowledge
+base has the three sets of Table~\ref{tab:deme-deontic}. The gate vetoes an affirmed prohibition
+(a contradiction in conception) and a negated imperfect duty (a contradiction in will). It passes
+every other known case. An absent maxim or an unknown action kind never vetoes.
+% src: lib:src/erisml/ethics/deontic_gate.py:1-136
+
+\begin{table}[t]
+\centering
+\footnotesize
+\begin{tabularx}{\linewidth}{l X l l}
+\toprule
+Set & Action kinds & Affirmed & Negated \\
+\midrule
+Prohibitions & \code{deceive}, \code{break\_commitment}, \code{cheat}, \code{impose\_externality}, \code{coerce}, \code{coerce\_or\_be\_coerced}, \code{inflict\_harm}, \code{use\_as\_means}, \code{refuse} & veto & pass \\
+Imperfect duties & \code{help}, \code{protect} & pass & veto \\
+Permissible & \code{make\_or\_keep\_commitment}, \code{protect}, \code{help}, \code{disclose}, \code{act\_under\_norm}, \code{act\_under\_authority} & pass & pass \\
+\bottomrule
+\end{tabularx}
+\caption{The deontic gate's knowledge base and its result for each polarity. The kinds
+\code{help} and \code{protect} appear in two sets, and the imperfect-duty rule decides their
+negated case.}
+\label{tab:deme-deontic}
+\end{table}
+% src: lib:src/erisml/ethics/deontic_gate.py:29-55, 101-136
+
+The kind \code{refuse} is a prohibition, so an affirmed maxim of refusing is vetoed. This is the
+robot's maxim, not the person's. The twin's facts carry no maxim, so in the twin the gate never
+fires.
+% src: lib:src/erisml/ethics/deontic_gate.py:40
+% src: gtc:twin/output_gate.py:135-168 (EthicalFacts built with no maxim)
+
+\subsection{The tactical layer}
+
+Every option that survives the reflex layer goes to every module. Let $J(o)$ be the judgements
+returned for option $o$, $t(j)$ the tier of the module behind judgement $j$, $w_t$ the tier
+weight and $v_{j,d}$ dimension $d$ of its vector. The tactical layer combines them by a
+normalized weighted mean,
+\begin{equation}
+\bar v_d(o) = \frac{\sum_{j \in J(o)} w_{t(j)}\, v_{j,d}}{\sum_{j \in J(o)} w_{t(j)}},
+\qquad
+(w_0,\dots,w_4) = (10,\ 5,\ 2,\ 1,\ 0.5),
+\label{eq:deme-aggregate}
+\end{equation}
+with weight $1.0$ for any tier outside the table. The veto flags and reason codes of all
+judgements are joined without duplicates. With no judgements the result is the default vector.
+% src: lib:src/erisml/ethics/layers/tactical.py:46-56 (weights), 233-283 (_aggregate_vectors)
+
+An option is tactically vetoed when some module's judgement triggers a veto and that module's
+tier is allowed to veto. Tiers 0 to 2 may, tiers 3 and 4 may not. A tier missing from the table
+may veto.
+% src: lib:src/erisml/ethics/layers/tactical.py:57-66, 188-195
+
+A module that raises an exception has not judged the option. Since commit 0da0b84 the layer
+records each failure as a string with the module name and the exception, logs it, and continues
+with the other modules. With \code{fail\_closed} set, the failure also vetoes the option, as an
+objection would. The default is false, which keeps the earlier behaviour of judging the option
+by the modules that answered. The configuration's docstring says that safety-critical
+deployments should set it to true. The pipeline reports the failures per option in
+\code{DecisionResult.em\_failures} and in the tactical layer's entry in the proof.
+% src: lib:src/erisml/ethics/layers/tactical.py:68-76 (fail_closed), 100-101, 160-208
+% src: lib:src/erisml/ethics/layers/pipeline.py:94-95, 191, 207-208, 239, 322
+% src: lib:tests/test_tactical_em_failures.py:43-91
+
+\subsection{Ranking and selection}
+
+The forbidden set is the union of the reflex-vetoed and tactically vetoed options. Ranking runs
+over a separate set, the options in the moral landscape whose aggregated vector carries no veto
+flag. The pipeline sorts these by the scalar $s(\bar v(o))$ of
+Equation~\eqref{eq:deme-scalar}, best first. It selects the top option, except that a supplied
+baseline option that is not forbidden is selected instead when
+\begin{equation}
+s(\bar v(\text{baseline})) \ \ge\ 0.95\ s(\bar v(\text{top})).
+\label{eq:deme-baseline}
+\end{equation}
+% src: lib:src/erisml/ethics/layers/pipeline.py:245-264
+% src: lib:src/erisml/ethics/moral_landscape.py:180-199 (filter_vetoed uses has_veto), 268-287
+
+The two sets need not agree. A veto from a failing module under \code{fail\_closed} adds no veto
+flag to the vector, and the top-ranked option is chosen without a check against the forbidden
+set. So the pipeline's \code{selected\_option\_id} can name an option that is also in
+\code{forbidden\_options}. A caller should filter the ranking against the forbidden list, as the
+twin does, rather than trust the selected option alone.
+% src: lib:src/erisml/ethics/layers/pipeline.py:245-256 (selected_id = ranked[0][0], no forbidden check)
+% src: gtc:twin/output_gate.py:240-247 (the twin filters ranked against forbidden and allowed)
+
+\section{Each decision leaves a hashed proof}\label{sec:deme-proof}
+
+When \code{generate\_proofs} is set, which is the default, the pipeline builds a
+\code{DecisionProof} and finalizes it. Figure~\ref{fig:deme-proof} groups its fields. The input
+group holds a hash of the facts, the profile name and hash, the module catalogue version and the
+names of the active modules. The facts hash is computed in two steps. Each option's facts are
+serialized as sorted-key JSON and hashed with SHA-256, and the list of those hashes is hashed
+again. The intermediate group holds the reflex and tactical layer outputs (timings, vetoed
+options, deontic reasons, module failures) and one record per module judgement with a SHA-256
+hash of its vector. The output group holds the candidates, the selected option, the ranking, the
+forbidden options, the rationale and the aggregated vector of each option.
+% src: lib:src/erisml/ethics/layers/pipeline.py:284-310
+% src: lib:src/erisml/ethics/decision_proof.py:31-78, 125-201, 337-383
+
+\begin{figure}[t]
+\centering
+\input{figures/ch06_proof}
+\caption{The field groups of a \code{DecisionProof} and how its hash is formed. The previous
+proof's hash is one of the hashed fields, so a chain of proofs breaks at the first altered
+record.}
+\label{fig:deme-proof}
+\end{figure}
+
+Let $P$ be the proof's canonical dictionary with the field \code{proof\_hash} removed, and let
+$\mathrm{JSON}_{\mathrm{c}}$ be serialization with sorted keys and no whitespace. Then
+\begin{equation}
+\code{proof\_hash} = \mathrm{SHA256}\bigl(\mathrm{JSON}_{\mathrm{c}}(P)\bigr).
+\label{eq:deme-proofhash}
+\end{equation}
+The canonical dictionary sorts the active module names, the candidates and the forbidden list,
+and keeps the ranking in order. \code{verify\_hash} recomputes the hash. \code{DecisionProofChain}
+sets each new proof's \code{previous\_proof\_hash} to the last proof's hash before finalizing,
+and \code{verify\_chain} checks every hash and every link.
+% src: lib:src/erisml/ethics/decision_proof.py:203-271, 386-453
+
+Two properties of the hash matter to an auditor. The pipeline finalizes each proof by itself,
+not through a chain, so a pipeline proof has no previous hash unless the caller chains it.
+Each proof also gets a random UUID and a wall-clock timestamp, both inside the hashed fields,
+and the layer outputs carry measured durations. The same facts therefore give a different
+\code{proof\_hash} on every run. The hash shows that a stored record is intact. It does not let
+anyone recompute a decision's hash from its inputs.
+% src: lib:src/erisml/ethics/decision_proof.py:138-144 (uuid4, now), 249-271
+% src: lib:src/erisml/ethics/layers/pipeline.py:307 (proof.finalize, no chain)
+
+\section{Governance, tensor, coalition and uncertainty code}\label{sec:deme-v3}
+
+\paragraph{Governance.} The file \code{governance.py} in the \code{ethics} package is a stub. It
+defines a configuration class with a mode, a threshold and weights. Its aggregation function
+returns the first judgement, and its selection function returns the first option. Next to the
+file is a package directory with the same name. Python imports the package, not the file, and we
+confirmed that the module path \code{erisml.ethics.governance} resolves to the package's
+\code{\_\_init\_\_.py}. The stub file is unreachable by that name. The package holds the working
+versions. Its function \code{aggregate\_moral\_vectors} computes the same weighted mean as
+Equation~\eqref{eq:deme-aggregate}, but with a weight looked up per module name, tier and
+stakeholder. Its configuration class \code{GovernanceConfigV2} adds dimension weights and lexical
+priority layers.
+% src: lib:src/erisml/ethics/governance.py:1-38
+% src: lib:src/erisml/ethics/governance/__init__.py:1-25
+% src: lib:src/erisml/ethics/governance/aggregation_v2.py:57-113
+% src: lib:src/erisml/ethics/governance/config_v2.py:8-9, 96-99, 129-158
+% src: checked 2026-10-03 with python, erisml.ethics.governance.__file__ ends in governance/__init__.py
+
+\paragraph{Moral tensor.} \code{MoralTensor} generalizes the vector to ranks one to six. The first
+axis always has length nine and holds the dimensions of Figure~\ref{fig:deme-vector}. The
+default axes are $(k)$, $(k,n)$, $(k,n,\tau)$, $(k,n,a,c)$, $(k,n,\tau,a,c)$ and
+$(k,n,\tau,a,c,s)$, where $n$ indexes parties, $\tau$ time, $a$ actions, $c$ coalition
+configurations and $s$ Monte Carlo samples. The rank-2 tensor is the per-stakeholder form.
+\code{from\_moral\_vectors} stacks one vector per party into a $9 \times n$ array and records
+each party's veto flags with that party's column as the veto location. Contraction along an
+axis with weights $w$ is a weighted mean,
+\begin{equation}
+T'_{\dots} = \operatorname{clip}_{[0,1]}\Bigl(\sum_{i} \hat w_i\, T_{\dots i \dots}\Bigr),
+\qquad \hat w_i = \frac{w_i}{\sum_j w_j},
+\label{eq:deme-contract}
+\end{equation}
+with uniform weights by default. \code{to\_vector} collapses a tensor to a vector by mean, maximum,
+minimum, weighted contraction or a single party. Its docstring calls the minimum the worst case
+per dimension. For \code{physical\_harm} the minimum is the least harm, so the minimum strategy
+is the most optimistic choice on that dimension and the most pessimistic on the other eight.
+% src: lib:src/erisml/ethics/moral_tensor.py:1-25, 79-93 (DEFAULT_AXIS_NAMES)
+% src: lib:src/erisml/ethics/moral_tensor.py:183-236 (fields, veto_locations), 477-539 (from_moral_vectors)
+% src: lib:src/erisml/ethics/moral_tensor.py:865-938 (contract), 940-1034 (to_vector, "min" docstring at 953)
+
+\paragraph{Coalitions.} \code{coalition.py} works on rank-4 tensors $(k,n,a,c)$ and treats
+coalition configuration $0$ as the grand coalition. \code{check\_coalition\_stability} picks one
+welfare dimension $d$ and averages it over parties and actions for each configuration,
+$W_c = \operatorname{mean}_{n,a} T_{d,n,a,c}$. Configuration $c$ blocks the grand coalition when
+its improvement $\Delta_c = W_c - W_0$ (or $W_0 - W_c$ when $d$ is harm) exceeds a threshold,
+$0.05$ by default. The stability score is
+\begin{equation}
+1 - \frac{|B|}{\max(1,\ C-1)},
+\label{eq:deme-stability}
+\end{equation}
+where $B$ is the set of blocking configurations and $C$ the number of configurations. The default
+welfare dimension is \code{physical\_harm}. This is a comparison of averages per configuration.
+It is not a computation of the core of a cooperative game, although the result sets its
+\code{core\_non\_empty} field equal to its stability flag.
+% src: lib:src/erisml/ethics/coalition.py:5-23, 453-550
+
+\paragraph{Uncertainty.} \code{uncertainty.py} holds Monte Carlo samples of moral values and
+summarizes them by expected value, variance, percentiles, confidence intervals, worst and best
+case, and conditional value at risk~\cite{rockafellar2000cvar}. For $S$ samples and tail
+probability $\alpha$ the array version computes
+\begin{equation}
+\mathrm{CVaR}_\alpha = \frac{1}{m}\sum_{i=1}^{m} x_{(i)},\qquad m = \max\bigl(1, \lceil \alpha S \rceil\bigr),
+\label{eq:deme-cvar}
+\end{equation}
+the mean of the $m$ lowest samples, with $\alpha = 0.05$ by default. The module docstring gives
+the rank-5 shape as $(d,n,t,c,s)$. That differs from the tensor's rank-5 default
+$(k,n,\tau,a,c)$. The architecture document records that the rank-5 conflict was resolved in
+favour of the tensor's order, with samples at rank 6. The docstring in \code{uncertainty.py}
+still shows the older layout.
+% src: lib:src/erisml/ethics/uncertainty.py:5-26, 55-63, 162-179, 477-508
+% src: lib:docs/moralvector_v2_architecture.md:85-89 (rank-5 reconciled)
+
+None of the tensor, coalition or uncertainty code runs in the twin. The twin's gate works on
+single vectors, one per option.
+
+\section{The twin uses DEME as its output gate}\label{sec:deme-twin}
+
+The twin's robot proposes one action from the scene's allowed set. Before the body acts, the
+class \code{OutputGate} in \code{twin/output\_gate.py} puts that proposal and every other allowed
+action through a \code{DEMEPipeline}. The pipeline holds three modules,
+\code{GenevaEMV2}, \code{AutonomyConsentEMV2}, and \code{TragicConflictEM} wrapped by
+\code{V1ToV2Adapter} at tier 3, and its tactical layer is built with \code{fail\_closed} set.
+Figure~\ref{fig:deme-twin-gate} shows where the gate's facts come from and the four outcomes it
+can produce.
+% src: gtc:twin/output_gate.py:1-23 (docstring), 49-63 (_deme)
+% src: gtc:twin/brain.py:319-321 (the brain builds the gate), 623 (every decision passes it)
+
+\begin{figure}[t]
+\centering
+\input{figures/ch06_twin_gate}
+\caption{The twin's output gate. Code derives the facts from the canonical state and the scene's
+declared profiles, and the gate tests four outcomes in order. The two model-written inputs, shown
+dashed, reach DEME only as accepted events and as a proposal, and no outcome leaves the allowed
+set.}
+\label{fig:deme-twin-gate}
+\end{figure}
+
+\subsection{The facts are derived, not guessed}
+
+For each allowed action the gate builds one \code{EthicalFacts} record in code, from the
+canonical moral state and from the scene's \code{capability\_ethics} block. No model writes
+them. Table~\ref{tab:deme-twin-facts} gives every field the gate sets and its source.
+% src: gtc:twin/output_gate.py:98-168
+
+\begin{table}[t]
+\centering
+\footnotesize
+\begin{tabularx}{\linewidth}{l X}
+\toprule
+Field & Value set by \code{OutputGate.facts} \\
+\midrule
+\code{expected\_benefit} & by the lowest tier of an obligation in force for the action, $1.0, 0.75, 0.5, 0.3$ for tiers $0$ to $3$, else $0.2$ for the scene's default action and $0.1$ otherwise \\
+\code{urgency} & equal to the benefit when an obligation is in force, else $0$ \\
+\code{expected\_harm} & the \code{harm} declared for the capability, else $0$ \\
+\code{violates\_rights} & true when one of Margaret's standing refusals covers the action \\
+\code{has\_valid\_consent} & false when the action is refused, or when it touches privacy or her body and neither her consent machine reads \code{obtained} nor the privacy promise has been lifted \\
+\code{violates\_explicit\_rule} & true when the action is prohibited in the current state \\
+\code{role\_duty\_conflict} & true when an obligation of tier $0$ or $1$ is in force, the action is not obliged and it is not \code{request\_authority} \\
+\code{coercion\_or\_undue\_influence} & true when the capability is declared coercive and its \code{justified\_when} conditions do not all hold \\
+\code{privacy\_invasion\_level} & $0.8$ for a capability declared private, else $0$ \\
+\code{secondary\_use\_without\_consent} & true for a private capability while the privacy promise is active \\
+\code{epistemic\_status} & uncertainty $0.2$, evidence quality high, for every action \\
+\bottomrule
+\end{tabularx}
+\caption{The facts the twin's gate builds for each allowed action, and where each value comes
+from. Every value is a function of the runtime state and the scene file.}
+\label{tab:deme-twin-facts}
+\end{table}
+% src: gtc:twin/output_gate.py:29 (TIER_BENEFIT), 89-96 (_tier_of), 109-168
+
+The scene declares the profiles. Physical assistance has harm $0.1$ and touches Margaret.
+Separating the dog has harm $0.2$ and driving off an animal $0.4$. Restraining a person has harm
+$0.4$ and is coercive, justified when restraint is authorized. The stun device and the spray have
+harm $0.6$ and are coercive, justified only when restraint is authorized and a severe attack has
+been measured. Recording, sharing data and entering the bedroom touch privacy. Unlocking the
+medication box has harm $0.2$. Capabilities not listed are treated as benign.
+% src: gtc:twin/scene/margaret_home.erisml:1021-1034
+
+The derivation is fixed code, but its inputs are not all fixed. The canonical state includes
+events that a language-model classifier proposed and the runtime accepted. A refusal is such an
+event. The gate's facts are only as true as the events behind them, which is why the refusal rule
+below reads the event history with care.
+
+\subsection{Margaret's refusals bind while she can voice them}
+
+The scene lists seven kinds of refusal and the capabilities each covers. A refusal of emergency
+services covers the call to emergency services. Refusals of physical help, of entry to her room,
+of recording, of data sharing, of staying inside and of medication cover one capability each.
+While a refusal stands, the gate's facts for a covered action record a rights violation without
+consent. \code{GenevaEMV2} then vetoes the action at tier 0.
+% src: gtc:twin/scene/margaret_home.erisml:1003-1020
+% src: gtc:twin/output_gate.py:17-19, 145-147
+
+\begin{figure}[t]
+\centering
+\input{figures/ch06_refusal}
+\caption{How the gate decides which refusals stand. A lapse event clears every refusal, and only
+an answered check-in lets a new refusal count again. The refusal events are model-classified,
+shown dashed, which is why a lapse must be followed by evidence that she can speak.}
+\label{fig:deme-refusal}
+\end{figure}
+
+The method \code{refused} replays the event history and keeps a flag for whether Margaret can
+voice a refusal (Figure~\ref{fig:deme-refusal}). A lapse event, \code{unresponsive} or
+\code{check\_in\_unanswered} in the scene, clears every refusal and sets the flag false. The
+event \code{check\_in\_answered} sets it true. A \code{refusal\_made} event by Margaret counts
+only while the flag is true. A refusal also covers nothing while a hazard named in its
+\code{not\_during} list holds. The scene uses this for emergency services, whose refusal does not
+cover a call during danger in the home or an attack. The scene's comment records that refusing an
+ambulance does not refuse the fire service in a fire, and that lifting a refusal grants nothing,
+since emergency services still need the governor's ruling.
+% src: gtc:twin/output_gate.py:65-87
+% src: gtc:twin/scene/margaret_home.erisml:1003-1013, 1020
+
+The re-arming rule came from a failure. In development run dev12b, case d27, the classifier
+re-read Margaret's words ``you don't need to call anyone'', said before she collapsed, as a fresh
+refusal while she lay unresponsive, and DEME vetoed the authorized emergency call. Under the
+current rule a refusal recorded after a lapse has no effect until she answers a check-in. Three
+tests fix the behaviour. A refusal she can no longer voice does not bind. Her old words re-read
+after a lapse do not refuse again. A refusal made after an answered check-in binds.
+% src: gtc:twin/output_gate.py:66-71 (docstring citing dev12b d27)
+% src: gtc:tests/test_twin_ladder.py:1135-1158
+
+\subsection{Tragic choices go to the monitoring centre}
+
+For every check the gate also computes the tragic-conflict index $\tau$ of the proposal. When the
+decision is deliberate, $\tau \ge 0.55$, the proposal is not itself the call to the monitoring
+centre, and that call is allowed and not forbidden, the gate replaces the proposal with
+\code{contact\_monitoring\_center}. The message names the proposal and its triggers. This
+happens whether or not DEME vetoed the proposal.
+% src: gtc:twin/output_gate.py:170-177 (tragic), 199-225 (routing)
+
+The emergency call against a standing refusal is the case the tests use. The scene's obligations
+to call emergency services carry priority tier 0, so the gate sets benefit and urgency to $1.0$.
+The refusal sets the rights violation and removes consent. No harm is declared for the call.
+By Equation~\eqref{eq:deme-tragic},
+\begin{equation}
+\tau = 0.20 + 0.25 + 0.10 = 0.55,
+\end{equation}
+which meets the threshold. The test asserts the high flag, the routing and that the message
+mentions a tragic conflict. The arithmetic here is ours, from the code and the scene. The test
+records only the outcome.
+% src: gtc:twin/scene/margaret_home.erisml:190-206 (EMS obligations at priority_tier 0)
+% src: gtc:tests/test_twin_ladder.py:1118-1132
+
+\subsection{Reflexes are gated but not redirected}
+
+The twin's reflexes respond to a measured attack on Margaret without a model. The brain passes
+each reflex action through the same gate with \code{deliberate} false. DEME may still veto a
+reflex action and replace it, but the gate never routes a reflex to the monitoring centre,
+because a reflex must stay fast. A test checks that a reflex emergency call against a standing
+refusal is vetoed, replaced by an allowed action and not routed.
+% src: gtc:twin/brain.py:472-473
+% src: gtc:twin/output_gate.py:21, 179-206
+% src: gtc:tests/test_twin_ladder.py:1161-1172
+
+\subsection{Replacement stays inside the allowed set}
+
+If DEME forbids the proposal, or the proposal is not in the allowed set, the gate takes the first
+action in DEME's ranking that is neither forbidden nor outside the allowed set. If there is none
+it takes \code{wait\_and\_observe} when that is allowed, else the scene's default action. The gate
+does not use the pipeline's \code{selected\_option\_id}, so the mismatch noted in
+Section~\ref{sec:deme-pipeline} cannot reach the body. The gate record keeps the proposal, the
+veto, the forbidden list, the first six ranked options, the tragic index, any module failures
+and the proof hash. The Lean model of the authority path proves that the gate's output is always
+permitted by the scene, whatever DEME vetoes and however it ranks.
+% src: gtc:twin/output_gate.py:226-250
+% src: gtc:formal/twin-containment/README.md:16 (gate_permitted and companions)
+% src: gtc:formal/twin-containment/TwinContainment.lean:379
+
+\subsection{The gate fails closed at three levels}
+
+A gate that cannot judge must not look like a gate that approves. The twin closes three ways.
+Inside the tactical layer, \code{fail\_closed} turns a failing module into a veto of that option.
+Around the pipeline, any exception from DEME makes the gate return the idle action with every
+option recorded as vetoed and the error text kept in \code{gate\_error}. Before serving, the
+brain runs a self-test that puts the default action through the gate on the scene's reset state
+and refuses to start if the record shows a gate error or any module failure. Tests cover each
+level.
+% src: gtc:twin/output_gate.py:58-62 (fail_closed=True), 189-198 (exception path)
+% src: gtc:twin/brain.py:579-588 (self_test); gtc:twin/service.py:385
+% src: gtc:tests/test_twin_ladder.py:1181-1185, 1205-1230
+
+The self-test exists because of an incident. Its docstring records that development run dev8 on
+2026-10-02 ran a whole development set on a gate that raised on every call, against a stale
+copy of the library, and nothing reported it.
+% src: gtc:twin/brain.py:579-582
+
+\section{Which parts are deterministic}\label{sec:deme-deterministic}
+
+The prior-art review for this work asks that the report state which DEME modules are
+deterministic, because a veto gate whose modules are models falls in the same class as model
+guardrails~\cite{rebedea2023nemo,inan2023llamaguard}. In the twin the answer is all of them.
+% src: gtc:paper/aies2027/prior_art.md:103
+
+\begin{itemize}
+\item \code{GenevaEMV2}, \code{AutonomyConsentEMV2} and \code{TragicConflictEM} are fixed
+arithmetic on the facts, as the equations of Section~\ref{sec:deme-modules} show. None calls a
+model.
+\item The reflex layer, the deontic gate, the tactical aggregation, the ranking and the
+baseline rule are fixed code over the facts and the module outputs.
+\item The twin's facts are computed by \code{OutputGate.facts} from the runtime state and the
+scene file. No model writes them.
+\item The refusal replay, the tragic routing and the replacement rule are fixed code.
+\end{itemize}
+% src: lib:src/erisml/ethics/modules/tier0/geneva_em.py:73-186
+% src: lib:src/erisml/ethics/modules/tier2/autonomy_consent_em.py:56-133
+% src: lib:src/erisml/ethics/modules/greek_tragedy_tragic_conflict_em.py:63-142
+% src: gtc:twin/output_gate.py:65-250
+
+Three things are not deterministic in the same sense. The decision proof's hash changes on every
+run, because of its random identifier, its timestamp and its measured durations, while the
+forbidden set and the ranking do not. The canonical state that feeds the facts includes events
+proposed by a language-model classifier, so a misclassified event becomes a wrong fact, as case
+d27 showed. And the library supports dimensions scored by learned feeders, which the twin does
+not use. A deployment that enabled them would put a model inside the vector, and the proof's
+feeder record exists to say which encoder, at which checkpoint, passed which bar.
+% src: lib:src/erisml/ethics/decision_proof.py:80-122, 138-144
+% src: gtc:twin/output_gate.py:66-71
+
+The library's own default leaves the tactical layer fail-open. The twin overrides it. Another
+caller of \code{DEMEPipeline} gets the earlier behaviour, in which a module that raises is
+recorded and logged but the option is judged by the modules that answered, unless that caller
+sets \code{fail\_closed}.
+% src: lib:src/erisml/ethics/layers/tactical.py:68-76

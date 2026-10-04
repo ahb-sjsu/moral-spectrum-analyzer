@@ -1,0 +1,19 @@
+% Chapter 13: where each line of work puts the trust that lets an action through.
+\begin{tikzpicture}[house, node distance=4mm]
+\node[panel=Grey, text width=26mm, minimum height=30mm] (a)
+  {\textcolor{hsGrey}{\textbf{In a model}}\\[2pt]\scriptsize a classifier or the policy itself judges\\[3pt]
+   \scriptsize Llama Guard, NeMo Guardrails, Constitutional AI};
+\node[panel=Purple, text width=26mm, minimum height=30mm, right=of a] (b)
+  {\textcolor{hsPurple}{\textbf{In a trusted model}}\\[2pt]\scriptsize a shielded model grounds the rules\\[3pt]
+   \scriptsize RoboGuard};
+\node[panel=Blue, text width=26mm, minimum height=30mm, right=of b] (c)
+  {\textcolor{hsBlue}{\textbf{In the user's query}}\\[2pt]\scriptsize provenance tracked from the trusted request\\[3pt]
+   \scriptsize dual-model pattern, CaMeL};
+\node[panel=Amber, text width=26mm, minimum height=30mm, right=of c] (d)
+  {\textcolor{hsAmber}{\textbf{In a specification}}\\[2pt]\scriptsize a verified monitor vetoes violations\\[3pt]
+   \scriptsize ethical governors, shields, SLEEC, Safety Chip};
+\node[panel=Red, text width=26mm, minimum height=30mm, right=of d] (e)
+  {\textcolor{hsRed}{\textbf{In attested sensing}}\\[2pt]\scriptsize a quorum of signed physical witnesses, lapsing with them\\[3pt]
+   \scriptsize this report};
+\draw[flow] ($(a.south west)+(0,-5mm)$) -- node[flowlabel, below=1mm]{less of the trust path passes through a language model} ($(e.south east)+(0,-5mm)$);
+\end{tikzpicture}

@@ -1,0 +1,31 @@
+% Chapter 6. The nine MoralVector dimensions as the 3 by 3 scope-by-mode matrix, with index k and
+% the default weight of the scalar collapse.
+% src: erisml-lib docs/moralvector_v2_architecture.md:33-37 (matrix)
+% src: erisml-lib src/erisml/ethics/moral_tensor.py:66-76 (k order)
+% src: erisml-lib src/erisml/ethics/moral_vector.py:31-43 (DEFAULT_DIMENSION_WEIGHTS)
+\begin{tikzpicture}[house,
+  cell/.style={minimum width=44mm, minimum height=15mm},
+  hd/.style={font=\sffamily\bfseries\footnotesize, text=hsTextMid},
+  kk/.style={step=#1, minimum size=5.5mm, font=\sffamily\bfseries\scriptsize}]
+\node[hd] at (0,12mm) {What matters};
+\node[hd] at (46mm,12mm) {Who decides};
+\node[hd] at (92mm,12mm) {What we know};
+\node[hd, anchor=east] at (-24mm,0) {Individual};
+\node[hd, anchor=east] at (-24mm,-18mm) {Relational};
+\node[hd, anchor=east] at (-24mm,-36mm) {Collective};
+\foreach \x/\y/\c/\k/\n/\w in {
+  0/0/Purple/3/autonomy\_respect/1.0,
+  46/0/Blue/1/rights\_respect/1.0,
+  92/0/Teal/4/privacy\_protection/1.0,
+  0/-18/Green/6/virtue\_care/0.7,
+  46/-18/Red/0/physical\_harm/{1.0, inverted},
+  92/-18/Amber/8/epistemic\_quality/0.5,
+  0/-36/Orange/2/fairness\_equity/1.0,
+  46/-36/Grey/7/legitimacy\_trust/1.0,
+  92/-36/Teal/5/societal\_environmental/0.8}{
+  \node[panel=\c, cell] (c\k) at (\x mm,\y mm) {};
+  \node[kk=\c] at ([xshift=4.5mm, yshift=-4.5mm]c\k.north west) {\k};
+  \node[font=\ttfamily\scriptsize, text=hs\c] at ([xshift=3mm, yshift=1.5mm]c\k.center) {\n};
+  \node[desc] at ([xshift=3mm, yshift=-4mm]c\k.center) {weight \w};
+}
+\end{tikzpicture}

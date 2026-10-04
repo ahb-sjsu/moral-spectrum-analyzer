@@ -1,0 +1,31 @@
+% The four Hohfeldian positions under V4 = {e, n, s, sn}, with the two-bit encoding.
+% src: C:\source\geometric-ethics-content\source\updates\sec8_4_hohfeld_v4.tex:7-37
+% src: C:\source\erisml-lib (origin/main df00fc5) src/erisml/ethics/hohfeld.py:8-30, 50-66 (square, bits)
+\begin{tikzpicture}[house,
+  pos/.style={panel=#1, minimum width=26mm, minimum height=12mm},
+  op/.style={flowlabel, font=\sffamily\bfseries\footnotesize}]
+\node[pos=Blue]  (O) at (0,2.6) {};
+\node[pos=Teal]  (C) at (5.2,2.6) {};
+\node[pos=Amber] (L) at (0,0) {};
+\node[pos=Green] (N) at (5.2,0) {};
+\node[stepname=Blue]  at (0,2.8)   {Obligation O};
+\node[stepname=Teal]  at (5.2,2.8) {Claim C};
+\node[stepname=Amber] at (0,0.2)   {Liberty L};
+\node[stepname=Green] at (5.2,0.2) {No-claim N};
+\node[desc] at (0,2.35)   {bits 00};
+\node[desc] at (5.2,2.35) {bits 01};
+\node[desc] at (0,-0.25)  {bits 10};
+\node[desc] at (5.2,-0.25){bits 11};
+\draw[flow, <->] (O) -- node[above, op] {$s$ correlative} (C);
+\draw[flow, <->] (L) -- node[below, op] {$s$} (N);
+\draw[flow, <->] (O) -- node[left, op] {$n$ negation} (L);
+\draw[flow, <->] (C) -- node[right, op] {$n$} (N);
+\draw[flow, <->] (O.south east) -- (N.north west);
+\draw[flow, <->] (L.north east) -- (C.south west);
+\node[op, fill=white, inner sep=1pt] at (2.6,1.3) {$sn$};
+\node[panel=Grey, text width=33mm, anchor=west] at (6.7,1.3) {%
+  \textcolor{hsGrey}{\bfseries Operations as bit masks}\\[2pt]
+  {\scriptsize $e=00$, $n=10$, $s=01$, $sn=11$}\\[2pt]
+  {\scriptsize apply and compose by XOR}\\[2pt]
+  {\scriptsize no element of order four, so no quarter-turn}};
+\end{tikzpicture}

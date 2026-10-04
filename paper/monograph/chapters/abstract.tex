@@ -1,0 +1,17 @@
+% src: the claims below are argued in chapters 9 to 11; numbers from paper/aies2027/kit/FACTS.md
+A home-care robot that uses language models to read its surroundings and pick its actions can be
+talked into things. A television drama, a forged alarm and a stranger who says he is the plumber
+all reach the same models that decide whether to call an ambulance or open the door. This report
+describes a robot in which the models never hold those decisions. They turn what the robot
+perceives into events of a declared model of the home and choose among the actions that model
+allows. Every action that carries authority, from calling emergency services to restraining an
+attacker, waits for signed readings from independent physical sensors or for a message on an
+authenticated channel. The home model is written in ErisML, compiled into obligations,
+prohibitions, state machines and strata, and checked at load time so that no event a model writes
+can lead into a stratum that grants authority. A Lean proof shows the two load-time checks suffice
+for any set of gates. The report covers the whole stack, from the seven layers of Philosophy
+Engineering and the geometry of moral strata through the ErisML language, its compiler and
+ethical module graph, the DEME ethics engine and the scene runtime, to a Unity simulation of one
+woman's home in which four language-model parties act. It reports the evaluation protocol, a
+sealed held-out set, the development runs and six defects that calibration found. Every defect
+changed how far or how fast the robot escalated. None let an action run beyond its authority.

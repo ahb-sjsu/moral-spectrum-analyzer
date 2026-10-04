@@ -1,0 +1,972 @@
+% Chapter 5. The ErisML compiler.
+% Author: agent C. Every claim is sourced from the erisml-compiler worktree at
+% C:\source\erisml-compiler-monitor (version 0.9.0, src/erisml_compiler/__init__.py:11).
+% Paths in "% src:" comments are relative to that worktree unless stated otherwise.
+
+\chapter{The ErisML compiler}\label{ch:compiler}
+
+The ErisML compiler turns a description of a moral situation into a typed graph, reads that graph
+through several ethical theories, and records every step in a hash chain. Its input is either
+structured ErisML source or natural-language text. Its output is an intermediate representation
+that downstream consumers can audit, replay and contest. This chapter describes the compiler as
+the code implements it in release 0.9.0. Where the design documents and the code differ, the
+chapter reports what the code does and names the difference.
+
+The chapter follows the data. Section~\ref{sec:compiler-split} gives the two-layer split between a
+descriptive substrate and the theory-bound projections. Section~\ref{sec:compiler-pipeline} walks
+the pass pipeline. Sections~\ref{sec:compiler-extraction} and~\ref{sec:compiler-canon} cover
+extraction, the three tiers, canonicalization and human correction.
+Section~\ref{sec:compiler-projections} covers the four projections and the disagreement record.
+Section~\ref{sec:compiler-emdag} treats the ethical-module graph in depth.
+Section~\ref{sec:compiler-fsm} covers the finite-state layer and the hardware target.
+Section~\ref{sec:compiler-audit} covers the audit chain and the training export.
+Section~\ref{sec:compiler-boundaries} closes with the trust boundaries and the limits the
+architecture states about itself.
+
+% src: src/erisml_compiler/__init__.py:11 (__version__ = "0.9.0")
+% src: docs/architecture.md:1-11
+
+\section{A descriptive substrate sits below theory-bound projections}\label{sec:compiler-split}
+
+The compiler separates two layers. The lower layer is the moral substrate. It is a typed directed
+graph, the \code{MoralGraph}, that records who did what to whom, under what authority and under
+what standing commitments. The upper layer is a set of projections. Each projection reads the
+same substrate and emits the kind of object its ethical theory produces.
+% src: docs/architecture.md:46-73
+
+The substrate has six node kinds and eleven edge kinds. The node kinds are stakeholder, act,
+maxim, commitment, fact and norm. A maxim node holds an action under a particular description,
+which is the unit a Kantian test operates on. The edge kinds are listed in
+Table~\ref{tab:compiler-edges}. Node and edge payloads carry the original schema objects verbatim,
+so the graph view loses nothing that the flat lists held.
+% src: docs/architecture.md:75-104
+% src: src/erisml_compiler/projections/substrate.py:42-67 (Maxim)
+
+\begin{table}[t]
+\centering\footnotesize
+\begin{tabular}{lll}
+\hline
+Edge kind & Direction & Payload \\
+\hline
+\code{performs} & stakeholder to act & \\
+\code{imposes\_on} & act to stakeholder & severity, confidence \\
+\code{consents\_to} & stakeholder to act & given, under\_duress, informed \\
+\code{holds\_commitment} & stakeholder to commitment & \\
+\code{commitment\_binds} & commitment to beneficiary & \\
+\code{treats\_as} & act to stakeholder & role in \{end, means, mere\_means\} \\
+\code{under\_maxim} & act to maxim & \\
+\code{coerces} & stakeholder to stakeholder & \\
+\code{surfaces\_fact} & act to fact & \\
+\code{fact\_subject} & fact to stakeholder & \\
+\code{would\_violate\_if\_universalised} & act to norm & \\
+\hline
+\end{tabular}
+\caption{The eleven typed edges of the moral graph. Each edge has a fixed source and target node
+kind, and three edges carry a payload that later passes read.}
+\label{tab:compiler-edges}
+\end{table}
+% src: docs/architecture.md:88-100
+
+Four projections ship. The consequentialist projection produces a per-stakeholder tensor, a
+verdict from the DEME evaluator and distributive statistics. The deontic projection produces four
+categorical gate findings. The virtue projection and the care projection each produce three
+findings. Every projection result carries the same minimum fields, so the orchestrator can compare
+them without knowing their internals.
+% src: docs/architecture.md:156-163
+% src: src/erisml_compiler/projections/base.py:94-125
+
+The split exists so that the compiler never aggregates across theories in silence. The
+architecture document states the reason directly. Aggregation across theories is itself a
+metaethical choice, and the compiler leaves that choice to its caller.
+Figure~\ref{fig:compiler-two-layer} shows the two layers and the comparison that joins them.
+% src: docs/architecture.md:68-73
+
+\begin{figure}[t]
+\centering
+\input{figures/ch05_two_layer}
+\caption{One descriptive substrate read by four theory-bound projections. Each projection lists
+the polarities its shipped code can emit, and the comparison writes a record of disagreement
+instead of a combined verdict.}
+\label{fig:compiler-two-layer}
+\end{figure}
+% src: src/erisml_compiler/projections/{consequentialist,deontic,virtue,care_ethics}.py (verdict rules)
+
+\section{The pipeline runs twelve numbered passes with one inserted graph pass}\label{sec:compiler-pipeline}
+
+The orchestrator function \code{compile\_document} runs the pipeline. The command-line entry point
+\code{cmd\_compile} calls it. Each pass runs inside a context manager that times it and appends a
+\code{PassRecord} with its index, its name, the tier and its duration in milliseconds. The list of
+pass records becomes part of the audit record.
+% src: src/erisml_compiler/pipeline/orchestrator.py:269-509
+% src: src/erisml_compiler/audit/provenance.py:11-25
+% src: src/erisml_compiler/ir/schemas.py:355-362
+
+Figure~\ref{fig:compiler-passes} shows the passes as the orchestrator records them. Pass~0 loads
+the input. A structured input goes straight to the graph pass. A text input goes through
+segmentation, extraction and canonicalization first. Pass~7.5 builds the typed graph and its hash.
+Pass~8 runs every enabled projection. Pass~10 is kept as an empty record for chain continuity,
+because the DEME verdict is now computed inside the consequentialist projection. Pass~11 detects
+conflicts between dimensions of the moral vector. Pass~12 finalizes the audit record. Two optional
+steps then run after the audit, a strategic analysis and a decision proof.
+% src: src/erisml_compiler/pipeline/orchestrator.py:281-507
+
+\begin{figure}[t]
+\centering
+\input{figures/ch05_pipeline}
+\caption{The compiler passes in the order the orchestrator records them, with the recorded pass
+index in each circle. A structured input skips segmentation, extraction and canonicalization, and
+only Tier 3 brings model-written content into the pipeline.}
+\label{fig:compiler-passes}
+\end{figure}
+% src: src/erisml_compiler/pipeline/orchestrator.py:282-356 (passes 0, 1, 2, 7, 75)
+% src: src/erisml_compiler/pipeline/orchestrator.py:363-480 (passes 8, 10, 11, 12)
+% src: src/erisml_compiler/pipeline/orchestrator.py:485-507 (post-audit steps)
+
+The numbering carries history. The orchestrator docstring lists twelve passes from an earlier
+specification, with tensorization at Pass~8 and DEME evaluation at Pass~10. The architecture
+document lists the EM-DAG at Pass~8 and the projections at Pass~8.5. The code records the
+projection pass under index~8 and records Pass~7.5 under the integer index~75. The EM-DAG runs
+inside the projection pass. This chapter uses the code's numbering.
+% src: src/erisml_compiler/pipeline/orchestrator.py:1-17 (docstring pass map)
+% src: docs/architecture.md:188-206 (pass table)
+% src: src/erisml_compiler/pipeline/orchestrator.py:350 (record_pass(passes, 75, "graph_identity", ...))
+% src: src/erisml_compiler/pipeline/orchestrator.py:363 (record_pass(passes, 8, "projection_pass", ...))
+
+The options that shape a run are collected in \code{CompileOptions}. They name the tier, the
+extractor, an optional critic extractor, the EM-DAG profile, the set of projections, an optional
+ethos profile, the canonicalizer and the tensor rank between one and six. One option,
+\code{strict\_v3}, governs a fallback. By default, if the DEME V3 tensor path in \code{erisml-lib}
+is missing or raises, the compiler falls back to an older tensor builder and logs a warning. With
+\code{strict\_v3} set, the same failure raises \code{StrictV3Error} instead. The option exists so
+that a research run cannot downgrade without notice.
+% src: src/erisml_compiler/pipeline/orchestrator.py:122-167 (CompileOptions)
+% src: src/erisml_compiler/pipeline/orchestrator.py:53-119 (StrictV3Error, _produce_v3_tensor)
+
+\section{Three tiers feed one evaluator}\label{sec:compiler-extraction}
+
+\subsection{The tiers differ only in how structure enters}
+
+The compiler defines three tiers in \code{tiers.py}. Tier~1, named \code{GEOMETRIC}, reads
+pre-parsed structured input and runs the finite-state machines and the evaluator. The code
+describes it as bounded in memory, deterministic in dispatch and feasible in fixed point. Tier~2,
+named \code{RULES}, extracts structure from natural-language text with patterns and keywords. It
+runs offline and deterministically. Tier~3, named \code{LLM}, extracts structure with a language
+model. It is the most expressive tier and runs in batch only. All three tiers emit the same
+intermediate representation, and the evaluator core is shared.
+% src: src/erisml_compiler/tiers.py:1-23
+% src: src/erisml_compiler/tiers.py:31-37
+
+The tier also decides two properties. Only Tier~1 is marked as castable to silicon, because only
+its full pipeline avoids text processing. Only Tier~3 requires network access. The tier is
+detected from the file extension when the caller does not name it. Files ending in
+\code{.json}, \code{.erisml}, \code{.yaml} or \code{.yml} select Tier~1. Files ending in
+\code{.txt} or \code{.md} select Tier~2. Tier~3 is never selected automatically.
+% src: src/erisml_compiler/tiers.py:39-73
+
+The Tier~1 loader reads JSON or ErisML source. ErisML source is the YAML form that the code
+generator emits, with the representation's own keys for stakeholders, relations, events,
+commitments, norms, ethical facts and an open \code{extra} block. The loader records the SHA-256
+of the raw file in the document record. The home-care twin of Part~III uses this loader to read its
+scene files.
+% src: src/erisml_compiler/ingestion/structured_loader.py:1-23, 48-76
+% src: C:\source\gtc-prototype\twin\brain.py:301-319 (load_structured_input on the scene)
+
+\subsection{Extractors share one result type}
+
+Every extractor implements one abstract method, \code{extract}, which takes a document and its
+segments and returns an \code{ExtractorResult}. The result holds lists of stakeholders, relations,
+events, commitments, norms, ethical facts and conflicts, a canonical-form tag, free metadata and an
+optional graph. When an extractor fills the graph field, the orchestrator skips the promotion step
+at Pass~7.5 and treats the extractor's graph as the source of truth.
+% src: src/erisml_compiler/annotation/base.py:26-68
+% src: src/erisml_compiler/pipeline/orchestrator.py:345-356
+
+Four extractors ship. The mock extractor returns hand-written fixtures for three example texts,
+selected by the SHA-256 of the text, and raises an error on any other document. The rule extractor
+is the production Tier~2 extractor. It uses regular expressions for commitment verbs, coercion,
+deception, collective targets and profession nouns. The probe extractor is labelled Tier~2.5. It
+encodes each segment with a frozen LaBSE sentence encoder~\cite{feng2022labse} and classifies it
+with trained probe heads into a stakeholder role and an ethical-fact kind. Without a trained
+checkpoint it returns a fixed low-confidence default, and its metadata records that no checkpoint
+was loaded. The LLM extractor issues four prompts per document, for stakeholders, commitments,
+ethical facts and the canonical form. It takes the first balanced JSON array from each reply,
+validates each element against the schema and keeps the elements that pass.
+% src: src/erisml_compiler/annotation/mock_extractor.py:1-10
+% src: src/erisml_compiler/annotation/rule_extractor.py:1-60
+% src: src/erisml_compiler/annotation/probe_extractor.py:1-20, 99-185
+% src: src/erisml_compiler/annotation/llm_extractor.py:1-25
+
+Segmentation precedes extraction for text input. The segmenter splits on blank lines and tags
+each paragraph as dialogue, norm statement, decision point or background by keyword patterns.
+% src: src/erisml_compiler/segmentation/segmenter.py:1-37
+
+\subsection{A critic extractor measures agreement and marks what it cannot corroborate}
+
+A second extractor can run as a critic over the first. The critic pass computes four agreement
+scores between the primary result $P$ and the critic result $C$. Three are Jaccard overlaps,
+\begin{equation}
+J(A,B) = \frac{|A \cap B|}{|A \cup B|}, \qquad J(\emptyset,\emptyset) = 1,
+\label{eq:compiler-jaccard}
+\end{equation}
+taken over stakeholder identifiers, commitment identifiers and ethical-fact kinds. The fourth is
+an indicator $a_{\mathrm{cf}} \in \{0,1\}$ that both extractors chose the same non-empty
+canonical form. The overall agreement is the mean of the four,
+\begin{equation}
+\bar{a} = \tfrac{1}{4}\bigl(J_{\mathrm{stake}} + J_{\mathrm{commit}} + J_{\mathrm{kind}} + a_{\mathrm{cf}}\bigr).
+\label{eq:compiler-agreement}
+\end{equation}
+Each stakeholder that the critic did not find is marked \code{requires\_review}. When $\bar{a}$
+falls below a review threshold, 0.5 by default, a document-level review note is added. The primary
+result is kept as the output. If the critic raises an error, the primary result passes through
+with the error recorded in its metadata.
+% src: src/erisml_compiler/annotation/critic.py:21-50 (CriticReport, _set_overlap)
+% src: src/erisml_compiler/annotation/critic.py:56-142 (critic_pass)
+% src: src/erisml_compiler/annotation/critic.py:145-179 (CriticExtractor)
+
+\section{Canonicalization and correction}\label{sec:compiler-canon}
+
+\subsection{Two canonicalizers map a situation to a registered form}
+
+Canonicalization assigns the situation a stable tag from a registry of canonical forms. The
+registry lives in \code{ontology/canonical\_forms.yaml}. The orchestrator builds a one-paragraph
+summary from the document title, the first 400 characters of text, up to eight ethical-fact
+descriptions and up to four commitments. It passes the summary and the registry to a
+canonicalizer.
+% src: src/erisml_compiler/pipeline/orchestrator.py:242-266
+% src: src/erisml_compiler/pipeline/orchestrator.py:327-343
+
+Two canonicalizers share one interface. The registry canonicalizer tokenizes the summary and each
+form's description and tag into lowercase words longer than two characters, removes stopwords, and
+scores each form by the Jaccard similarity of Equation~\eqref{eq:compiler-jaccard}. It returns the
+best form when the score reaches 0.10. The embedding canonicalizer encodes the summary and each
+form's text with LaBSE, normalizes the embeddings and scores by the dot product, which equals the
+cosine similarity $\cos(\mathbf{e}_s, \mathbf{e}_f)$ for unit vectors. It returns the best form
+when the score reaches 0.55. Both thresholds can be changed, the second through an environment
+variable. When the best score is below threshold, the result carries no tag, and the extractor's
+own tag is kept.
+% src: src/erisml_compiler/canonicalizer/registry.py:68-120 (threshold 0.10)
+% src: src/erisml_compiler/canonicalizer/labse.py:20-110 (threshold 0.55, ERISML_LABSE_THRESHOLD)
+% src: src/erisml_compiler/pipeline/orchestrator.py:335-336
+
+The selector \code{auto\_canonicalizer} prefers the embedding canonicalizer and falls back to the
+registry canonicalizer when the sentence-encoder package cannot load. Every result records its
+backend, its score, whether the tag is a registered form and a list of evidence strings. The
+orchestrator stores all of these under \code{ir.extra["canonicalization"]}.
+% src: src/erisml_compiler/canonicalizer/base.py:8-71
+% src: src/erisml_compiler/pipeline/orchestrator.py:337-343
+
+The home-care twin uses the registry canonicalizer, not the embedding one. Its classifier
+canonicalizes, and its chooser sees only the canonical state.
+% src: C:\source\gtc-prototype\twin\brain.py:315-319
+
+\subsection{Human corrections are patches with hashes on both sides}
+
+The correction package closes a loop from human review back into training data. A corrections
+file names a corrector, a rationale and a list of patches. Each patch is one of three operations,
+\code{set}, \code{add} or \code{remove}, applied at a dotted path such as
+\code{stakeholders.village.type}. Paths can address a scalar field, a whole entity in a keyed
+collection, or a field inside an entity. The keyed collections are stakeholders, commitments,
+events, ethical facts, conflicts, norms and relations.
+% src: src/erisml_compiler/correction/__init__.py:1-13
+% src: src/erisml_compiler/correction/corrector.py:1-46, 72-173
+
+Applying corrections proceeds in a fixed order. The corrector hashes the representation, applies
+each patch, and counts the patches that fail without stopping. It then rebuilds the
+representation through schema validation and hashes it again. A structural diff, organised per
+entity, summarizes the change. The \code{CorrectionRecord} holds the corrector, the rationale, the
+time, the counts of applied and failed patches, the hashes before and after, and the diff summary.
+The record is appended to \code{ir.extra["corrections"]}, so the history of corrections travels
+with the representation.
+% src: src/erisml_compiler/correction/corrector.py:176-235
+% src: src/erisml_compiler/correction/diff.py:1-40
+
+\section{Four projections, and disagreement as a result}\label{sec:compiler-projections}
+
+\subsection{The substrate view}
+
+Each projection reads a \code{MoralSubstrate}. When the graph is present, the substrate is
+derived from the graph. Otherwise it is derived from the flat lists. Besides the lists, the
+substrate holds three derived objects. The first is the maxim, with its agent, a coarse action
+kind, a polarity of affirmed or negated, and a purpose. The second is the list of consent states.
+The third is the list of authority legitimacies.
+% src: src/erisml_compiler/projections/substrate.py:135-164
+% src: src/erisml_compiler/projections/substrate.py:42-67
+
+\subsection{The consequentialist projection}
+
+The consequentialist projection runs the EM-DAG of Section~\ref{sec:compiler-emdag}, projects
+the module outputs onto the moral vector, builds the moral tensor and asks the DEME bridge for a
+verdict. It returns the per-party verdicts and the Gini and worst-off statistics that the DEME
+verdict carries. Its metadata records the DAG name, whether an ethos profile was applied and a
+count of graph nodes and edges by kind. The orchestrator copies this projection's outputs into
+the older top-level fields, so consumers written before the split keep working.
+% src: src/erisml_compiler/projections/consequentialist.py:232-357
+% src: src/erisml_compiler/pipeline/orchestrator.py:373-410
+
+The DEME bridge is a cascade of fixed comparisons over the vector. It returns
+\code{tragic\_conflict\_escalate} when the externality score is at most $-0.85$ and some
+commitment is active but defeasible. It returns \code{prohibited} when harm is below $-0.85$,
+care is below $0.5$ and legitimacy is below zero. Further branches return
+\code{permitted\_with\_residue} and \code{permitted}. Chapter~6 treats DEME in full.
+% src: src/erisml_compiler/erisml_backend/deme_bridge.py:40-120
+
+\subsection{The deontic projection runs four gates and a solver}
+
+The deontic projection emits four \code{GateFinding} records. A gate finding is categorical. It
+has a name, a flag \code{passed}, a reason tied to substrate elements, a severity from minor to
+catastrophic and a list of implicated stakeholders.
+% src: src/erisml_compiler/projections/base.py:32-57
+% src: src/erisml_compiler/projections/deontic.py:45-91
+
+The \emph{universalizability} gate tests the maxim's action kind. When the Z3 solver~\cite{demoura2008z3}
+is installed and the action kind is in its model, the gate runs a satisfiability check. The model
+has nine Boolean institutional facts, among them \code{truth\_telling\_default},
+\code{promises\_create\_trust} and \code{non\_consenting\_party\_standing}. For each action kind
+the model lists the facts that universalizing the maxim destroys, $D$, and the facts the act
+presupposes, $P$. The contradiction-in-conception test asks whether
+\begin{equation}
+\Phi_{\mathrm{CIC}} = \bigwedge_{d \in D} \neg d \;\wedge\; \bigwedge_{p \in P} p
+\label{eq:compiler-cic}
+\end{equation}
+is satisfiable. If it is not, the maxim fails with a contradiction in conception. The model of
+deception, for example, destroys and presupposes the same fact, \code{truth\_telling\_default}, so
+$\Phi_{\mathrm{CIC}}$ is unsatisfiable. If $\Phi_{\mathrm{CIC}}$ is satisfiable, the solver adds
+the agent's own ends $E$, four facts that a rational agent needs, and checks
+\begin{equation}
+\Phi_{\mathrm{CIW}} = \Phi_{\mathrm{CIC}} \;\wedge\; \bigwedge_{e \in E} e .
+\label{eq:compiler-ciw}
+\end{equation}
+If $\Phi_{\mathrm{CIW}}$ is unsatisfiable, the maxim fails with a contradiction in will. Coercion
+and refusal of help fail this way. Otherwise the gate passes, and the satisfying assignment is
+recorded in the finding for audit. A negated maxim, an action kind outside the model, or a missing
+solver all route to a lookup table of hand-written dependencies instead. The finding records which
+path ran.
+% src: src/erisml_compiler/delta/universalizability_smt.py:1-58 (fact universe, agent ends)
+% src: src/erisml_compiler/delta/universalizability_smt.py:107-196 (_ZModel, _Z3_ACTION_MODEL)
+% src: src/erisml_compiler/delta/universalizability_smt.py:218-367 (test_universalizability_smt, _solve)
+% src: src/erisml_compiler/projections/deontic.py:95-168
+
+The solver adds consistency checking, not moral content. The source file says so. The fact
+universe and each action's destroyed and presupposed facts are written by hand. What the solver
+contributes is that the hand-written model cannot contradict itself without the contradiction
+showing.
+% src: src/erisml_compiler/delta/universalizability_smt.py:46-58
+
+The \emph{mere means} gate fires on any \code{treats\_as} edge whose role is \code{mere\_means}.
+Without such edges it falls back to the maxim's own record, and then to any stakeholder whose
+consent was not given. The \emph{valid consent} gate fires when any consent state is absent,
+under duress or uninformed. The \emph{legitimate authority} gate fires when any authority in the
+substrate is not legitimate. The first three gates carry severity grave and the fourth moderate.
+The verdict follows from the failures,
+\begin{equation}
+v_{\mathrm{deon}} =
+\begin{cases}
+\code{forbidden} & \text{if a grave or catastrophic gate fails,}\\
+\code{requires\_review} & \text{else if a moderate gate fails,}\\
+\code{permissible} & \text{otherwise.}
+\end{cases}
+\label{eq:compiler-deontic}
+\end{equation}
+% src: src/erisml_compiler/projections/deontic.py:71-79 (verdict rule)
+% src: src/erisml_compiler/projections/deontic.py:172-296 (other three gates)
+
+\subsection{The virtue and care projections}
+
+The virtue projection emits three findings. The character finding maps the action kind to a
+virtue and vice pair, such as \code{honesty} and \code{deception} or \code{fidelity} and \code{perfidy}, from a table of six
+action kinds. Deceiving and imposing an externality express the vice. Negation flips the reading,
+so refraining from a vice expresses the virtue. The commitment finding reports the count of
+standing commitments as context and always passes. The asymmetry finding fires when the act
+imposes on a stakeholder labelled vulnerable, patient or dependent. The verdict is \code{vicious}
+when two or more grave or catastrophic findings fail, \code{requires\_practical\_wisdom} when any
+finding fails, and \code{virtuous} otherwise. In the shipped code all three findings carry
+moderate or minor severity, so the projection's verdict is \code{virtuous} or
+\code{requires\_practical\_wisdom}.
+% src: src/erisml_compiler/projections/virtue.py:36-46 (_ACTION_VIRTUE_AXES)
+% src: src/erisml_compiler/projections/virtue.py:53-90 (verdict rule)
+% src: src/erisml_compiler/projections/virtue.py:92-228 (findings and severities)
+
+The care projection follows the care-ethics tradition, which reasons from relations and dependence
+rather than from isolated acts. It emits three findings. The relational-attentiveness finding
+fails when the substrate holds no relations. The asymmetric-responsibility finding fails when a
+dependent, a patient or a highly vulnerable party is present. It flags an asymmetry and does not
+judge whether the duty was met. The dependency-response finding fails, with grave severity, when an
+\code{imposes\_on} edge targets a dependent party. The verdict is \code{uncaring} when two or more
+grave findings fail, \code{requires\_caring\_attention} when any finding fails and \code{caring}
+otherwise. Only the dependency-response finding is grave, so in the shipped code the
+\code{uncaring} verdict cannot occur. Both the virtue and the care projections can therefore
+permit or escalate, and neither can forbid.
+% src: src/erisml_compiler/projections/care_ethics.py:1-27
+% src: src/erisml_compiler/projections/care_ethics.py:39-213
+
+\subsection{Disagreement is recorded, never resolved}
+
+Each projection's native verdict maps to one of four polarities, \code{permit}, \code{forbid},
+\code{escalate} and \code{neutral}. Comparing polarities keeps vocabulary from looking like
+disagreement, since \code{permitted}, \code{permissible}, \code{virtuous} and \code{caring} all map
+to \code{permit}. Let $\pi_k$ be the polarity of projection $k$. The orchestrator writes a
+disagreement record when
+\begin{equation}
+\bigl|\{\pi_k\}_k \setminus \{\code{neutral}\}\bigr| > 1 .
+\label{eq:compiler-disagree}
+\end{equation}
+The record holds every native verdict, every polarity and a fixed note. The note says that the
+compiler surfaces all verdicts without aggregating and leaves the choice to the caller. The
+compiler does not name a winner.
+% src: src/erisml_compiler/projections/base.py:60-91 (VerdictPolarity, _DEFAULT_POLARITY_MAP)
+% src: src/erisml_compiler/pipeline/orchestrator.py:437-454
+% src: docs/architecture.md:165-186
+
+The polarity map has a consequence that a reader of the code should know. The map lists
+\code{permitted}, \code{requires\_human\_review}, \code{tragic\_conflict\_escalate} and
+\code{forbidden\_action} for the consequentialist projection. The DEME bridge also returns
+\code{prohibited}, \code{permitted\_with\_residue} and \code{indeterminate}. Those three strings are
+not in the map, so they map to \code{neutral}. A consequentialist \code{prohibited} verdict
+therefore drops out of the comparison in Equation~\eqref{eq:compiler-disagree}.
+% src: src/erisml_compiler/projections/base.py:67-91 (map entries)
+% src: src/erisml_compiler/erisml_backend/deme_bridge.py:61-120 (verdict strings returned)
+% src: src/erisml_compiler/projections/consequentialist.py:336-340 (polarity not set explicitly)
+
+\section{The EM-DAG}\label{sec:compiler-emdag}
+
+The EM-DAG is the graph of ethical modules that feeds the consequentialist projection. Each module
+evaluates one ethical concern and writes one dimension of the moral vector. Edges run from a module
+to the modules that read its output. The topology is the DEME profile, so a different deployment
+can load a different graph.
+% src: src/erisml_compiler/em_dag/__init__.py:1-13
+% src: docs/architecture.md:228-254
+
+\subsection{The module contract}
+
+A module subclasses \code{EthicalModule}. It declares three class attributes, a \code{name}, the
+moral-vector \code{dimension} it writes and a tuple of \code{dependencies}. The class refuses to be
+defined without a name and a dimension. It implements one method,
+\code{evaluate(ir, upstream)}, which receives the full representation and the outputs of its
+declared dependencies, and returns an \code{EMOutput}.
+% src: src/erisml_compiler/em_dag/base.py:10-51
+
+An \code{EMOutput} holds the module name, a \code{DimensionScore}, the identifiers of the facts
+that contributed and the upstream dependencies. A dimension score has a value $v \in [-1,1]$, a
+confidence $c \in [0,1]$, an uncertainty $u \in [0,1]$, a direction of positive, negative or
+neutral, a list of source spans and an explanation. Positive values mean the dimension is
+respected. Negative values mean it is violated.
+% src: src/erisml_compiler/ir/schemas.py:264-272 (DimensionScore)
+% src: src/erisml_compiler/em_dag/modules/_helpers.py:1-6 (sign convention)
+
+\subsection{Validation and evaluation}
+
+The \code{EMDAG} class validates on construction. Every declared dependency must name a module in
+the graph, or construction raises. It then orders the modules with Kahn's
+algorithm~\cite{kahn1962topological}. Each module starts with an in-degree equal to its number of
+dependencies. Modules with in-degree zero enter a queue. Removing a module from the queue
+decrements the in-degree of its dependants and enqueues those that reach zero. If the resulting
+order is shorter than the module set, the graph has a cycle, and construction raises with the
+modules still holding positive in-degree.
+% src: src/erisml_compiler/em_dag/dag.py:67-113
+
+Evaluation walks the stored order. For each module it collects the outputs of that module's
+dependencies, which are already computed, and calls \code{evaluate}. A module therefore never
+sees the output of a module it did not declare. The result is a map from module name to output.
+% src: src/erisml_compiler/em_dag/dag.py:133-144
+
+\subsection{The default profile}
+
+A profile is a YAML file with a name and a list of modules, each given as a
+\code{module.path:ClassName} reference. The loader imports each class and instantiates it with no
+arguments. The default profile, \code{default\_em\_dag\_v0.1}, lists ten modules in three groups.
+Five are roots with no dependencies. Four form a second tier. One composes the others.
+Figure~\ref{fig:compiler-emdag} shows the graph as configured.
+% src: src/erisml_compiler/em_dag/dag.py:152-179 (load_profile)
+% src: src/erisml_compiler/em_dag/profiles/default.yaml:1-24
+
+\begin{figure}[t]
+\centering
+\input{figures/ch05_emdag}
+\caption{The default EM-DAG as configured in \code{default.yaml}. Each panel names a module and
+the moral-vector dimension it writes, and each circle gives its place in the evaluation order. Two
+declared edges, drawn grey, fix the order without passing any data.}
+\label{fig:compiler-emdag}
+\end{figure}
+% src: src/erisml_compiler/em_dag/profiles/default.yaml:11-24
+% src: src/erisml_compiler/em_dag/modules/*.py (dependencies tuples)
+% src: docs/architecture.md:236-249 (same edges)
+
+The order that Kahn's algorithm produces for this profile is harm, rights, fairness, legitimacy,
+epistemic, externality, care, autonomy, fidelity, repair. The emitted hardware sources record the
+same order in their header.
+% src: src/erisml_compiler/silicon/examples/erisml_em_dag.cpp:5
+
+\subsection{What each module computes}
+
+Most modules share two aggregation helpers. Let $F$ be the set of facts a module selects, and let
+each fact $f$ have a severity weight $w(f)$ and a confidence $c_f$. The severity weights are
+$0.2$ for minor, $0.5$ for moderate, $0.85$ for grave and $1.0$ for catastrophic, with $0.5$ when
+the severity is missing. The negative aggregate is
+\begin{equation}
+v = -\max_{f \in F} w(f), \qquad c = \frac{1}{|F|}\sum_{f \in F} c_f, \qquad u = 1 - c,
+\label{eq:compiler-aggneg}
+\end{equation}
+and the positive aggregate has the same form with the sign of $v$ reversed. With $F$ empty, both
+return $v = 0$, $c = 1$, $u = 0$ and a neutral direction. The aggregate takes the worst fact, not
+a sum, so several moderate facts never add up to a grave one.
+% src: src/erisml_compiler/em_dag/modules/_helpers.py:35-40 (SEVERITY_WEIGHT)
+% src: src/erisml_compiler/em_dag/modules/_helpers.py:93-165 (severity_score, aggregate_negative, aggregate_positive)
+
+The five roots select facts by kind and, for most, by keywords in the fact's description.
+\begin{itemize}
+\item \emph{Harm} takes every fact of kind \code{harm} or \code{non\_maleficence} and applies the
+negative aggregate.
+\item \emph{Rights} takes harm facts whose description contains the string \code{right}.
+\item \emph{Fairness} takes facts of kind \code{justice} whose description mentions unfairness,
+bias or discrimination.
+\item \emph{Legitimacy} takes legitimacy facts whose description mentions void, tyrannical,
+coercive or fraudulent authority, together with every coercion fact.
+\item \emph{Epistemic} takes truth and deception facts whose description mentions deception,
+lying, withholding or manipulation. It records the deception and leaves to the verdict layer
+whether the deception was justified.
+\end{itemize}
+% src: src/erisml_compiler/em_dag/modules/harm.py:10-24
+% src: src/erisml_compiler/em_dag/modules/rights.py:10-28
+% src: src/erisml_compiler/em_dag/modules/fairness.py:10-32
+% src: src/erisml_compiler/em_dag/modules/legitimacy.py:10-36
+% src: src/erisml_compiler/em_dag/modules/epistemic.py:10-38
+
+The second tier reads upstream outputs or upstream concepts. The \emph{autonomy} module applies the
+negative aggregate to consent and coercion facts whose description signals coercion or imposition.
+It then composes with legitimacy. Let $s_A$ be its own score and $s_L$ the legitimacy score. If
+$v_L < -0.5$ and $v_A > v_L$, the module replaces its score with
+\begin{equation}
+v_A' = v_L, \qquad c_A' = \min(c_A, c_L), \qquad u_A' = \max(u_A, u_L),
+\label{eq:compiler-autonomy}
+\end{equation}
+with a negative direction. The code comment gives the reason. Consent under illegitimate authority
+is void, so autonomy cannot score better than a severely compromised legitimacy.
+% src: src/erisml_compiler/em_dag/modules/autonomy.py:1-55
+
+The \emph{fidelity} module reads commitments. Let $V$ be the violated commitments and $A$ the
+active, defeasible or fulfilled ones. Its value is
+\begin{equation}
+v_{\mathrm{fid}} =
+\begin{cases}
+-0.8 & \text{if } V \neq \emptyset,\\
+0.6 & \text{else if some commitment in } A \text{ is active but defeasible},\\
+0.85 & \text{else if } A \neq \emptyset,\\
+0 & \text{otherwise,}
+\end{cases}
+\label{eq:compiler-fidelity}
+\end{equation}
+with confidences $0.9$, $0.85$, $0.85$ and $1$. The module declares a dependency on legitimacy,
+and the default code does not read the legitimacy output. The dependency fixes the evaluation
+order.
+% src: src/erisml_compiler/em_dag/modules/fidelity.py:18-86
+
+The \emph{externality} module takes externality facts whose subjects include a non-consenting
+third party. If none qualify, it takes all externality facts. The set of non-consenting third
+parties comes from a helper described below. The module declares a dependency on harm and does not
+read the harm output either.
+% src: src/erisml_compiler/em_dag/modules/externality.py:1-44
+
+The \emph{care} module is the positive counterpart of harm. With care facts present it applies
+the positive aggregate. Without them, if the graph holds at least one stakeholder of high or
+extreme vulnerability and at least one stakeholder with the protector role, it returns
+$v = 0.7$ with confidence $0.75$. Otherwise it returns zero.
+% src: src/erisml_compiler/em_dag/modules/care.py:20-61
+
+The \emph{repair} module measures the moral debt left after an act. Let
+$N = \{\,d \in \{\mathrm{harm}, \mathrm{externality}, \mathrm{fidelity}\} : v_d < 0\,\}$ be the
+upstream modules with negative scores. Then
+\begin{equation}
+v_{\mathrm{rep}} =
+\begin{cases}
+-\dfrac{1}{|N|}\displaystyle\sum_{d \in N} |v_d| & \text{if } N \neq \emptyset,\\[2ex]
+0 & \text{otherwise,}
+\end{cases}
+\label{eq:compiler-repair}
+\end{equation}
+with confidence $0.8$ in the first case. Its explanation names the violated commitments. Repair is
+the only module that averages, and it averages only the negative upstream scores.
+% src: src/erisml_compiler/em_dag/modules/repair.py:17-73
+
+\subsection{The graph-native helpers}
+
+The modules do not read the representation's lists directly. They call six helpers.
+\begin{itemize}
+\item \code{facts\_of\_kind} returns the facts of one kind.
+\item \code{active\_commitments} and \code{violated\_commitments} return commitments by status.
+\item \code{vulnerable\_stakeholders} and \code{stakeholders\_with\_role} return stakeholders.
+\item \code{nonconsenting\_third\_party\_ids} returns the identifiers of parties who bear an act
+without consent.
+\end{itemize}
+The architecture document names five of them. Each helper queries the typed graph when one is attached and reads
+the flat lists otherwise. Fact nodes carry their kind as a label, so \code{facts\_of\_kind} filters
+fact nodes by label and rebuilds each fact from its payload.
+% src: src/erisml_compiler/em_dag/modules/_helpers.py:8-21, 43-90
+% src: src/erisml_compiler/ir/graph/promote.py:158-161 (labels=[kind])
+% src: docs/architecture.md:256-265
+
+The helper for non-consenting third parties shows what the graph adds. On the graph path it
+returns the stakeholders labelled \code{nonconsenting\_third\_party}, together with
+\begin{equation}
+T = \{\, t : (a \xrightarrow{\code{imposes\_on}} t) \in E \ \wedge\ (t \xrightarrow{\code{consents\_to}} a) \notin E \,\},
+\label{eq:compiler-thirdparty}
+\end{equation}
+the targets of an imposition edge with no paired consent edge. This is a typed-edge reading of
+bearing an act without consent. The flat path instead matches role labels and a consent status of
+not obtained or coerced. The project holds a golden test that compares the module outputs on the
+graph path against a baseline captured on the flat path, for each of the three bundled scenarios.
+% src: src/erisml_compiler/em_dag/modules/_helpers.py:210-243
+% src: tests/test_em_dag_graph_native.py:9, 34, 57-78 (golden_em_dag_flat.json)
+
+\subsection{From module outputs to the moral vector, and the ethos profile}
+
+The moral vector has ten dimensions, one per module in the default profile. The projection copies
+each module's score into the dimension that module declares. A dimension that no module owns gets
+a neutral zero with an explanation saying so.
+% src: src/erisml_compiler/ir/schemas.py:250-288 (MORAL_DIMENSIONS, MoralVector)
+% src: src/erisml_compiler/evaluation/moral_vector.py:32-69
+
+An ethos profile scales module values at this step. For module $m$ with weight $\omega_m$, the
+projected value is
+\begin{equation}
+v_m' = \min\bigl(1, \max(-1, \omega_m v_m)\bigr),
+\label{eq:compiler-ethos}
+\end{equation}
+with $\omega_m = 1$ for any module the profile does not list. Confidence and direction are left
+unchanged, because the weight expresses salience and not the module's certainty.
+% src: src/erisml_compiler/evaluation/moral_vector.py:19-55
+
+Two fitted profiles ship, fit from the Dear Abby and AITA slices of Social Chemistry
+101~\cite{forbes2020socialchem}. The Dear Abby profile lists weights for six modules. Harm and care
+receive $1.74772$, legitimacy $0.970297$, fidelity $0.723662$, fairness $0.59368$ and rights
+$0.216921$. Autonomy, epistemic, externality and repair are absent and so receive the default
+weight of one. Each profile also carries per-module priors and coverage, a corpus fingerprint with
+a SHA-256, a license and a citation, the hand-written mapping from moral foundations to modules,
+and a list of bias notes. The notes state, for example, that the five moral foundations give no
+signal to four of the ten modules. The loader keeps all of this text, and its docstring asks
+callers to show it wherever the profile is used.
+% src: docs/architecture.md:287-310
+% src: src/erisml_compiler/em_dag/profiles/dear_abby_socialchem_v0.1.yaml:1-50, 76-103
+% src: src/erisml_compiler/em_dag/dag.py:187-211 (load_ethos_profile)
+
+\section{The finite-state layer and the silicon target}\label{sec:compiler-fsm}
+
+\subsection{Three deterministic machines track moral state}
+
+Tier~1 carries three finite-state machines. Each is a table from state and event tag to next
+state. An event tag with no entry leaves the state unchanged. Terminal states absorb every event.
+Each machine keeps a history of time index, state and event.
+% src: src/erisml_compiler/fsm/__init__.py:1-16
+% src: src/erisml_compiler/fsm/commitment_fsm.py:96-116
+
+The commitment machine has seven states. From \code{active} a commitment can become
+\code{active\_but\_defeasible}, \code{fulfilled}, \code{violated}, \code{void} when legitimacy
+collapses, or \code{expired}. From the defeasible state it can return to \code{active}, become
+\code{defeated}, or reach any of the other terminal states. The five terminal states are
+\code{defeated}, \code{fulfilled}, \code{violated}, \code{void} and \code{expired}. The machine's
+docstring lists the defeasibility conditions as a coerced vow, a vow to commit a wrong, a
+catastrophic non-consensual externality and a conflict with a higher duty.
+% src: src/erisml_compiler/fsm/commitment_fsm.py:1-93
+
+The legitimacy machine has six states. A fully legitimate authority becomes defeasible on a
+procedural violation, coercive on detected coercion and fraudulent when evidence is revealed. A
+defeasible authority can be restored. A coercive authority escalates to tyrannical, and coercive
+or tyrannical authority becomes void on catastrophic intent. A fraudulent authority becomes void
+when evidence is revealed. Only \code{void} is terminal. The consent machine has four states. Consent
+not obtained becomes \code{obtained} or \code{coerced}. Obtained consent can be withdrawn or
+coerced on revisit. The states \code{coerced} and \code{withdrawn} are terminal.
+% src: src/erisml_compiler/fsm/legitimacy_fsm.py:1-75
+% src: src/erisml_compiler/fsm/consent_fsm.py:1-38
+
+Every machine has at most seven states, so each fits a three-bit register. The architecture
+document bounds the whole moral state by
+$O(n_{\mathrm{commitments}} + n_{\mathrm{authorities}} + n_{\mathrm{consenters}})$ registers.
+Figure~\ref{fig:compiler-commitment-fsm} draws the commitment machine.
+
+\begin{figure}[t]
+\centering
+\input{figures/ch05_commitment_fsm}
+\caption{The commitment lifecycle machine. Two live states lead to five absorbing states by named
+event tags, and the defeasible state reaches the same four outcomes as the active state plus
+defeat.}
+\label{fig:compiler-commitment-fsm}
+\end{figure}
+% src: docs/architecture.md:271-285
+% src: src/erisml_compiler/fsm/commitment_fsm.py:44-46
+
+\subsection{What \code{silicon-emit} produces}
+
+The command \code{eris-compile silicon-emit --out-dir} writes four files. The first,
+\code{erisml\_fsm.cpp}, holds the three machines. Each becomes a state enumeration of type
+\code{ap\_uint<3>}, an event enumeration of type \code{ap\_uint<4>}, and a step function. The step
+function returns early from any terminal state and otherwise switches on state and event. It
+carries the Vitis HLS pragmas \code{INLINE} and \code{PIPELINE II=1}. The transition cases are
+generated from the same Python tables the machines use, so the cases cannot drift from the Python
+reference. The lists of state and event names that number the enumerations are written out in the
+emitter by hand.
+% src: src/erisml_compiler/cli.py:613-660 (cmd_silicon_emit)
+% src: src/erisml_compiler/silicon/hls_emit.py:1-12, 21-23 (imports _TRANSITIONS)
+% src: src/erisml_compiler/silicon/hls_emit.py:37-201 (enum, switch, emit_fsm_cpp)
+
+The second file, \code{erisml\_em\_dag.cpp}, holds the EM-DAG. It loads the chosen profile,
+declares a fixed-point score type \code{ap\_fixed<16,4>} by default, and emits one function per
+module whose arguments are the feature structure and the outputs of the module's dependencies. A
+top function marked \code{DATAFLOW} calls the modules in topological order. Each module body is a
+placeholder that returns a score of zero and a confidence of 200 on a scale of 255. The file
+header says so, and the command's help text calls the file a skeleton. The third file,
+\code{erisml\_top.cpp}, is the kernel entry point with AXI interface pragmas. It calls the EM-DAG
+pipeline and sets the packed verdict word to zero. A comment reserves its bit layout, three bits
+for the verdict kind, eight for confidence and one for escalation. The fourth file is a Makefile
+that calls \code{v++} for the Alveo U55C platform, with an \code{hw\_emu} target for hardware
+emulation.
+% src: src/erisml_compiler/silicon/hls_emit.py:209-320 (emit_em_dag_pipeline, placeholder bodies)
+% src: src/erisml_compiler/silicon/hls_emit.py:328-376 (emit_top_module, packed_verdict = 0)
+% src: src/erisml_compiler/silicon/hls_emit.py:379-419 (emit_makefile, PLATFORM xilinx_u55c_gen3x16_xdma_3_202210_1)
+
+Fixed-point conversion uses a signed Q format with $W$ total bits and $I$ integer bits, so
+$f = W - I$ fractional bits. A value $x$ quantizes to the integer
+\begin{equation}
+q(x) = \operatorname{clip}\bigl(\operatorname{round}(x \cdot 2^{f}),\ -2^{W-1},\ 2^{W-1}-1\bigr),
+\label{eq:compiler-quant}
+\end{equation}
+which saturates rather than wraps. The defaults are $W = 16$ and $I = 4$, and the command accepts
+other widths.
+% src: src/erisml_compiler/silicon/fixed_point.py:65-125
+% src: src/erisml_compiler/cli.py:627-628
+
+\subsection{What the silicon path has and has not shown}
+
+Figure~\ref{fig:compiler-silicon} gathers the emitter's inputs, its four output files and the
+recorded status of each. The silicon-target document lists the status of each step. The strict subset for the machines and
+the EM-DAG, the fixed-point port of the arithmetic helpers and the emitter are marked done. The
+document states that continuous integration verifies the emitted sources build. The project's
+tests check that the emitted file contains the three machines, has balanced braces and carries the
+pragmas, and that the EM-DAG file is in topological order with a \code{DATAFLOW} pragma.
+Bit-exact equivalence between the emitted code and the Python reference is marked not done. FPGA
+synthesis and on-board validation are marked blocked on the bitstream pipeline. A formal
+equivalence proof is future work.
+% src: docs/silicon_target.md:107-117 (status table)
+% src: tests/test_silicon.py:20-97
+
+\begin{figure}[t]
+\centering
+\input{figures/ch05_silicon}
+\caption{The silicon emitter turns the Python machine tables and the EM-DAG profile into four
+Vitis HLS files. Only the machine file carries working logic, and the EM-DAG and top-level files
+are skeletons that return zero.}
+\label{fig:compiler-silicon}
+\end{figure}
+
+Two facts follow from the code. The emitted EM-DAG has the topology of the profile but not its
+arithmetic, so no score computed in hardware can yet match a score computed in Python. The
+document's resource figures for the default ten-module graph, fewer than five thousand lookup
+tables and a critical path of at most ten nanoseconds, are stated as expectations. They are not
+measurements.
+% src: src/erisml_compiler/silicon/hls_emit.py:221-224, 289-290
+% src: docs/silicon_target.md:75-79 ("Expected resource usage")
+
+\RESULT{Bit-exact equivalence of emitted C++ against the Python reference on the pipeline test
+vectors, and synthesis resource and timing figures, once measured.}
+
+The tier description names a Mahalanobis evaluator as part of Tier~1, and the fixed-point helpers
+mention porting it. The source tree has no Mahalanobis implementation. The term appears only in
+docstrings.
+% src: src/erisml_compiler/tiers.py:7, 79
+% src: src/erisml_compiler/silicon/fixed_point.py:3 ; grep -rni mahalanobis src/ returns docstrings only
+
+The document also states what the silicon target is not. It does not replace the
+natural-language front end, which stays in software. It gates proposed actions and does not
+generate them. It does not answer whether a deployment is lawful.
+% src: docs/silicon_target.md:38-47, 95-105
+
+\section{The audit chain and its exports}\label{sec:compiler-audit}
+
+\subsection{Two hashes anchor a compile}
+
+The compiler computes two content hashes. The graph hash is the SHA-256 of a canonical JSON
+encoding of the moral graph,
+\begin{equation}
+h_G = \operatorname{SHA256}\bigl(\operatorname{canon}(G)\bigr).
+\label{eq:compiler-graphhash}
+\end{equation}
+The encoding sorts nodes by identifier, sorts each node's labels, sorts every payload's keys
+recursively, and sorts edges by source, destination, kind and payload. Two graphs with the same
+nodes and edges therefore hash the same regardless of insertion order. Edges that differ only in
+payload count as distinct.
+% src: src/erisml_compiler/ir/graph/canonical.py:1-82
+% src: docs/architecture.md:106-112
+
+The representation hash $h_{\mathrm{IR}}$ is the SHA-256 of the representation dumped to JSON
+with sorted keys. It excludes the audit record itself, the document timestamp and the source file
+path. The document identity stays covered through the text hash stored in the document record.
+% src: src/erisml_compiler/audit/hash_chain.py:22-41
+
+The graph promotion has a round-trip property. Converting a graph to flat lists and back gives
+the same graph hash for every bundled example.
+% src: docs/architecture.md:123-127
+
+\subsection{The audit record}
+
+Pass~12 builds the \code{AuditRecord}. It holds $h_{\mathrm{IR}}$, the hash of the source text, the
+schema version \code{erisml\_compiler\_ir\_v0.3}, the compiler version, the tier, the extractor
+name, an optional model version, the EM-DAG profile name, $h_G$, the ethos profile name with the
+SHA-256 of its YAML file, a UTC timestamp and the list of pass records.
+% src: src/erisml_compiler/audit/hash_chain.py:44-71
+% src: src/erisml_compiler/ir/schemas.py:365-386
+% src: src/erisml_compiler/__init__.py:12
+
+The architecture document says that two compiles of the same case yield bit-identical audit
+records. The code supports a narrower statement. The same input, extractor and profiles produce
+the same $h_G$ and the same $h_{\mathrm{IR}}$. The audit record as a whole also holds a timestamp
+and measured pass durations, which differ between runs.
+% src: docs/architecture.md:224-226
+% src: src/erisml_compiler/audit/hash_chain.py:69 (timestamp_utc)
+% src: src/erisml_compiler/audit/provenance.py:15-25 (duration_ms)
+
+The decision proof extends the chain after Pass~12. It is a dictionary that hashes the moral
+tensor's values, shape, axes and three moral-bearing metadata keys, hashes the ethical facts and
+hashes a profile record. It lists the forbidden and ranked options. Its \code{previous\_proof\_hash}
+field defaults to the audit record's $h_{\mathrm{IR}}$, and its \code{proof\_hash} is the SHA-256
+of every other field. Because the proof is built after the audit record, $h_{\mathrm{IR}}$ does not
+cover it. The link runs from the proof back to the representation.
+Figure~\ref{fig:compiler-audit} draws the chain.
+% src: src/erisml_compiler/erisml_backend/v3_phase6.py:195-337
+% src: src/erisml_compiler/pipeline/orchestrator.py:468-507 (audit before proof)
+
+\begin{figure}[t]
+\centering
+\input{figures/ch05_audit_chain}
+\caption{The audit chain of one compile. Four inputs are hashed into the audit record, and the
+decision proof points back to the representation hash. The timestamp and the pass durations
+change between any two compiles, and the hashes do not.}
+\label{fig:compiler-audit}
+\end{figure}
+
+A separate function bundles an audit folder for a reviewer. The folder holds the representation
+as JSON, the source text, the ErisML rendering and a readable report.
+% src: src/erisml_compiler/audit/artifact.py:12-37
+
+\subsection{The training export}
+
+The RLEF export writes one JSON record per compile under schema \code{rlef\_v0.2}. It holds the
+source text, the flat annotations, the moral-vector timeline, the DEME verdict, the module
+outputs, the audit record and any human corrections. Since version 0.8.0 it also holds the moral
+graph, with its hash, canonical JSON, nodes, edges and counts by kind, every projection result and
+the disagreement record. A trainer can learn against the typed graph, against one theory's
+verdict or against the timeline.
+% src: src/erisml_compiler/export/rlef.py:1-81
+% src: docs/architecture.md:335-372
+
+\subsection{The I-EIP monitor interface}
+
+The I-EIP monitor compares the text-side representation with probes on a model's internal
+activations. It has three lenses. The text lens is the consequentialist projection's moral vector.
+The activation lens is a set of calibrated per-layer probes on hidden states, read from a mock
+source, a local Hugging Face model or a remote host over SSH. The delta lens compares the two and
+runs an equivariance test under meaning-preserving rewrites.
+% src: docs/i_eip_monitor.md:1-38
+% src: docs/architecture.md:312-333
+% src: src/erisml_compiler/monitor/__init__.py:1-46
+
+The comparison scores each dimension $d$ with weight $\omega_d$. Let $\Delta_d$ be the activation
+value minus the text value, and let $\delta_d = 1$ when the two directions differ. The divergence is
+\begin{equation}
+D = \frac{\sum_d \omega_d \min\bigl(1, |\Delta_d| + 0.5\,\delta_d\bigr)}{\sum_d \omega_d},
+\label{eq:compiler-divergence}
+\end{equation}
+and the comparison flags for review when $D \geq 0.35$, when more than two directions differ, or
+when a dimension uncertain on both sides moves by at least $0.25$. Six named failure modes set
+\code{requires\_human\_review}. They are \code{text\_internal\_mismatch},
+\code{layerwise\_drift}, \code{group\_symmetry\_break}, \code{probe\_uncertainty\_spike},
+\code{audit\_chain\_break} and \code{rho\_non\_orthogonal}. The monitor's only authorised output on
+failure is that flag with a report. It never overrules a projection's verdict. Chapter~12 reports
+the monitor study.
+% src: src/erisml_compiler/delta/compare.py:81-190 (compare_morals, defaults)
+% src: src/erisml_compiler/delta/failure_modes.py:1-60
+% src: docs/i_eip_monitor.md:5-8
+
+The monitor runs outside the silicon path by design. Activation hooks need a runtime that can read
+a transformer's hidden states. The monitor document places the silicon path in the real-time loop
+and the monitor out of band on a sampled subset of inputs.
+% src: docs/i_eip_monitor.md:118-125
+
+\section{Trust boundaries and stated limits}\label{sec:compiler-boundaries}
+
+\subsection{Six boundaries, each with a mediator}
+
+The architecture names six trust boundaries. Table~\ref{tab:compiler-trust} lists them with the
+mechanism that mediates each one.
+% src: docs/architecture.md:415-424
+
+\begin{table}[t]
+\centering\footnotesize
+\begin{tabular}{p{30mm}p{30mm}p{62mm}}
+\hline
+Boundary & Untrusted side & Mediator \\
+\hline
+Text input & user text & extractor and canonicalizer \\
+LLM output (Tier 3) & language model & critic, canonicalizer and schema validators \\
+Probe output (Tier 2.5) & probe checkpoint & calibration provenance with probe and corpus hashes, anchored to the monitor trace \\
+Activation source & remote inference host & SSH with a literal harness string and no remote code update \\
+Ethos profile & YAML on disk & YAML SHA-256 in the audit record \\
+Audit chain & downstream consumer & $h_{\mathrm{IR}}$, $h_G$ and the decision-proof hash \\
+\hline
+\end{tabular}
+\caption{The six trust boundaries of the compiler. In each row the compiler is the trusted side.
+Two mediators filter what crosses, three record a hash of it, and one restricts what runs remotely.}
+\label{tab:compiler-trust}
+\end{table}
+% src: docs/architecture.md:417-424
+
+The mediators work in three ways. Two filter. Extraction with canonicalization, and the critic
+with the schema validators, change or reject what crosses. Three record. The probe provenance,
+the ethos hash and the audit hashes leave content unchanged and make a later substitution
+detectable. One restricts. The activation harness is a literal string in the compiler's source, and
+no remote code update runs at inference time. The monitor document places that trust boundary at
+the SSH account. The monitor document adds its own threat
+model, with probe poisoning, activation spoofing and a faulty rewrite catalogue as the three named
+threats.
+% src: docs/i_eip_monitor.md:40-113
+
+\subsection{What the architecture says it is not}
+
+The architecture document ends with four disclaimers. This chapter restates them because they
+bound every claim above.
+
+The compiler is not neutral across metaethical positions. The substrate's categories,
+stakeholders, maxims, commitments and ethical facts, are themselves choices. The split into
+substrate and projections made that commitment smaller than it was before version 0.8.0. It did
+not remove it.
+
+The compiler is not a moral authority. It emits findings from several theories and declines to
+choose between them when they disagree.
+
+The compiler does not contain a complete Kantian, virtue or care analyser. The shipped findings
+come from rule lists, a table from action kinds to virtues and role labels for dependency. The
+universalizability gate now runs a solver, but over a hand-written model of nine facts.
+
+The compiler does not replace human judgment. The monitor's only output on failure is a request
+for human review. The projections produce findings meant to support deliberation.
+% src: docs/architecture.md:426-447
+% src: src/erisml_compiler/delta/universalizability_smt.py:46-58
+
+\subsection{What the code adds to that list}
+
+Reading the code adds five points to the document's own list. The rights, fairness, legitimacy,
+epistemic and autonomy modules select facts by keyword matches on free-text descriptions, so their
+scores depend on the extractor's wording. Two second-tier modules declare dependencies that their
+code does not read, so in the default profile those edges fix order and carry no data. The polarity
+map leaves three DEME verdict strings at \code{neutral}, so those verdicts never enter the
+disagreement test. The emitted EM-DAG hardware is a skeleton. The audit record carries a timestamp
+and timings, so only its two hashes are reproducible bit for bit.
+% src: src/erisml_compiler/em_dag/modules/{rights,fairness,legitimacy,epistemic,autonomy}.py
+% src: src/erisml_compiler/em_dag/modules/fidelity.py:21, externality.py:24
+% src: src/erisml_compiler/projections/base.py:67-91
+% src: src/erisml_compiler/silicon/hls_emit.py:221-224
+% src: src/erisml_compiler/audit/hash_chain.py:69
+
+The parts of the compiler that the home-care twin relies on are narrower than this chapter. The
+twin loads its scene through the Tier~1 loader, canonicalizes with the registry canonicalizer, and
+runs the scene runtime that Chapter~7 describes. The twin's code under \code{twin/} imports
+neither the projections package nor the silicon package.
+% src: C:\source\gtc-prototype\twin\brain.py:301-319
+% src: grep -rn "projections|silicon|em_dag" C:\source\gtc-prototype\twin --include=*.py | grep import (no hits, 2026-10-03)

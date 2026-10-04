@@ -1,0 +1,28 @@
+% Chapter 9. The situation and centre_contact stratifications. Red edges enter an authority
+% stratum and come only from system events. Light-blue edges are other system events.
+% src: twin/scene/margaret_home.erisml:866-892
+\begin{tikzpicture}[house, lab/.style={flowlabel, font=\sffamily\scriptsize}]
+% situation
+\node[stratum] (ord) at (0,0) {ordinary};
+\node[authority] (ems) at (40mm,-15mm) {ems\_only};
+\node[authority] (emg) at (40mm,15mm) {emergency};
+\draw[grant] (ord) -- node[lab, above left]{elevate} (emg);
+\draw[grant] (ord) -- node[lab, below left]{authorize\_ems} (ems);
+\draw[grant] (ems) -- node[lab, right]{elevate} (emg);
+\draw[flow] (emg.north) .. controls (40mm,27mm) and (0,27mm) .. node[lab, above]{lapsed} (ord.north);
+\draw[flow] (ems.south) .. controls (40mm,-27mm) and (0,-27mm) .. node[lab, below]{lapsed} (ord.south);
+\node[detail, anchor=west] (note) at (52mm,0) {a refusal\\moves nothing};
+\begin{scope}[on background layer]
+\node[panel=Grey, fit=(ord)(ems)(emg)(note), inner xsep=5mm, inner ysep=16mm] (S1) {};
+\end{scope}
+\node[stepname=Grey, anchor=north west] at ([xshift=2mm, yshift=-1mm]S1.north west) {\code{situation}};
+% centre_contact
+\node[stratum] (rch) at (96mm,0) {reachable};
+\node[authority] (unr) at (134mm,0) {unreachable};
+\draw[grant] (rch.north east) to[bend left=18] node[lab, above]{unavailable} (unr.north west);
+\draw[flow] (unr.south west) to[bend left=18] node[lab, below, align=center]{on the line, EMS sent\\or stood down} (rch.south east);
+\begin{scope}[on background layer]
+\node[panel=Grey, fit=(rch)(unr), inner xsep=7mm, inner ysep=23mm] (S2) {};
+\end{scope}
+\node[stepname=Grey, anchor=north west] at ([xshift=2mm, yshift=-1mm]S2.north west) {\code{centre\_contact}};
+\end{tikzpicture}

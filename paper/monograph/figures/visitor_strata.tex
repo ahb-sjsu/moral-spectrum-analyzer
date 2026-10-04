@@ -1,0 +1,28 @@
+% visitor_standing, main paths, in the house style (figures/housestyle.tex). Caption is the
+% including chapter's. Red edges enter an authority stratum and come only from system events.
+% Dashed grey edges are the classifier's reading. Light-blue edges are other system events.
+% src: twin/scene/margaret_home.erisml:816-831
+% src: docs/STRATA_TAXONOMY.md:49-67
+\begin{tikzpicture}[house, lab/.style={flowlabel, font=\sffamily\scriptsize}]
+\node[stratum] (none) at (0,0) {none};
+\node[stratum] (str) at (36mm,15mm) {stranger};
+\node[stratum] (wel) at (76mm,15mm) {welcomed};
+\node[authority] (arr) at (36mm,-15mm) {arranged};
+\node[authority] (hh) at (76mm,-15mm) {household};
+\node[absorbing] (hos) at (112mm,0) {hostile};
+\draw[untrusted] (none) -- node[lab, above left]{someone enters} (str);
+\draw[untrusted] (str) -- node[lab, above]{she welcomes him} (wel);
+\draw[grant] (none) -- node[lab, pos=0.3, below left]{visit arranged} (arr);
+\draw[grant] (wel) -- node[lab, right, align=left]{credential\\verified} (hh);
+\draw[flow] (wel) -- node[lab, above right]{attack measured} (hos);
+\draw[flow] (hh) -- (hos);
+\draw[flow] (hh.north west) -- node[lab, pos=0.35, below left]{revoked} (str.south east);
+\draw[flow] (hos.south) .. controls (112mm,-34mm) and (0,-34mm) .. node[lab, below]{the centre clears him (oversight)} (none.south);
+% legend
+\node[authority, minimum width=12mm, minimum height=5mm, font=\sffamily\scriptsize] (k1) at (2mm,-44mm) {authority};
+\node[absorbing, minimum width=12mm, minimum height=5mm, font=\sffamily\scriptsize, right=2.5mm of k1] (k2) {absorbing};
+\node[stratum, minimum width=12mm, minimum height=5mm, font=\sffamily\scriptsize, right=2.5mm of k2] (k3) {plain};
+\draw[grant] ([xshift=3mm]k3.east) -- ++(7mm,0) node[lab, right] (k4) {system event, grants};
+\draw[flow] ([xshift=2mm]k4.east) -- ++(7mm,0) node[lab, right] (k5) {system event};
+\draw[untrusted] ([xshift=2mm]k5.east) -- ++(7mm,0) node[lab, right] {model reading};
+\end{tikzpicture}

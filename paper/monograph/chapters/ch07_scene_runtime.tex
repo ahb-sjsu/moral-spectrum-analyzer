@@ -1,0 +1,483 @@
+\chapter{The scene runtime}\label{ch:runtime}
+
+The scene runtime executes a scene. It takes the validated record of Chapter~\ref{ch:erisml}, keeps
+a small set of state machines and stratifications, and steps them on a stream of events. After every
+event it reports which of the agent's actions are prohibited, which are obliged and which are
+allowed. This chapter follows one step through the runtime, then describes the machines, the rule
+by which prohibitions win, the discharge of obligations, the loading of strata, the scene agent whose
+two models read and write the runtime, and the processes that present a scene's protocols as BPMN
+diagrams. All of it is in the erisml-compiler package, under \code{runtime/}, \code{fsm/} and
+\code{process/}. The twin of Part~III uses it unchanged.
+% src: erisml-compiler src/erisml_compiler/runtime/scene.py:1-37
+% src: gtc-prototype twin/brain.py:191-194, 312-320
+
+\section{A runtime is built from one record}\label{sec:runtime-build}
+
+The class \code{SceneRuntime} is constructed from a \code{CompilerIR} and an optional agent name.
+When no name is passed it takes the scene's \code{extra.agent}. The constructor creates one
+commitment machine per commitment. It creates one consent machine per stakeholder whose consent
+status is set and is not \code{n/a}, starting in the state that status names, or in
+\code{not\_obtained} for any other value. It creates one legitimacy machine per stakeholder in the
+authority or protector role. It loads and checks the stratifications
+(Section~\ref{sec:runtime-strata}). It then steps the scene's standing events in order of time
+index.
+% src: erisml-compiler src/erisml_compiler/runtime/scene.py:48, 106-135
+
+For Margaret's home this gives three commitment machines, one consent machine for Margaret, three
+legitimacy machines for the robot, the monitoring centre and emergency services, and seven
+stratifications, fourteen state entries in all. None of the four standing events moves any of them.
+The runtime therefore starts with every commitment active, Margaret's consent not obtained, every
+authority fully legitimate and every stratification in its initial state.
+% src: gtc-prototype twin/scene/margaret_home.erisml:41-69 (stakeholders), 81-109 (commitments), 110-134 (events), 815-922 (strata)
+% src: erisml-compiler src/erisml_compiler/runtime/scene.py:48-66 (event types that drive machines; none is a standing event type)
+% src: erisml-compiler src/erisml_compiler/runtime/strata.py:124-144 (no gate fires on consent_refused, role_assigned, authority_delegated or activity_started in this scene)
+
+\section{One step moves strata, then machines, then norms}\label{sec:runtime-step}
+
+The method \code{step} takes one event (Figure~\ref{fig:runtime-step}). An event given as a plain
+dictionary is first built into an event record, with an identifier \code{live}$k$ and, when it has
+no time index, the runtime's current time index plus one. The runtime's time index is the largest
+seen so far. The event is appended to the run, and its position $k$ in the run is its index from
+then on.
+% src: erisml-compiler src/erisml_compiler/runtime/scene.py:192-199
+
+\begin{figure}[t]
+\centering
+\input{figures/ch07_runtime_step}
+\caption{One step of the scene runtime, from an event to a snapshot. An event reaches the runtime
+from the classifier, which may propose only perceived types, or from the system, the only source
+that can lead into an authority stratum.}
+\label{fig:runtime-step}
+\end{figure}
+
+The step then runs five stages in a fixed order.
+\begin{enumerate}
+\item Every stratification is offered the event. The first of its gates that fires sets its state and
+records the event's index as the moment the stratum was established. If the state changed, the
+runtime records a crossing.
+\item The consent, legitimacy and commitment machines step on the event types mapped to them.
+\item Each commitment is checked for defeasibility. An active commitment whose defeasibility
+condition now holds is overridden, and an overridden commitment is restored by an oversight event.
+\item If the event is \code{action\_\allowbreak{}performed}, every obligation on the performed action records
+the event's index as its discharge point.
+\item The runtime computes the snapshot.
+\end{enumerate}
+The order matters. Strata step first, so a ruling that moves the situation into an emergency
+overrides the privacy promise in the same step, because the promise's defeasibility condition reads
+that stratum.
+% src: erisml-compiler src/erisml_compiler/runtime/scene.py:201-238
+% src: gtc-prototype twin/scene/margaret_home.erisml:100, 778 (privacy_promise defeasible on stratum:situation=emergency)
+
+The snapshot carries the time index, the event, the state of every machine and stratification, the
+identifiers of the norms in force, the prohibited, obliged and allowed actions, the norms behind each
+of them, the crossings of this step, and the most urgent tier of each obliged action.
+% src: erisml-compiler src/erisml_compiler/runtime/scene.py:70-103
+
+\section{Three small machines hold commitments, consent and legitimacy}\label{sec:runtime-machines}
+
+Each machine is a deterministic table from a state and an event tag to a next state
+(Figure~\ref{fig:runtime-machines}). A tag the table does not list for the current state leaves the
+state unchanged. Absorbing states ignore every tag. The commitment machine has seven states, and its
+five terminal states are absorbing. The consent machine has four, and coerced and withdrawn are
+absorbing. The legitimacy machine has six, and void is absorbing.
+% src: erisml-compiler src/erisml_compiler/fsm/commitment_fsm.py:33-91
+% src: erisml-compiler src/erisml_compiler/fsm/consent_fsm.py:13-37
+% src: erisml-compiler src/erisml_compiler/fsm/legitimacy_fsm.py:22-74
+
+\begin{figure}[t]
+\centering
+\input{figures/ch07_machines}
+\caption{The three moral state machines as their tables define them. Dashed transitions exist in
+the tables, but the scene runtime never sends their tags, so it never reaches defeated or void
+through a commitment.}
+\label{fig:runtime-machines}
+\end{figure}
+
+The runtime maps scene event types to tags. Three consent types, \code{consent\_given},
+\code{consent\_\allowbreak{}withdrawn} and \code{coerced\_\allowbreak{}assent}, step the machine of the event's actor. Six
+legitimacy types step the machine of the event's target. Three commitment types step the machine
+whose identifier is the event's content. The consent tag for a coerced revisit and the commitment
+tags for an override and for a legitimacy collapse are in the tables but not in the runtime's maps.
+The legitimacy table also differs from its docstring. The table lets a fully legitimate or
+defeasible authority become fraudulent and lets a coercive one become void, which the docstring
+does not list. This chapter follows the tables.
+% src: erisml-compiler src/erisml_compiler/runtime/scene.py:48-66, 207-212
+% src: erisml-compiler src/erisml_compiler/fsm/consent_fsm.py:1-21
+% src: erisml-compiler src/erisml_compiler/fsm/commitment_fsm.py:44-71
+% src: erisml-compiler src/erisml_compiler/fsm/legitimacy_fsm.py:1-52
+
+Margaret's scene declares none of these twelve event types in its vocabulary. In the twin the
+commitment machines move only through defeasibility and oversight, and the consent and legitimacy
+machines keep their initial states.
+% src: grep of the twelve type names over gtc-prototype twin/scene/margaret_home.erisml and twin/*.py returned nothing (2026-10-03)
+
+\section{A condition overrides a commitment and only oversight restores it}\label{sec:runtime-defeasible}
+
+After the machines step, the runtime checks every commitment. An active commitment is overridden
+when any of its named defeasibility conditions holds, read from the point of its last restoration.
+An overridden commitment is restored when the event's type is in the scene's \code{oversight} list
+and the event names the commitment by content or target, or names nothing. Restoration records the
+event's index, and only later events can override the commitment again.
+% src: erisml-compiler src/erisml_compiler/runtime/scene.py:214-230
+% src: erisml-compiler tests/test_scene_runtime.py:98-114
+
+In Margaret's home the privacy promise is overridden when the situation stratification enters
+emergency, and its three prohibitions are lifted while it is overridden. Two of the four oversight
+types can restore it. The centre's confirmation that privacy is restored and the lapse of evidence
+declare no content, so an event of either type that names nothing restores any overridden
+commitment. The clearing of a visitor is declared with the single content \code{visitor}, and the
+clearing of devices with \code{devices}. Neither names a commitment, so neither restores one. The
+scene's comment says the same of the first.
+% src: gtc-prototype twin/scene/margaret_home.erisml:100, 778, 802-804, 1120, 1133, 1139, 1151
+% src: erisml-compiler src/erisml_compiler/runtime/scene.py:224-230
+
+The freshness rule of the next section applies here too. After a restoration, the emergency
+stratum counts toward a new override only if a gate establishes it again after the restoration. A
+ruling of elevate that arrives after the restoration overrides the promise again.
+% src: erisml-compiler src/erisml_compiler/runtime/scene.py:180-188, 217-223
+
+\section{Prohibitions win}\label{sec:runtime-norms}
+
+Let $N$ be the scene's norms and $A$ the actions in its capability list. For a norm $n$ write
+$\pi(n)$ for its priority tier and $d_n$ for its discharge point, which is $0$ until an action
+discharges it. A norm is lifted when it is defeasible, its source is \code{commitment:}$c$ for a
+commitment $c$ of the scene, and that commitment's machine is not active. The set of norms in force
+after event $k$ is
+\begin{equation}
+F_k = \bigl\{\, n \in N \bigm| n \text{ is not lifted} \;\wedge\; \forall t \in T(n)\;
+\mathrm{holds}_{s(n)}(t) \,\bigr\},
+\label{eq:in-force}
+\end{equation}
+where $T(n)$ is the norm's condition list, and $s(n) = d_n$ for an obligation and $s(n) = 0$ for any
+other norm.
+% src: erisml-compiler src/erisml_compiler/runtime/scene.py:241-251
+
+A norm applies to an action $a$ when the scene has no agent or the norm's actor is the agent, and the
+norm's action is $a$ or is \code{elevated\_\allowbreak{}action} with $a$ an elevated capability. For each
+$a \in A$ let $P_a$ be the prohibitions in $F_k$ that apply to $a$, and let $R_a$ be the permissions
+and exceptions in $F_k$ that apply to $a$ by name. Then $a$ is prohibited when
+\begin{equation}
+P_a \neq \emptyset \;\wedge\; \Bigl( R_a = \emptyset \;\vee\;
+\min_{n \in P_a} \pi(n) \;\le\; \min_{n \in R_a} \pi(n) \Bigr).
+\label{eq:prohibited}
+\end{equation}
+A permission lifts a prohibition only from a strictly more urgent tier. On equal tiers the
+prohibition wins. A permission written against \code{elevated\_\allowbreak{}action} lifts nothing. The allowed
+actions are the capabilities that are not prohibited.
+% src: erisml-compiler src/erisml_compiler/runtime/scene.py:253-288
+% src: erisml-compiler tests/test_scene_runtime.py:128-141
+
+The obliged actions are the actions of the obligations in $F_k$ that bind the agent. The obliged set
+is not intersected with the capabilities and is not filtered by the prohibitions. An action can be
+obliged and prohibited in the same snapshot. The scene agent's chooser removes that conflict in the
+direction of the prohibition, because it offers the model only obligations that are allowed and
+falls back only to an allowed obligation (Section~\ref{sec:runtime-agent}). Prohibitions therefore
+win twice, once against permissions in Equation~\eqref{eq:prohibited} and once against obligations
+in the chooser. For each prohibited or obliged action the snapshot records the identifiers of the
+norms behind it.
+% src: erisml-compiler src/erisml_compiler/runtime/scene.py:282-298
+% src: erisml-compiler src/erisml_compiler/runtime/agent.py:243-244, 269-275
+
+Margaret's emergency call shows the rule at work (Listing~\ref{lst:scene-ems}). Outside an
+emergency and without the governor's authorization the prohibition \code{n6p} is in force at tier 0
+and no permission exists, so the call is prohibited. Under a ruling of elevate the situation
+stratification enters emergency. The prohibition leaves $F_k$ and the obligation \code{n6} enters it.
+% src: gtc-prototype twin/scene/margaret_home.erisml:187-208, 778, 785, 873-880
+
+\paragraph{Urgency reaches the chooser.}
+Each obliged action carries the most urgent tier among the obligations in force that oblige it. The
+snapshot stores these tiers, and the method \code{obliged\_\allowbreak{}by\_\allowbreak{}priority} orders the obliged actions
+by tier and then by name. The chooser receives the allowed obligations in that order, each with its
+tier, and is told that tier 0 is the most urgent. Its fallback takes the first. Before this change
+the model saw obligations in alphabetical order with no tier, and in a twin development run a
+referral of fraud to the monitoring centre lost to check-ins. The obliged set itself did not change.
+% src: erisml-compiler src/erisml_compiler/runtime/scene.py:84-89, 282-298
+% src: erisml-compiler src/erisml_compiler/runtime/agent.py:42-50, 243-251, 270-274
+% src: erisml-compiler PR #38 (merged), "Found in the gtc twin (dev12b d24)"
+% src: erisml-compiler tests/test_scene_agent.py:248 (test_the_chooser_sees_obligations_most_urgent_first_and_falls_back_to_the_most_urgent)
+
+\section{An action discharges an obligation until its stratum is established again}\label{sec:runtime-discharge}
+
+An obligation is discharged by doing what it obliges. When the event \code{action\_\allowbreak{}performed} with
+content $a$ is stepped at index $k$, every obligation whose action is $a$ records $d_n = k$, whether
+or not it is in force at that moment. From then on its tokens are read from $d_n$
+(Equation~\ref{eq:in-force}). An \code{event:} token over the trigger counts only a new event after
+the action, so a fresh inactivity report obliges a fresh check-in. An obligation with no conditions
+cannot be discharged and is in force at every step.
+% src: erisml-compiler src/erisml_compiler/runtime/scene.py:232-235, 250-251
+% src: erisml-compiler tests/test_scene_runtime.py:117-125
+
+A stratum is a state, not an event, and this broke discharge. A token that read only the current
+stratum ignored the discharge point, so an obligation that rested on a stratum stayed in force for
+as long as the stratum lasted. The twin found this when the corroborated emergency moved from a
+\code{latest:} token over the governor's ruling to the situation stratification. The robot remained
+obliged to call emergency services after it had called them. Pull request 36 of the compiler
+changed the rule.
+% src: erisml-compiler PR #36 (merged) description
+% src: erisml-compiler commit 4f9a224
+
+Let $\varepsilon_\sigma$ be the index of the event at which a gate of stratification $\sigma$ last
+fired, and let $\sigma$ be in state $x_\sigma$. A \code{stratum:}$\sigma$\code{=}$q$ token evaluated
+from starting point $s$ holds when
+\begin{equation}
+x_\sigma = q \;\wedge\; \bigl(\, \nu \;\vee\; s = 0 \;\vee\; \varepsilon_\sigma > s \,\bigr),
+\label{eq:stratum-fresh}
+\end{equation}
+where $\nu$ is true when the token sits under an odd number of \code{not:} prefixes. A positive
+token counts after a discharge only if a gate established the stratum after it. Under a negation the
+token reads the stratum as it stands now, so \code{not:} keeps the meaning ``not in that stratum
+now''. The polarity passes through named conditions, so a \code{not:cond:} over a condition defined
+by a stratum token also reads the stratum now. Margaret's check-in obligation after a fall carries
+\code{not:cond:corroborated\_\allowbreak{}life\_\allowbreak{}threatening\_\allowbreak{}emergency} and so stops as soon as the situation is an
+emergency, whatever was discharged before.
+% src: erisml-compiler src/erisml_compiler/runtime/scene.py:151-162, 173-176, 180-188
+% src: gtc-prototype twin/scene/margaret_home.erisml:248-256 (n4c), 778
+
+A gate that fires records the index even when it leaves the stratum where it was. Fresh evidence for
+the same stratum therefore owes the obligation again without any crossing. Three tests fix the rule,
+namely discharge until the stratum is entered again, a negated stratum read now after a discharge,
+and fresh evidence for the same stratum.
+% src: erisml-compiler src/erisml_compiler/runtime/strata.py:124-144
+% src: erisml-compiler tests/test_scene_strata.py:176-225
+
+Figure~\ref{fig:runtime-discharge} works the rule by hand for the obligation \code{p9v}, which obliges
+the robot to speak, to warn Margaret, while an animal at hand is venomous.
+% src: gtc-prototype twin/scene/margaret_home.erisml:570-578 (p9v, stratum:animal_standing=venomous)
+
+\begin{figure}[t]
+\centering
+\input{figures/ch07_discharge}
+\caption{The obligation to warn Margaret about a venomous animal through five events, worked from
+the code and not from a recorded run. Before pull request 36 the warning stayed owed after it was
+given, for as long as the animal stayed venomous.}
+\label{fig:runtime-discharge}
+\end{figure}
+
+A \code{state:} token over a stratum, written \code{state:stratum:}$\sigma$\code{=}$q$, reads the
+same state but bypasses the freshness rule, because the runtime's \code{state:} branch ignores the
+starting point. Margaret's scene uses no \code{state:} token.
+% src: erisml-compiler src/erisml_compiler/runtime/scene.py:138-143, 177-179
+% src: gtc-prototype twin/scene/margaret_home.erisml (no "state:" token; grep 2026-10-03)
+
+\section{Strata are stepped by gates and loaded under two checks}\label{sec:runtime-strata}
+
+A gate has an identifier, a trigger type, an optional trigger content, a target state, a tuple of
+source states and a boundary type. It fires on an event when the event's type is the trigger type,
+the event's content equals the trigger content if one is given, and the stratification is in one of
+the source states, or in any state when none is listed. A stratification offers each event to its
+gates in declared order, and the first that fires wins. Gates are edge-triggered. Only the event
+being stepped can fire one, and history never fires it again. A crossing record names the
+stratification, the gate, the boundary type and the source and target states.
+% src: erisml-compiler src/erisml_compiler/runtime/strata.py:17-25, 46-60, 124-144
+% src: erisml-compiler tests/test_scene_strata.py:72-95
+
+The boundary types follow Geometric Ethics \cite{bond2026geometricethics}. A \code{threshold} gate is
+Type~I, a measured quantity crossing a value. A \code{phase} gate is Type~II, a change of phase. An
+absorbing state is Type~III. Type~IV constraint surfaces are not states. They are the scene's non-defeasible
+prohibitions.
+% src: erisml-compiler src/erisml_compiler/runtime/strata.py:17-22, 43
+
+The loader refuses a scene that breaks any of its rules, so such a scene never runs. A stratification
+must declare states, and its initial state must be one of them. Its authority and absorbing states
+must be declared, and its initial state may not be an authority state. Every gate must have a
+trigger, name only declared states, use one of the two boundary types and fire on a declared event
+type. Two further checks carry the containment argument.
+% src: erisml-compiler src/erisml_compiler/runtime/strata.py:26-33, 63-122
+% src: erisml-compiler tests/test_scene_strata.py:117-165
+\begin{description}
+\item[Authority.] A gate whose target is an authority state must fire on an event type declared
+\code{source: system}. A model's reading of the world cannot lead into a state that grants
+something.
+\item[Absorption.] A gate that can leave an absorbing state must fire on a human-oversight event. The
+states a gate can leave are its source states, or every state when it lists none, less its target.
+\end{description}
+% src: erisml-compiler src/erisml_compiler/runtime/strata.py:26-33, 113-122
+
+In Margaret's home both authority states of the situation are entered only on the governor's ruling.
+The reporting duty has no authority state, so a perceived suspicion of a crime may enter it. Adding a
+duty grants nothing. The visitor's hostile state is left only on \code{visitor\_\allowbreak{}cleared}, and a
+compromised device only on \code{device\_\allowbreak{}cleared}, both oversight types.
+% src: gtc-prototype twin/scene/margaret_home.erisml:804, 820-831, 873-880, 893-907, 916-922
+
+\paragraph{The trigger key.}
+A gate's trigger was first written under the key \code{on}. YAML 1.1 reads a bare \code{on} as the
+Boolean true, so a scene written as \verb|{on: event}| produced a gate keyed \code{True} with an empty
+trigger. The loader then refused it as an undeclared event type with an empty name, which hid the
+cause, and the twin's scene hit exactly this. Pull request 29 renamed the key to \code{trigger}, the
+book's triggering feature, and the loader now refuses a gate without one with a message that names
+the YAML trap. A test parses \code{on:} with PyYAML and checks the refusal.
+% src: erisml-compiler PR #29 (merged) description
+% src: erisml-compiler src/erisml_compiler/runtime/strata.py:17-19, 87-90
+% src: erisml-compiler tests/test_scene_strata.py:167-174
+
+\section{The agent's two models are isolated from each other}\label{sec:runtime-agent}
+
+The runtime decides nothing about the world. The scene agent connects it to two models
+(Figure~\ref{fig:runtime-agent}). The observation classifier turns perception facts into events of
+the scene's vocabulary. The action chooser picks one action from the allowed set. Neither model can
+change the norms, the machines or the allowed set. Both receive the scene's role, so one runtime can
+serve every agent of a scene with several parties.
+% src: erisml-compiler src/erisml_compiler/runtime/agent.py:1-22, 56-57
+
+\begin{figure}[t]
+\centering
+\input{figures/ch07_agent}
+\caption{The isolated scene agent. What the two models write passes through checks before it
+reaches the runtime or the robot, and the chooser never sees the perception facts.}
+\label{fig:runtime-agent}
+\end{figure}
+
+\paragraph{The classifier.}
+The classifier's vocabulary is the scene's event types less the system types. It receives the
+scene's plain-language description, that vocabulary, the last eight events and the facts. Each
+event it proposes is checked. An event is rejected and reported, never stepped, when it is not an
+object with a string type, when its actor, target or content is not a string, when its conditions
+are not a list of strings, when its type is a system type, when its type is undeclared, or when its
+content is outside the type's declared list. A comment in the code records why the field types are
+checked. A model once returned a list as the content of a free-content type, and the whole decision
+failed.
+% src: erisml-compiler src/erisml_compiler/runtime/agent.py:105-140, 153-172
+
+Isolation adds a second layer, which the code calls the boundary of mandatory canonicalization. When
+the scene declares actors in \code{extra.actors}, an event's actor must be one of them. Any other
+actor is snapped by the canonicalizer to a declared one, or to \code{unknown}, and the snap is
+recorded. An event type that
+lists its actors keeps only those, and any other actor becomes the first listed. The target is
+canonicalized like the actor. The event's conditions are dropped. Content for a type with no
+declared content list is free text, and it is removed and recorded in a quarantine list, never
+stepped. What is stepped is then canonical, with declared types, declared contents and declared
+actors.
+% src: erisml-compiler src/erisml_compiler/runtime/agent.py:84-95, 142-151, 183-200
+
+The actor constraint came from the twin. In one development run, 30 sensor readings were classified
+with the actor \code{unknown\_\allowbreak{}person} and 71 with \code{unknown}. Downstream they read as a stream of
+strangers, and the chooser called the monitoring centre in scenarios where nobody was there. Pull
+request 37 let an event type name its only actors, and Margaret's scene gives sensor readings the
+actor \code{device} and media content the actor \code{media} (Listing~\ref{lst:scene-actor-types}).
+% src: erisml-compiler PR #37 (merged) description, "dev11b d23, d25"
+% src: erisml-compiler src/erisml_compiler/runtime/agent.py:186-194
+% src: erisml-compiler tests/test_scene_agent.py:167
+% src: gtc-prototype twin/scene/margaret_home.erisml:1121-1122
+
+\paragraph{The chooser.}
+The chooser has two views. In the facts view it receives the perception facts. In the canonical view
+it never sees them. It receives the last sixteen stepped events reduced to type, actor, target and
+content, and from the caller's context only two keys, \code{governor\_\allowbreak{}ruling} and
+\code{requested}. Raw text
+in the world, such as a television, a message or a stranger's words, then cannot reach the model
+that picks the action. In both views it also receives the scene's description, the allowed
+obligations with their tiers, the default action, the allowed capabilities with their descriptions,
+the prohibited actions and the state of every machine.
+% src: erisml-compiler src/erisml_compiler/runtime/agent.py:204-258
+
+A choice outside the allowed set is rejected and recorded. The chooser then falls back to the most
+urgent allowed obligation, else to the default action if it is allowed, else to the first allowed
+action. The decision records the rejected proposal and marks the fallback.
+% src: erisml-compiler src/erisml_compiler/runtime/agent.py:259-275
+% src: erisml-compiler tests/test_scene_agent.py:49-67
+
+\paragraph{One decision.}
+The method \code{decide} classifies the facts, steps each accepted event in turn and asks the chooser
+for an action on the last snapshot. Events that do not come from perception, such as a ruling or an
+action performed, are stepped through \code{record} and never pass through the classifier. In the
+twin the robot's agent is isolated and uses the compiler's registry canonicalizer. The monitoring
+centre and the dispatcher are agents of their own scenes and run without isolation.
+% src: erisml-compiler src/erisml_compiler/runtime/agent.py:278-309
+% src: gtc-prototype twin/brain.py:185-194 (Desk builds SceneAgent without isolation), 304-305 (centre and EMS desks), 312-320 (robot, isolated=True, RegistryCanonicalizer)
+
+These patterns have names in prior work. A model that reads untrusted text and returns only
+constrained output is the quarantined model of the dual-model pattern \cite{willison2023dualllm}.
+Tracking provenance outside the model so that it cannot grant itself capabilities is the design
+principle of CaMeL \cite{debenedetti2026camel}. A model that may only select among permitted actions
+is the action-selector pattern \cite{beurerkellner2025patterns}. A verified component that removes
+unsafe choices of a learner is a shield \cite{bloem2015shield,alshiekh2018shielding}. The canonical
+view follows the mandatory canonicalization of the No Escape argument \cite{bond2026noescape}.
+% src: gtc-prototype paper/aies2027/prior_art.md:86-91, 126-139
+% src: erisml-compiler src/erisml_compiler/runtime/agent.py:208-216 (cites erisml-lib docs/papers/foundations/no_escape.tex)
+
+\section{A process is a checked view, exported to BPMN and imported under the same checks}\label{sec:runtime-processes}
+
+The process loader turns each entry of \code{extra.processes} into nodes and flows and refuses any
+process that fails one of its checks (Figure~\ref{fig:runtime-process}). Every node needs a unique
+identifier that is a valid XML name, one of the six kinds and a declared lane. A task in the agent's
+lane must name one of the scene's capabilities. A task in another lane must be marked external,
+another party's work. A start or message event must be triggered by a declared event type, and a
+message, being an authenticated channel, by a system type. A timer must name an interval the scene
+declares, as a dotted path into \code{extra}, in seconds, minutes or hours. A flow's condition must be
+evaluable in the scene. No flow may enter a start event or leave an end event. Every node must be
+reachable from a start event, and every node but an end event must have a way on.
+% src: erisml-compiler src/erisml_compiler/process/model.py:20-34, 139-251
+
+\begin{figure}[t]
+\centering
+\input{figures/ch07_process}
+\caption{A scene's process from declaration to diagram and back. An edited diagram re-enters the
+scene only through the checks a declared process passes.}
+\label{fig:runtime-process}
+\end{figure}
+
+The containment check applies to tasks whose capability is elevated or governed. A flow into such a
+task must rest only on structural condition tokens, those that only system events can make true.
+A flow with no condition that leaves a start or message event triggered by a system event is also
+structural, because the authenticated trigger is the evidence. Margaret's escalation ladder uses both
+forms. Its start event for a corroborated emergency is triggered by the governor's ruling of elevate
+and flows straight into the call to emergency services. Its gateway after a ruling reaches the same
+call on \code{latest:governor\_\allowbreak{}ruling=authorize\_\allowbreak{}ems}.
+% src: erisml-compiler src/erisml_compiler/process/model.py:30-33, 210-219
+% src: erisml-compiler tests/test_process_bpmn.py:196 (a governed task may follow a system-triggered event directly)
+% src: gtc-prototype twin/scene/margaret_home.erisml:934, 952, 958, 977, 1162
+
+\paragraph{Export.}
+The function \code{to\_bpmn} writes a checked process as BPMN 2.0 XML \cite{omg2011bpmn} with diagram
+interchange, so that the file opens in BPMN tools such as bpmn-js and Camunda Modeler. The tests
+validate the output against the OMG's schemas. The process becomes one pool with a lane per party. A
+task carries its capability in an \code{erisml:binding} extension element. A start event triggered by
+a system event becomes a message start, and one triggered by a perceived event becomes a
+conditional start whose condition is that event's token. A message becomes an intermediate message
+catch, and a timer an intermediate timer catch with an ISO 8601 duration resolved from the scene. The
+conditions on a gateway's flows are written as formal expressions in the language
+\code{https://erisml.org/condition-token}. The layout is layered, with a node's column given by its
+longest distance from a start and its row by its lane. A descriptor file lets modelers keep the
+binding when they save.
+% src: erisml-compiler src/erisml_compiler/process/bpmn.py:1-18, 28-36, 163-320
+% src: erisml-compiler src/erisml_compiler/process/__init__.py:5-8 (erisml.json moddle descriptor)
+% src: erisml-compiler tests/test_process_bpmn.py:1-18, 110
+
+\paragraph{Import.}
+A BPMN document is a proposal, and the scene decides. The importer reads the meaning back from the
+places the exporter writes it and refuses what the runtime cannot honour. It refuses parallel,
+inclusive, complex and event-based gateways, sub-processes, transactions, call activities, boundary
+events, intermediate throw events, script tasks, business-rule tasks and receive tasks. It refuses a
+condition in any expression language other than condition tokens. It refuses a timer that does not
+name the scene's interval, and a timer whose diagram duration disagrees with that interval, so a
+duration edited in a modeler is refused instead of silently ignored. It refuses a document that
+declares a DTD or an entity, and a document over five million bytes. It then runs the same checks as
+for a declared process.
+% src: erisml-compiler src/erisml_compiler/process/importer.py:1-25, 36-52, 90-99, 226-232, 255-264, 275-294
+% src: erisml-compiler tests/test_process_import.py:24-170
+
+\paragraph{Trace.}
+The trace maps an agent's record stream onto a process for a live view. An event activates a start or
+message node whose trigger matches its type and content. An \code{action\_\allowbreak{}performed} record activates
+the task for that action. Between two activated nodes the trace recovers the shortest path through
+the nodes a run does not record, namely gateways, timers and other parties' tasks, up to a depth of
+four. The trace decides nothing. A task appears in it only if the agent performed the action, and the
+agent performed it only if the scene allowed it.
+% src: erisml-compiler src/erisml_compiler/process/trace.py:1-10, 28-75
+
+The use of BPMN to describe robot missions has precedent \cite{corradini2023bpmn}. Here it describes
+an escalation of human authority and stays a view of the norms.
+% src: gtc-prototype paper/aies2027/prior_art.md:170-175
+
+\section{What the runtime does not do}\label{sec:runtime-limits}
+
+The runtime keeps no clock. Time is the order of events, and a timer in a process names an interval
+that code outside the runtime must measure and report as an event. The runtime does not check that an
+event's type is declared. Checks happen where events enter and where gates and processes load. It
+does not check that an obliged action is one of the agent's capabilities. It does not resolve a
+conflict between an obligation and a prohibition. It reports both, and the chooser resolves it toward
+the prohibition. It does not decide whether an allowed action is wise or safe for Margaret. In the
+twin that judgement belongs to the governor and the \deme{} output gate of Chapters~6 and~9.
+% src: erisml-compiler src/erisml_compiler/runtime/scene.py:192-238, 282-298
+% src: erisml-compiler src/erisml_compiler/runtime/agent.py:16-18 (authority for elevated actions stays with the caller's gate)
+% src: gtc-prototype twin/output_gate.py:1-5

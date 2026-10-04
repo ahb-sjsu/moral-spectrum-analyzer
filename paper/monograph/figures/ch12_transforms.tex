@@ -1,0 +1,34 @@
+% Chapter 12. The five meaning-preserving rewrites of a cycle's perception facts.
+% src: docs/PREREG_IEIP_TWIN.md:40-50
+% src: twin/ieip/analysis.py:60-77 (SYNONYMS), 91-150 (g0 to g4, seeded per cycle)
+\begin{tikzpicture}[house,
+  p/.style={minimum width=29mm, minimum height=40mm, text width=27mm, anchor=north},
+  d/.style={detail, text width=25mm}]
+\foreach \i/\col/\x/\lab in {0/Grey/0/g_0, 1/Purple/31/g_1, 2/Blue/62/g_2, 3/Teal/93/g_3, 4/Green/124/g_4}{
+  \node[panel=\col, p] (P\i) at (\x mm,0) {};
+  \node[step=\col] at ([yshift=-5mm]P\i.north) {\i};
+}
+\node[stepname=Grey, below=10mm of P0.north] (n0) {$g_0$ null};
+\node[desc, below=0mm of n0, text width=27mm] (e0) {whitespace only};
+\node[d, below=1.5mm of e0] {indentation\\1, 2 or 4\\sets the noise\\floor};
+
+\node[stepname=Purple, below=10mm of P1.north] (n1) {$g_1$ key order};
+\node[desc, below=0mm of n1, text width=27mm] (e1) {every object};
+\node[d, below=1.5mm of e1] {keys shuffled\\values unchanged};
+
+\node[stepname=Blue, below=10mm of P2.north] (n2) {$g_2$ units};
+\node[desc, below=0mm of n2, text width=27mm] (e2) {metres to cm};
+\node[d, below=1.5mm of e2] {key suffix\\\code{\_m} to \code{\_cm}\\value times 100};
+
+\node[stepname=Teal, below=10mm of P3.north] (n3) {$g_3$ clock};
+\node[desc, below=0mm of n3, text width=27mm] (e3) {twelve-hour form};
+\node[d, below=1.5mm of e3] {\code{11:53}\\becomes\\\code{11:53 AM}};
+
+\node[stepname=Green, below=10mm of P4.north] (n4) {$g_4$ synonyms};
+\node[desc, below=0mm of n4, text width=27mm] (e4) {activity, behaviour};
+\node[d, below=1.5mm of e4] {\code{sleep} to \code{asleep}\\\code{reading} to\\\code{reading a book}};
+
+% the original facts feed all five
+\node[panel=Amber, anchor=south, minimum width=60mm] (X) at ([yshift=8mm]P2.north) {\textbf{facts $x$ of one decision cycle}\quad seed from the cycle's hash};
+\foreach \i in {0,...,4}{ \draw[flow] (X.south) -- (P\i.north); }
+\end{tikzpicture}

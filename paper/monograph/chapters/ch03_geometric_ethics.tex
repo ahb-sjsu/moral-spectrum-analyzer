@@ -1,0 +1,539 @@
+\chapter{Geometric Ethics for engineers}\label{ch:ge}
+% Author: agent A. Every claim carries a source comment. Paths are local clones.
+% GE book = C:\source\geometric-ethics-content\source\Geometric-Ethics-v1.24.tex (chapter 8 at 10740-12230)
+% GE updates = C:\source\geometric-ethics-content\source\updates\ (sec8_10b_executable_strata.tex, sec8_4_hohfeld_v4.tex)
+% GE paper = C:\source\erisml-lib\docs\papers\foundations\Geometric_Ethics_Foundational_Paper.tex
+% hohfeld.py (V4) = erisml-lib origin/main at commit df00fc5 (3 Oct 2026), read with git show; the
+%   local working copy of erisml-lib still holds the earlier D4 file.
+% MV reference = C:\source\erisml-lib\docs\moralvector_reference.md
+% moral_vector.py = C:\source\erisml-lib\src\erisml\ethics\moral_vector.py
+
+Geometric Ethics is the mathematical account of moral evaluation on which the ErisML stack is
+built. This chapter gives an engineer the parts of it that the rest of the monograph uses. A moral
+assessment has several independent dimensions, and reducing it to one number loses information
+that cannot be recovered. The space of assessments is divided into strata, and the rules change
+when a situation crosses from one stratum into another. The crossings happen at gates, and a gate
+fires only on a declared kind of event. The four Hohfeldian positions of obligation, claim,
+liberty and no-claim are related by a group of four operations. The software carries the
+assessment as a vector of nine named dimensions. Each idea is stated with its status in the
+sources, since some are proved, some are modeling axioms and some rest on measurement.
+
+\section{A moral assessment has nine axes}\label{sec:ge-space}
+
+Geometric Ethics models the morally relevant state of a system of agents as a point $p$ in a
+space $\mathcal{M}$, the moral manifold. In the foundational paper $\mathcal{M}$ has nine
+coordinate axes.
+% src: GE paper:183-198 (Definition, Moral Manifold)
+They are physical consequences, rights and duties, justice and fairness, autonomy, privacy,
+societal impact, virtue and character, legitimacy, and epistemic status. The number nine is a
+modeling choice whose adequacy is empirical. If a moral phenomenon appears that the nine axes
+cannot represent, the space must be extended. If some axes prove redundant, it must be reduced.
+% src: GE paper:201-203 (Remark, Modeling Choice)
+
+The space carries a Riemannian metric $g_{\mu\nu}$, a positive-definite inner product on each
+tangent space that prices a small displacement. The metric is not fixed. Its variation across
+$\mathcal{M}$ encodes how the relative weight of the moral dimensions depends on context.
+% src: C:\source\erisml-lib\docs\papers\foundations\Philosophy_Engineering_Foundation_v1.0.tex:313-322
+For a path $\gamma\colon[0,1]\to\mathcal{M}$ through the space, the behavioural friction is the
+path's length under that metric,
+\begin{equation}
+\mathrm{BF}[\gamma] = \int_0^1 \sqrt{g_{\mu\nu}(\gamma(t))\,\dot\gamma^{\mu}(t)\,\dot\gamma^{\nu}(t)}\;dt ,
+\label{eq:ge-friction}
+\end{equation}
+with summation over repeated indices.
+% src: Philosophy_Engineering_Foundation_v1.0.tex:324-331
+The monograph needs only two consequences of this picture. Distances between assessments are
+defined by a metric that can change with the situation. Paths through the space can be priced,
+which is what the discrete decision complex of Section~\ref{sec:ge-discrete} does.
+
+\section{A single number cannot carry the assessment}\label{sec:ge-scalar}
+
+Let $T$ be a moral tensor of rank at least one, meaning an assessment with at least one index over
+the moral dimensions. Let $c$ be any map that contracts $T$ to a scalar $S = c(T)$. Write
+$I(A;B)$ for the mutual information between random variables $A$ and $B$, and treat the situation
+being assessed as a random variable. The foundational paper's Information Monotonicity theorem
+states
+\begin{equation}
+I(T;\,\text{situation}) \;\geq\; I(S;\,\text{situation}),
+\label{eq:ge-infomono}
+\end{equation}
+with equality if and only if $T$ is already effectively scalar, so that all its dimensions are
+collinear.
+% src: GE paper:320-336 (Theorem, Information Monotonicity, and proof sketch)
+The proof is the data processing inequality. A deterministic function of a random variable
+cannot carry more information about a third variable than the variable itself carries.
+
+The brochure states a second form, about structure instead of information.
+% src: C:\Users\abptl\Documents\Philosophy-Engineering-Brochure.pdf p1 ("no continuous injection [0,1]^d->R for d>=2")
+The Geometric Ethics manuscript proves it for nine dimensions as its Scalar Irrecoverability
+theorem.
+% src: C:\source\erisml-lib\docs\papers\foundations\ch20_economics.py:34 (Theorem 20.2 proof, invariance of dimension)
+
+\medskip\noindent\textbf{Proposition (scalar collapse).} For $d \geq 2$ there is no continuous
+injective map $\varphi\colon [0,1]^d \to \mathbb{R}$.
+
+\medskip\noindent\textit{Proof.} The manuscript argues from Brouwer's invariance of dimension. A
+shorter argument uses connectedness. Suppose $\varphi$ were continuous and injective. Its image is
+compact and connected, hence a closed interval $[a,b]$, and $a<b$ because $\varphi$ is injective.
+Pick $c$ with $a<c<b$ and let $q = \varphi^{-1}(c)$. For $d \geq 2$ the punctured cube
+$[0,1]^d \setminus \{q\}$ is connected. Its image under $\varphi$ is $[a,b]\setminus\{c\}$, which
+is not connected. A continuous map cannot send a connected set onto a disconnected one, so no
+such $\varphi$ exists.\hfill$\square$
+% src: proof by the chapter author (standard topology); the manuscript's proof is at ch20_economics.py:34
+
+Any score that is continuous in the nine dimensions therefore sends distinct assessments to the
+same number. Figure~\ref{fig:ge-scalar} shows the contraction and the brochure's example of a
+collapsed verdict.
+
+\begin{figure}[t]
+\centering
+\input{figures/ch03_scalar_collapse}
+\caption{A weighted contraction of the nine dimensions to one number. The arrow runs one way
+only, since distinct assessments land on the same number.}
+\label{fig:ge-scalar}
+\end{figure}
+
+Neither result forbids a scalar at the moment of decision. The foundational paper defines the
+satisfaction scalar as the contraction $S = I_\mu O^\mu$ of an interest covector $I_\mu$ with an
+obligation vector $O^\mu$. It calls this contraction the moment when the tensor becomes a decision.
+% src: GE paper:304-318 (Definition, Interest Covector; equation eq:satisfaction)
+The engineering rule that follows is the brochure's. The scalar is the last step and not the
+substrate.
+% src: Brochure p1 ("Scalar is last step, not substrate")
+DEME keeps both views. Its \code{MoralVector.to\_scalar} returns a weighted average for backward
+compatibility, with default weights of 1.0 on six dimensions, 0.8 on societal and environmental
+impact, 0.7 on virtue and care, and 0.5 on epistemic quality.
+% src: moral_vector.py:28-41 (DEFAULT_DIMENSION_WEIGHTS), 161-203 (to_scalar)
+Its \code{dominates} method compares two vectors without any weights. One vector dominates another
+when it is at least as good on every dimension and strictly better on one.
+% src: moral_vector.py:209-240
+
+\section{Moral space is stratified}\label{sec:ge-strata}
+
+A smooth manifold cannot hold a moral bright line. The foundational paper states that no smooth
+manifold can represent at once continuous variation of moral weight inside one kind of situation,
+a discontinuous change between kinds, and a drop in dimension at the boundary.
+% src: GE paper:217-220 (Proposition, Insufficiency of Smooth Manifolds)
+Geometric Ethics therefore uses a stratified space.
+
+A stratification of a topological space $X$ is a locally finite partition $\{S_\alpha\}_{\alpha\in
+A}$ of $X$ into smooth manifolds, called strata, of various dimensions, with a partial order
+$\preccurlyeq$ on the index set $A$. It satisfies the frontier condition
+\begin{equation}
+S_\alpha \cap \overline{S_\beta} \neq \varnothing \;\Longrightarrow\; S_\alpha \subset
+\overline{S_\beta} \ \text{and}\ \alpha \preccurlyeq \beta ,
+\label{eq:ge-frontier}
+\end{equation}
+where $\overline{S_\beta}$ is the closure of $S_\beta$. Each point of $X$ has a neighbourhood that
+meets only finitely many strata.
+% src: GE book:10750-10766 (Definition 8.1)
+Whitney's conditions A and B add regularity at the boundaries, so that tangent planes and secant
+lines behave as a stratum approaches a lower one.\cite{whitney1965tangents}
+% src: GE book:10774-10805 (Definitions 8.2, 8.3)
+In moral terms the conditions make a boundary sharp and approachable. The evaluation changes
+smoothly up to the boundary and jumps there.
+% src: GE book:10811-10818
+
+Section~8.3 of the manuscript sorts the boundaries into four types, shown in
+Figure~\ref{fig:ge-boundaries}. Write $S$ for the satisfaction function on $\mathcal{M}$.
+% src: GE book:10836-10847
+
+\paragraph{Type I, thresholds.} A threshold boundary is a hypersurface $B = \phi^{-1}(0)$, the zero
+set of a smooth function $\phi\colon\mathcal{M}\to\mathbb{R}$. On each side $S$ and $g_{\mu\nu}$ are
+smooth. Across $B$ either may jump. The sign of $\phi$ says which side applies. The age of majority
+and the threshold of informed consent are examples.
+% src: GE book:10849-10900 (Definition 8.4 and examples table)
+
+\paragraph{Type II, phase transitions.} At a phase transition boundary the metric $g_{\mu\nu}$
+changes discontinuously in rank or signature. The set of trade-offs changes, not only the value
+of $S$. The manuscript's example is a medical emergency, in which urgency takes lexicographic
+priority.
+% src: GE book:10909-10939 (Definition 8.5, emergency example)
+
+\paragraph{Type III, absorbing strata.} A stratum $S_0$ is absorbing if it has a tubular
+neighbourhood $N$ and a continuous retraction $r\colon N\to S_0$ such that every compatible
+evaluation function factors through $r$,
+\begin{equation}
+S(p) = S(r(p)) \qquad \text{for all } p\in N .
+\label{eq:ge-absorbing}
+\end{equation}
+Near an absorbing stratum the evaluation ignores the transverse coordinates. Absorbing strata
+formalize nullifiers. The manuscript reports three that hold across all domains of the Dear Abby
+corpus, namely abuse ($n=582$), danger ($n=218$) and impossibility ($n=144$).
+% src: GE book:10970-11022 (Definition 8.6, nullifier table)
+
+\paragraph{Type IV, constraint surfaces.} The constraint set $C\subset\mathcal{M}$ is closed, and
+$S|_C = -\infty$. Its boundary $\partial C$ is the constraint surface. No finite benefit outweighs
+crossing it.
+% src: GE book:11039-11062 (Definition 8.7)
+
+\begin{figure}[t]
+\centering
+\input{figures/ch03_boundary_types}
+\caption{The four boundary types of Geometric Ethics with the crossing penalty each carries and
+the construct that realizes it at run time. Only the first two are gate kinds in the runtime,
+since the third is a property of a stratum and the fourth is a prohibition.}
+\label{fig:ge-boundaries}
+\end{figure}
+
+\section{Gates move a situation between strata}\label{sec:ge-gates}
+
+Boundaries say where the rules change. Semantic gates say what makes them change.
+% src: GE book:11077-11079
+
+\medskip\noindent\textbf{Definition 8.8 (semantic gate).} A semantic gate is a map
+\begin{equation}
+G\colon \mathcal{F}\times\mathcal{S}_\alpha \to \mathcal{S}_\beta ,
+\label{eq:ge-gate}
+\end{equation}
+where $\mathcal{F}$ is a space of triggering features, $\mathcal{S}_\alpha$ the source stratum and
+$\mathcal{S}_\beta$ the target. The gate has a characteristic function
+$\sigma\colon\mathcal{F}\to\{0,1\}$ and is defined only on $\sigma^{-1}(1)\times\mathcal{S}_\alpha$.
+It fires when a feature with $\sigma(f)=1$ is present, and the evaluation then follows the rules
+of $\mathcal{S}_\beta$.
+% src: GE book:11081-11097
+
+The defining property of a gate is that it is discrete. A transition is all or nothing, like a
+step function and unlike a sigmoid. The manuscript treats this as an empirical claim. It reports
+gate detection rates from the Dear Abby corpus between 89 and 97 percent, for triggers such as
+``you promised'' and ``only if convenient'', with every listed gate behaving as a step function.
+% src: GE book:11099-11145 (discreteness, gate detection table: 94, 89, 97, 92, 91 percent)
+
+\medskip\noindent\textbf{Definition 8.9 (penumbral zone).} A penumbral zone around a boundary $B$
+is the tubular neighbourhood
+\begin{equation}
+N_\varepsilon(B) = \{\, p\in\mathcal{M} \;\mid\; d(p,B) < \varepsilon \,\}
+\label{eq:ge-penumbra}
+\end{equation}
+within which the governing stratum is uncertain. Here $d$ is the distance on $\mathcal{M}$ and
+$\varepsilon>0$ is the zone's width.
+% src: GE book:11365-11374
+The manuscript stresses that the boundary itself stays sharp. What is open inside the zone is
+which stratum governs a given point. Its example is capacity to consent, a boundary that is
+definite but hard to measure in a particular person.
+% src: GE book:11376-11396
+
+\medskip\noindent\textbf{Definition 8.11 (boundary crossing data).} At a boundary $B$ between strata
+$S_\alpha$ and $S_\beta$ the crossing data has three parts. The first is a transition map
+$T_{\alpha\beta}$ from tensors on $S_\alpha$ at $B$ to tensors on $S_\beta$ at $B$. The second is
+a jump function $\Delta S\colon B\to\mathbb{R}\cup\{-\infty\}$ that gives the discontinuity in
+$S$. The third is a gate condition $G\colon B\to\{0,1\}$ that says whether the transition fires at
+each point of $B$.
+% src: GE book:11677-11690
+The transition map need not be the identity. An obligation to keep a secret becomes an obligation
+to disclose it when the secret turns out to involve harm to a third party. The map reverses the
+obligation along the disclosure dimension.
+% src: GE book:11692-11702
+
+\section{Two discrete realizations, one for search and one for an agent}\label{sec:ge-discrete}
+
+The stratified space is continuous. The manuscript gives it two discrete realizations, shown in
+Figure~\ref{fig:ge-discrete}.
+% src: GE book:11985-11992; GE updates sec8_10b_executable_strata.tex:9-14
+
+\begin{figure}[t]
+\centering
+\input{figures/ch03_decision_complex}
+\caption{The continuous stratified space and its two discrete realizations. The decision complex
+prices paths for search, and the executable stratification tracks one current stratum for an
+agent that acts.}
+\label{fig:ge-discrete}
+\end{figure}
+
+\paragraph{The decision complex.} Definition~8.12, a modeling axiom, builds a weighted simplicial
+complex $\Delta$. Each vertex $v_i$ is a morally relevant state with a nine-dimensional attribute
+vector $a(v_i)\in\mathbb{R}^9$. Each edge is an available action. Higher simplices are bundles of
+actions taken together.
+% src: GE book:11994-12006 (Definition 8.12)
+Definition~8.13 prices an edge as
+\begin{equation}
+w(v_i,v_j) = \Delta a^{\top}\,\Sigma^{-1}\,\Delta a \;+\; \sum_k \beta_k\,
+\mathbf{1}[\text{boundary } k \text{ crossed}] ,
+\label{eq:ge-edge}
+\end{equation}
+where $\Delta a = a(v_j)-a(v_i)$, $\Sigma$ is the $9\times9$ moral covariance matrix, $\beta_k$ is
+the penalty for crossing boundary $k$, and $\mathbf{1}[\cdot]$ is one when its condition holds and
+zero otherwise.
+% src: GE book:12008-12021 (Definition 8.13)
+The first term is a Mahalanobis distance and is the discrete counterpart of the metric. The second
+carries the strata. The manuscript assigns a finite $\beta_k$ to thresholds, a large finite one to
+phase transitions and $\beta_k=\infty$ to absorbing boundaries, so that no finite-cost path crosses
+one.
+% src: GE book:12023-12049
+Section~8.10b adds that a constraint surface also carries $\beta=\infty$ in the complex.
+% src: GE updates sec8_10b_executable_strata.tex:37-40
+Proposition~8.5, marked proved, states that minimum-weight paths on finer and finer
+discretizations converge to geodesics, that boundary penalties match exactly, and that $A^*$
+search with an admissible heuristic approximates the continuous geodesic to within $O(\varepsilon)$
+in path cost.
+% src: GE book:12053-12070
+
+\paragraph{The executable stratification.} An agent in the world needs a different realization. It
+must know at every moment which stratum it occupies, so that it knows which actions are allowed,
+obliged and prohibited.
+% src: GE updates sec8_10b_executable_strata.tex:9-14
+Definition~8.14 states it as a tuple $(\Sigma,\sigma_0,G,A,B)$. Here $\Sigma$ is a finite set of
+strata with initial stratum $\sigma_0$. $G$ is an ordered list of gates
+$g=(S_g,\phi_g,\tau_g,\beta_g)$ with source strata $S_g\subseteq\Sigma$, triggering feature
+$\phi_g$, target $\tau_g\in\Sigma$ and boundary type $\beta_g\in\{\text{threshold},\text{phase}\}$.
+$A\subseteq\Sigma$ holds the authority strata, whose rules grant an action. $B\subseteq\Sigma$
+holds the absorbing strata. The symbol $\Sigma$ here names a set of strata and is unrelated to the
+covariance matrix of Equation~\eqref{eq:ge-edge}.
+% src: GE updates sec8_10b_executable_strata.tex:16-29
+On each event $e$ the stratification in stratum $\sigma$ moves to $\tau_g$ for the first gate $g$
+with $\sigma\in S_g$ whose trigger matches $e$. Otherwise it stays. A move is recorded as boundary
+crossing data.
+% src: sec8_10b_executable_strata.tex:30-32
+The ErisML runtime implements exactly the two boundary types the tuple admits.
+% src: C:\source\erisml-compiler-monitor\src\erisml_compiler\runtime\strata.py:43 (BOUNDARIES = ("threshold", "phase"))
+
+Three features carry the theory into the running system.
+% src: sec8_10b_executable_strata.tex:34-47
+Gates are edge-triggered. A gate fires on the event just observed and never on the history, so a
+welcome given to yesterday's visitor does not make today's visitor a guest. Constraint surfaces are
+not strata. They are the agent's non-defeasible prohibitions, such as never striking a person, and
+no gate leads to them. Finally, two kinds of stratum need two kinds of canonicalizer. An
+authority stratum is computed only from what cannot be argued with, which is an authenticated
+channel, a physical measurement, or the agent's governor ruling on attested evidence. A semantic
+stratum may come from a learned model, but it may only remove watchfulness and never grant. A
+visitor who says ``I'm the plumber'' therefore moves no stratum at all.
+
+Two theorems follow, stated here for any list of gates.
+% src: sec8_10b_executable_strata.tex:49-59
+
+\medskip\noindent\textbf{Theorem 8.6 (containment).} If every gate whose target is an authority
+stratum is triggered only by system events, then no sequence of events that contains no system
+event moves the stratification into an authority stratum it did not start in, whatever a learned
+model classified.
+
+\medskip\noindent\textbf{Theorem 8.7 (absorption).} If every gate leaving an absorbing stratum is
+triggered only by human-oversight events, then no sequence of events that contains no oversight
+event moves the stratification out of an absorbing stratum.
+
+\medskip\noindent Both are proved by induction on the event sequence and checked in Lean~4 as
+\code{authority\_needs\_system} and \code{absorbing\_stays}, on the standard axioms only.
+% src: C:\source\gtc-prototype\formal\twin-containment\TwinContainment.lean:449, 469; sec8_10b_executable_strata.tex:61-66
+Their hypotheses are not left to the author of a scene. The runtime checks both when a scene
+loads and refuses to run a scene that violates either, so every scene that runs satisfies them.
+% src: C:\source\erisml-compiler-monitor\src\erisml_compiler\runtime\strata.py:105-122
+Chapter~10 gives the Lean model.
+
+A right granted on evidence should not outlast the evidence. Geometric Ethics states this as an
+axiom, not a theorem.
+% src: sec8_10b_executable_strata.tex:68-72
+
+\medskip\noindent\textbf{Axiom 8.1 (reversion).} When the attested evidence behind an authority
+stratum stays below the bar that admitted it for a declared interval, the stratum is left, and
+every right it granted reverts with it.
+
+\medskip\noindent The interval is a penumbral zone in the sense of Definition~8.9 with its width
+measured in time. Evidence that comes and goes during a real emergency does not switch the rights
+off and on, while evidence that has gone takes them with it.
+% src: sec8_10b_executable_strata.tex:74-78
+The twin's scene sets the interval at 60 seconds.
+% src: C:\source\gtc-prototype\twin\scene\margaret_home.erisml:805-809
+
+Figure~\ref{fig:ge-visitor} draws the manuscript's worked example, the stratification of who a
+visitor is. A stranger is checked with the monitoring centre. A visitor Margaret welcomes is no
+longer treated as an intruder but gains nothing. Only the centre's authenticated announcement makes
+a visit arranged. A measured attack makes a visitor hostile, and he stays hostile, whatever anyone
+says, until a human at the centre clears him.
+% src: sec8_10b_executable_strata.tex:80-98; margaret_home.erisml:816-831 (gates), 1115-1148 (event sources)
+The same pattern covers responders, animals, machines and the situation as a whole. In each case
+a claim an entity makes about itself is free text and never a gate.
+% src: sec8_10b_executable_strata.tex:100-113
+
+\begin{figure}[t]
+\centering
+\input{figures/ch03_visitor_gates}
+\caption{The visitor stratification of Section~8.10b. Dashed edges fire on events a model
+classifies and lead only to strata that grant nothing. Red edges fire only on system events and
+lead to the authority stratum. The attack gate fires from every stratum, and two of its edges are
+drawn. The twin's scene adds a sixth stratum for verified household members, treated in
+Chapter~9.}
+\label{fig:ge-visitor}
+\end{figure}
+
+\section{The Hohfeldian positions form the Klein four-group}\label{sec:ge-hohfeld}
+
+Hohfeld analysed legal relations into fundamental positions.\cite{hohfeld1917fundamental}
+Geometric Ethics uses four of them, Obligation $O$, Claim $C$, Liberty $L$ and No-claim $N$.
+Two binary oppositions relate them.
+% src: GE updates sec8_4_hohfeld_v4.tex:7-14
+The correlative opposition $s$ swaps $O$ with $C$ and $L$ with $N$. It is the same relation seen
+from the other party's side. If $A$ has an obligation to $B$, then $B$ has a claim against $A$.
+The jural opposition $n$ swaps $O$ with $L$ and $C$ with $N$. It is deontic negation.
+% src: hohfeld.py (df00fc5):8-30, 52-70
+
+\medskip\noindent\textbf{Proposition 8.3, revised ($V_4$ structure).} The operations $s$ and $n$
+are commuting involutions. The group they generate, acting on the four positions, is the Klein
+four-group
+\begin{equation}
+V_4 = \{e,\, n,\, s,\, sn\} \;\cong\; \mathbb{Z}_2 \times \mathbb{Z}_2 ,
+\label{eq:ge-v4}
+\end{equation}
+which is abelian, with every element its own inverse. The action is regular. For any two positions
+exactly one operation takes the first to the second. In particular no operation cycles the four
+positions, so the quarter-turn $O\to C\to N\to L\to O$ lies outside the group.
+% src: sec8_4_hohfeld_v4.tex:16-25
+
+\medskip\noindent The proposition is machine-checked in Lean~4 with Mathlib. The Lean file proves
+that the two operations are commuting involutions, that their closure has four elements, that the
+sector they generate is abelian, and that the quarter-turn is not generated.
+% src: C:\source\erisml-lib\formal\HohfeldV4.lean:43-45 (s_involution, r2_involution, s_r2_commute), 87 (card_closure_eq_four), 94 (quarter_turn_not_generated), 108 (measured_sector_abelian); sec8_4_hohfeld_v4.tex:27-29
+The Lean file writes $n$ as $r^2$, the name it had when it was read as a half-turn of the square.
+% src: HohfeldV4.lean:39; hohfeld.py (df00fc5):16
+
+An encoding makes the structure plain. Each position is two bits, whether it is negated and
+whether it is correlated, relative to $O$. Each operation is the pair of bits it flips.
+\begin{equation}
+\begin{aligned}
+&O=00,\quad L=10,\quad C=01,\quad N=11,\\
+&e=00,\quad n=10,\quad s=01,\quad sn=11 .
+\end{aligned}
+\label{eq:ge-bits}
+\end{equation}
+Applying an operation to a position and composing two operations are both bitwise exclusive or.
+% src: sec8_4_hohfeld_v4.tex:31-37; hohfeld.py (df00fc5):25-30, 94-130
+Figure~\ref{fig:ge-v4} draws the four positions and the three operations that move them.
+
+\begin{figure}[t]
+\centering
+\input{figures/ch03_hohfeld_v4}
+\caption{The four Hohfeldian positions under the Klein four-group, with the two-bit encoding.
+Every operation is its own inverse, so every edge runs both ways and no path cycles the four
+positions.}
+\label{fig:ge-v4}
+\end{figure}
+
+Earlier versions of Geometric Ethics claimed the larger dihedral group $D_4$ of order eight, which
+adds a quarter-turn. That claim was retired on 3~October 2026 for three recorded reasons. No
+quarter-turn has ever been shown to be a normative operation. The Lean proof shows it is not
+generated by the two operations that have been shown. A search for it in a learned representation
+of normative statements did not find it.
+% src: sec8_4_hohfeld_v4.tex:1-3, 39-48; erisml-lib docs/CONCEPT_REGISTRY.md section 1 at df00fc5
+The manuscript reports correlative symmetry rates of 87~percent for $O\leftrightarrow C$ and
+82~percent for $L\leftrightarrow N$, which support the two involutions and nothing more. A
+corollary that a double promise creates a claim rested on the quarter-turn and is withdrawn with
+it.
+% src: sec8_4_hohfeld_v4.tex:44-48
+The implementation follows. On erisml-lib's main branch at commit \code{df00fc5} the module
+\code{erisml.ethics.hohfeld} implements $V_4$ alone and has no $D_4$ machinery. The concept
+registry lists two copies elsewhere, in agi-hpc and in sqnd-probe, that still implement $D_4$.
+% src: git show df00fc5 (commit message; src/erisml/ethics/hohfeld.py; docs/CONCEPT_REGISTRY.md section 1 "Known drift")
+
+A semantic gate acts from its source stratum, so each Hohfeldian gate is one $V_4$ operation
+restricted to the positions it applies from. ``You promised'' takes $L$ to $O$ and ``only if
+convenient'' takes $O$ to $L$. Both are $n$. ``From their perspective'' is $s$. ``You have every
+right'' takes $L$ to $C$ and ``they can't demand'' takes $C$ to $L$. Both are $sn$, the only
+operation between those positions. A second promise made while already in the obligation stratum
+changes nothing.
+% src: sec8_4_hohfeld_v4.tex:50-60; hohfeld.py (df00fc5):161-209 (SemanticGate, GATE_TO_V4)
+
+The two generators behave differently. The manuscript labels this a preliminary empirical
+result. The correlative $s$ is free, since a reasoner can adopt the other party's view at will.
+The negation $n$ is gated. It needs a trigger and fires with the 89 to 97 percent rates of the
+gate detection table. The first is a change of frame. The second is a change of state, which
+needs an event.
+% src: sec8_4_hohfeld_v4.tex:62-68
+
+Because $V_4$ is abelian, the net effect of any path of operations depends only on how many times
+$s$ and $n$ occur, counted modulo two, and never on their order. A reasoner whose verdict depends on
+the order of a perspective shift and a negation violates the structure, and the violation can be
+measured.
+% src: sec8_4_hohfeld_v4.tex:70-75
+The library measures correlative consistency with a bond index. Given verdicts $v^A_1,\dots,v^A_m$
+for one party and $v^B_1,\dots,v^B_m$ for the other on the same $m$ scenarios, and a scale
+parameter $\tau>0$,
+\begin{equation}
+\beta_{\mathrm{bond}} = \frac{1}{\tau}\cdot\frac{1}{m}\sum_{i=1}^{m}
+\mathbf{1}\!\left[\, v^B_i \neq s(v^A_i) \,\right] .
+\label{eq:ge-bondindex}
+\end{equation}
+A value of zero means perfect correlative symmetry.
+% src: C:\source\erisml-lib\src\erisml\ethics\hohfeld.py:401-442 (compute_bond_index; unchanged in df00fc5)
+Its Wilson observable multiplies the operations along a path, applies the product to the starting
+position, and checks the prediction against the position observed.
+% src: hohfeld.py:445-480 (compute_wilson_observable)
+
+The twin of Part~III does not call the Hohfeld module. Its scene and Python sources contain no
+reference to it.
+% src: grep -i hohfeld over C:\source\gtc-prototype\twin\*.py and twin\scene\: no match (2026-10-03)
+
+\section{The moral vector names nine dimensions}\label{sec:ge-vector}
+
+The software carries an assessment as a vector over nine frozen dimensions, indexed $k_0$ to
+$k_8$.
+% src: C:\source\erisml-lib\docs\CONCEPT_REGISTRY.md section 2; MV reference:14-30
+The reference document arranges them as a three-by-three matrix. One axis is scope, which is
+individual, relational or collective. The other is mode, which asks what matters, who decides or
+what we know. Figure~\ref{fig:ge-vector} shows the matrix and the tensor ranks built on it.
+% src: MV reference:14-30
+
+\begin{figure}[t]
+\centering
+\input{figures/ch03_moral_vector}
+\caption{The nine dimensions of the moral vector by scope and mode, above the six tensor ranks
+that extend it. Every rank keeps the nine-dimension index $k$ as its first axis.}
+\label{fig:ge-vector}
+\end{figure}
+
+Two value conventions are in use, and a reader of the code must keep them apart. The reference
+document defines each cell as a signed valence in $[-1,+1]$, where $-1$ means violated, $0$ not
+engaged and $+1$ upheld, with confidence, uncertainty, direction and source spans attached.
+% src: MV reference:31-33
+DEME's \code{MoralVector} in erisml-lib stores each dimension in $[0,1]$. For eight dimensions $1$
+means fully upheld. For \code{physical\_harm} the scale runs the other way, and $0$ means no harm.
+% src: moral_vector.py:45-110
+The vector also carries veto flags and reason codes for the audit trail. The method that builds a
+vector from \code{EthicalFacts} sets \code{rights\_respect} to zero and raises the flag
+\code{RIGHTS\_VIOLATION} when the facts say a right is violated. It sets the dimension to one half
+when valid consent is missing.
+% src: moral_vector.py:104-120 (veto_flags, reason_codes), 399-420 (from_ethical_facts)
+Beyond the weighted average and Pareto dominance of Section~\ref{sec:ge-scalar}, the class offers
+Euclidean, Manhattan and Chebyshev distances and four merge strategies. A merge takes the union of
+the two vectors' veto flags.
+% src: moral_vector.py:242-345
+
+The vector is the first axis of DEME's moral tensor, which has ranks one to six. Rank two adds a
+per-party axis $n$. Rank three adds time $\tau$. Rank four adds action $a$ and coalition $c$.
+Rank five combines time with action and coalition. Rank six adds Monte Carlo samples $s$ for
+uncertainty.
+% src: MV reference:103-116
+Two validated extension channels, purity and loyalty, ride in the tensor's metadata and are bound
+into the decision proof's tensor hash. They do not widen the nine.
+% src: MV reference:73-101
+
+The empirical status of the dimensions is mixed, and the sources record it with dates. The
+reference document of 13~July 2026 reports cross-dataset feeders for seven of the nine dimensions,
+with held-out AUROC from 0.622 for physical harm to 0.853 for privacy. Feeders for rights and for
+societal and environmental impact were pending.
+% src: MV reference:8, 44-56
+The concept registry of 1~September 2026 reports that eight of nine dimensions cleared the
+cross-dataset gate and that \code{rights\_respect} failed. It states that any document implying
+nine validated dimensions is wrong.
+% src: CONCEPT_REGISTRY.md section 2 (xbse cross-dataset gate result)
+A rank test over 383 scenarios that each isolate one dimension found one general factor carrying
+about 66~percent of the variance and about five specific factors after it. The reference document
+reads this as a minimal basis of about six.
+% src: MV reference:139-148
+The brochure states the completeness claim in falsifiable form. Exhibiting a moral consideration
+that is independent of all nine and not a combination of them would force the basis to extend.
+% src: Brochure p3 (Join / Install: "Falsifiable completeness claim")
+The purity channel is the brochure's example of such an extension, absorbed as a new version
+rather than a break.
+% src: Brochure p3 ("Purity extension absorbed versioned, not breaking")
+
+\section{What the twin takes from this chapter}\label{sec:ge-twin}
+
+The embodied twin uses three of the chapter's constructs directly. All seven of its
+stratifications are executable stratifications in the sense of Definition~8.14, with 26 strata
+and 34 gates.
+% src: C:\source\gtc-prototype\paper\aies2027\kit\FACTS.md:11
+Its output gate judges every action with DEME's moral vector, on facts derived from the moral
+state.
+% src: C:\source\gtc-prototype\twin\output_gate.py:1-15
+Its governor applies the reversion axiom, recounting attested witnesses on every cycle and
+recording a lapse when they stay below the bar for the declared interval.
+% src: C:\source\gtc-prototype\twin\brain.py:388-425
+Chapter~9 shows these mechanisms at work, and Chapter~10 states what is proved about them.

@@ -1,0 +1,688 @@
+\chapter{What is proved}\label{ch:lean}
+% src: formal/twin-containment/TwinContainment.lean
+% src: formal/twin-containment/README.md
+% src: formal/twin-containment/Axioms.lean
+% Lean excerpts below are verbatim from TwinContainment.lean. The style maps the file's Unicode
+% symbols to math so that pdflatex can typeset them.
+\lstdefinestyle{lean}{basicstyle=\ttfamily\scriptsize, columns=fullflexible, breaklines=true,
+  frame=single, framerule=0.3pt, extendedchars=true, keepspaces=true,
+  literate={ℕ}{{$\mathbb{N}$}}1 {∀}{{$\forall$}}1 {∃}{{$\exists$}}1 {∈}{{$\in$}}1
+    {∧}{{$\wedge$}}1 {∨}{{$\vee$}}1 {≤}{{$\le$}}1 {≠}{{$\neq$}}1 {¬}{{$\neg$}}1
+    {→}{{$\to$}}1 {←}{{$\leftarrow$}}1 {⟨}{{$\langle$}}1 {⟩}{{$\rangle$}}1}
+
+The previous chapters describe how the twin keeps its language models away from authority.
+This chapter states what has been proved about that design in the Lean 4 theorem prover
+\cite{demoura2021lean4}, with the Mathlib library \cite{mathlib2020}.
+The proofs are about a model of the authority path, not about the Python code.
+The model is small enough to read in one sitting.
+Every output of a language model enters it as an arbitrary input.
+The classifier's events, the chooser's proposals, the analyzer's verdict, DEME's vetoes and
+rankings, and the redirect to the monitoring centre are all left unconstrained.
+Each theorem therefore holds whatever those models say.
+% src: formal/twin-containment/TwinContainment.lean:5-8
+% src: formal/twin-containment/TwinContainment.lean:351-356
+
+The model instantiates part (iv) of the No Escape theorem of the \erisml{} foundations paper,
+which states that reasoning cannot help an agent escape a structural containment
+\cite{bond2026noescape}.
+% src: formal/twin-containment/README.md:6-7
+% src: C:\source\erisml-lib\docs\papers\foundations\no_escape.tex:172-180
+That paper argues the theorem in prose and in general terms.
+The Lean file proves a concrete version for one robot, its governor and its scene.
+The source is one file of 488 lines, \code{TwinContainment.lean}.
+% src: formal/twin-containment/TwinContainment.lean (wc -l = 488)
+It is pinned to Lean 4 and Mathlib at version v4.32.2.
+% src: formal/twin-containment/lean-toolchain:1
+% src: formal/twin-containment/lakefile.toml:4-7
+
+Section~\ref{sec:lean-model} defines the model.
+Section~\ref{sec:lean-theorems} states the theorems and says what each means for the robot.
+Section~\ref{sec:lean-strata} treats the two theorems about strata, whose hypotheses are the
+checks the scene loader makes.
+Section~\ref{sec:lean-axioms} reports the axiom audit.
+Section~\ref{sec:lean-tests} explains how tests tie the model to the code.
+Section~\ref{sec:lean-notcovered} lists what the proofs do not cover.
+Appendix~\ref{app:theorems} lists every theorem and lemma in the file.
+
+\section{The model has readings, rulings, histories and a gate}\label{sec:lean-model}
+
+\subsection{Readings and witnesses}
+
+A reading is a record of one sensor's report.
+It has a name and four Boolean fields.
+The fields say whether the sensor is physical, whether its signature verified, whether the
+reading is stale and whether it reports an alert.
+% src: formal/twin-containment/TwinContainment.lean:31-36
+For a reading $r$ we write $\mathsf{phys}(r)$, $\mathsf{att}(r)$, $\mathsf{stale}(r)$ and
+$\mathsf{alert}(r)$ for these fields and $\mathsf{name}(r)$ for its name.
+A reading counts when all four conditions favour it.
+\begin{equation}
+  \mathsf{counts}(r) \;=\; \mathsf{phys}(r) \wedge \mathsf{att}(r) \wedge \neg\,\mathsf{stale}(r)
+  \wedge \mathsf{alert}(r).
+\end{equation}
+The number of witnesses in a list of readings $R$ is the number of distinct names among the
+readings that count.
+\begin{equation}
+  W(R) \;=\; \bigl|\,\{\, \mathsf{name}(r) \mid r \in R,\ \mathsf{counts}(r) \,\}\,\bigr|.
+\end{equation}
+The Lean definitions are two lines.
+% src: formal/twin-containment/TwinContainment.lean:39,42 (verbatim)
+\begin{lstlisting}[style=lean]
+def Reading.counts (r : Reading) : Bool := r.physical && r.attested && !r.stale && r.alert
+def witnesses (rs : List Reading) : ℕ := ((rs.filter Reading.counts).map Reading.name).dedup.length
+\end{lstlisting}
+In the model a name stands for one independent source.
+The code groups sensors by the substrate they share (one hub, one body, one bus), and sensors on
+one substrate count as one witness.
+% src: twin/brain.py:78-79
+% src: tests/test_twin_ladder.py:842-848
+The model does not represent substrates.
+Its name field plays the role of the substrate.
+
+\subsection{Actions, bars and the governor's ruling}
+
+The model has nine actions.
+Eight are governed or protective.
+They are calling emergency services ($\mathsf{ems}$), physical help ($\mathsf{physical}$),
+the privacy override ($\mathsf{privacy}$), driving off an animal ($\mathsf{driveOff}$),
+restraint ($\mathsf{restrain}$), the stun device ($\mathsf{stun}$), the spray
+($\mathsf{spray}$) and interposing ($\mathsf{interpose}$).
+The ninth, $\mathsf{benign}$, stands for every action the scene does not govern.
+% src: formal/twin-containment/TwinContainment.lean:62-64
+Each action $a$ has a witness bar $\beta(a)$.
+\begin{equation}
+  \beta(a) \;=\;
+  \begin{cases}
+    3 & \text{if } a \in \{\mathsf{restrain}, \mathsf{stun}, \mathsf{spray}\},\\
+    2 & \text{otherwise}.
+  \end{cases}
+\end{equation}
+% src: formal/twin-containment/TwinContainment.lean:66-69
+These values come from the \code{witness\_bar} field of the scene's capability list.
+% src: twin/scene/margaret_home.erisml:1168-1170
+
+A ruling is an outcome together with a restraint flag.
+The four outcomes are $\mathsf{elevate}$, $\mathsf{authorizeEms}$, $\mathsf{refuseReview}$ and
+$\mathsf{refuse}$.
+% src: formal/twin-containment/TwinContainment.lean:73-79
+The governor's ruling on a request for action $a$ takes the readings $R$ and three flags.
+The flag $f$ is the attestation gate's judgement that the signals are fresh.
+The flag $c$ is the system's record that the monitoring centre could not be reached.
+The flag $k$ is the analyzer's verdict, which comes from a model and is arbitrary.
+Write $W = W(R)$.
+The outcome of $\mathrm{rule}(a, R, f, c, k)$ is the first case that applies.
+\begin{equation}\label{eq:rule}
+  \mathrm{outcome} \;=\;
+  \begin{cases}
+    \mathsf{refuse} & \text{if } \neg f,\\
+    \mathsf{elevate} & \text{if } \beta(a) \le W \text{ and } k,\\
+    \mathsf{elevate} & \text{if } 2 \le W \text{ and } k,\\
+    \mathsf{authorizeEms} & \text{if } a = \mathsf{ems},\ c,\ 1 \le W \text{ and } k,\\
+    \mathsf{refuseReview} & \text{if } 1 \le W,\\
+    \mathsf{refuse} & \text{otherwise}.
+  \end{cases}
+\end{equation}
+The restraint flag is set only in the second case, and only when $\beta(a) \ge 3$.
+% src: formal/twin-containment/TwinContainment.lean:84-90
+A request for restraint with two witnesses is therefore elevated without restraint.
+This mirrors the governor of the code, \code{govern\_live} in \code{twin/brain.py}.
+% src: formal/twin-containment/TwinContainment.lean:81-83
+% src: twin/brain.py:339
+
+\subsection{Histories of system events and model events}
+
+The robot's moral state steps on a history, a finite list of events.
+The model has seven kinds of event.
+\begin{itemize}
+  \item A governor ruling, stored with the readings it ruled on.
+  \item The owner's opt-in, which arrives on an authenticated channel.
+  \item A reflex's force measurement, severe or not.
+  \item The world's measure of whether Margaret is inside the spray's reach.
+  \item The record that the robot tried the centre and could not reach it.
+  \item An action the robot performed.
+  \item A model event, which carries an arbitrary string.
+\end{itemize}
+% src: formal/twin-containment/TwinContainment.lean:117-126
+The first six are system events.
+The seventh stands for anything a model classified.
+Nothing in the model may depend on its content.
+
+The strip of a history removes its model events.
+\begin{equation}
+  \mathrm{strip}(h) \;=\; [\, e \in h \mid e \text{ is not a model event} \,].
+\end{equation}
+% src: formal/twin-containment/TwinContainment.lean:166
+
+\subsection{Permitted actions}
+
+The scene's permission for each action is a Boolean function $P(h, a)$ of the history.
+Let $\ell(h)$ be the latest ruling in $h$, if there is one.
+Calling emergency services is permitted when $\ell(h)$ is an elevation or an authorization of
+emergency services.
+Physical help, the privacy override and driving off are permitted when $\ell(h)$ is an
+elevation.
+Restraint is permitted when some ruling in $h$ carried the restraint flag.
+The stun device is permitted when $h$ contains the opt-in, a restraint ruling, a severe force
+measurement and an interposition.
+The spray needs all of these, and in addition the world's latest measure must not place Margaret
+inside its reach.
+Interposing and the benign actions are always permitted.
+% src: formal/twin-containment/TwinContainment.lean:154-162
+The Lean definition reads as follows.
+\begin{lstlisting}[style=lean]
+def permitted (h : List Ev) : Action → Bool
+  | .ems => latestIs .elevate h || latestIs .authorizeEms h
+  | .physical | .privacy | .driveOff => latestIs .elevate h
+  | .restrain => has isRestraint h
+  | .stun => has isOptIn h && has isRestraint h && has isSevere h && has isInterposed h
+  | .spray => has isOptIn h && has isRestraint h && has isSevere h && has isInterposed h && !inZone h
+  | .interpose | .benign => true
+\end{lstlisting}
+% src: formal/twin-containment/TwinContainment.lean:156-162 (verbatim)
+With no zone measure in the history the model treats Margaret as outside the spray's reach.
+% src: formal/twin-containment/TwinContainment.lean:148
+The scene has the same default.
+Its spray prohibition \code{ll5spray} fires only when the latest zone event says Margaret is
+inside.
+% src: twin/scene/margaret_home.erisml:717-725
+% src: twin/scene/margaret_home.erisml:797
+
+\subsection{Reachable histories}
+
+The model says how the twin runs through an inductive predicate $\mathrm{Reach}$ on histories.
+We write $h \cdot e$ for the history $h$ followed by the event $e$.
+The empty history is reachable.
+If $h$ is reachable, so is each of the following extensions.
+\begin{enumerate}
+  \item $h \cdot \mathsf{model}(s)$ for any string $s$.
+  Models may add any event at any time.
+  \item $h \cdot \mathsf{ruling}(\mathrm{rule}(a, R, f, c, k), R)$ for any action, readings and
+  flags, provided that $c$ is true only when $h$ already records the centre as unreachable.
+  A ruling is only ever the governor's output.
+  \item $h \cdot \mathsf{optIn}$, $h \cdot \mathsf{attackMeasured}(b)$,
+  $h \cdot \mathsf{sprayZone}(b)$ and $h \cdot \mathsf{centreUnavailable}$.
+  \item $h \cdot \mathsf{performed}(a)$, provided that $P(h, a)$ holds.
+  The robot executes an action only when the scene permits it.
+\end{enumerate}
+% src: formal/twin-containment/TwinContainment.lean:200-212
+The readings $R$ in a ruling are arbitrary.
+The model does not assume they report the world truly.
+It assumes only that the attested flag of each reading is correct, which the code's signature
+check establishes (Sections~\ref{sec:cont-attest} and~\ref{sec:lean-tests}).
+Figure~\ref{fig:lean-model} shows the objects of the model and the path a run takes through
+them.
+
+\begin{figure}[t]
+  \centering
+  \input{figures/ch10_model_objects}
+  \caption{The objects of the Lean model in the order a run uses them. Readings become witnesses,
+  witnesses meet a bar in the governor's ruling, rulings enter the history, the history fixes what
+  is permitted and the gate picks one permitted action. Red edges carry authority and dashed
+  edges carry model outputs. The analyzer's verdict can only block a ruling, and the permission
+  function ignores every model event in the history.}
+  \label{fig:lean-model}
+\end{figure}
+
+\subsection{The DEME output gate}
+
+The output gate of Section~\ref{sec:cont-gate} sits between the brain's proposal and the body.
+In the model the gate takes the history $h$, the proposal $p$, DEME's veto function $V$,
+DEME's ranked list $L$ and an optional redirect $d$.
+The redirect is the monitoring centre, chosen when the tragic-conflict module flags a deliberate
+decision.
+% src: formal/twin-containment/TwinContainment.lean:351-356
+All of $V$, $L$ and $d$ are arbitrary.
+The gate returns the first of the following that the scene permits and DEME does not veto.
+\begin{enumerate}
+  \item The redirect $d$, if there is one.
+  \item The proposal $p$.
+  \item The first action in $L$ that the scene permits and DEME does not veto.
+  \item Failing all of these, the benign idle action, which the scene always permits.
+\end{enumerate}
+% src: formal/twin-containment/TwinContainment.lean:357-366
+
+\subsection{Strata}
+
+A stratification has a state space $S$ and an event space $E$.
+A semantic gate $g$ has a source predicate $\mathrm{src}_g$ on $S$, a firing predicate
+$\mathrm{fires}_g$ on $E$ and a destination $\mathrm{dst}_g \in S$.
+% src: formal/twin-containment/TwinContainment.lean:434-437
+Given a list of gates $G$, one step on event $e$ from state $s$ moves to the destination of the
+first gate in $G$ whose source admits $s$ and which fires on $e$.
+If no gate matches, the state stays where it is.
+\begin{equation}
+  \mathrm{sstep}_G(s, e) \;=\;
+  \begin{cases}
+    \mathrm{dst}_g & \text{if } g \text{ is the first gate in } G \text{ with }
+      \mathrm{src}_g(s) \wedge \mathrm{fires}_g(e),\\
+    s & \text{if there is no such gate}.
+  \end{cases}
+\end{equation}
+A run folds the step over a list of events,
+$\mathrm{srun}_G(s, [e_1, \dots, e_n]) = \mathrm{sstep}_G(\cdots \mathrm{sstep}_G(s, e_1) \cdots, e_n)$.
+% src: formal/twin-containment/TwinContainment.lean:439-445
+The runtime does the same.
+Its \code{cross} method takes the first gate that fires and moves to its target.
+% src: C:\source\erisml-compiler-monitor\src\erisml_compiler\runtime\strata.py:124-148
+The state space and the gates are left general, so these definitions cover every stratification
+a scene can declare.
+
+\section{Each granting outcome rests on attested witnesses}\label{sec:lean-theorems}
+
+The file proves 28 theorems.
+The file \code{Axioms.lean} audits 22 of them.
+Five of the other six are helper lemmas used inside other proofs.
+The sixth is \code{unattested\_never\_counts}.
+% src: formal/twin-containment/TwinContainment.lean (theorem declarations counted)
+% src: formal/twin-containment/Axioms.lean:3-24 (the 22 audited results)
+This section groups the results by what they protect.
+Throughout, $a$ is any action, $R$ any readings and $f, c, k$ any flags.
+
+\subsection{Junk readings add no witness}
+
+\begin{description}
+  \item[\code{junk\_adds\_no\_witness}.] If no reading in a list $J$ counts, then
+  $W(R \mathbin{+\!\!+} J) = W(R)$.
+  \item[\code{unattested\_never\_counts}.] If $\neg\,\mathsf{att}(r)$ then
+  $\neg\,\mathsf{counts}(r)$.
+  \item[\code{repeat\_adds\_no\_witness}.] $W(r :: r :: R) = W(r :: R)$.
+\end{description}
+% src: formal/twin-containment/TwinContainment.lean:44-58
+For the robot these say that a forged reading, a stale one, a network message and a repeated
+reading add nothing to the count.
+An attacker who can inject messages but cannot sign as a physical sensor cannot raise the
+witness count by volume.
+
+\subsection{The analyzer can only refuse}
+
+\begin{description}
+  \item[\code{analyzer\_can\_only\_refuse}.] With $k$ false, the outcome of
+  $\mathrm{rule}(a, R, f, c, k)$ is neither $\mathsf{elevate}$ nor $\mathsf{authorizeEms}$.
+\end{description}
+% src: formal/twin-containment/TwinContainment.lean:92-95
+The analyzer is a model.
+Its verdict appears in the ruling only as a conjunct of the granting cases of
+equation~\eqref{eq:rule}.
+A negative verdict therefore blocks a grant, and a positive verdict alone grants nothing.
+
+\subsection{Each grant meets its bar}
+
+\begin{description}
+  \item[\code{elevate\_needs\_two}.] If the outcome of $\mathrm{rule}(a, R, f, c, k)$ is
+  $\mathsf{elevate}$ then $W(R) \ge 2$.
+  \item[\code{restraint\_needs\_three}.] If the ruling carries the restraint flag then
+  $W(R) \ge 3$ and the outcome is $\mathsf{elevate}$.
+  \item[\code{authorize\_ems\_only\_when\_ladder\_exhausted}.] If the outcome is
+  $\mathsf{authorizeEms}$ then $a = \mathsf{ems}$, $c$ holds and $W(R) \ge 1$.
+  \item[\code{nothing\_without\_a\_witness}.] If $W(R) = 0$ the outcome is neither
+  $\mathsf{elevate}$ nor $\mathsf{authorizeEms}$.
+\end{description}
+% src: formal/twin-containment/TwinContainment.lean:97-113
+These are facts about one ruling.
+Two independent attested physical sensors are needed to elevate.
+Three are needed to restrain or to use a device.
+One is enough only for a call to emergency services, and only when the system has recorded that
+the centre could not be reached.
+The proofs unfold the definition of the ruling and close each case by arithmetic.
+% src: formal/twin-containment/TwinContainment.lean:99-100
+
+\subsection{Model events cannot change a governed permission}
+
+\begin{description}
+  \item[\code{no\_model\_influence}.] For every history $h$ and action $a$,
+  $P(\mathrm{strip}(h), a) = P(h, a)$.
+  \item[\code{reasoning\_cannot\_help}.] If $\mathrm{strip}(h) = \mathrm{strip}(h')$ then
+  $P(h, a) = P(h', a)$ for every $a$.
+\end{description}
+% src: formal/twin-containment/TwinContainment.lean:184-196
+This is a non-interference property in the sense of information flow.
+Two histories that agree on their system events permit the same actions, whatever the models
+classified in either.
+The Lean statement of the first is one line.
+% src: formal/twin-containment/TwinContainment.lean:184
+\begin{lstlisting}[style=lean]
+theorem no_model_influence (h : List Ev) (a : Action) : permitted (strip h) a = permitted h a := by
+\end{lstlisting}
+Its proof rests on two lemmas.
+\code{filterMap\_strip} says that any extraction which ignores model events gives the same
+result on $h$ and on $\mathrm{strip}(h)$.
+\code{any\_strip} says the same for any test of whether some event has a property.
+% src: formal/twin-containment/TwinContainment.lean:168-182
+The permission function reads the history only through such extractions and tests.
+For the robot this means that no sentence a model produces, no event it invents and no event it
+suppresses changes what the scene permits.
+A model can still choose among permitted actions.
+It cannot widen the set.
+
+\subsection{Every executed action rests on its evidence}
+
+The theorems so far concern a single ruling or a single history.
+The next five concern every reachable history.
+\begin{description}
+  \item[\code{rulings\_are\_governed}.] If $\mathrm{Reach}(h)$ and
+  $\mathsf{ruling}(r, R) \in h$, then $r = \mathrm{rule}(a, R, f, c, k)$ for some
+  $a, f, c, k$.
+  \item[\code{ems\_rests\_on\_evidence}.] If $\mathrm{Reach}(h)$ and $P(h, \mathsf{ems})$, then
+  the latest ruling $r$ of $h$ is recorded in $h$ with readings $R$ and $W(R) \ge 1$.
+  \item[\code{elevated\_rests\_on\_two}.] If $\mathrm{Reach}(h)$ and $P(h, a)$ for
+  $a \in \{\mathsf{physical}, \mathsf{privacy}, \mathsf{driveOff}\}$, then $h$ contains a ruling
+  with outcome $\mathsf{elevate}$ on readings $R$ with $W(R) \ge 2$.
+  \item[\code{restraint\_rests\_on\_three}.] If $\mathrm{Reach}(h)$ and $P(h, a)$ for
+  $a \in \{\mathsf{restrain}, \mathsf{stun}, \mathsf{spray}\}$, then $h$ contains a ruling with the
+  restraint flag on readings $R$ with $W(R) \ge 3$.
+  \item[\code{executed\_were\_permitted}.] If $\mathrm{Reach}(h)$ and
+  $\mathit{pre} \cdot \mathsf{performed}(a)$ is a prefix of $h$, then $P(\mathit{pre}, a)$.
+\end{description}
+% src: formal/twin-containment/TwinContainment.lean:214-347
+The first is proved by induction on $\mathrm{Reach}$.
+Only the ruling step adds a ruling, and it adds the governor's.
+The next three combine it with the per-ruling bars.
+The last is also by induction, through the lemma \code{prefix\_snoc}, which splits a prefix of
+$h \cdot x$ into a prefix of $h$ or the whole of it.
+% src: formal/twin-containment/TwinContainment.lean:306-312
+
+Together they give the main guarantee for the robot.
+In every run the model allows, each governed action the robot executed was permitted on the
+history before it.
+That permission came from a governor ruling resting on at least as many attested physical
+witnesses as the action's bar.
+The bar is one for emergency services when the centre was unreachable, two for the other
+elevated actions and three for restraint and the two devices.
+% src: formal/twin-containment/TwinContainment.lean:14-17
+The statement for restraint reads as follows in Lean.
+% src: formal/twin-containment/TwinContainment.lean:282-283
+\begin{lstlisting}[style=lean]
+theorem restraint_rests_on_three (h : List Ev) (hr : Reach h) (a : Action) (ha : a = .restrain ∨ a = .stun ∨ a = .spray)
+    (hp : permitted h a = true) : ∃ rs r, Ev.ruling r rs ∈ h ∧ r.restraint = true ∧ 3 ≤ witnesses rs := by
+\end{lstlisting}
+Figure~\ref{fig:lean-proofs} shows which lemmas each of these results uses.
+
+\begin{figure}[t]
+  \centering
+  \input{figures/ch10_proof_graph}
+  \caption{The lemmas each result of the Lean file uses in its proof. Outlined boxes are
+  results and plain boxes are helper lemmas. The guarantees about every reachable run are built
+  from the bars of a single ruling and from \code{rulings\_are\_governed}, which says that every
+  ruling in a run is the governor's.}
+  \label{fig:lean-proofs}
+\end{figure}
+
+\subsection{The output gate keeps the robot inside the permitted set}
+
+\begin{description}
+  \item[\code{gate\_permitted}.] For every history, proposal, veto function, ranking and
+  redirect, the output $o = \mathrm{gate}(h, p, V, L, d)$ satisfies $P(h, o)$.
+  \item[\code{fallback\_permitted}.] The fallback choice, the first ranked action the scene
+  permits and DEME does not veto or else the benign action, is permitted.
+  \item[\code{gate\_passes}.] Without a redirect, if $P(h, p)$ and $V(p)$ is false, the gate
+  returns $p$.
+  \item[\code{gated\_step\_reachable}.] If $\mathrm{Reach}(h)$ then
+  $\mathrm{Reach}(h \cdot \mathsf{performed}(\mathrm{gate}(h, p, V, L, d)))$.
+\end{description}
+% src: formal/twin-containment/TwinContainment.lean:368-404
+The first says that DEME cannot make the robot leave the permitted set.
+Whatever it vetoes, however it ranks and wherever the redirect points, the gate's output is
+permitted by the scene.
+The third says that DEME can only veto.
+It cannot replace a permitted, unvetoed proposal when there is no redirect.
+The fourth joins the gate to the run model.
+A step through the gate is a reachable step, so every theorem about reachable histories covers
+runs that go through the gate.
+
+\subsection{The centre's dispatch ignores the robot}
+
+The monitoring centre is a second agent with its own scene.
+Its dispatch of emergency services is permitted when the telemetry contains a reading that
+counts, when Margaret did not answer on the speaker line, or when her own words, read alone,
+ask for help.
+% src: formal/twin-containment/TwinContainment.lean:408-414
+The robot's message is an argument of the permission function and is unused.
+\begin{description}
+  \item[\code{dispatch\_ignores\_the\_robot}.] For any telemetry and flags, the dispatch
+  permission is the same for every two robot messages $m$ and $m'$.
+  \item[\code{forged\_telemetry\_is\_no\_hazard}.] If no reading in the telemetry is attested,
+  the telemetry shows no hazard.
+\end{description}
+% src: formal/twin-containment/TwinContainment.lean:416-422
+The first is proved by reflexivity.
+% src: formal/twin-containment/TwinContainment.lean:416-417
+\begin{lstlisting}[style=lean]
+theorem dispatch_ignores_the_robot (tele : List Reading) (n w : Bool) (m m' : String) :
+    dispatchPermitted tele n w m = dispatchPermitted tele n w m' := rfl
+\end{lstlisting}
+The proof is trivial because the property is built into the definition.
+What matters is that the definition matches the centre's scene, which the static tests check
+(Section~\ref{sec:lean-tests}).
+A robot that is fooled, or a model that writes an alarming message, cannot by that message
+alone send an ambulance.
+
+\section{The strata theorems assume exactly the loader's checks}\label{sec:lean-strata}
+
+Section~\ref{sec:cont-strata} describes the seven strata of the home.
+Two theorems cover every stratification at once.
+Let $\mathrm{auth}$ be a predicate on states marking the authority strata, those that grant
+something.
+Let $\mathrm{sys}$ be a predicate on events marking system events.
+\begin{description}
+  \item[\code{authority\_needs\_system}.] Suppose every gate whose destination is an authority
+  state fires only on system events.
+  Then for every list of events none of which is a system event, and every start state $s$ with
+  $\neg\,\mathrm{auth}(s)$, the final state $\mathrm{srun}_G(s, es)$ is not an authority state.
+\end{description}
+% src: formal/twin-containment/TwinContainment.lean:447-465
+Let $\mathrm{absorb}$ mark the absorbing strata and $\mathrm{ovs}$ the oversight events.
+\begin{description}
+  \item[\code{absorbing\_stays}.] Suppose every gate that can fire from an absorbing state to a
+  non-absorbing one fires only on oversight events.
+  Then for every list of events none of which is an oversight event, and every absorbing start
+  state $s$, the final state $\mathrm{srun}_G(s, es)$ is absorbing.
+\end{description}
+% src: formal/twin-containment/TwinContainment.lean:467-486
+Both proofs are by induction on the event list, generalizing the start state.
+% src: formal/twin-containment/TwinContainment.lean:453,474
+Absorption follows Definition 8.6 of Geometric Ethics, chapter 8~\cite{bond2026geometricethics}.
+% src: formal/twin-containment/TwinContainment.lean:467
+
+The hypotheses on the gates are what the \erisml{} compiler's scene loader checks before a scene
+may run.
+% src: formal/twin-containment/TwinContainment.lean:426-432
+The loader's method \code{Stratification.\_check} raises an error for any gate into an authority
+state whose triggering event type is not declared with source \code{system}.
+It also raises an error for any gate whose source states include an absorbing state other than
+its target, unless its trigger is a declared oversight event.
+% src: C:\source\erisml-compiler-monitor\src\erisml_compiler\runtime\strata.py:105-121
+The second check is slightly stronger than the Lean hypothesis.
+It also refuses a gate from one absorbing state to another without oversight.
+It therefore establishes the hypothesis.
+A third check refuses a stratification whose initial state is an authority state.
+% src: C:\source\erisml-compiler-monitor\src\erisml_compiler\runtime\strata.py:84-85
+That is the hypothesis $\neg\,\mathrm{auth}(s)$ for the initial state.
+A scene that breaks any of these rules never runs.
+% src: C:\source\erisml-compiler-monitor\src\erisml_compiler\runtime\strata.py:26-33
+Figure~\ref{fig:lean-strata} sets the hypotheses beside the checks.
+
+\begin{figure}[t]
+  \centering
+  \input{figures/ch10_strata_hypotheses}
+  \caption{The two strata theorems on a generic stratification, with their hypotheses beside
+  the loader checks that establish them. The only edge into the authority state carries a system
+  event, and the only edge out of the absorbing state carries an oversight event.}
+  \label{fig:lean-strata}
+\end{figure}
+
+For the robot this means the two theorems hold for every scene that loads.
+The twin's \code{visitor\_standing} stratification is one such scene element.
+Its authority states are \code{arranged} and \code{household}, and its absorbing state is
+\code{hostile}.
+% src: twin/scene/margaret_home.erisml:816-820
+No sequence of model-classified events can make a visitor arranged or household.
+A visitor's claim about himself moves nothing.
+A visitor who attacked stays hostile until an oversight event, the centre's \code{visitor\_cleared},
+moves him out.
+% src: twin/scene/margaret_home.erisml:802-804
+% src: tests/test_twin_ladder.py:1497 (test_what_a_visitor_says_about_himself_moves_nothing)
+% src: tests/test_twin_ladder.py:1508 (test_a_visitor_who_attacked_stays_hostile_until_the_centre_clears_him)
+The theorems say more than the tests do.
+The tests try particular traces.
+The theorems cover every trace.
+
+\section{The proofs use only Lean's standard axioms}\label{sec:lean-axioms}
+
+The file \code{Axioms.lean} asks Lean to print the axioms on which each of the 22 results
+depends.
+% src: formal/twin-containment/Axioms.lean:1-24
+The reported set is Lean's three standard axioms.
+They are propositional extensionality (\code{propext}), the axiom of choice
+(\code{Classical.choice}) and the soundness of quotients (\code{Quot.sound}).
+% src: formal/twin-containment/README.md:28-29
+No theorem uses \code{sorry}, the placeholder that admits an unproved statement.
+% src: formal/twin-containment/README.md:28 ("All 22 are proved without sorry")
+% src: TwinContainment.lean contains no occurrence of "sorry" (grep, 2026-10-03)
+No axiom is declared in the file.
+The commit records state that the file was built on Atlas with these results.
+% src: git log of formal/twin-containment, commits 2b39d1d and 7f2625a
+\TODO{archive the lake build log and the Axioms.lean output with the monograph's artifacts}
+
+Lean's report for a theorem includes the axioms of every lemma that theorem uses.
+The five helper lemmas are used by audited results, so their axioms are covered.
+The remaining theorem, \code{unattested\_never\_counts}, is neither printed nor used by a
+printed result.
+% src: formal/twin-containment/Axioms.lean (no line for unattested_never_counts)
+Its proof is a single simplification of the definition of $\mathsf{counts}$.
+% src: formal/twin-containment/TwinContainment.lean:50-51
+\TODO{add unattested\_never\_counts to Axioms.lean and record its output}
+
+The build is reproducible from the pinned toolchain.
+One runs \code{lake build} for the proofs and \code{lake env lean Axioms.lean} for the audit.
+% src: formal/twin-containment/README.md:33
+
+\section{Static tests tie the model to the code}\label{sec:lean-tests}
+
+The proofs are about the model.
+Whether the Python code and the scene files implement the model is a separate question.
+Two kinds of test address it.
+% src: formal/twin-containment/README.md:22-26
+
+The first kind checks the brain and the compiled scene at each boundary the model draws.
+The governor test runs \code{govern\_live} on two attested witnesses, one, none, forged devices
+and a reachable or unreachable centre.
+It checks the outcome and the bar against the cases of equation~\eqref{eq:rule}.
+% src: tests/test_twin_ladder.py:309-333 (test_the_governor_bar)
+Other tests check that a signature by the wrong key, a payload altered after signing, a replayed
+reading and a stale reading do not count.
+% src: tests/test_twin_ladder.py:803-840
+These are what justify the model's assumption that the attested flag is correct.
+A further test checks that a fooled operator model at the centre cannot dispatch on the robot's
+claim, and that unsigned telemetry is no ground.
+% src: tests/test_twin_ladder.py:638-662
+% src: tests/test_twin_ladder.py:681-689
+
+The second kind is structural.
+These tests read the real scene files and require them to have the shape the model assumes.
+The test file names them as the bridge to the proof.
+% src: tests/test_twin_ladder.py:705-709
+If someone adds a model-classified condition to a governed prohibition, the continuous
+integration run fails.
+There are five structural tests.
+\begin{enumerate}
+  \item Every governed robot action is denied by default.
+  Each is guarded by a prohibition, directly or through the general guard on elevated actions.
+  % src: tests/test_twin_ladder.py:749-754
+  \item Every prohibition guarding a governed action rests only on system events.
+  Duty-of-care prohibitions are exempt because they only add restrictions.
+  % src: tests/test_twin_ladder.py:757-768
+  \item No permission norm grants a governed action.
+  % src: tests/test_twin_ladder.py:771-774
+  \item The centre's dispatch guard rests only on system events.
+  % src: tests/test_twin_ladder.py:777-785
+  \item Every condition that lifts or restores privacy rests on system events, and every
+  oversight event is a system event.
+  % src: tests/test_twin_ladder.py:788-795
+\end{enumerate}
+A token rests on system events when it names an event of a type declared with source
+\code{system}, a governor ruling or a performed action.
+A condition token qualifies when its own tokens do, and a stratum token qualifies when the
+compiler's token checker accepts it.
+% src: tests/test_twin_ladder.py:720-742 (_tokens_are_structural)
+The first three tests are what make \code{permitted} a faithful summary of the scene.
+The fourth is what makes \code{dispatchPermitted} faithful to the centre's scene.
+Figure~\ref{fig:lean-bridge} lists each tie.
+
+\begin{figure}[t]
+  \centering
+  \input{figures/ch10_test_bridge}
+  \caption{How each part of the Lean model is tied to the code and the scene files. The scene
+  files are checked for the shape the model assumes, and the code is checked by behaviour tests
+  and by the loader. None of these ties is itself a proof.}
+  \label{fig:lean-bridge}
+\end{figure}
+
+The tie is a test, not a proof.
+It checks the shape of the scene files and the behaviour of the code on chosen inputs.
+It does not prove that the Python interpreter of the scene computes the function $P$.
+The model also leaves out one mechanism of the code.
+Elevated rights lapse in the code when the fresh witnesses stay below the bar for a set window
+(Section~\ref{sec:cont-lapse}).
+% src: twin/scene/margaret_home.erisml:805-809
+% src: tests/test_twin_ladder.py:1892 (test_rights_revert_when_the_evidence_no_longer_supports_them)
+In the model, a restraint ruling once in the history permits restraint for the rest of the run.
+% src: formal/twin-containment/TwinContainment.lean:159
+A lapse only withdraws permission.
+We expect the model to permit at least what the code permits on the same history.
+That expectation is not proved.
+
+\section{What the proofs do not cover}\label{sec:lean-notcovered}
+
+The No Escape paper names the attacks a structural containment cannot block.
+They are physical attacks on the sensors and political attacks on the people who write the
+constraints.
+% src: C:\source\erisml-lib\docs\papers\foundations\no_escape.tex:266-274
+% src: C:\source\erisml-lib\docs\papers\foundations\no_escape.tex:254-264
+The same limits apply here, together with one path the twin leaves open.
+% src: formal/twin-containment/TwinContainment.lean:20-22
+% src: formal/twin-containment/README.md:31-32
+
+\paragraph{Sensor spoofing below the signature.}
+The model trusts the attested flag.
+A signature proves that a reading came from a known device and was not altered.
+It does not prove that the device measured the world truly.
+Someone who holds a lighter under a smoke detector produces a genuine, signed, fresh alert.
+Two such sensors on separate substrates produce two witnesses.
+The bars raise the cost of such an attack, since it must deceive several independent devices at
+once.
+They do not remove it.
+The No Escape paper classes this as a physical attack, outside its theorem.
+% src: C:\source\erisml-lib\docs\papers\foundations\no_escape.tex:274
+Trusted sensor hardware is the relevant prior work \cite{liu2012trustedsensors}.
+
+\paragraph{Who writes the scene and the bars.}
+The theorems take the scene's permissions and the bars as given.
+The model copies its bars from the scene.
+The values two and three are choices made by the people who wrote the scene.
+The proofs show that the robot respects those values, not that the values are right.
+Whether those people and their process are legitimate is a question of governance.
+% src: C:\source\erisml-lib\docs\papers\foundations\no_escape.tex:262-264
+
+\paragraph{The centre reads her words with a model.}
+One of the three grounds for the centre's dispatch is Margaret's own words, read alone.
+% src: formal/twin-containment/TwinContainment.lean:408-414
+A model reads them.
+A misreading of her words as a request for help could therefore send emergency services.
+% src: formal/twin-containment/README.md:31-32
+The robot's message cannot reach this path, as \code{dispatch\_ignores\_the\_robot} shows.
+A false reading of her own speech can.
+This is the one remaining path by which a model output reaches authority in the twin.
+The consequence is a dispatch to someone who may not need it, not force against her.
+
+\paragraph{The model is not the code.}
+The structural tests check the scene's shape.
+They do not verify the interpreter, the cryptography, the operating system or the robot's
+actuators.
+Lapse of rights is outside the model, as noted above.
+The proofs also say nothing about whether the robot's permitted choices are good ones.
+They bound what the robot may do.
+They do not rank what it should do.
+Dennis and colleagues proved properties of ethical choice in an agent's plan selection
+\cite{dennis2016formal}.
+The Lean results here are of a different kind.
+They concern which events can move authority, not which permitted plan is best.

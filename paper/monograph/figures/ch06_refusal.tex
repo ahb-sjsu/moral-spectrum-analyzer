@@ -1,0 +1,22 @@
+% Chapter 6. How OutputGate.refused() reads Margaret's refusals from the event history.
+% src: gtc-prototype twin/output_gate.py:65-87
+% src: gtc-prototype twin/scene/margaret_home.erisml:1003-1020 (refusals, refusal_lapses_on)
+\begin{tikzpicture}[house,
+  st/.style={minimum width=36mm, minimum height=17mm},
+  lbl/.style={flowlabel, align=center}]
+\node[panel=Green, st] (a) at (0,0) {};
+\node[stepname=Green] at ([yshift=3mm]a.center) {She can voice};
+\node[desc] at ([yshift=-2.5mm]a.center) {no refusal in force};
+\node[panel=Orange, st] (b) at (62mm,0) {};
+\node[stepname=Orange] at ([yshift=3mm]b.center) {Refusal stands};
+\node[desc, text width=33mm] at ([yshift=-3mm]b.center) {its capabilities are\\facts of a rights violation};
+\node[panel=Grey, st] (c) at (31mm,-36mm) {};
+\node[stepname=Grey] at ([yshift=3mm]c.center) {Lapsed};
+\node[desc, text width=33mm] at ([yshift=-3mm]c.center) {every refusal cleared\\new refusals ignored};
+\draw[untrusted] (a) -- node[lbl, above]{refusal\_made} (b);
+\draw[flow] (b.south) -- node[lbl, right]{unresponsive or\\check\_in\_unanswered} (c.east);
+\draw[flow] ([xshift=8mm]a.south) -- node[lbl, right, pos=0.35]{lapse} (c.north west);
+\draw[flow] (c.west) -| node[lbl, left, pos=0.75]{check\_in\_answered} ([xshift=-10mm]a.south);
+\draw[untrusted] (c.south east) .. controls +(14mm,-12mm) and +(-14mm,-12mm) .. node[lbl, below]{refusal\_made\\(no effect)} (c.south west);
+\node[detail, text width=40mm, anchor=south] at ([yshift=2mm]b.north) {covers nothing while a hazard\\in its not\_during list holds};
+\end{tikzpicture}

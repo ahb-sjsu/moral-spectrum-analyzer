@@ -1,0 +1,25 @@
+% From the continuous stratified space to the two discrete realizations of chapter 8.
+% src: C:\source\geometric-ethics-content\source\Geometric-Ethics-v1.24.tex:11985-12075 (Defs 8.12, 8.13, Prop 8.5)
+% src: C:\source\geometric-ethics-content\source\updates\sec8_10b_executable_strata.tex:7-37 (Def 8.14)
+\begin{tikzpicture}[house,
+  box/.style={panel=#1, minimum width=34mm, minimum height=36mm},
+  dd/.style={desc, text width=30mm},
+  ex/.style={detail, text width=29mm}]
+\node[box=Purple] (m) at (0,0)   {};
+\node[box=Blue]   (d) at (4.0,0) {};
+\node[box=Teal]   (x) at (8.0,0) {};
+\node[step=Purple] at (0,1.35)   {1};
+\node[step=Blue]   at (4.0,1.35) {2};
+\node[step=Teal]   at (8.0,1.35) {3};
+\node[stepname=Purple] at (0,0.75)   {Stratified space};
+\node[stepname=Blue]   at (4.0,0.75) {Decision complex};
+\node[stepname=Teal]   at (8.0,0.75) {Executable strata};
+\node[dd] at (0,0.1)   {smooth strata, metric $g_{\mu\nu}$, four boundary types};
+\node[dd] at (4.0,0.1) {states, actions as weighted edges, for search};
+\node[dd] at (8.0,0.1) {current stratum, gates fired by events, for an agent};
+\node[ex] at (0,-1.05)   {Definitions 8.1 to 8.11};
+\node[ex] at (4.0,-1.05) {$w=\Delta a^{\top}\Sigma^{-1}\Delta a+\sum_k\beta_k\,\mathbf{1}_k$};
+\node[ex] at (8.0,-1.05) {$(\Sigma,\sigma_0,G,A,B)$};
+\draw[flow] (m) -- (d);
+\draw[flow] (m.north) to[bend left=22] node[above, flowlabel] {for an acting agent} (x.north);
+\end{tikzpicture}

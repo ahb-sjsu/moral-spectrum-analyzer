@@ -1,0 +1,43 @@
+% Chapter 7. One step of the scene runtime: an event in, strata and machines step, a snapshot out.
+% src: erisml-compiler src/erisml_compiler/runtime/scene.py:192-238 (step), 241-299 (in_force, snapshot)
+% src: erisml-compiler src/erisml_compiler/runtime/strata.py:124-144 (cross)
+% src: erisml-compiler src/erisml_compiler/runtime/agent.py:5-13, 299-309 (who supplies events)
+\begin{tikzpicture}[house]
+\def\tw{27mm}
+% inputs
+\node[panel=Grey, text width=24mm, minimum height=13mm] (cls) at (0,6mm) {\textcolor{hsGrey}{\bfseries classifier}\\{\scriptsize\color{hsTextMid}perceived types\\only}};
+\node[panel=Red, text width=24mm, minimum height=13mm] (sys) at (0,-17mm) {\textcolor{hsRed}{\bfseries system}\\{\scriptsize\color{hsTextMid}rulings, replies,\\actions performed}};
+\node[panel=Purple, text width=17mm, minimum height=13mm] (ev) at (29mm,-5.5mm) {\textcolor{hsPurple}{\bfseries event} $e_k$\\{\scriptsize\color{hsTextMid}type, content,\\actor, target}};
+\draw[untrusted] (cls.east) -- (ev.west);
+\draw[grant] (sys.east) -- (ev.west);
+% row 1, left to right
+\foreach \i/\c/\x/\name/\what/\det in {
+  1/Teal/57/Strata/{each gate that\\fires on the event}/{first match wins\\records \texttt{entered\_at}\\a crossing if it moved},
+  2/Green/90/Machines/{consent, legitimacy,\\commitment}/{each steps on its\\mapped event types},
+  3/Orange/123/Defeasibility/{override or restore\\a commitment}/{a named condition\\overrides, only an\\oversight event restores}} {
+  \node[panel=\c, text width=\tw, minimum height=36mm, anchor=north] (p\i) at (\x mm, 12mm) {};
+  \node[step=\c] (s\i) at ([yshift=-5mm]p\i.north) {\i};
+  \node[stepname=\c, below=0.8mm of s\i] (n\i) {\name};
+  \node[desc, below=0.2mm of n\i, text width=\tw] (d\i) {\what};
+  \node[detail, below=1mm of d\i, text width=\tw-2mm] {\det};
+}
+% row 2, right to left
+\foreach \i/\c/\x/\name/\what/\det in {
+  4/Amber/123/Discharge/{if the event is\\\texttt{action\_performed}}/{each obligation on\\that action records\\the event index},
+  5/Blue/90/Norms in force/{commitment source\\and every token}/{prohibitions win ties\\against permissions}} {
+  \node[panel=\c, text width=\tw, minimum height=33mm, anchor=north] (p\i) at (\x mm, -30mm) {};
+  \node[step=\c] (s\i) at ([yshift=-5mm]p\i.north) {\i};
+  \node[stepname=\c, below=0.8mm of s\i] (n\i) {\name};
+  \node[desc, below=0.2mm of n\i, text width=\tw] (d\i) {\what};
+  \node[detail, below=1mm of d\i, text width=\tw-2mm] {\det};
+}
+\node[panel=Grey, text width=40mm, minimum height=33mm, anchor=north] (snap) at (46mm, -30mm) {};
+\node[stepname=Grey, below=2mm of snap.north] (sn) {Snapshot};
+\node[detail, below=1mm of sn, text width=37mm, align=left] {\texttt{prohibited}\quad\texttt{allowed}\\\texttt{obliged}\quad\texttt{obliged\_tiers}\\\texttt{machines}\quad\texttt{reasons}\\\texttt{norms\_in\_force}\\\texttt{crossings}};
+\draw[flow] (ev.east) -- (ev.east -| p1.west);
+\draw[flow] (p1.east) -- (p1.east -| p2.west);
+\draw[flow] (p2.east) -- (p2.east -| p3.west);
+\draw[flow] (p3.south) -- (p4.north);
+\draw[flow] (p4.west) -- (p4.west -| p5.east);
+\draw[flow] (p5.west) -- (p5.west -| snap.east);
+\end{tikzpicture}

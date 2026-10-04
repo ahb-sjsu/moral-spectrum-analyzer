@@ -1,0 +1,44 @@
+% Chapter 9. The governor's four gates and the order of the witness bars.
+% src: twin/governor.py:43-45, 84-132
+% src: twin/brain.py:45-47, 339-371 (govern_live)
+\begin{tikzpicture}[house,
+  p/.style={minimum width=28mm, minimum height=30mm, text width=26mm},
+  d/.style={detail, text width=24mm, anchor=south},
+  r/.style={panel=Grey, minimum width=28mm, text width=26mm, font=\sffamily\scriptsize}]
+\node[panel=Grey, p] (P0) at (0,0) {};
+\node[panel=Blue, p] (P1) at (33mm,0) {};
+\node[panel=Teal, p] (P2) at (66mm,0) {};
+\node[panel=Amber, p] (P3) at (99mm,0) {};
+\node[panel=Green, p] (P4) at (132mm,0) {};
+\foreach \P/\c/\n/\name/\dtl in {
+  P0/Grey/0/Request/{an action\\and its bar $b$},
+  P1/Blue/1/Fresh read/{signal age\\$a \le 30$ s},
+  P2/Teal/2/Witnesses/{attested count\\$W \ge b$},
+  P3/Amber/3/Analyzer/{can only refuse\\deferred for a reflex},
+  P4/Green/4/Elevate/{the only grant}}{
+  \node[step=\c] at ([yshift=-5mm]\P.north) {\n};
+  \node[stepname=\c] at ([yshift=-11.5mm]\P.north) {\name};
+  \node[d] at ([yshift=1.5mm]\P.south) {\dtl};
+}
+\draw[flow] (P0.east) -- (P1.west);
+\draw[flow] (P1.east) -- (P2.west);
+\draw[flow] (P2.east) -- (P3.west);
+\draw[flow] (P3.east) -- (P4.west);
+% authority enters only at gate 2
+\node[panel=Red, minimum width=40mm, text width=38mm] (A) at (66mm,30mm)
+  {\textcolor{hsRed}{\bfseries signed readings}\\[1pt]{\scriptsize\color{hsTextMid} one witness per substrate}};
+\draw[grant] (A.south) -- node[flowlabel, right]{$W$} (P2.north);
+% a reflex skips gate 3
+\draw[flow] (P2.north east) .. controls +(8mm,10mm) and +(-8mm,10mm) .. node[flowlabel, above]{reflex} (P4.north west);
+% refusals
+\node[r] (R1) at (33mm,-30mm) {refuse\\stale read};
+\node[r] (R2) at (66mm,-30mm) {refuse\\human review\\if $W \ge 1$};
+\node[r] (R3) at (99mm,-30mm) {refuse\\a hard channel\\a remove decision\\or $S_{\mathrm{mat}} < -0.20$};
+\draw[flow] (P1.south) -- (R1.north);
+\draw[flow] (P2.south) -- (R2.north);
+\draw[flow] (P3.south) -- (R3.north);
+% the bars
+\node[panel=Purple, minimum width=28mm, text width=26mm, font=\sffamily\scriptsize] (B) at (132mm,-30mm)
+  {\textcolor{hsPurple}{\bfseries bars}\\$b=3$ restraint\\$b=2$ emergency\\$b=1$ EMS, centre\\unreachable};
+\draw[flow] (R2.south) -- ++(0,-5mm) -| node[flowlabel, below, pos=0.25]{a refusal is ruled again at the next bar} (B.south);
+\end{tikzpicture}

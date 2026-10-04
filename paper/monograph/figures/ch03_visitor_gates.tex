@@ -1,0 +1,22 @@
+% The visitor_standing stratification of Geometric Ethics section 8.10b (five strata) with its gates.
+% src: C:\source\geometric-ethics-content\source\updates\sec8_10b_executable_strata.tex:80-98
+% src: C:\source\gtc-prototype\twin\scene\margaret_home.erisml:816-831 (gates), 1115-1148 (event sources)
+% Model-written triggers (person_entered, visitor_welcomed) are dashed. System triggers into an
+% authority stratum (visit_arranged) are red. Other system triggers (attack_measured, visitor_cleared,
+% person_left on arranged) are flow arrows.
+\begin{tikzpicture}[house, lab/.style={flowlabel, font=\sffamily\scriptsize}]
+\node[stratum]   (none) at (0,0)     {none};
+\node[stratum]   (str)  at (3.2,1.5) {stranger};
+\node[stratum]   (wel)  at (7.3,1.5) {welcomed};
+\node[authority] (arr)  at (5.2,-1.5) {arranged};
+\node[absorbing] (hos)  at (10.0,0)  {hostile};
+\draw[untrusted] (none) -- node[lab, above left] {someone enters} (str);
+\draw[untrusted] (str) -- node[lab, above] {she welcomes him} (wel);
+\draw[grant] (none) -- node[lab, below left, text=hsRed] {visit arranged} (arr);
+\draw[grant] (str) -- (arr);
+\draw[grant] (wel) -- (arr);
+\draw[flow] (wel) -- node[lab, above right] {attack measured} (hos);
+\draw[flow] (arr) -- (hos);
+\draw[flow, dotted] (hos.south) .. controls (10.0,-3.0) and (0,-3.0) .. node[lab, below] {cleared by the centre (oversight)} (none.south);
+\node[detail, draw=hsGreyLine, text width=40mm, anchor=south west] at (-0.8,2.15) {a visitor's claim about himself is free text and moves no stratum};
+\end{tikzpicture}

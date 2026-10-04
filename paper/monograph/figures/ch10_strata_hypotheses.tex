@@ -1,0 +1,30 @@
+% Chapter 10. The two strata theorems: their gate hypotheses and the loader checks that establish them.
+% src: formal/twin-containment/TwinContainment.lean:447-486 (authority_needs_system, absorbing_stays)
+% src: C:\source\erisml-compiler-monitor\src\erisml_compiler\runtime\strata.py:84-85,105-121
+\begin{tikzpicture}[house,
+  d/.style={detail, text width=60mm, align=left}]
+% a generic stratification
+\node[stratum] (s0) at (0,0) {initial};
+\node[stratum] (s1) at (34mm,0) {other};
+\node[authority] (au) at (0,-24mm) {authority};
+\node[absorbing] (ab) at (34mm,-24mm) {absorbing};
+\draw[untrusted] (s0) -- node[flowlabel, above]{any event} (s1);
+\draw[grant] (s0) -- node[flowlabel, left, align=right]{system\\event only} (au);
+\draw[flow] ([xshift=-3mm]s1.south) -- node[flowlabel, left, align=right]{any\\event} ([xshift=-3mm]ab.north);
+\draw[flow] ([xshift=3mm]ab.north) -- node[flowlabel, right, align=left]{oversight\\event only} ([xshift=3mm]s1.south);
+\draw[untrusted] (s1.south west) -- node[pos=0.5, text=hsRed, font=\sffamily\bfseries\normalsize]{$\times$} (au.north east);
+\node[figsub, align=center] at (17mm,-34mm) {a model event into an authority state\\is refused when the scene loads};
+
+% the correspondence
+\node[stepname=Teal, anchor=north west] (Lt) at (64mm, 6mm) {Lean hypothesis};
+\node[d, below=1.5mm of Lt.south west, anchor=north west] (L1) {\textbf{authority\_needs\_system}\\every gate into an authority state fires only on a system event, and the start state is not an authority state};
+\node[d, below=1.5mm of L1] (L2) {\textbf{absorbing\_stays}\\every gate that can leave an absorbing state fires only on an oversight event};
+\node[stepname=Blue, below=12mm of L2.south west, anchor=north west] (Ct) {Loader check before a scene runs};
+\node[d, below=1.5mm of Ct.south west, anchor=north west] (C1) {refuses a gate into an authority state whose trigger is not declared with source system, and an authority state as the initial state};
+\node[d, below=1.5mm of C1] (C2) {refuses a gate that leaves an absorbing state on an event not declared as oversight};
+\begin{scope}[on background layer]
+  \node[panel=Teal, fit=(Lt)(L1)(L2), inner sep=2.5mm] (L) {};
+  \node[panel=Blue, fit=(Ct)(C1)(C2), inner sep=2.5mm] (C) {};
+\end{scope}
+\draw[flow] (C.north) -- node[flowlabel, right]{establishes} (L.south);
+\end{tikzpicture}

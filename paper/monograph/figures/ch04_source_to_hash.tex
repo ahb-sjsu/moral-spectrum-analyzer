@@ -1,0 +1,38 @@
+% Chapter 4. From a scene file to a validated record, a typed graph and its hash.
+% src: erisml-compiler src/erisml_compiler/ingestion/structured_loader.py:45-76
+% src: erisml-compiler src/erisml_compiler/ir/schemas.py:394-458
+% src: erisml-compiler docs/architecture.md:106-127, src/erisml_compiler/ir/graph/canonical.py:48-82
+\begin{tikzpicture}[house, node distance=4mm]
+\def\pw{25mm}
+\def\ph{47mm}
+% five numbered panels
+\foreach \i/\c/\x in {1/Purple/0, 2/Blue/29.5, 3/Green/59, 4/Orange/88.5, 5/Teal/118} {
+  \node[panel=\c, minimum width=\pw+3mm, minimum height=\ph, anchor=north] (p\i) at (\x mm, 0) {};
+  \node[step=\c] (s\i) at ([yshift=-5.5mm]p\i.north) {\i};
+}
+\node[stepname=Purple, below=1.2mm of s1, text width=\pw, align=center] (n1) {Scene source};
+\node[desc, below=0.3mm of n1, text width=\pw] (d1) {ErisML source,\\YAML};
+\node[detail, below=1.5mm of d1, text width=\pw-2mm] {\texttt{margaret\_home}\\\texttt{.erisml}\\IR field names\\as top-level keys\\an \texttt{extra} block};
+
+\node[stepname=Blue, below=1.2mm of s2, text width=\pw, align=center] (n2) {Loader};
+\node[desc, below=0.3mm of n2, text width=\pw] (d2) {\texttt{load\_structured}\\\texttt{\_input}};
+\node[detail, below=1.5mm of d2, text width=\pw-2mm] {.erisml .yaml .yml\\read as YAML\\SHA-256 of the text\\each section\\validated};
+
+\node[stepname=Green, below=1.2mm of s3, text width=\pw, align=center] (n3) {CompilerIR};
+\node[desc, below=0.3mm of n3, text width=\pw] (d3) {schema\\\texttt{ir\_v0.3}};
+\node[detail, below=1.5mm of d3, text width=\pw-2mm] {stakeholders\\events\\commitments\\norms\\\texttt{extra}};
+
+\node[stepname=Orange, below=1.2mm of s4, text width=\pw, align=center] (n4) {MoralGraph};
+\node[desc, below=0.3mm of n4, text width=\pw] (d4) {Pass 7.5\\\texttt{graph\_from\_flat}};
+\node[detail, below=1.5mm of d4, text width=\pw-2mm] {6 node kinds\\11 edge kinds\\payloads carry\\the records\\verbatim};
+
+\node[stepname=Teal, below=1.2mm of s5, text width=\pw, align=center] (n5) {Graph hash};
+\node[desc, below=0.3mm of n5, text width=\pw] (d5) {canonical JSON\\then SHA-256};
+\node[detail, below=1.5mm of d5, text width=\pw-2mm] {nodes by id\\edges by source,\\target, kind,\\payload\\\texttt{graph\_hash}};
+
+\foreach \a/\b in {1/2, 2/3, 3/4, 4/5} { \draw[flow] (p\a.east) -- (p\b.west); }
+% the runtime branch
+\node[panel=Grey, below=7mm of p3, text width=52mm] (rt) {\textcolor{hsGrey}{\bfseries Scene runtime}\\[1pt]{\scriptsize\color{hsTextMid} reads norms and \texttt{extra}, Chapter 7}};
+\draw[flow] (p3.south) -- node[flowlabel, right]{the same record} (rt.north);
+\draw[flow] (p4.north) .. controls +(0,9mm) and +(0,9mm) .. node[flowlabel, above]{back to flat lists, \texttt{flat\_from\_graph}} (p3.north);
+\end{tikzpicture}

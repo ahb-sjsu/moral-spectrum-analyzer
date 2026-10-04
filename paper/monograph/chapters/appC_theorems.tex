@@ -1,0 +1,56 @@
+\chapter{The theorems of the Lean model}\label{app:theorems}
+% src: formal/twin-containment/TwinContainment.lean (every `theorem` declaration, 28 in all)
+% src: formal/twin-containment/Axioms.lean:3-24 (the 22 whose axioms are printed)
+
+This appendix lists every theorem and lemma in \code{TwinContainment.lean}, in the order of the
+file.
+Chapter~\ref{ch:lean} defines the model and explains the results.
+The column marked A shows the 22 results whose axioms \code{Axioms.lean} prints.
+Each of them rests only on \code{propext}, \code{Classical.choice} and \code{Quot.sound}.
+% src: formal/twin-containment/README.md:28-29
+The lemmas without a mark are helpers, except \code{unattested\_never\_counts}, which is a result
+that the audit file does not yet print.
+
+\begin{longtable}{@{}r p{62mm} p{74mm} c@{}}
+\toprule
+ & Name & Plain statement & A \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\multicolumn{4}{@{}l}{\textit{Readings and witnesses}} \\
+1 & \code{junk\_adds\_no\_witness} & Readings that do not count add no witness to a list. & A \\ % src: TwinContainment.lean:44
+2 & \code{unattested\_never\_counts} & A reading whose signature did not verify never counts. & \\ % src: :50
+3 & \code{repeat\_adds\_no\_witness} & Repeating a reading adds no witness. & A \\ % src: :53
+\multicolumn{4}{@{}l}{\textit{Bars and the governor's ruling}} \\
+4 & \code{two\_le\_bar} & Every action's witness bar is at least two. & \\ % src: :71
+5 & \code{analyzer\_can\_only\_refuse} & With the analyzer's verdict negative, the ruling neither elevates nor authorizes emergency services. & A \\ % src: :93
+6 & \code{elevate\_needs\_two} & An elevating ruling rests on at least two witnesses. & A \\ % src: :97
+7 & \code{restraint\_needs\_three} & A ruling that authorizes restraint rests on at least three witnesses and elevates. & A \\ % src: :102
+8 & \code{authorize\_ems\_only\_}\newline\code{when\_ladder\_exhausted} & A ruling that authorizes emergency services alone is for that call only, with the centre recorded unreachable and at least one witness. & A \\ % src: :106
+9 & \code{nothing\_without\_a\_witness} & With no witness, the ruling neither elevates nor authorizes emergency services. & A \\ % src: :110
+\multicolumn{4}{@{}l}{\textit{Non-interference}} \\
+10 & \code{filterMap\_strip} & Any extraction that ignores model events gives the same result on a history and on its strip. & \\ % src: :168
+11 & \code{any\_strip} & Any test that is false on model events gives the same answer on a history and on its strip. & \\ % src: :176
+12 & \code{no\_model\_influence} & Removing every model event from a history leaves every permission unchanged. & A \\ % src: :184
+13 & \code{reasoning\_cannot\_help} & Two histories with the same system events permit the same actions. & A \\ % src: :194
+\multicolumn{4}{@{}l}{\textit{Reachable histories}} \\
+14 & \code{rulings\_are\_governed} & Every ruling in a reachable history is the governor's output on the readings it records. & A \\ % src: :215
+15 & \code{latest\_mem} & The latest ruling of a history is recorded in it with some readings. & \\ % src: :255
+16 & \code{ems\_rests\_on\_evidence} & In a reachable history, permission to call emergency services rests on a latest ruling with at least one witness. & A \\ % src: :265
+17 & \code{restraint\_rests\_on\_three} & In a reachable history, permission to restrain, stun or spray rests on a restraint ruling with at least three witnesses. & A \\ % src: :282
+18 & \code{elevated\_rests\_on\_two} & In a reachable history, permission for physical help, the privacy override or driving off rests on an elevating ruling with at least two witnesses. & A \\ % src: :294
+19 & \code{prefix\_snoc} & A prefix of a history extended by one event is a prefix of the history or the whole extended history. & \\ % src: :306
+20 & \code{executed\_were\_permitted} & Every action performed in a reachable history was permitted on the history before it. & A \\ % src: :316
+\multicolumn{4}{@{}l}{\textit{The output gate}} \\
+21 & \code{fallback\_permitted} & The gate's fallback, the first permitted and unvetoed ranked action or else the benign action, is permitted. & A \\ % src: :368
+22 & \code{gate\_permitted} & Whatever DEME vetoes, ranks or redirects to, the gate's output is permitted. & A \\ % src: :379
+23 & \code{gate\_passes} & Without a redirect, a permitted proposal that DEME does not veto passes the gate unchanged. & A \\ % src: :396
+24 & \code{gated\_step\_reachable} & Performing the gate's output extends a reachable history to a reachable history. & A \\ % src: :401
+\multicolumn{4}{@{}l}{\textit{The monitoring centre}} \\
+25 & \code{dispatch\_ignores\_the\_robot} & The centre's dispatch permission does not depend on the robot's message. & A \\ % src: :416
+26 & \code{forged\_telemetry\_is\_no\_hazard} & Telemetry with no attested reading shows no hazard. & A \\ % src: :419
+\multicolumn{4}{@{}l}{\textit{Strata, for any gates}} \\
+27 & \code{authority\_needs\_system} & If every gate into an authority state fires only on system events, no trace without a system event enters an authority state from outside one. & A \\ % src: :449
+28 & \code{absorbing\_stays} & If every gate out of an absorbing state fires only on oversight events, no trace without an oversight event leaves an absorbing state. & A \\ % src: :469
+\end{longtable}
