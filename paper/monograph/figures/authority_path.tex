@@ -1,0 +1,54 @@
+% The authority path of the twin, world to body, in the house style (figures/housestyle.tex).
+% Caption is the including chapter's. Red edges are the only ones that grant; dashed grey edges
+% carry what a model wrote.
+% src: twin/brain.py:1-23, 589-626; twin/input_layer.py; twin/governor.py; twin/output_gate.py;
+% src: twin/service.py:49-84 (Chain); twin/unity/TwinWorld/Assets/Twin/Runtime/Perception.cs:106-136
+\begin{tikzpicture}[house,
+  p/.style={minimum width=31mm, minimum height=31mm, text width=29mm},
+  d/.style={detail, text width=27mm, anchor=south}]
+% row 1, left to right
+\node[panel=Purple, p] (P1) at (0,0) {};
+\node[panel=Blue, p] (P2) at (41mm,0) {};
+\node[panel=Amber, p] (P3) at (82mm,0) {};
+\node[panel=Green, p] (P4) at (129mm,0) {};
+% row 2, right to left
+\node[panel=Amber, p] (P5) at (129mm,-40mm) {};
+\node[panel=Red, p] (P6) at (82mm,-40mm) {};
+\node[panel=Orange, p] (P7) at (41mm,-40mm) {};
+\node[panel=Teal, p] (P8) at (0,-40mm) {};
+% side panels
+\node[panel=Teal, minimum width=31mm, text width=29mm] (CH) at (129mm,31mm)
+  {\textcolor{hsTeal}{\bfseries authenticated channels}\\[1pt]{\scriptsize\color{hsTextMid} centre, dispatch\\and owner}};
+\node[panel=Red, minimum width=31mm, text width=29mm] (AT) at (82mm,-74mm)
+  {\textcolor{hsRed}{\bfseries attestation}\\[1pt]{\scriptsize\color{hsTextMid} signed and fresh\\one per substrate}};
+\node[panel=Grey, minimum width=31mm, text width=29mm] (LG) at (41mm,-74mm)
+  {\textcolor{hsGrey}{\bfseries hash-chained log}\\[1pt]{\scriptsize\color{hsTextMid} every record, linked\\by SHA-256}};
+% contents
+\foreach \P/\c/\n/\name/\dsc/\dtl in {
+  P1/Purple/1/World/{Unity simulation}/{facts and\\signed readings},
+  P2/Blue/2/Input layer/{whitelist schema}/{undeclared fields\\dropped and reported},
+  P3/Amber/3/Classifier/{a language model}/{facts to canonical\\scene events},
+  P4/Green/4/Scene runtime/{norms and strata}/{allowed, obliged\\and prohibited sets},
+  P5/Amber/5/Chooser/{a language model}/{one action from\\the allowed set},
+  P6/Red/6/Governor/{four gates}/{counts attested\\witnesses},
+  P7/Orange/7/Output gate/{DEME}/{veto, replace\\or refer to a human},
+  P8/Teal/8/Robot body/{one motor routine}/{acts, then reports\\it performed}}{
+  \node[step=\c] at ([yshift=-5mm]\P.north) {\n};
+  \node[stepname=\c] at ([yshift=-11.5mm]\P.north) {\name};
+  \node[desc, text width=27mm] at ([yshift=-15.5mm]\P.north) {\dsc};
+  \node[d] at ([yshift=1.5mm]\P.south) {\dtl};
+}
+% the path
+\draw[flow] (P1.east) -- node[flowlabel, above]{facts} (P2.west);
+\draw[flow] (P2.east) -- (P3.west);
+\draw[untrusted] (P3.east) -- node[flowlabel, above]{events} (P4.west);
+\draw[flow] (P4.south) -- node[flowlabel, right]{allowed} (P5.north);
+\draw[untrusted] (P5.west) -- node[flowlabel, above]{proposal} (P6.east);
+\draw[flow] (P6.west) -- node[flowlabel, above]{ruling} (P7.east);
+\draw[flow] (P7.west) -- node[flowlabel, above]{action} (P8.east);
+% authority enters only here
+\draw[grant] (CH.south) -- node[flowlabel, right]{system events} (P4.north);
+\draw[grant] (AT.north) -- node[flowlabel, right]{witnesses} (P6.south);
+\draw[flow] (P1.west) -- ++(-3mm,0) -- ++(0,-91mm) -| node[flowlabel, above, pos=0.3]{signed readings} (AT.south);
+\draw[flow] (P7.south) -- (LG.north);
+\end{tikzpicture}

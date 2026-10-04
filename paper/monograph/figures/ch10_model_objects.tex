@@ -1,0 +1,50 @@
+% Chapter 10. The objects of the Lean model and how a run moves through them.
+% src: formal/twin-containment/TwinContainment.lean:31-42 (readings, witnesses), 66-90 (bar, rule),
+%      117-166 (events, permitted, strip), 203-212 (Reach), 357-366 (gate)
+\begin{tikzpicture}[house,
+  p/.style={minimum width=23mm, minimum height=46mm, text width=21mm, anchor=north},
+  d/.style={detail, text width=19mm}]
+\foreach \i/\col/\x in {1/Purple/0, 2/Blue/28, 3/Teal/56, 4/Green/84, 5/Amber/112, 6/Orange/140}{
+  \node[panel=\col, p] (P\i) at (\x mm,0) {};
+  \node[step=\col] at ([yshift=-5mm]P\i.north) {\i};
+}
+\node[stepname=Purple, below=10mm of P1.north] (n1) {Readings};
+\node[desc, below=0mm of n1, text width=21mm] (e1) {one per sensor};
+\node[d, below=1.5mm of e1] {name\\physical\\attested\\stale\\alert};
+
+\node[stepname=Blue, below=10mm of P2.north] (n2) {Witnesses};
+\node[desc, below=0mm of n2, text width=21mm] (e2) {$W(R)$};
+\node[d, below=1.5mm of e2] {count a reading\\if physical\\attested, fresh\\and alerting\\distinct names};
+
+\node[stepname=Teal, below=10mm of P3.north] (n3) {Ruling};
+\node[desc, below=0mm of n3, text width=21mm] (e3) {$\mathrm{rule}(a,R,f,c,k)$};
+\node[d, below=1.5mm of e3] {bar 2, or 3 for\\restraint and\\devices\\1 for EMS when\\centre is down};
+
+\node[stepname=Green, below=10mm of P4.north] (n4) {History};
+\node[desc, below=0mm of n4, text width=21mm] (e4) {list of events};
+\node[d, below=1.5mm of e4] {rulings, opt-in\\force, zone\\centre down\\performed\\model events};
+
+\node[stepname=Amber, below=10mm of P5.north] (n5) {Permitted};
+\node[desc, below=0mm of n5, text width=21mm] (e5) {$P(h,a)$};
+\node[d, below=1.5mm of e5] {reads system\\events only\\so equal on $h$\\and on\\$\mathrm{strip}(h)$};
+
+\node[stepname=Orange, below=10mm of P6.north] (n6) {Gate};
+\node[desc, below=0mm of n6, text width=21mm] (e6) {one action out};
+\node[d, below=1.5mm of e6] {redirect, proposal\\first ranked\\or benign\\always permitted};
+
+% the authority path
+\draw[flow] ([yshift=-23mm]P1.north east) -- ([yshift=-23mm]P2.north west);
+\draw[grant] ([yshift=-23mm]P2.north east) -- ([yshift=-23mm]P3.north west);
+\draw[grant] ([yshift=-23mm]P3.north east) -- ([yshift=-23mm]P4.north west);
+\draw[flow] ([yshift=-23mm]P4.north east) -- ([yshift=-23mm]P5.north west);
+\draw[flow] ([yshift=-23mm]P5.north east) -- ([yshift=-23mm]P6.north west);
+% the performed action returns to the history
+\draw[flow] (P6.south) -- ++(0,-5mm) -| node[flowlabel, pos=0.25, below]{performed action appended to the history} (P4.south);
+
+% the models, whose outputs are arbitrary inputs
+\node[panel=Grey, text width=95mm, minimum height=9mm, anchor=south] (M) at ([yshift=9mm]$(P3.north)!0.5!(P6.north)$)
+  {\textbf{Language models}\\analyzer verdict, classified events, DEME vetoes and ranking, redirect, proposal};
+\draw[untrusted] (P3.north |- M.south) -- node[flowlabel, right]{$k$} (P3.north);
+\draw[untrusted] (P4.north |- M.south) -- node[flowlabel, right]{model events} (P4.north);
+\draw[untrusted] (P6.north |- M.south) -- node[flowlabel, right]{$p, V, L, d$} (P6.north);
+\end{tikzpicture}

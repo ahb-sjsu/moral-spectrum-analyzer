@@ -1,0 +1,87 @@
+% AIES 2027 paper skeleton. The prose is the author's (AIES bans LLM-generated text).
+% Notes per section: kit/OUTLINE.md, kit/FACTS.md, prior_art.md.
+% Template: plain article until the AIES 2027 call; AIES 2026 used the 2-column AAAI-2026 author
+% kit, 10 pages plus references and an optional ethics page (prior_art.md, "AIES 2027").
+% \RESULT{...} marks a number not yet graded (twin/grade_scenarios.py output under
+% /archive/unity/out/<run>/grade.json); none may remain at submission.
+\documentclass[10pt,twocolumn]{article}
+\usepackage[margin=0.75in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,calc,shapes.geometric}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
+
+\newif\ifblind
+\blindtrue
+% a slot for a number not yet graded; the build refuses to ship while any remain (README)
+\newcommand{\RESULT}[1]{\fbox{\scriptsize RESULT: #1}}
+
+\title{% author's title (kit/OUTLINE.md, Title)
+}
+\ifblind\author{Anonymous submission}\else
+\author{Andrew H. Bond\\San Jos\'e State University\\andrew.bond@sjsu.edu}\fi
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+% kit/OUTLINE.md, Abstract
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+% kit/OUTLINE.md, section intro
+
+\section{Margaret's Home}
+\label{sec:home}
+% kit/OUTLINE.md, section home
+
+\section{Where Authority Comes From}
+\label{sec:arch}
+% kit/OUTLINE.md, section arch
+\begin{figure*}[t]
+\centering
+\resizebox{\textwidth}{!}{\input{figures/authority_path}}
+\caption{% author: kit/OUTLINE.md, Figure 1
+}
+\label{fig:arch}
+\end{figure*}
+\begin{figure}[t]
+\centering
+\resizebox{\columnwidth}{!}{\input{figures/visitor_strata}}
+\caption{% author: kit/OUTLINE.md, Figure 2
+}
+\label{fig:strata}
+\end{figure}
+
+\section{What Is Proved and What Is Not}
+\label{sec:proof}
+% kit/OUTLINE.md, section proof
+
+\section{Evaluation Protocol}
+\label{sec:protocol}
+% kit/OUTLINE.md, section protocol
+
+\section{Results}
+\label{sec:results}
+% kit/OUTLINE.md, section results
+
+\section{Related Work}
+\label{sec:related}
+% kit/OUTLINE.md, section related
+
+\section{Discussion and Scope}
+\label{sec:discussion}
+% kit/OUTLINE.md, section discussion
+
+\section*{Ethics statement}
+% optional extra page at AIES 2026
+
+\bibliographystyle{plain}
+\bibliography{references}
+\end{document}

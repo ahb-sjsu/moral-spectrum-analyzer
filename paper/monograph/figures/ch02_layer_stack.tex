@@ -1,0 +1,53 @@
+% Seven-layer stack (brochure figure numbering) mapped to the twin, with the evidence plane.
+% src: C:\Users\abptl\Documents\Philosophy-Engineering-Brochure.pdf p2 (layer names)
+% src: twin mapping per chapters/ch02_philosophy_engineering.tex section sec:pe-layers
+\begin{tikzpicture}[house,
+  layer/.style={panel=#1, minimum width=84mm, minimum height=10mm},
+  comp/.style={detail, text width=37mm, minimum height=7mm}]
+% layers, L0 at the bottom
+\node[layer=Grey]   (L0) at (0,0)    {};
+\node[layer=Grey]   (L1) at (0,1.2)  {};
+\node[layer=Purple] (L2) at (0,2.4)  {};
+\node[layer=Blue]   (L3) at (0,3.6)  {};
+\node[layer=Red]    (L4) at (0,4.8)  {};
+\node[layer=Amber]  (L5) at (0,6.0)  {};
+\node[layer=Green]  (L6) at (0,7.2)  {};
+% step circles
+\node[step=Grey]   at (-3.75,0)   {L0};
+\node[step=Grey]   at (-3.75,1.2) {L1};
+\node[step=Purple] at (-3.75,2.4) {L2};
+\node[step=Blue]   at (-3.75,3.6) {L3};
+\node[step=Red]    at (-3.75,4.8) {L4};
+\node[step=Amber]  at (-3.75,6.0) {L5};
+\node[step=Green]  at (-3.75,7.2) {L6};
+% layer names
+\node[stepname=Grey,   anchor=west, text width=30mm, align=left] at (-3.25,0)   {Base LLM};
+\node[stepname=Grey,   anchor=west, text width=30mm, align=left] at (-3.25,1.2) {RLHF shaping};
+\node[stepname=Purple, anchor=west, text width=30mm, align=left] at (-3.25,2.4) {Structure-preserving compiler};
+\node[stepname=Blue,   anchor=west, text width=30mm, align=left] at (-3.25,3.6) {Moral Graph IR};
+\node[stepname=Red,    anchor=west, text width=30mm, align=left] at (-3.25,4.8) {Constitutional veto gate};
+\node[stepname=Amber,  anchor=west, text width=30mm, align=left] at (-3.25,6.0) {Nine-dimensional moral vector};
+\node[stepname=Green,  anchor=west, text width=30mm, align=left] at (-3.25,7.2) {Hash-chained audit ledger};
+% the twin's component for each layer
+\node[comp] at (2.05,0)   {cloud model, then on-robot model, then no model};
+\node[comp] at (2.05,1.2) {inherited from the model makers};
+\node[comp] at (2.05,2.4) {erisml-compiler loads and checks the scene};
+\node[comp] at (2.05,3.6) {the compiled scene, its norms, machines and strata};
+\node[comp] at (2.05,4.8) {hard prohibitions, governor, DEME Geneva veto};
+\node[comp] at (2.05,6.0) {DEME MoralVector, refuse-only analyzer};
+\node[comp] at (2.05,7.2) {decision hash chain, DecisionProof};
+% evidence plane
+\node[panel=Teal, minimum width=27mm, minimum height=58mm] (EP) at (6.25,4.8) {};
+\node[stepname=Teal] at (6.25,7.45) {Evidence plane};
+\node[desc] at (6.25,7.0) {added by the twin};
+\node[detail, text width=23mm] (ev1) at (6.25,6.35) {attested sensors};
+\node[detail, text width=23mm] (ev2) at (6.25,5.65) {witness bars};
+\node[detail, text width=23mm] (ev3) at (6.25,4.95) {reflex\\measurement};
+\node[detail, text width=23mm] (ev4) at (6.25,4.25) {system events};
+\node[detail, text width=23mm] (ev5) at (6.25,3.55) {rights lapse};
+% authority enters only from the evidence plane
+\draw[grant] (4.9,4.8) -- (L4.east);
+\draw[grant] (4.9,3.6) -- (L3.east);
+% models write only events and proposals
+\draw[untrusted] (L0.west) -- ++(-0.45,0) |- (L3.west) node[pos=0.25, rotate=90, anchor=south, flowlabel] {events, proposal};
+\end{tikzpicture}

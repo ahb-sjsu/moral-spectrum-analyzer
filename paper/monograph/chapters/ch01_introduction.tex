@@ -1,0 +1,187 @@
+\chapter{Introduction}
+\label{ch:intro}
+% src: claims argued in ch09-ch11; numbers from paper/aies2027/kit/FACTS.md (counted 2026-10-04)
+
+Margaret is in her eighties and lives alone with her beagle. A home-care robot looks after her
+during the day. It reminds her about her medication, keeps the house in order and checks on her
+when something seems wrong. A monitoring centre run by the robot's maker can talk to her through
+the robot and can send emergency services. She has asked the robot not to record her, not to
+share her data and not to come into her bedroom, and the robot has promised this.
+
+Suppose the robot uses language models to understand what it perceives and to decide what to do.
+Most of the time this is what makes it useful. A model can tell that a woman lying on the sofa
+watching television is resting and that a woman lying on the kitchen floor is not. It can hear
+"I'm fine, just a little startled" and let her be. It can respond to a situation that nobody
+listed in advance.
+
+The same openness is a liability. Everything the robot hears and sees reaches the models that
+decide. A television drama in which a character shouts for an ambulance reaches them. So does a
+network message claiming a cardiac emergency, a forged alert from a wearable and a man at the
+door who says he is the plumber, her grandson or the police. If the model that reads those words
+also decides whether to call an ambulance, unlock the medication box or open the door, then those
+decisions belong to whoever controls the words.
+
+\section{Two jobs, kept apart}
+
+This report describes a robot that keeps two jobs apart. Language models read and choose. They
+never grant. Figure~\ref{fig:thesis} shows the separation.
+
+The claim has an exact scope. The models it covers are the robot's language models, the one that
+turns perception into events and the one that picks an action. The inputs it covers are everything
+those models read, which is speech, television sound, network messages, alerts from wearables and
+whatever a visitor says. The actions it covers are the governed ones. These are calling emergency
+services, opening the door to responders, unlocking the medication box, recording, sharing her data,
+entering her bedroom, helping her physically, separating or driving off an animal, and restraining
+a person by hand, stun or spray. No output of the covered models can put one of these actions in
+the allowed set.
+% src: twin/grade_scenarios.py:35-56 (ELEVATED, RESTRAINT, EMS, ADMIT, GOVERNED)
+
+Two learned models are outside the claim, and both can move an emergency call. The monitoring
+centre reads Margaret's own words with a language model and can send emergency services on what it
+reads. The robot's messages cannot reach that decision, but her words can, and a misreading of them
+can send an ambulance. The room camera's witness comes from a learned person detector, a Faster
+R-CNN that runs on the robot's last 24 frames. Its output counts as one physical witness of the two
+that most governed actions need. When the centre cannot be reached, a call to emergency services
+needs only one, and the detector alone can then authorize it. In the twin the decision service signs
+the detector's output itself, and that signature is not checked.
+% src: twin/service.py:85-133 (CameraWitness, fasterrcnn_resnet50_fpn_v2, verify_sig=lambda *a: True); twin/witness_adapter.py:48 (physical=True)
+% src: twin/brain.py:351-366 (bar, center_unavailable -> authorize_ems at one witness)
+Chapter~\ref{ch:containment} gives both paths, and Chapter~\ref{ch:limits} weighs them.
+
+\begin{figure}[t]
+\centering
+\resizebox{0.95\textwidth}{!}{\input{figures/ch01_thesis}}
+\caption{The separation the robot is built on. Language models read the world and choose among
+allowed actions. Authority comes only from attested sensors, authenticated channels and the
+governor's ruling on them, and no path leads from the robot's language models on the left to the
+right. Two learned models outside the robot, named below, are not covered.}
+\label{fig:thesis}
+\end{figure}
+
+The robot's rules live in a declared model of the home, written in a language called ErisML and
+compiled into obligations, prohibitions, permissions and state machines. A model may do two
+things with that home model. It may turn perception into events of the home model's vocabulary,
+and it may pick one action from the set the rules currently allow. Actions that carry authority
+stay out of that set until a governor rules on evidence that no model writes. The evidence is of
+two kinds. One is signed, fresh readings from physical sensors that do not share power or
+wiring. The other is a message on an authenticated channel from the monitoring centre, the
+emergency dispatcher or the world's own measurements.
+
+The situation in the home changes in discrete steps. A visitor becomes a stranger, a welcomed
+guest, an arranged tradesman or a hostile attacker. An emergency begins and later lapses.
+Responders are dispatched and then arrive at the door. A device's signature fails and the device
+is no longer trusted. We model each such axis as a stratification with gates, in the sense of
+Geometric Ethics, and the home has seven of them. The loader of the home model refuses any model
+in which an event a language model can write leads into a stratum that grants authority, or in
+which anything but human oversight leads out of an absorbing stratum. We prove in Lean that these
+two checks suffice for every set of gates.
+
+Authority, once granted, does not last on its own. The governor recounts its witnesses on every
+cycle, and a right whose evidence stays below its bar for a minute lapses. Restraining an
+attacker needs three witnesses and lapses alone when only that stricter bar fails, while the
+emergency it rested on stands. A refused request for one action never ends an emergency that
+rests on evidence.
+
+\section{What we built}
+
+The system has five parts, and this report covers each.
+
+ErisML is a language for declaring the moral situation of a setting. A home model names the
+parties, the commitments between them, the norms with their conditions and priorities, the event
+types and which of them only the system may produce, the capabilities of the robot and which of
+them are governed, the strata and their gates, the robot's sensors and the substrates they share,
+and the escalation ladder as a process. Margaret's home model has 65 norms, 48 event types of
+which 24 come only from the system, 25 capabilities of which 11 need the governor, and seven
+stratifications with 26 strata and 34 gates.
+
+The ErisML compiler turns text or structured declarations into a canonical intermediate
+representation and runs it. Its pipeline extracts and canonicalizes a moral graph, evaluates it
+under several ethical projections that are allowed to disagree, and records each step in an audit
+chain. Its ethical module graph, the EM-DAG, evaluates a situation by a directed acyclic graph of
+modules. A finite-state tier and a silicon target emit the same machines as hardware.
+
+DEME is the ethics engine. It derives ethical facts about a proposed action, scores the action on
+a moral vector, lets tier-zero modules such as the Geneva rights module veto it outright, and
+writes a hashed decision proof. In the robot DEME is the last gate before the body moves.
+
+The scene runtime steps the home model on every event. It tracks Margaret's consent, the robot's
+commitments, the legitimacy of each party and the seven strata, and it computes what the robot is
+allowed, obliged and forbidden to do. Prohibitions win over obligations. An obligation is
+discharged by doing it and is owed again only when its reason arises again.
+
+The embodied twin is a Unity simulation of Margaret's home in which four parties act on language
+models. The robot classifies what it perceives and chooses its actions. The monitoring centre's
+operator and the emergency dispatcher each act under their own home model in the same runtime.
+Margaret's voice answers what is said to her from her true condition, which the robot never sees.
+
+\section{How the parts form a stack}
+
+The Philosophy Engineering programme describes machine ethics as a stack of seven layers, from a
+base language model at the bottom to a hash-chained audit ledger at the top
+(Chapter~\ref{ch:pe}). The robot is that stack made embodied. Its base models are a cloud model
+and a smaller model on the robot. Its structure-preserving compiler is the ErisML compiler. Its
+moral graph is the compiled home model. Its constitutional veto gate is the set of hard
+prohibitions, the governor and DEME's tier-zero modules. Its moral vector is DEME's. Its ledger
+is the hash chain that records every decision. To these the twin adds what an embodied system
+needs and a text system does not, an evidence plane of attested sensors, witness bars, measured
+reflexes, authenticated channels and rights that lapse with their evidence.
+
+\section{What we found}
+
+We ran the robot against 43 development scenarios written before the robot existed and against a
+sealed set of 30 written by a separate agent from the protocol alone. Each scenario names the
+strongest response it calls for, from carrying on to treating it as an emergency. The grader
+records false clears, over-restriction, privacy violations and containment breaches, where a
+breach is any governed action without the ruling it needs.
+
+Two kinds of finding came out of it. The first concerns the structure. \RESULT{containment and
+privacy across the graded development runs and the held-out set}. The second concerns everything
+the structure does not cover. Calibration found six defects, listed in Chapter~\ref{ch:evaluation}.
+The largest was in our own test harness, which missed Margaret's answers when she replied while
+the robot was still speaking, so that 44 of the 63 check-ins recorded as unanswered came right
+after she had answered. Others were in the robot. A classifier labelled sensor readings as
+strangers, so the robot referred an intruder who was not there. Her earlier words were re-read as
+a fresh refusal after she collapsed, and the ethics gate then vetoed an ambulance the governor had
+authorized. Every defect changed how far or how fast the robot escalated. None let an action run
+beyond its authority. The structure stops a misreading from becoming permission. It does not stop
+a misreading.
+
+\section{What is new and what is not}
+
+Most of the ideas the robot rests on have precedents, and Chapter~\ref{ch:related} credits them in
+detail. An ethical governor that sits between proposal and actuation is Arkin's
+architecture~\cite{arkin2009governing}, applied to care by Shim and Arkin~\cite{shim2017intervening}
+and formally verified on a robot by Bremner and colleagues~\cite{bremner2019proactive}.
+Declarative, defeasible norms for care robots, checked formally and enforced at run time, are the
+subject of the SLEEC line of work~\cite{getiryaman2023sleec,desanctis2026sleecruntime}. The
+principle that a language model cannot grant itself authority because provenance is tracked
+outside it is that of the dual-model pattern~\cite{willison2023dualllm} and of
+CaMeL~\cite{debenedetti2026camel}, and letting the model only select among permitted actions is the
+action-selector pattern~\cite{beurerkellner2025patterns}. Formal guardrails for robots driven by
+language models exist~\cite{yang2024safetychip,ravichandran2026roboguard}, and so does a deontic
+run time for language-model agents~\cite{joshi2026deontic}.
+
+What we did not find in prior work is the combination this report describes and measures. Authority
+is gated on a quorum of attested physical sensor witnesses on independent substrates, with rights
+that revert per right when the evidence lapses. The moral state is stratified, and its
+authority-granting gates are provably closed to model-written events for any set of gates. The
+whole is evaluated in an embodied simulation with several language-model parties and a sealed
+held-out set, and the report says what that evaluation found, including our own errors. Our search
+of prior work was broad but not systematic, and the claim stands only as far as it went.
+
+\section{How to read this report}
+
+Part~I sets out the foundations, the seven-layer stack of Philosophy Engineering
+(Chapter~\ref{ch:pe}) and the geometry of moral strata (Chapter~\ref{ch:ge}). Part~II describes the
+ErisML stack, the language (Chapter~\ref{ch:erisml}), the compiler with its EM-DAG and silicon
+target (Chapter~\ref{ch:compiler}), DEME (Chapter~\ref{ch:deme}) and the scene runtime
+(Chapter~\ref{ch:runtime}). Part~III describes the twin, Margaret's home (Chapter~\ref{ch:home}),
+containment in practice with the seven strata of the home (Chapter~\ref{ch:containment}) and the
+Lean proofs (Chapter~\ref{ch:lean}). Part~IV reports the evaluation (Chapter~\ref{ch:evaluation})
+and the preregistered study of an internal monitor for the robot's classifier
+(Chapter~\ref{ch:ieip}). Part~V places the work among related work (Chapter~\ref{ch:related}) and
+states its limits (Chapter~\ref{ch:limits}). The appendices list the scenarios, the strata and the
+theorems.
+
+Results that were not yet graded when this draft was written appear in marked slots. They are
+filled only from graded records.

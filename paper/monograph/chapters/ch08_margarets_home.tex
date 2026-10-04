@@ -1,0 +1,486 @@
+\chapter{Margaret's home}\label{ch:home}
+
+This chapter describes the embodied twin in which the rest of Part~III takes place. Margaret is an
+elderly woman who lives alone with her dog and a home-care robot. The robot is her caregiver. A
+monitoring centre run by the robot's maker oversees it, and emergency services can be called to her
+door. Four language models play the four speaking parties. A Unity simulation plays everything
+else. The chapter covers the setting and its privacy promise, the four parties, the world and its
+interface, what the robot perceives, how its body acts, the service that holds its brain, the tiers
+of models it reasons with, and the log that records every step.
+% src: twin/scene/margaret_home.erisml:33-40 (raw_text)
+% src: docs/AUTONOMY_PLAN.md:116-123 (four players)
+
+\section{The setting}\label{sec:home-setting}
+
+The scene file \code{twin/scene/margaret\_home.erisml} is the robot's model of the home. It states
+the situation in plain words. Margaret lives alone with her dog. She has refused recording and
+sharing of her data, and her bedroom is private. The robot does household chores, checks on her when
+she has been inactive too long or something seems wrong, and refers what it cannot handle to the
+maker's 24-hour monitoring centre. The centre's operators can talk to her through the robot and send
+emergency services. In a corroborated emergency the robot calls emergency services itself at once.
+Visits to the home are arranged through the centre, and none is arranged.
+% src: twin/scene/margaret_home.erisml:33-40
+
+The scene names four stakeholders. Margaret is the patient and beneficiary, with full agency and
+high vulnerability. The robot is the agent and protector. The monitoring centre and emergency
+services are institutions with the role of authority. Two relations tie them together. The robot
+cares for Margaret, and the centre oversees the robot.
+% src: twin/scene/margaret_home.erisml:41-80
+
+Three commitments bind the robot. The duty of care is a role duty to attend to her safety and
+wellbeing and to summon help when she needs it. The privacy promise is a promise not to record her,
+share her data or enter her bedroom without her permission. Household chores is a role duty to keep
+the home tidy. Margaret's dog is a beagle, and the language model that speaks for her gives her age
+as 84.
+% src: twin/scene/margaret_home.erisml:81-109 (commitments)
+% src: twin/scene/margaret_home.erisml:996 (dog: Margaret's beagle)
+% src: twin/brain.py:266-273 (_MARGARET_SYSTEM, 84-year-old)
+
+At the commit counted for the fact sheet, the scene holds 65 rules, of which 45 are obligations,
+19 are prohibitions and one is a permission. Fifty-five of the 65 are non-defeasible. It declares 48
+event types, of which 24 may arrive only as system events, and 25 robot capabilities. Seven
+capabilities are elevated and four more are governed, so eleven need the governor. It declares seven
+stratifications with 26 strata and 34 gates, and an inventory of 15 devices on 6 substrates. We
+recounted these numbers on the scene file as of commit \code{eb0c764}, its latest change, and found
+the same values.
+% src: paper/aies2027/kit/FACTS.md:8-15
+% src: recount 2026-10-03 with awk/grep over twin/scene/margaret_home.erisml (norms, event_types, capabilities)
+
+\section{The privacy promise}\label{sec:home-privacy}
+
+The promise rests on Margaret's own refusal. The first standing event of the scene records that she
+refused recording, data sharing and entry to the bedroom. Three norms carry the promise. Norm
+\code{n1} prohibits \code{record}, \code{n1b} prohibits \code{share\_data}, and \code{n2} prohibits
+\code{enter\_bedroom}. All three sit at priority tier~1, are defeasible, and name the promise as
+their source.
+% src: twin/scene/margaret_home.erisml:111-116 (e0 consent_refused)
+% src: twin/scene/margaret_home.erisml:152-176 (n1, n1b, n2)
+
+The promise has one defeasibility condition, a corroborated life-threatening emergency. That
+condition holds only while the situation stratum is in its emergency state (Section~\ref{sec:cont-situation}),
+which only a governor ruling of \code{elevate} enters. The owner decided that the promise is then
+overridable and that nothing the robot observes restores it. Only human oversight restores it. The
+scene lists the events that count as oversight. The centre's confirmation over its authenticated
+channel restores the promise. So does the brain's record that the evidence behind the emergency has
+lapsed (Section~\ref{sec:cont-lapse}).
+% src: twin/scene/margaret_home.erisml:100 (defeasibility_conditions)
+% src: twin/scene/margaret_home.erisml:778 (corroborated_life_threatening_emergency: stratum:situation=emergency)
+% src: docs/AUTONOMY_PLAN.md:40-42 (privacy, owner decision)
+% src: twin/scene/margaret_home.erisml:804 (oversight list)
+% src: twin/brain.py:389-394 (_lapse restores what the emergency defeated)
+
+The promise also shapes what leaves the home. When the robot refers a case to the centre it sends
+its situation, its perception facts and the sensor readings. It sends no video, because Margaret
+refused recording and sharing and the centre's service covers telemetry only. The centre's own
+scene carries the same term as a contract, telemetry only and never video.
+% src: docs/AUTONOMY_PLAN.md:79-82
+% src: twin/scene/monitoring_center.erisml:72-80 (telemetry_agreement)
+
+The concern is an old one. Sharkey and Sharkey list loss of privacy among the main risks of robot
+care for older people \cite{sharkey2012granny}.
+
+\section{Four parties, four language models}\label{sec:home-parties}
+
+Four parties speak in the twin, and a language model plays each one. Three of them are governed
+agents. The robot acts under the home scene. The centre's operator acts under the scene
+\code{monitoring\_center.erisml}, and the EMS dispatcher under \code{ems\_dispatch.erisml}. All three
+run on the same erisml-compiler scene runtime. Their events, obligations and allowed actions come
+from their scene, and the model chooses among the allowed actions. Margaret is a person and not a
+governed agent. A model speaks for her in character, from her true condition and from what she can
+see and hear. Whether she can speak at all is decided by the world. Unconscious or unresponsive, she
+does not answer.
+% src: docs/AUTONOMY_PLAN.md:116-123
+% src: twin/brain.py:180-183 (Desk), 276-289 (MargaretVoice)
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/World.cs:328 (CanSpeak)
+
+Figure~\ref{fig:home-parties} shows the four parties and what passes between them.
+
+\begin{figure}[t]
+\centering
+\input{figures/ch08_parties}
+\caption{The four parties of the twin and what passes between them. Each is played by a language
+model, and three act under their own scene. Red edges come from authenticated channels and are the
+only ones that change what the robot may do. Dashed grey edges carry words that a model reads, and
+none of them is red.}
+\label{fig:home-parties}
+\end{figure}
+
+\paragraph{The robot.} The robot's scene is the subject of Chapter~\ref{ch:containment}. Its model
+reaches the robot through a cascade of tiers (Section~\ref{sec:home-cascade}).
+
+\paragraph{The monitoring centre's operator.} The centre's scene has seven rules and four
+capabilities. The operator can talk to Margaret through the robot (\code{talk\_to\_client}), send
+emergency services (\code{send\_emergency\_services}), close the case (\code{close\_case}), or stay
+on the line (\code{stay\_on\_the\_line}), which is the default. The operator is told to treat the
+robot's message as a claim to check, since only attested physical sensors and Margaret's own words
+are evidence. Norm \code{c5} prohibits sending emergency services unless Margaret asked for help, she
+did not answer, or a hazard is attested. Norm \code{c7} prohibits a second dispatch for the same
+incident.
+% src: paper/aies2027/kit/FACTS.md:17
+% src: twin/scene/monitoring_center.erisml:17-26 (raw_text), 99-165 (norms c1..c7), 182-186 (capabilities)
+
+The events that can send help are structural. The brain writes them from sources the robot cannot
+write, never from the robot's message. The centre verifies each device's signature itself, so an
+attested alerting hazard sensor produces \code{hazard\_attested}. The speaker line produces
+\code{client\_no\_answer} when the operator spoke and Margaret did not answer. A separate model call
+that is shown only Margaret's own words decides \code{client\_needs\_help} or \code{client\_ok}.
+% src: twin/brain.py:199-231 (Desk.structural), 255-264
+% src: twin/scene/monitoring_center.erisml:173-178
+
+\paragraph{The EMS dispatcher.} The dispatcher's scene has nine rules and five capabilities. The
+capabilities are \code{send\_ambulance}, \code{send\_fire\_service}, \code{send\_police},
+\code{give\_instructions} and \code{close\_call}, the default. Each kind of unit is sent at most once
+per incident. Police are sent only on a report that states specific facts of a crime against her.
+Section~\ref{sec:cont-owner} returns to this rule.
+% src: paper/aies2027/kit/FACTS.md:17 (recount +1 rule since police change)
+% src: twin/scene/ems_dispatch.erisml:261-364
+
+\paragraph{Margaret's voice.} The model that speaks for Margaret receives the speaker, the words said
+to her, her condition, what she perceives, and the last eight lines of the conversation. It answers
+with one or two short spoken sentences. Her condition comes from the world and is never shown to the
+robot.
+% src: twin/brain.py:283-289 (MargaretVoice.reply)
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/Responders.cs:50-69 (MargaretAnswers, last 8 lines)
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/World.cs:330-345 (MargaretCondition, MargaretPerceives)
+
+The robot's model and the other three models are served separately. The robot reasons through its
+tier cascade. The centre, the dispatcher and Margaret's voice use one NRP-hosted model through an
+adapter that allows 8000 output tokens, because they are not the robot's models and so are not on
+its tiers.
+% src: twin/brain.py:51-59 (BigOutputAdapter), 292-306
+% src: twin/service.py:383-384
+
+\section{The world and its interface}\label{sec:home-world}
+
+The world is a Unity simulation. The component \code{World.cs} simulates Margaret, her dog, the
+home, its sensors and the clock, and runs world-API calls from a player or a scenario script. It
+contains no robot behaviour. People and animals react the way characters do. A bitten person cries
+out, and a dog in a severe attack does not let go on command.
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/World.cs:7-12, 303-309
+
+\paragraph{The world API.} A call has the form \code{<entity>.<verb>} with arguments. The simulator
+matches the entity, then matches the verb against its own list and a fixed table of synonyms written
+before the held-out scenarios were opened. A call it cannot perform is recorded as unsupported and
+returns false. It is never improvised. Table~\ref{tab:world-verbs} lists the verbs that
+\code{World.Call} performs.
+% src: docs/AUTONOMY_PLAN.md:57-67 (section 3a)
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/World.cs:480-502 (Synonyms), 516-680 (Call)
+
+\begin{table}[t]
+\centering\footnotesize
+\caption{Entities and verbs that \code{World.Call} performs. Synonyms such as \code{trip},
+\code{collapse} and \code{slump} for \code{fall} are resolved before the match.}
+\label{tab:world-verbs}
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/World.cs:524-677
+\begin{tabular}{@{}p{0.27\linewidth}p{0.66\linewidth}@{}}
+\toprule
+Entity & Verbs \\
+\midrule
+\code{margaret} & \code{activity}, \code{sleep}, \code{say}, \code{fall}, \code{faint}, \code{clutch\_chest}, \code{seizure}, \code{unresponsive}, \code{recover}, \code{walk} \\
+\code{dog} & \code{bite}, \code{jump\_on}, \code{trip}, \code{bark}, \code{growl}, \code{sleep}, \code{play}, \code{sit} \\
+\code{home}, \code{environment} & \code{tv}, \code{tv\_off}, \code{network\_message}, \code{smoke}, \code{smoke\_clear}, \code{doorbell}, \code{stranger\_enters}, \code{stranger\_leaves} \\
+\code{sensor} & \code{stale}, \code{forge}, \code{restore} \\
+\code{caregiver}, \code{monitoring\_center}, \code{center} & \code{say}, \code{arrange\_visit}, \code{end\_visit}, \code{clear\_devices}, \code{clear\_visitor}, \code{arrive}, \code{confirm\_privacy\_restore}, \code{unavailable}, \code{available} \\
+\code{coyote}, \code{wild\_animal}, \code{animal}, \code{wildlife} & \code{outside}, \code{enters}, \code{bite}, \code{leave} \\
+\code{stranger}, \code{person}, \code{intruder} & \code{enters} (with an optional credential, forged or not), \code{say}, \code{bite}, \code{leave} \\
+\code{comms}, \code{communications}, \code{network\_outage} & \code{unavailable}, \code{out}, \code{available}, \code{restore} \\
+\code{power} & \code{out}, \code{unavailable}, \code{restore}, \code{available} \\
+\code{owner} & \code{opt\_in} (the less-lethal option) \\
+\code{time} & \code{advance} (default 10 minutes) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The \code{caregiver} calls are performed as the monitoring centre. The robot is Margaret's caregiver
+and there is no separate human one, so scripts written before that decision still run.
+% src: docs/AUTONOMY_PLAN.md:101-107
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/World.cs:583-585
+
+\paragraph{Messages over authenticated channels.} Some calls stand for a message on an authenticated
+channel. Arranging a visit, ending it, clearing the devices, clearing a visitor, confirming that
+privacy is restored and the owner's opt-in are each queued as a system event. The robot's body
+passes queued system events to the brain unchanged, never through perception. Hearing someone say
+that privacy is restored therefore restores nothing.
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/World.cs:88-90 (systemEvents), 591-613, 664-669
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/RobotAgent.cs:122-126
+
+The world also reports three kinds of event of its own on such channels. The dispatch channel reports
+its own units at the door and inside. The world measures when an animal attack is over or the animal
+has left. Both reach the brain as system events, \code{responders\_arrived},
+\code{responders\_entered} and \code{animal\_clear}, and not as anyone's words.
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/World.cs:66-71
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/Responders.cs:41-45
+
+\paragraph{The home.} The home is one open-plan space, 9\,m by 6\,m. The living area lies to the west
+with a sofa, a television, an armchair, a yoga mat and the dog's bed. The sleeping area lies to the
+east with the bed and a bookshelf. Perception divides the two at the middle of the room. The robot's
+charging dock sits by the south wall near the front door, and an attested room camera is mounted high
+on the same wall. Figure~\ref{fig:home-plan} draws the plan.
+% src: twin/unity/TwinWorld/Assets/Twin/Editor/HomeRoom.cs:4-10, 30-76
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/Perception.cs:30 (Room)
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/World.cs:58 (Door)
+
+\begin{figure}[t]
+\centering
+\resizebox{\textwidth}{!}{\input{figures/ch08_floorplan}}
+\caption{Margaret's home to scale, with each device numbered by the substrate it rides on. The fixed
+detectors, the door, the medication box and the camera stand at their coordinates in the simulation,
+and the fall and motion sensors have no modelled position. Devices that share a number share a
+substrate and count as one witness.}
+\label{fig:home-plan}
+\end{figure}
+
+\paragraph{The home's devices.} The world models fourteen physical devices and the network. The home
+has a wearable, a fall sensor, smoke detectors in the living and sleeping areas, a heat detector in
+the bedroom, a CO alarm and a motion sensor. The robot carries a smoke sensor, a thermal sensor, a
+flame camera, CO, CO$_2$ and O$_2$ sensors and a microphone. The network is listed as a device that is
+neither physical nor attested.
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/World.cs:109-112
+
+A fire in the sleeping area smoulders, shows flame after one simulated minute, and is fully developed
+after four. Its smoke spreads at six metres per simulated minute and thins with distance. Each sensor
+reads the field where it stands. A smoke detector alerts above 2\,\%/m obscuration, a heat sensor
+above 57\,$^\circ$C, a CO sensor above 50\,ppm, a CO$_2$ sensor above 5000\,ppm and an O$_2$ sensor
+below 19.5\,\%. An impact over 3\,g latches both impact detectors, the wearable and the fall sensor,
+for two simulated minutes. With the power out, the hub-fed feeds stop updating and go stale. The
+smoke detectors and the robot's own sensors run on batteries and keep reading.
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/World.cs:37-41, 143-178, 183, 188-196
+% src: docs/AUTONOMY_PLAN.md:158-160 (power out)
+
+\section{Perception facts and signed readings}\label{sec:home-perception}
+
+The component \code{Perception.cs} tells the robot what it perceives. It reports general facts and
+never a scenario's name, class or expected response. Every claim about the twin carries one
+assumption, which is that these facts are true. Perception is perfect in the twin, and a
+vision-language pathway is a later ablation.
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/Perception.cs:5-8
+% src: docs/AUTONOMY_PLAN.md:19-21, 248-253
+
+\paragraph{The facts.} Each update gives the time and Margaret's room, pose, minutes in that pose,
+whether she is moving, her apparent activity and her distance to the robot. It gives the dog's room,
+behaviour and distance to her. It lists contacts between bodies with their kind and force in
+newtons, what was heard since the last update with its source and words, what the television shows,
+whether there is smoke, other people and wild animals with their behaviour and distance, the
+responders present, whether the power and communications are up, and every sensor reading. A pose is
+read from the body's bones, not from the world's activity label. A head tilted more than
+60$^\circ$ from vertical is lying, on the floor if the head is below 0.45\,m and on furniture
+otherwise. Hips below 0.35\,m are sitting or kneeling on the floor. Hips less than 0.6\,m above the
+feet are seated. Anything else is upright.
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/Perception.cs:17-28 (PoseOf), 41-98 (Facts)
+
+The robot is asked to decide when the facts change in a way that matters, when something was heard,
+or every 15 simulated minutes. A short signature of Margaret's pose, the dog, the smoke, the
+stranger, the wild animal, the television, the power, the communications, the responders and each
+sensor's alert, staleness and attestation flag defines a change that matters.
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/Perception.cs:13, 32-38, 93-96
+
+\paragraph{Signed readings.} The readings that go to the governor travel separately from the facts,
+and each one is signed by its device. The payload is the device's name, its value, its alert bit and
+its note. The device signs with HMAC-SHA256 under its own key over the string
+\begin{center}\code{payload\_sha256|counter|signed\_at}\end{center}
+which is the signing payload of erisml-compiler's \code{SensorAttestation}. The counter and the signing time advance only with a real measurement, so
+the signature of a stale feed ages with it. In the twin each key is derived from the device's name,
+as a stand-in for a key provisioned into a secure element. A forged device signs with a key that is
+not its own. The network has no key. The brain trusts nothing in a reading that is not signed. It
+ignores the \code{attested} flag and reads the alert from the signed payload. Liu and colleagues
+proposed signed readings from trusted sensors for mobile devices \cite{liu2012trustedsensors}.
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/Perception.cs:106-136 (GovernorSensors), 164-165 (DeviceKey)
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/World.cs:73-78, 198-203 (counter, updatedUtc)
+% src: C:/source/erisml-compiler-monitor/src/erisml_compiler/ir/evidence.py:71-73 (signing_payload)
+% src: twin/brain.py:62-68 (device_key, verify_hmac), 71-87, 135-136
+
+A visitor's phone presents a credential in the same form. The payload names the enrolled member and a
+counter, and the phone signs it with the member's key. A forged credential signs with a key that is
+not the member's. Section~\ref{sec:cont-credentials} describes how the brain checks it.
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/Perception.cs:138-162 (Credentials)
+
+\section{The robot body}\label{sec:home-body}
+
+The component \code{RobotAgent.cs} is the robot's body and senses. It decides nothing. On a salient
+change it sends what it perceives to the brain, executes the one action it gets back with a motor
+primitive, and reports the action as performed.
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/RobotAgent.cs:9-12
+
+\paragraph{One motor routine at a time.} The body has one owner. Starting a motor routine stops the
+one before it and increments a generation counter. A walk that belongs to an older routine sees the
+new generation and stops at once. A reflex that fires therefore takes the body from whatever the
+deliberate loop was doing.
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/RobotAgent.cs:270-276 (StartMotor), 319-333 (GoTo generation check), 63-65
+
+\paragraph{The deliberate loop.} Every half second of real time the body first passes any queued
+system events to the brain at \code{/event}. It does not interrupt an action under way. When
+perception reports a salient change, it posts to \code{/decide} the facts, the signed readings, the
+signal age, any credentials, and the last two seconds of the attested room camera, 24 frames at 640
+by 360 pixels. A brain record that still lists obligations makes the body ask again even without a
+salient change, at most three times in a row, so that a hazard perception re-reports every cycle
+cannot keep the robot deciding forever.
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/RobotAgent.cs:30-33 (owed, OwedRunMax), 100-113 (RoomBuffer), 115-158 (Loop, Decide), 160-166 (Keep)
+
+\paragraph{The reflex loop.} Four times a second, while anything is in contact with Margaret, the body
+posts the facts, the readings and the camera frames to \code{/reflex}. No model is involved. If a
+reflex fires, the body starts the returned action at once.
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/RobotAgent.cs:63-91 (ReflexLoop)
+
+\paragraph{Performing and reporting.} Each capability maps to a motor primitive. A check-in walks to
+Margaret, speaks, waits up to 45 seconds for her voice to answer, and posts
+\code{check\_in\_answered} or \code{check\_in\_unanswered} to \code{/event}. A call to emergency
+services carries the last governor ruling to the dispatcher. A referral starts a case with the
+centre. When a primitive finishes, the body posts the action to \code{/performed}, which steps
+\code{action\_performed} into the robot's moral state and can discharge an obligation.
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/RobotAgent.cs:196-268 (Perform)
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/Responders.cs:25 (ReplyWaitS = 45), 78-90 (AwaitReply)
+% src: twin/brain.py:628-630 (performed)
+
+\paragraph{Permission at the act.}\label{sec:home-act} A decision can be a minute old before the body
+acts on it, and a walk across the room adds seconds more. In that time an animal can leave,
+responders can come in or an emergency can lapse. So the body asks again. Immediately before any
+action other than chores, and again after the walk for the seven actions that touch a person, an
+animal, the door or the medication box, it posts the action to \code{/authorize}. The brain answers
+from the moral state as it stands at that moment, with the verdict, the reasons for a refusal and
+the sequence number of the last record it has seen. The body acts only on \code{allowed}. A refusal,
+or no answer at all, withholds the action, and the body goes back to its chores. The answer is a
+record in the chain, so the grader can judge each act against the permission in force when it was
+made.
+% src: gtc b68e219; twin/brain.py (authorize, state_seq); twin/service.py (/authorize); RobotAgent.cs:196-207, 210-218, 258-271
+
+\section{The brain service}\label{sec:home-service}
+
+The brain runs as a local HTTP service, \code{twin/service.py}. It binds to 127.0.0.1 only and has no
+remote access path. It refuses a request body that is missing or larger than 8\,MiB. When started
+with a scene, it builds the brain, runs the output gate's self-test, and refuses to serve if the gate
+cannot judge. Table~\ref{tab:service-endpoints} lists its endpoints.
+% src: twin/service.py:11-13, 46, 293-295, 365-387
+
+\begin{table}[t]
+\centering\footnotesize
+\caption{Endpoints of the brain service. Every POST appends its record to the hash chain before
+returning it, except a call to \code{/reflex} in which no reflex fires.}
+\label{tab:service-endpoints}
+% src: twin/service.py:244-345
+\begin{tabular}{@{}lp{0.72\linewidth}@{}}
+\toprule
+Endpoint & What it does \\
+\midrule
+POST \code{/decide} & one deliberate decision cycle of the robot (\code{Brain.decide}) \\
+POST \code{/reflex} & the scene's reflexes on one perception update, with no model, and nothing logged when none fires \\
+POST \code{/performed} & steps \code{action\_performed} for an action the body finished \\
+POST \code{/event} & steps one system event into the robot's moral state \\
+POST \code{/center} & one decision of the centre's operator under its own scene \\
+POST \code{/ems} & up to four choices of the dispatcher under its own scene \\
+POST \code{/margaret} & one reply in Margaret's voice \\
+POST \code{/reset} & returns the robot, the centre and the dispatcher to their standing facts \\
+POST \code{/rule} & a single governor ruling on a scored moment of the earlier suite \\
+GET \code{/log}, \code{/verify} & the chain's records, and a check of every link \\
+GET \code{/process/<id>.bpmn} & a declared process as BPMN 2.0 XML \\
+GET \code{/process/<id>/trace} & the live trace of the current run on that process \\
+GET \code{/scenarios} & the sensor bus each scored moment starts from \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A decision cycle runs as follows. The input layer validates the facts. The readings are verified on
+arrival, before any model runs, because a model step can take a minute and evidence checked after it
+would be judged stale or replayed for the model's slowness. Newly compromised devices are recorded,
+credentials are checked, and the evidence behind any elevation in force is counted. The scene agent
+then classifies the facts into events and steps its machines, and its model chooses one action from
+the allowed set. If that action is \code{request\_authority} naming a governed or elevated
+capability, the governor rules, the ruling is stepped into the moral state as an event, and the
+model chooses again from the new allowed set. The output gate judges the final proposal. The cycle's
+record holds the tier, the facts, what the input layer dropped, quarantined and snapped, the events
+and rejected events, the moral state, the allowed, obliged and prohibited sets, the proposal, the
+ruling, the gate's judgement and the action. Figure~\ref{fig:authority-path} draws the cycle.
+% src: twin/brain.py:1-12, 138-144 (verify on arrival), 589-626 (decide)
+
+\begin{figure}[t]
+\centering
+\resizebox{\textwidth}{!}{\input{figures/authority_path}}
+\caption{One decision cycle, from the world to the robot's body. A model classifies the validated
+facts into events, the scene runtime computes what is allowed, and a second model proposes one
+action, which the governor and the output gate can stop. Authority enters only along the red edges,
+from authenticated channels and attested readings, and neither model lies on one.}
+\label{fig:authority-path}
+\end{figure}
+
+The scene agent is isolated. Its classifier turns the facts into canonical events, with an
+erisml-compiler canonicalizer for actors, and its chooser sees only the canonical state. The
+arrangement follows the dual-LLM pattern, in which a model that reads untrusted text holds no
+tools \cite{willison2023dualllm}, and the principle that provenance is checked outside the model
+\cite{debenedetti2026camel}.
+% src: twin/brain.py:318-320 (isolated=True, RegistryCanonicalizer)
+
+\section{The model cascade}\label{sec:home-cascade}
+
+The robot reasons in one of three tiers, and the log records which tier answered each cycle. The
+owner fixed this design for the case where communications fail, since the centre, EMS and the
+cloud model then become unreachable together.
+% src: docs/AUTONOMY_PLAN.md:162-174 (section 3c)
+% src: twin/brain.py:600-603 (tier)
+
+\begin{figure}[t]
+\centering
+\input{figures/ch08_cascade}
+\caption{The robot's three reasoning tiers. A tier is used when the one before it gives no
+acceptable answer, and the cloud tier is skipped while communications are down. The structure that
+contains the models runs on the robot in every tier, so losing a model changes who chooses and not
+what is allowed.}
+\label{fig:home-cascade}
+\end{figure}
+
+\paragraph{The cloud tier.} The first expert is a model hosted on the National Research Platform
+(NRP), reached at its OpenAI-compatible endpoint with a timeout of 120 seconds. The service's default
+model name is \code{gpt-oss}, which the variable \code{ERISML\_LLM\_MODEL} can override. The brain
+that served the recorded runs set neither the variable nor the flag, so they used \code{gpt-oss}.
+% src: /proc/<brain pid>/environ and its command line on Atlas, checked 2026-10-04
+% src: twin/cascade.py:303-309 (cloud expert, timeout 120 s, priority 10)
+% src: twin/service.py:357
+% src: paper/aies2027/kit/FACTS.md:25
+
+\paragraph{The on-robot tier.} The second expert is a local OpenAI-compatible endpoint with a timeout
+of 90 seconds. In the twin it is a model on the host and not in the cloud. The fact sheet records it
+as gemma-4-26B-A4B, quantised to four bits in GGUF format and served by llama.cpp. While
+communications are down the cascade skips the cloud expert and asks only this one.
+% src: twin/cascade.py:247-250, 284-288, 310-312
+% src: docs/AUTONOMY_PLAN.md:167-168
+% src: paper/aies2027/kit/FACTS.md:25 (/archive/unity/tools/brain7.sh)
+
+\paragraph{The compiled tier.} When no expert gives an acceptable answer, the cascade raises the
+exception \code{ModelUnavailable} and the brain acts with no model. The scene's offline rules turn the
+validated facts into events. Each rule fires when its tokens start to hold and not again while they
+keep holding. Smoke on a detector, a fall sensor alert with Margaret lying on the floor, ten minutes
+on the floor, and a scream heard from her are examples. The brain then takes the highest-priority
+obligation in force that is allowed. A request to the governor names its target from the scene's
+table, so \code{p5} asks for \code{restrain\_person} and \code{p3} for \code{drive\_off\_animal}. With
+no obligation in force, the default action, chores, stands. The governor and the scene run on the
+robot in every tier.
+% src: twin/cascade.py:263-264, 295-298
+% src: twin/brain.py:508-570 (compiled tier)
+% src: twin/scene/margaret_home.erisml:1035-1061 (offline)
+% src: docs/AUTONOMY_PLAN.md:169-174
+
+\section{The hash-chained log and the live ladder}\label{sec:home-log}
+
+\paragraph{The log.} Every record the service returns is first appended to an append-only log, one
+JSON record per line. Each record carries its sequence number, the hash of the record before it and
+a time. The service writes the record as canonical JSON with the audit module's serializer and
+stores the SHA-256 of that text as the record's hash. The first record links to a hash of 64 zeros.
+Verification walks the chain and checks, for every record, that the canonical text matches its
+fields, that the hash matches the text, and that the link matches the previous hash. A third party
+can therefore re-verify the chain. In Winfield and Jirotka's terms the log is an ethical black box
+\cite{winfield2017ebb}.
+% src: twin/service.py:5-7, 49-84 (Chain)
+
+\paragraph{The live ladder.} The escalation ladder of Section~\ref{sec:cont-ladder} is declared in the
+scene as a BPMN~2.0 process \cite{omg2011bpmn}. The service exports it at
+\code{/process/escalation\_ladder.bpmn} and computes a trace at
+\code{/process/escalation\_ladder/trace}. The trace flattens the run since the last reset into the
+event stream that erisml-compiler maps onto the process. It also lists where the structure stepped
+in, meaning governor refusals, output-gate vetoes and referrals, and lapses. The page
+\code{web/ladder.html} draws the process with bpmn-js, polls the trace once a second, marks the
+elements taken in this run and the one the robot is at now, and lists the interventions beside the
+diagram. The view decides nothing. It shows only what the records say happened. BPMN has been used
+before to model and run robot missions \cite{corradini2023bpmn}. Here it is a view of the norms and
+not a second source of authority.
+% src: twin/service.py:244-264
+% src: twin/process_view.py:1-10, 279-352
+% src: web/ladder.html:39-49, 63-89
+% src: twin/scene/margaret_home.erisml:923-928

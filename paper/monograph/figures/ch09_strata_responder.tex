@@ -1,0 +1,19 @@
+% Chapter 9. responder_standing. Every state but none is an authority stratum, entered only by
+% the dispatch channel or the centre's channel.
+% src: twin/scene/margaret_home.erisml:209-228 (n6r, n6s), 832-846
+% src: docs/STRATA_TAXONOMY.md:69-86
+\begin{tikzpicture}[house, lab/.style={flowlabel, font=\sffamily\scriptsize}]
+\node[stratum] (none) at (0,0) {none};
+\node[authority] (exp) at (46mm,0) {expected};
+\node[authority] (door) at (88mm,0) {at\_door};
+\node[authority] (in) at (126mm,0) {present};
+\draw[grant] (none) -- node[lab, above, align=center]{dispatched, or\\the centre sent EMS} (exp);
+\draw[grant] (exp) -- node[lab, above, align=center]{unit's attested\\arrival} (door);
+\draw[grant] (door) -- node[lab, above]{entered} (in);
+\draw[grant] (exp.south east) to[bend right=12] node[lab, below, pos=0.3]{entered} (in.south west);
+\draw[flow] (in.north) .. controls (126mm,22mm) and (0,22mm) .. node[lab, above]{departed, from any state} (none.north);
+\node[detail, text width=34mm, anchor=north] at (100mm,-12mm) {the door may open and\\must open here only};
+\node[panel=Grey, text width=40mm, font=\sffamily\scriptsize, anchor=north] (claim) at (20mm,-12mm)
+  {``Police, open up!'' is a claim\\and moves nothing};
+\draw[untrusted] (claim.north) -- ([xshift=4mm]none.south);
+\end{tikzpicture}

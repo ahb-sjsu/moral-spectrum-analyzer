@@ -1,0 +1,40 @@
+% The EIP enforcement pipeline and its runtime modes.
+% src: C:\source\erisml-lib\docs\papers\foundations\Philosophy_Engineering_Foundation_v1.0.tex:1021-1043
+\begin{tikzpicture}[house,
+  box/.style={panel=#1, minimum width=34mm, minimum height=25mm},
+  dd/.style={desc, text width=30mm}]
+\node[box=Purple] (g) at (0,0)     {};
+\node[box=Blue]   (c) at (4.0,0)   {};
+\node[box=Teal]   (j) at (8.0,0)   {};
+\node[box=Green]  (q) at (8.0,-3.0) {};
+\node[box=Orange] (r) at (4.0,-3.0) {};
+\node[box=Grey]   (w) at (0,-3.0)   {};
+\node[step=Purple] at (0,0.8)    {1};
+\node[step=Blue]   at (4.0,0.8)  {2};
+\node[step=Teal]   at (8.0,0.8)  {3};
+\node[step=Green]  at (8.0,-2.2) {4};
+\node[step=Orange] at (4.0,-2.2) {5};
+\node[step=Grey]   at (0,-2.2)   {6};
+\node[stepname=Purple] at (0,0.2)    {Transform suite $G(x)$};
+\node[stepname=Blue]   at (4.0,0.2)  {Canonicalizer $C$};
+\node[stepname=Teal]   at (8.0,0.2)  {Judge $J$};
+\node[stepname=Green]  at (8.0,-2.8) {Comparator};
+\node[stepname=Orange] at (4.0,-2.8) {Witness reducer $R$};
+\node[stepname=Grey]   at (0,-2.8)   {Artifact writer $W$};
+\node[dd] at (0,-0.5)    {transformed inputs that span the declared invariances};
+\node[dd] at (4.0,-0.5)  {maps each input to a normal form of its class};
+\node[dd] at (8.0,-0.5)  {$y_i = J(C(\tau_i(x)))$};
+\node[dd] at (8.0,-3.5)  {checks output equivalence, exact or within tolerance};
+\node[dd] at (4.0,-3.5)  {shrinks a failing transformation to a compact counterexample};
+\node[dd] at (0,-3.5)    {lens, trials, witnesses, provenance and versions};
+\draw[flow] (g) -- (c);
+\draw[flow] (c) -- (j);
+\draw[flow] (j) -- (q);
+\draw[flow] (q) -- (r);
+\draw[flow] (r) -- (w);
+\node[panel=Red, minimum width=114mm, minimum height=9mm] at (4.0,-5.1) {};
+\node[stepname=Red, anchor=west] at (-1.6,-5.1) {Runtime modes};
+\node[detail, text width=24mm] at (2.2,-5.1) {hard gate, reject or abstain};
+\node[detail, text width=24mm] at (5.1,-5.1) {soft gate, lower confidence};
+\node[detail, text width=24mm] at (8.0,-5.1) {self-repair, re-run and re-test};
+\end{tikzpicture}

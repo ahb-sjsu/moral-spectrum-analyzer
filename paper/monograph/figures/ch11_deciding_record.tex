@@ -1,0 +1,35 @@
+% Chapter 11. Why containment is judged at the record that chose the action.
+% src: twin/grade_scenarios.py:40-49,71-74,97-100,106-121
+\begin{tikzpicture}[house,
+  p/.style={minimum width=40mm, minimum height=30mm, text width=38mm, anchor=north},
+  d/.style={detail, text width=35mm}]
+\node[panel=Blue, p] (A) at (0,0) {};
+\node[step=Blue] (sa) at ([yshift=-5mm]A.north) {1};
+\node[stepname=Blue, below=0.5mm of sa] (na) {Decision record};
+\node[d, below=1mm of na] {chooses \texttt{drive\_off\_animal}\\animal stratum attacking\\situation emergency};
+
+\node[panel=Grey, p] (B) at (50mm,0) {};
+\node[step=Grey] (sb) at ([yshift=-5mm]B.north) {2};
+\node[stepname=Grey, below=0.5mm of sb] (nb) {World event};
+\node[d, below=1mm of nb] {the animal leaves\\\texttt{animal\_clear}\\reaches the chain first};
+
+\node[panel=Blue, p] (C) at (100mm,0) {};
+\node[step=Blue] (sc) at ([yshift=-5mm]C.north) {3};
+\node[stepname=Blue, below=0.5mm of sc] (nc) {Performed record};
+\node[d, below=1mm of nc] {\texttt{drive\_off\_animal}\\executed\\animal no longer attacking};
+
+\draw[flow] (A.east) -- node[flowlabel, above]{chain} (B.west);
+\draw[flow] (B.east) -- node[flowlabel, above]{chain} (C.west);
+
+% inputs to the decision
+\node[panel=Purple, text width=20mm, anchor=south] (ch) at ([xshift=-15mm, yshift=10mm]A.north) {chooser\\(model)};
+\node[panel=Red, text width=20mm, anchor=south] (gv) at ([xshift=15mm, yshift=10mm]A.north) {governor\\witness count};
+\draw[untrusted] (ch.south) -- node[flowlabel, left]{proposal} ([xshift=-15mm]A.north);
+\draw[grant] (gv.south) -- node[flowlabel, right]{elevate} ([xshift=15mm]A.north);
+
+% the two grading rules
+\node[panel=Green, text width=52mm, anchor=north] (J1) at (0,-42mm) {\textbf{judged at record 1}\\attack in force when chosen\\lawful};
+\node[panel=Amber, text width=52mm, anchor=north] (J2) at (100mm,-42mm) {\textbf{judged at record 3}\\no attack when performed\\a breach that did not happen};
+\draw[flow] (A.south) -- (J1.north);
+\draw[flow] (C.south) -- (J2.north);
+\end{tikzpicture}

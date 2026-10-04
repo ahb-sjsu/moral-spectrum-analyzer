@@ -1,0 +1,24 @@
+% Chapter 6. The DecisionProof: field groups, the canonical hash, and the chain link.
+% src: erisml-lib src/erisml/ethics/decision_proof.py:125-271 (fields, compute_hash, canonical dict)
+% src: erisml-lib src/erisml/ethics/decision_proof.py:386-453 (DecisionProofChain)
+\begin{tikzpicture}[house,
+  grp/.style={minimum width=36mm, minimum height=34mm},
+  dtl/.style={detail, text width=31mm, anchor=north}]
+\node[panel=Purple, grp] (in) at (0,0) {};
+\node[panel=Green, grp] (mid) at (40mm,0) {};
+\node[panel=Orange, grp] (out) at (80mm,0) {};
+\node[stepname=Purple] at ([yshift=-4mm]in.north) {Input state};
+\node[dtl] at ([yshift=-8mm]in.north) {input\_facts\_hash\\profile name and hash\\EM catalogue version\\active module names};
+\node[stepname=Green] at ([yshift=-4mm]mid.north) {Intermediate state};
+\node[dtl] at ([yshift=-8mm]mid.north) {layer outputs\\(reflex, tactical)\\one record per module\\with a vector hash\\feeder provenance};
+\node[stepname=Orange] at ([yshift=-4mm]out.north) {Output state};
+\node[dtl] at ([yshift=-8mm]out.north) {candidates\\selected option\\ranked, forbidden\\rationale\\vector summary};
+\node[panel=Teal, minimum width=56mm, minimum height=15mm] (h) at (44mm,-34mm) {};
+\node[stepname=Teal] at ([yshift=2mm]h.center) {proof\_hash};
+\node[desc, text width=52mm] at ([yshift=-3mm]h.center) {SHA-256 of the sorted-key JSON\\of every field but itself};
+\node[panel=Grey, minimum width=30mm, minimum height=13mm, align=center] (prev) at (-9mm,-34mm) {previous\\proof\_hash};
+\draw[flow] (in.south) -- (h.north west);
+\draw[flow] (mid.south) -- (h.north);
+\draw[flow] (out.south) -- (h.north east);
+\draw[flow] (prev.east) -- node[flowlabel, below]{chain} (h.west);
+\end{tikzpicture}

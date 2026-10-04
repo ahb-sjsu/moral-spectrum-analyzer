@@ -1,0 +1,26 @@
+% Chapter 5. The audit chain of one compile.
+% src: C:\source\erisml-compiler-monitor\src\erisml_compiler\audit\hash_chain.py:18-71
+% src: C:\source\erisml-compiler-monitor\src\erisml_compiler\ir\graph\canonical.py:48-82
+% src: C:\source\erisml-compiler-monitor\src\erisml_compiler\erisml_backend\v3_phase6.py:195-337
+% src: C:\source\erisml-compiler-monitor\src\erisml_compiler\pipeline\orchestrator.py:202-214 (ethos sha256)
+\begin{tikzpicture}[house,
+  src/.style={panel=#1, text width=30mm, minimum height=14mm}]
+% inputs and their hashes
+\node[src=Blue] (txt) at (0,0) {\textcolor{hsBlue}{\textbf{source text}}\\{\scriptsize SHA-256 of the raw text}};
+\node[src=Teal] (gr) at (0,-19mm) {\textcolor{hsTeal}{\textbf{moral graph}}\\{\scriptsize $h_G$ over sorted nodes\\and edges}};
+\node[src=Purple] (ir) at (0,-38mm) {\textcolor{hsPurple}{\textbf{representation}}\\{\scriptsize $h_{\mathrm{IR}}$ without audit,\\timestamp, file path}};
+\node[src=Green] (eth) at (0,-57mm) {\textcolor{hsGreen}{\textbf{ethos profile}}\\{\scriptsize SHA-256 of the YAML file}};
+% the audit record
+\node[panel=Orange, text width=36mm, minimum height=66mm] (aud) at (48mm,-28.5mm) {};
+\node[stepname=Orange, anchor=north] at ($(aud.north)+(0,-3mm)$) {Audit record};
+\node[detail, text width=31mm, anchor=north] (d1) at ($(aud.north)+(0,-10.5mm)$) {text hash, $h_G$, $h_{\mathrm{IR}}$};
+\node[detail, text width=31mm, below=2mm of d1] (d2) {ethos name and hash};
+\node[detail, text width=31mm, below=2mm of d2] (d3) {versions, tier, extractor,\\EM-DAG profile};
+\node[detail, text width=31mm, below=2mm of d3] (d4) {timestamp and pass\\durations, vary per run};
+\node[step=Orange, anchor=north west] at ([xshift=1.5mm, yshift=-1.5mm]aud.north west) {12};
+% decision proof
+\node[panel=Grey, text width=30mm, minimum height=30mm] (prf) at (100mm,-28.5mm)
+  {\textcolor{hsGrey}{\textbf{Decision proof}}\\[2pt]{\scriptsize tensor, facts and\\profile hashes\\[1pt]previous\_proof\_hash\\$=h_{\mathrm{IR}}$\\[1pt]proof\_hash over\\every other field}};
+\foreach \s in {txt,gr,ir,eth} { \draw[flow] (\s.east) -- (aud.west |- \s.east); }
+\draw[flow] (aud.east) -- node[flowlabel, above]{built after} (prf.west);
+\end{tikzpicture}

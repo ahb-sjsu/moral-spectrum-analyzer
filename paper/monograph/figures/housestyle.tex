@@ -1,0 +1,48 @@
+% House illustration style of the author's Geometric series books (from geometric-law/figures and
+% geometric-reasoning/figures SVGs): pastel Material panels (light fill, darker stroke, rx 8),
+% strong-coloured numbered step circles, light-blue flow arrows, sans-serif text in grey tiers.
+% Load once in main.tex after tikz. Use only these names in every figure.
+
+% ---- palette: fill, stroke, strong (Material 50 / 200-300 / 700-900)
+\definecolor{hsPurpleFill}{HTML}{F3E5F5}\definecolor{hsPurpleLine}{HTML}{CE93D8}\definecolor{hsPurple}{HTML}{7B1FA2}
+\definecolor{hsBlueFill}{HTML}{E3F2FD}\definecolor{hsBlueLine}{HTML}{90CAF9}\definecolor{hsBlue}{HTML}{1565C0}
+\definecolor{hsGreenFill}{HTML}{E8F5E9}\definecolor{hsGreenLine}{HTML}{A5D6A7}\definecolor{hsGreen}{HTML}{2E7D32}
+\definecolor{hsOrangeFill}{HTML}{FFF3E0}\definecolor{hsOrangeLine}{HTML}{FFCC80}\definecolor{hsOrange}{HTML}{E65100}
+\definecolor{hsTealFill}{HTML}{E0F2F1}\definecolor{hsTealLine}{HTML}{80CBC4}\definecolor{hsTeal}{HTML}{00695C}
+\definecolor{hsRedFill}{HTML}{FFEBEE}\definecolor{hsRedLine}{HTML}{EF9A9A}\definecolor{hsRed}{HTML}{C62828}
+\definecolor{hsAmberFill}{HTML}{FFF8E1}\definecolor{hsAmberLine}{HTML}{FFE082}\definecolor{hsAmber}{HTML}{FF8F00}
+\definecolor{hsGreyFill}{HTML}{F5F5F5}\definecolor{hsGreyLine}{HTML}{BDBDBD}\definecolor{hsGrey}{HTML}{424242}
+\definecolor{hsFlow}{HTML}{9ECAE1}
+\definecolor{hsText}{HTML}{333333}\definecolor{hsTextMid}{HTML}{555555}\definecolor{hsTextLight}{HTML}{777777}
+
+\tikzset{
+  % base text: sans, dark grey
+  house/.style={font=\sffamily\footnotesize, text=hsText, >={Stealth[length=2.2mm]}},
+  % a panel: pastel fill, darker stroke, rounded 8pt. Usage: panel=Blue
+  panel/.style={draw=hs#1Line, fill=hs#1Fill, line width=0.9pt, rounded corners=4pt,
+                align=center, inner sep=4pt},
+  % an inner detail box (lighter, no stroke)
+  detail/.style={fill=white, fill opacity=0.85, text opacity=1, rounded corners=2pt,
+                 font=\sffamily\scriptsize, text=hsTextMid, align=center, inner sep=3pt},
+  % a numbered step circle. Usage: \node[step=Purple] {1};
+  step/.style={circle, fill=hs#1, text=white, font=\sffamily\bfseries\small,
+               minimum size=6.5mm, inner sep=0pt},
+  % name and description text inside panels
+  stepname/.style={font=\sffamily\bfseries\footnotesize, text=hs#1},
+  desc/.style={font=\sffamily\scriptsize, text=hsTextMid, align=center},
+  % flow arrows (the books' light blue) and labelled arrows
+  flow/.style={->, draw=hsFlow, line width=1.6pt},
+  flowlabel/.style={font=\sffamily\scriptsize\bfseries, text=hsTextLight},
+  % authority edges: strong red, heavier, the only edges that grant
+  grant/.style={->, draw=hsRed, line width=1.8pt},
+  % a model-written (untrusted) edge: dashed grey
+  untrusted/.style={->, draw=hsGreyLine, line width=1.1pt, dashed},
+  % strata states: authority (bold teal), absorbing (double red), plain (grey)
+  stratum/.style={draw=hsGreyLine, fill=hsGreyFill, rounded corners=3pt, minimum width=16mm,
+                  minimum height=7mm, font=\sffamily\footnotesize},
+  authority/.style={stratum, draw=hsTeal, fill=hsTealFill, line width=1.4pt},
+  absorbing/.style={stratum, draw=hsRed, fill=hsRedFill, double, double distance=1.1pt},
+  % figure title and subtitle lines inside a tikzpicture (optional; captions carry the point)
+  figtitle/.style={font=\sffamily\bfseries\small, text=hsText},
+  figsub/.style={font=\sffamily\scriptsize, text=hsTextMid},
+}

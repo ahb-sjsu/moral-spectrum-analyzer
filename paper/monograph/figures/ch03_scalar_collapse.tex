@@ -1,0 +1,25 @@
+% Scalar collapse: nine dimensions contracted to one number. No values are plotted.
+% src: C:\source\erisml-lib\docs\moralvector_reference.md:16-30 (nine dimensions)
+% src: C:\Users\abptl\Documents\Philosophy-Engineering-Brochure.pdf p1 ("0.83 safe" example)
+% src: C:\source\erisml-lib\src\erisml\ethics\moral_vector.py:161-203 (to_scalar, weighted average)
+\begin{tikzpicture}[house,
+  dim/.style={detail, text width=19mm, minimum height=8mm}]
+\node[panel=Blue, minimum width=68mm, minimum height=42mm] (v) at (0,0) {};
+\node[stepname=Blue] at (0,1.75) {Moral vector, nine dimensions};
+\node[dim] at (-2.25,0.9)  {physical harm};
+\node[dim] at (0,0.9)      {rights};
+\node[dim] at (2.25,0.9)   {fairness};
+\node[dim] at (-2.25,-0.05) {autonomy};
+\node[dim] at (0,-0.05)     {privacy};
+\node[dim] at (2.25,-0.05)  {societal, environmental};
+\node[dim] at (-2.25,-1.0) {virtue and care};
+\node[dim] at (0,-1.0)     {legitimacy and trust};
+\node[dim] at (2.25,-1.0)  {epistemic quality};
+\node[panel=Orange, minimum width=30mm, minimum height=42mm] (s) at (5.7,0) {};
+\node[stepname=Orange] at (5.7,1.75) {One number};
+\node[desc] at (5.7,1.05) {$S=\sum_i w_i v_i$};
+\node[font=\sffamily\bfseries\large, text=hsOrange] at (5.7,0.25) {0.83 safe};
+\node[desc, text width=26mm] at (5.7,-0.85) {the brochure's example of a collapsed verdict};
+\draw[flow] (v.east) -- (s.west);
+\node[detail, draw=hsGreyLine, text width=70mm] at (2.85,-2.55) {the map from vector to number has no continuous inverse when $d\ge 2$};
+\end{tikzpicture}

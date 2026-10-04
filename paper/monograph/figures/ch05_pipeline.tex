@@ -1,0 +1,35 @@
+% Chapter 5. The compiler passes as the orchestrator records them (pass index in each circle).
+% src: C:\source\erisml-compiler-monitor\src\erisml_compiler\pipeline\orchestrator.py:269-509
+\begin{tikzpicture}[house,
+  pp/.style={panel=#1, text width=32mm, minimum height=19mm}]
+% row 1, left to right
+\node[pp=Blue] (p0) at (0,0) {\textcolor{hsBlue}{\textbf{Ingestion}}\\[1pt]{\scriptsize text loader, or the Tier 1\\structured loader}};
+\node[pp=Blue] (p1) at (42mm,0) {\textcolor{hsBlue}{\textbf{Segmentation}}\\[1pt]{\scriptsize paragraphs tagged as\\dialogue, norm, decision}};
+\node[pp=Purple] (p2) at (84mm,0) {\textcolor{hsPurple}{\textbf{Extraction}}\\[1pt]{\scriptsize mock, rule, probe or LLM\\with an optional critic}};
+% row 2, right to left
+\node[pp=Purple] (p7) at (84mm,-29mm) {\textcolor{hsPurple}{\textbf{Canonicalization}}\\[1pt]{\scriptsize Jaccard registry or\\LaBSE cosine}};
+\node[pp=Teal] (p75) at (42mm,-29mm) {\textcolor{hsTeal}{\textbf{Graph identity}}\\[1pt]{\scriptsize promote to MoralGraph,\\compute $h_G$}};
+\node[pp=Green] (p8) at (0,-29mm) {\textcolor{hsGreen}{\textbf{Projections}}\\[1pt]{\scriptsize four theories, EM-DAG\\inside the first}};
+% row 3, left to right
+\node[pp=Grey] (p10) at (0,-58mm) {\textcolor{hsGrey}{\textbf{DEME record}}\\[1pt]{\scriptsize empty, kept for chain\\continuity}};
+\node[pp=Amber] (p11) at (42mm,-58mm) {\textcolor{hsAmber}{\textbf{Conflict detection}}\\[1pt]{\scriptsize opposite signs with\\magnitude above 0.5}};
+\node[pp=Orange] (p12) at (84mm,-58mm) {\textcolor{hsOrange}{\textbf{Audit record}}\\[1pt]{\scriptsize $h_{\mathrm{IR}}$, $h_G$, profiles,\\pass timings}};
+% step circles carry the pass index the code records
+\foreach \n/\c/\t in {p0/Blue/0, p1/Blue/1, p2/Purple/2, p7/Purple/7, p75/Teal/7.5, p8/Green/8, p10/Grey/10, p11/Amber/11, p12/Orange/12}
+  { \node[step=\c] at (\n.north west) {\t}; }
+% flow
+\draw[flow] (p0) -- node[flowlabel, above]{text} (p1);
+\draw[flow] (p1) -- (p2);
+\draw[flow] (p2) -- (p7);
+\draw[flow] (p7) -- (p75);
+\draw[flow] (p75) -- (p8);
+\draw[flow] (p8) -- (p10);
+\draw[flow] (p10) -- (p11);
+\draw[flow] (p11) -- (p12);
+\draw[flow] (p0.south) -- ++(0,-4.5mm) -| node[flowlabel, pos=0.3, above]{Tier 1} ([xshift=-6mm]p75.north);
+\draw[untrusted] ($(p2.north)+(0,9mm)$) node[flowlabel, above]{Tier 3 model output} -- (p2.north);
+% after the audit
+\node[panel=Grey, text width=64mm, below=6mm of p12.south east, anchor=north east] (post)
+  {{\scriptsize after Pass 12, strategic analysis and the decision proof}};
+\draw[flow] (p12) -- (p12 |- post.north);
+\end{tikzpicture}

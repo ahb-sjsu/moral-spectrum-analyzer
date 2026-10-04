@@ -1,0 +1,33 @@
+% The nine dimensions of the moral vector as the 3x3 scope-by-mode matrix, and the tensor ranks.
+% src: C:\source\erisml-lib\docs\moralvector_reference.md:14-30 (3x3 table), 103-116 (ranks)
+\begin{tikzpicture}[house,
+  cell/.style={detail, text width=23mm, minimum height=10mm},
+  hdr/.style={stepname=#1, text width=23mm, align=center},
+  rk/.style={panel=Grey, text width=17mm, minimum height=13mm, inner sep=2pt, font=\sffamily\tiny}]
+\node[panel=Blue, minimum width=100mm, minimum height=46mm] at (1.45,-1.05) {};
+% column headers (mode)
+\node[hdr=Purple] at (-0.45,0.85) {What matters};
+\node[hdr=Purple] at (2.25,0.85)  {Who decides};
+\node[hdr=Purple] at (4.95,0.85)  {What we know};
+% row headers (scope)
+\node[stepname=Blue, anchor=east] at (-1.85,0.0)   {Individual};
+\node[stepname=Blue, anchor=east] at (-1.85,-1.15) {Relational};
+\node[stepname=Blue, anchor=east] at (-1.85,-2.3)  {Collective};
+% cells: k index and dimension
+\node[cell] at (-0.45,0.0)   {k3\\autonomy respect};
+\node[cell] at (2.25,0.0)    {k1\\rights respect};
+\node[cell] at (4.95,0.0)    {k4\\privacy protection};
+\node[cell] at (-0.45,-1.15) {k6\\virtue and care};
+\node[cell] at (2.25,-1.15)  {k0\\physical harm};
+\node[cell] at (4.95,-1.15)  {k8\\epistemic quality};
+\node[cell] at (-0.45,-2.3)  {k2\\fairness and equity};
+\node[cell] at (2.25,-2.3)   {k7\\legitimacy and trust};
+\node[cell] at (4.95,-2.3)   {k5\\societal and environmental};
+% tensor ranks
+\node[rk] at (-3.2,-4.25) {rank 1\\$(k)$\\global};
+\node[rk] at (-1.2,-4.25) {rank 2\\$(k,n)$\\per party};
+\node[rk] at (0.8,-4.25)  {rank 3\\$(k,n,\tau)$\\over time};
+\node[rk] at (2.8,-4.25)  {rank 4\\$(k,n,a,c)$\\action, coalition};
+\node[rk] at (4.8,-4.25)  {rank 5\\$(k,n,\tau,a,c)$\\coalitions in time};
+\node[rk] at (6.8,-4.25)  {rank 6\\$(k,n,\tau,a,c,s)$\\samples};
+\end{tikzpicture}

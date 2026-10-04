@@ -1,0 +1,23 @@
+% Chapter 6. The five module tiers, their default weights and veto rights, and what each holds.
+% src: erisml-lib src/erisml/ethics/layers/tactical.py:46-63 (origin/main) weights and veto flags
+% src: erisml-lib src/erisml/ethics/modules/tier0..tier4/__init__.py (contents)
+% src: gtc-prototype twin/output_gate.py:58-62 (the twin's three modules)
+\begin{tikzpicture}[house,
+  tier/.style={minimum width=140mm, minimum height=11mm},
+  nm/.style={font=\sffamily\bfseries\footnotesize, anchor=west},
+  wt/.style={detail, text width=22mm},
+  mods/.style={desc, anchor=west, align=left, text width=58mm}]
+\foreach \c/\y/\n/\name/\w/\v/\m in {
+  Red/0/0/Constitutional/{weight 10.0}/{can veto}/{GenevaEMV2 (twin)\\GenevaEMV3},
+  Orange/-13/1/Core safety/{weight 5.0}/{can veto}/{none yet (placeholder)},
+  Purple/-26/2/Rights and fairness/{weight 2.0}/{can veto}/{AutonomyConsentEMV2 (twin)\\TriageEMV3, RightsFirstEMV3},
+  Blue/-39/3/Soft values/{weight 1.0}/{advisory}/{none in the package\\TragicConflictEM placed here by the twin},
+  Grey/-52/4/Meta-governance/{weight 0.5}/{advisory}/{none yet (placeholder)}}{
+  \node[panel=\c, tier] (t\n) at (0,\y mm) {};
+  \node[step=\c] at ([xshift=6mm]t\n.west) {\n};
+  \node[nm, text=hs\c] at ([xshift=11mm]t\n.west) {\name};
+  \node[wt] at ([xshift=64mm]t\n.west) {\w\\\v};
+  \node[mods] at ([xshift=80mm]t\n.west) {\m};
+}
+\draw[flow] ([xshift=-4mm]t4.south west) -- node[flowlabel, left, align=right]{more\\weight} ([xshift=-4mm]t0.north west);
+\end{tikzpicture}

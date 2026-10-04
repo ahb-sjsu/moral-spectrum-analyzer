@@ -1,0 +1,40 @@
+% Chapter 7. Obligation discharge with a stratum token, worked by hand from the code (not a recorded run).
+% Norm p9v of Margaret's home: obligation speak, condition stratum:animal_standing=venomous.
+% Gates a_venomous (animal_seen=venomous, from none/visiting/pest/wild) and a_clear (animal_clear).
+% src: gtc-prototype twin/scene/margaret_home.erisml:570-578 (p9v), 855-865 (animal_standing)
+% src: erisml-compiler src/erisml_compiler/runtime/scene.py:180-188 (fresh rule), 232-235 (discharge)
+% src: erisml-compiler src/erisml_compiler/runtime/strata.py:124-144 (entered_at set when a gate fires)
+% src: erisml-compiler PR #36 (before: a stratum token ignored the discharge point)
+\begin{tikzpicture}[house, row/.style={font=\sffamily\scriptsize\bfseries, text=hsTextLight, anchor=east, align=right},
+  cell/.style={font=\sffamily\scriptsize, text=hsText, align=center}]
+\def\cw{27mm}
+\foreach \j/\ev in {1/{\texttt{animal\_seen}\\\texttt{=venomous}}, 2/{\texttt{action\_}\\\texttt{performed}\\\texttt{=speak}}, 3/{\texttt{activity\_}\\\texttt{started}}, 4/{\texttt{animal\_clear}}, 5/{\texttt{animal\_seen}\\\texttt{=venomous}}} {
+  \node[panel=Purple, text width=\cw-8mm, minimum height=11mm, inner sep=2pt, font=\sffamily\scriptsize] (h\j) at (\j*\cw, 0) {\ev};
+  \node[step=Purple, anchor=south] at ([yshift=-1mm]h\j.north) {\j};
+}
+\node[row] at (0.45*\cw, 0) {event};
+% stratum row
+\foreach \j/\st/\sty in {1/venomous/stratum, 2/venomous/stratum, 3/venomous/stratum, 4/none/stratum, 5/venomous/stratum} {
+  \node[\sty, minimum width=18mm] (a\j) at (\j*\cw, -12mm) {\st};
+}
+\node[row] at (0.45*\cw, -12mm) {\texttt{animal\_standing}};
+% entered_at and discharge point
+\foreach \j/\en/\d in {1/1/0, 2/1/2, 3/1/2, 4/4/2, 5/5/2} {
+  \node[cell] at (\j*\cw, -20mm) {\en};
+  \node[cell] at (\j*\cw, -26mm) {\d};
+}
+\node[row] at (0.45*\cw, -20mm) {\texttt{entered\_at}};
+\node[row] at (0.45*\cw, -26mm) {discharge point};
+% owed rows
+\foreach \j/\now/\old in {1/Green/Green, 2/Grey/Green, 3/Grey/Green, 4/Grey/Grey, 5/Green/Green} {
+  \node[panel=\now, minimum width=21mm, minimum height=6mm, inner sep=1pt, font=\sffamily\scriptsize] at (\j*\cw, -35mm) {};
+  \node[panel=\old, minimum width=21mm, minimum height=6mm, inner sep=1pt, font=\sffamily\scriptsize, dashed] at (\j*\cw, -44mm) {};
+}
+\foreach \j/\a/\b in {1/owed/owed, 2/discharged/still owed, 3/discharged/still owed, 4/not in stratum/not in stratum, 5/owed/owed} {
+  \node[font=\sffamily\scriptsize, text=hsText] at (\j*\cw, -35mm) {\a};
+  \node[font=\sffamily\scriptsize, text=hsTextMid] at (\j*\cw, -44mm) {\b};
+}
+\node[row] at (0.45*\cw, -35mm) {\texttt{speak} obliged\\since PR \#36};
+\node[row] at (0.45*\cw, -44mm) {before PR \#36};
+\foreach \j/\k in {1/2, 2/3, 3/4, 4/5} { \draw[flow] (h\j.east) -- (h\k.west); }
+\end{tikzpicture}

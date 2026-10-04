@@ -1,0 +1,22 @@
+% Chapter 9. animal_standing. The classifier's readings enter the four semantic states, which
+% grant nothing. Only the reflex's force measurement enters attacking, the one authority stratum.
+% src: twin/scene/margaret_home.erisml:847-865, 525-535 (p4p), 570-578 (p9v), 1086-1092 (x_animal)
+% src: docs/STRATA_TAXONOMY.md:104-119
+\begin{tikzpicture}[house, lab/.style={flowlabel, font=\sffamily\scriptsize}]
+\node[stratum] (none) at (0,0) {none};
+\node[stratum] (vis) at (45mm,18mm) {visiting};
+\node[stratum] (pest) at (45mm,6mm) {pest};
+\node[stratum] (wild) at (45mm,-6mm) {wild};
+\node[stratum] (ven) at (45mm,-18mm) {venomous};
+\node[authority] (att) at (110mm,4mm) {attacking};
+\foreach \s/\t in {vis/a neighbour's pet, pest/pest, wild/wild animal, ven/venomous}{
+  \draw[untrusted] (none.east) -- (\s.west);
+}
+\node[lab, align=center] at (20mm,13mm) {classifier's\\reading};
+\draw[untrusted] (vis.south east) to[bend left=30] (wild.north east);
+\draw[untrusted] (wild.south east) to[bend left=30] (ven.north east);
+\draw[grant] (none.north) .. controls (0,32mm) and (110mm,32mm) .. node[lab, above]{\code{animal\_attack\_measured}, from any state, force at least 150 N} (att.north);
+\draw[flow] (att.south) .. controls (110mm,-32mm) and (0,-32mm) .. node[lab, below]{\code{animal\_clear}, attack over or animal gone, from any state} (none.south);
+\node[detail, text width=34mm, anchor=west] at (58mm,0) {the semantic states grant\\nothing, venomous\\obliges a warning};
+\node[detail, text width=26mm, anchor=north] at (113mm,-21mm) {only here may\\\code{drive\_off\_animal}\\be asked for};
+\end{tikzpicture}

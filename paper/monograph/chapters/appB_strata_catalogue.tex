@@ -1,0 +1,216 @@
+\chapter{The strata catalogue}\label{app:strata}
+
+This appendix lists every stratification of Margaret's home as the scene file declares it. Each table
+gives the states, the initial state, the authority states, the absorbing states, and every gate with
+its identifier, trigger event, source states, target state and boundary type. The entries are copied
+from \code{extra.strata} in \code{twin/scene/margaret\_home.erisml}. A trigger written as
+\code{event=content} fires only on an event of that type with that content. A gate with no source
+states fires from any state of its stratification. Chapter~\ref{ch:containment} explains what each
+stratification changes.
+% src: twin/scene/margaret_home.erisml:815-922
+% src: C:/source/erisml-compiler-monitor/src/erisml_compiler/runtime/strata.py:21 (any stratum when `from` is omitted)
+
+The scene runtime checks two rules when the scene loads. Only a system event may enter an authority
+state, and only a human-oversight event may leave an absorbing state. The scene's oversight events
+are \code{monitoring\_center\_confirmed\_privacy\_restore}, \code{visitor\_cleared},
+\code{evidence\_lapsed} and \code{device\_cleared}. Across the seven stratifications there are 26
+states and 34 gates.
+% src: docs/STRATA_TAXONOMY.md:23-31
+% src: twin/scene/margaret_home.erisml:804 (oversight)
+% src: paper/aies2027/kit/FACTS.md:12
+
+\section{visitor\_standing}\label{app:strata-visitor}
+
+States none, stranger, welcomed, arranged, household and hostile. Initial none. Authority arranged
+and household. Absorbing hostile.
+% src: twin/scene/margaret_home.erisml:816-831
+
+\begin{table}[h]
+\centering\footnotesize
+\caption{Gates of \code{visitor\_standing}.}
+\label{tab:app-visitor}
+% src: twin/scene/margaret_home.erisml:821-831
+\begin{tabular}{@{}lllll@{}}
+\toprule
+Gate & Trigger & From & To & Boundary \\
+\midrule
+\code{v\_attack} & \code{attack\_measured} & any & hostile & threshold \\
+\code{v\_arranged} & \code{visit\_arranged} & none, stranger, welcomed & arranged & phase \\
+\code{v\_enter} & \code{person\_entered} & none & stranger & threshold \\
+\code{v\_unexpected} & \code{unexpected\_visitor} & none & stranger & threshold \\
+\code{v\_welcome} & \code{visitor\_welcomed} & stranger & welcomed & phase \\
+\code{v\_household} & \code{household\_verified} & none, stranger, welcomed & household & phase \\
+\code{v\_revoked} & \code{credential\_revoked} & household & stranger & phase \\
+\code{v\_left} & \code{person\_left} & stranger, welcomed, arranged, household & none & threshold \\
+\code{v\_ended} & \code{visit\_ended} & arranged & none & phase \\
+\code{v\_cleared} & \code{visitor\_cleared=visitor} & hostile & none & phase \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{responder\_standing}\label{app:strata-responder}
+
+States none, expected, at\_door and present. Initial none. Authority expected, at\_door and present.
+No absorbing state.
+% src: twin/scene/margaret_home.erisml:837-846
+
+\begin{table}[h]
+\centering\footnotesize
+\caption{Gates of \code{responder\_standing}.}
+\label{tab:app-responder}
+% src: twin/scene/margaret_home.erisml:841-846
+\begin{tabular}{@{}lllll@{}}
+\toprule
+Gate & Trigger & From & To & Boundary \\
+\midrule
+\code{r\_dispatched} & \code{ems\_reply=dispatched} & none & expected & phase \\
+\code{r\_centre\_sent} & \code{monitoring\_center\_reply=ems\_sent} & none & expected & phase \\
+\code{r\_at\_door} & \code{responders\_arrived} & expected & at\_door & threshold \\
+\code{r\_inside} & \code{responders\_entered} & expected, at\_door & present & threshold \\
+\code{r\_departed} & \code{responders\_departed} & expected, at\_door, present & none & phase \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{animal\_standing}\label{app:strata-animal}
+
+States none, visiting, pest, wild, venomous and attacking. Initial none. Authority attacking. No
+absorbing state. Margaret's dog has no state here, because the scene fixes its standing as a
+declared actor.
+% src: twin/scene/margaret_home.erisml:847-865, 996
+
+\begin{table}[h]
+\centering\footnotesize
+\caption{Gates of \code{animal\_standing}.}
+\label{tab:app-animal}
+% src: twin/scene/margaret_home.erisml:859-865
+\begin{tabular}{@{}lllll@{}}
+\toprule
+Gate & Trigger & From & To & Boundary \\
+\midrule
+\code{a\_attack} & \code{animal\_attack\_measured} & any & attacking & threshold \\
+\code{a\_visiting} & \code{animal\_seen=visiting\_pet} & none & visiting & threshold \\
+\code{a\_pest} & \code{animal\_seen=pest} & none & pest & threshold \\
+\code{a\_wild} & \code{wild\_animal\_present} & none, visiting, pest & wild & threshold \\
+\code{a\_venomous} & \code{animal\_seen=venomous} & none, visiting, pest, wild & venomous & phase \\
+\code{a\_clear} & \code{animal\_clear} & visiting, pest, wild, venomous, attacking & none & threshold \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{situation}\label{app:strata-situation}
+
+States ordinary, ems\_only and emergency. Initial ordinary. Authority ems\_only and emergency. No
+absorbing state. Only governor rulings move this stratification, and a refusal moves nothing.
+% src: twin/scene/margaret_home.erisml:866-880
+
+\begin{table}[h]
+\centering\footnotesize
+\caption{Gates of \code{situation}.}
+\label{tab:app-situation}
+% src: twin/scene/margaret_home.erisml:877-880
+\begin{tabular}{@{}lllll@{}}
+\toprule
+Gate & Trigger & From & To & Boundary \\
+\midrule
+\code{s\_elevate} & \code{governor\_ruling=elevate} & ordinary, ems\_only & emergency & phase \\
+\code{s\_ems} & \code{governor\_ruling=authorize\_ems} & ordinary & ems\_only & phase \\
+\code{s\_lapsed} & \code{governor\_ruling=lapsed} & ems\_only, emergency & ordinary & phase \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{centre\_contact}\label{app:strata-centre}
+
+States reachable and unreachable. Initial reachable. Authority unreachable. No absorbing state. Only
+the centre's replies move this stratification.
+% src: twin/scene/margaret_home.erisml:881-892
+
+\begin{table}[h]
+\centering\footnotesize
+\caption{Gates of \code{centre\_contact}.}
+\label{tab:app-centre}
+% src: twin/scene/margaret_home.erisml:888-892
+\begin{tabular}{@{}lllll@{}}
+\toprule
+Gate & Trigger & From & To & Boundary \\
+\midrule
+\code{c\_down} & \code{monitoring\_center\_reply=unavailable} & reachable & unreachable & phase \\
+\code{c\_line} & \code{monitoring\_center\_reply=on\_the\_line} & unreachable & reachable & phase \\
+\code{c\_sent} & \code{monitoring\_center\_reply=ems\_sent} & unreachable & reachable & phase \\
+\code{c\_stood} & \code{monitoring\_center\_reply=stood\_down} & unreachable & reachable & phase \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{reporting\_duty}\label{app:strata-reporting}
+
+States none, suspicion and reported. Initial none. No authority state and no absorbing state, since
+adding a duty grants nothing. The classifier's \code{crime\_suspected} may therefore enter it.
+% src: twin/scene/margaret_home.erisml:893-907
+
+\begin{table}[h]
+\centering\footnotesize
+\caption{Gates of \code{reporting\_duty}.}
+\label{tab:app-reporting}
+% src: twin/scene/margaret_home.erisml:903-907
+\begin{tabular}{@{}lllll@{}}
+\toprule
+Gate & Trigger & From & To & Boundary \\
+\midrule
+\code{rd\_suspected} & \code{crime\_suspected} & none, reported & suspicion & threshold \\
+\code{rd\_attack} & \code{attack\_measured} & none, reported & suspicion & threshold \\
+\code{rd\_reported} & \code{action\_performed=contact\_monitoring\_center} & suspicion & reported & phase \\
+\code{rd\_closed} & \code{monitoring\_center\_reply=stood\_down} & reported & none & phase \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{machine\_standing}\label{app:strata-machine}
+
+States trusted and compromised. Initial trusted. No authority state. Absorbing compromised. The brain
+records \code{device\_compromised} when a device in the inventory fails the integrity of its
+attestation, and only the centre's \code{device\_cleared} leaves the absorbing state.
+% src: twin/scene/margaret_home.erisml:908-922
+% src: twin/brain.py:494-498, 634-635
+
+\begin{table}[h]
+\centering\footnotesize
+\caption{Gates of \code{machine\_standing}.}
+\label{tab:app-machine}
+% src: twin/scene/margaret_home.erisml:920-922
+\begin{tabular}{@{}lllll@{}}
+\toprule
+Gate & Trigger & From & To & Boundary \\
+\midrule
+\code{m\_compromised} & \code{device\_compromised} & trusted & compromised & phase \\
+\code{m\_cleared} & \code{device\_cleared=devices} & compromised & trusted & phase \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Conditions that read the strata}\label{app:strata-conditions}
+
+The scene's norms read the strata through named conditions. Table~\ref{tab:app-conditions} lists the
+conditions defined on strata.
+
+\begin{table}[h]
+\centering\footnotesize
+\caption{Scene conditions defined on strata.}
+\label{tab:app-conditions}
+% src: twin/scene/margaret_home.erisml:775-801
+\begin{tabular}{@{}ll@{}}
+\toprule
+Condition & Definition \\
+\midrule
+\code{corroborated\_life\_threatening\_emergency} & \code{stratum:situation=emergency} \\
+\code{center\_unavailable} & \code{stratum:centre\_contact=unreachable} \\
+\code{ems\_authorized} & \code{stratum:situation=ems\_only} \\
+\code{responders\_at\_door} & \code{stratum:responder\_standing=at\_door} \\
+\code{animal\_attacking} & \code{stratum:animal\_standing=attacking} \\
+\code{duty\_to\_report} & \code{stratum:reporting\_duty=suspicion} \\
+\code{visitor\_unverified} & not none, not arranged, not household in \code{visitor\_standing} \\
+\code{visitor\_vouched\_for} & not none, not stranger, not hostile in \code{visitor\_standing} \\
+\bottomrule
+\end{tabular}
+\end{table}

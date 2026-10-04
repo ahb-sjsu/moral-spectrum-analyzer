@@ -1,0 +1,32 @@
+% The four commitments of Philosophy Engineering.
+% src: C:\Users\abptl\Documents\Philosophy-Engineering-Brochure.pdf p2-3 (Methodology, items 1-4)
+% src: C:\source\geometric-ethics-content\source\updates\sec8_4_hohfeld_v4.tex:1-3 (D4 retired)
+% src: C:\source\gtc-prototype\paper\aies2027\kit\FACTS.md:22 (held-out sealed 2026-10-01)
+% src: C:\source\geometric-ethics-content\source\Geometric-Ethics-v1.24.tex:41959-41967 (ledger status tags)
+\begin{tikzpicture}[house,
+  card/.style={panel=#1, minimum width=29mm, minimum height=60mm},
+  ex/.style={detail, text width=24mm, minimum height=19mm}]
+\node[card=Purple] (c1) at (0,0)    {};
+\node[card=Blue]   (c2) at (3.3,0)  {};
+\node[card=Green]  (c3) at (6.6,0)  {};
+\node[card=Orange] (c4) at (9.9,0)  {};
+\node[step=Purple] at (0,2.25)   {1};
+\node[step=Blue]   at (3.3,2.25) {2};
+\node[step=Green]  at (6.6,2.25) {3};
+\node[step=Orange] at (9.9,2.25) {4};
+\node[stepname=Purple, text width=26mm, align=center] at (0,1.35)   {Declared modeling choices};
+\node[stepname=Blue,   text width=26mm, align=center] at (3.3,1.35) {Stated invariances};
+\node[stepname=Green,  text width=26mm, align=center] at (6.6,1.35) {Extracted predictions};
+\node[stepname=Orange, text width=26mm, align=center] at (9.9,1.35) {Versioned revision};
+\node[desc, text width=26mm] at (0,0.0)   {each claim carries its status, definition, assumption, conditional theorem or empirical result};
+\node[desc, text width=26mm] at (3.3,0.0) {the redescriptions that must not change a verdict are written down and tested};
+\node[desc, text width=26mm] at (6.6,0.0) {each claim is put in a form a measurement can fail};
+\node[desc, text width=26mm] at (9.9,0.0) {a failed prediction amends the model and the change is recorded};
+\node[ex] at (0,-1.75)   {Geometric Ethics ledger tags each definition as a modeling axiom or a formal definition};
+\node[ex] at (3.3,-1.75) {EIP and BIP name the transformation group a judgment must be invariant under};
+\node[ex] at (6.6,-1.75) {the twin's held-out scenarios were sealed before the robot ran them};
+\node[ex] at (9.9,-1.75) {D4 retired for V4 on 3 October 2026};
+\draw[flow] (c1.east) -- (c2.west);
+\draw[flow] (c2.east) -- (c3.west);
+\draw[flow] (c3.east) -- (c4.west);
+\end{tikzpicture}

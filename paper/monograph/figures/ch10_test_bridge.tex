@@ -1,0 +1,28 @@
+% Chapter 10. How each part of the Lean model is tied to the code and the scene files.
+% src: tests/test_twin_ladder.py:705-795 (structural tests), 309-333, 638-689, 803-840
+% src: C:\source\erisml-compiler-monitor\src\erisml_compiler\runtime\strata.py:105-121
+\begin{tikzpicture}[house,
+  m/.style={detail, text width=36mm, minimum height=11mm},
+  t/.style={detail, text width=50mm, minimum height=11mm},
+  c/.style={detail, text width=40mm, minimum height=11mm}]
+\node[stepname=Purple] (hm) at (0,0) {Lean model};
+\node[stepname=Teal] (ht) at (56mm,0) {What ties it};
+\node[stepname=Blue] (hc) at (114mm,0) {Code and scene files};
+\foreach \r/\y/\a/\b/\c in {
+  1/-9/{\code{permitted}}/{structural tests 1 to 3\\denied by default, guards on system events only, no granting permission}/{\code{margaret\_home.erisml}\\prohibitions and capabilities},
+  2/-23/{\code{dispatchPermitted}}/{structural test 4\\the dispatch guard rests on system events only}/{\code{monitoring\_center.erisml}\\dispatch guard},
+  3/-37/{\code{Reading.counts}\\the attested flag}/{behaviour tests\\wrong key, altered payload, replay, stale}/{\code{brain.py}\\signature and freshness checks},
+  4/-51/{\code{rule}}/{behaviour test\\the governor bar on 0 to 3 witnesses}/{\code{govern\_live}\\in \code{brain.py}},
+  5/-65/{\code{authority\_needs\_system}\\\code{absorbing\_stays}}/{loader checks\\a scene that breaks them never runs}/{\code{strata.py}\\\code{Stratification.\_check}}}{
+  \node[m] (m\r) at (0,\y mm) {\a};
+  \node[t] (t\r) at (56mm,\y mm) {\b};
+  \node[c] (c\r) at (114mm,\y mm) {\c};
+  \draw[flow, <->] (m\r) -- (t\r);
+  \draw[flow, <->] (t\r) -- (c\r);
+}
+\begin{scope}[on background layer]
+  \node[panel=Purple, fit=(hm)(m1)(m5), inner sep=2.5mm] {};
+  \node[panel=Teal, fit=(ht)(t1)(t5), inner sep=2.5mm] {};
+  \node[panel=Blue, fit=(hc)(c1)(c5), inner sep=2.5mm] {};
+\end{scope}
+\end{tikzpicture}

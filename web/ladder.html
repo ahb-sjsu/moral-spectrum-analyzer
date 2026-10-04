@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escalation Ladder, Live</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bpmn-js@17/dist/assets/diagram-js.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bpmn-js@17/dist/assets/bpmn-js.css">
+<style>
+  :root { --ink: #0b0b0b; --ink2: #52514e; --bg: #fcfcfb; --panel: #ffffff; --grid: #e6e5e1;
+          --visited: #1baf7a; --visited-fill: #dcf3e8; --current: #2a78d6; --warn: #d03b3b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Inter, "Segoe UI", Helvetica, Arial, sans-serif; color: var(--ink); background: var(--bg); }
+  header { padding: 10px 16px; border-bottom: 1px solid var(--grid); display: flex; gap: 16px; align-items: baseline; flex-wrap: wrap; }
+  header h1 { font-size: 1.15rem; margin: 0; }
+  header .status { color: var(--ink2); font-size: .9rem; }
+  main { display: grid; grid-template-columns: 1fr 320px; height: calc(100vh - 49px); }
+  #canvas { background: var(--panel); border-right: 1px solid var(--grid); }
+  aside { padding: 12px 14px; overflow-y: auto; font-size: .9rem; }
+  aside h2 { font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink2); margin: 14px 0 6px; }
+  .note { border-left: 3px solid var(--warn); padding: 4px 8px; margin: 6px 0; background: #fdf3f2; }
+  .note b { display: block; }
+  .legend span { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  /* the trace */
+  .djs-element.visited .djs-visual > :nth-child(1) { stroke: var(--visited) !important; fill: var(--visited-fill) !important; }
+  .djs-connection.visited .djs-visual > path { stroke: var(--visited) !important; stroke-width: 3px !important; }
+  .djs-element.current .djs-visual > :nth-child(1) { stroke: var(--current) !important; stroke-width: 4px !important; }
+  @media (max-width: 760px) { main { grid-template-columns: 1fr; grid-template-rows: 60vh auto; } #canvas { border-right: 0; border-bottom: 1px solid var(--grid); } }
+</style>
+</head>
+<body>
+<header>
+  <h1>The escalation ladder</h1>
+  <span class="status" id="status">connecting…</span>
+</header>
+<main>
+  <div id="canvas"></div>
+  <aside>
+    <div class="legend">
+      <div><span style="background: var(--visited-fill); border: 2px solid var(--visited)"></span>taken in this run</div>
+      <div><span style="border: 3px solid var(--current)"></span>where the robot is now</div>
+    </div>
+    <h2>Where the structure stepped in</h2>
+    <div id="notes"><p style="color: var(--ink2)">Nothing yet in this run.</p></div>
+    <h2>What this is</h2>
+    <p>The robot's escalation ladder as a BPMN 2.0 process, exported by erisml-compiler from the
+      ErisML scene the robot runs. The path is drawn from the brain's hash-chained records. The
+      diagram decides nothing: every action in it was allowed by the scene and passed by the
+      ethics gate before the robot took it.</p>
+  </aside>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/bpmn-js@17/dist/bpmn-navigated-viewer.production.min.js"></script>
+<script>
+  const params = new URLSearchParams(location.search);
+  const service = (params.get("service") || "http://127.0.0.1:8771").replace(/\/$/, "");
+  const pid = params.get("process") || "escalation_ladder";
+  const viewer = new BpmnJS({ container: "#canvas" });
+  const status = document.getElementById("status");
+  let marked = new Set();
+
+  function esc(s) { return String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+  async function load() {
+    const xml = await (await fetch(`${service}/process/${pid}.bpmn`)).text();
+    await viewer.importXML(xml);
+    viewer.get("canvas").zoom("fit-viewport");
+  }
+
+  async function poll() {
+    try {
+      const t = await (await fetch(`${service}/process/${pid}/trace`)).json();
+      const canvas = viewer.get("canvas");
+      for (const id of marked) { canvas.removeMarker(id, "visited"); canvas.removeMarker(id, "current"); }
+      marked = new Set();
+      for (const s of t.steps) { canvas.addMarker(s.element, "visited"); marked.add(s.element); }
+      if (t.current) canvas.addMarker(t.current, "current");
+      const n = t.steps.filter(s => s.kind !== "flow").length;
+      status.textContent = n ? `${n} step${n === 1 ? "" : "s"} in this run` : "waiting for the run to start";
+      const notes = document.getElementById("notes");
+      notes.innerHTML = t.interventions.length
+        ? t.interventions.map(n => `<div class="note"><b>${esc(n.by)}: ${esc(n.what)}</b>${esc(n.why)}</div>`).join("")
+        : '<p style="color: var(--ink2)">Nothing yet in this run.</p>';
+    } catch (e) {
+      status.textContent = `cannot reach the brain at ${service}`;
+    }
+  }
+
+  load().then(() => { poll(); setInterval(poll, 1000); })
+        .catch(e => { status.textContent = `cannot load the process from ${service}: ${e}`; });
+</script>
+</body>
+</html>

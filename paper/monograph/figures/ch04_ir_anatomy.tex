@@ -1,0 +1,27 @@
+% Chapter 4. The fields of CompilerIR, grouped by who fills them, and the extra keys the runtime reads.
+% src: erisml-compiler src/erisml_compiler/ir/schemas.py:394-458
+% src: erisml-compiler src/erisml_compiler/ingestion/structured_loader.py:54-76
+% src: erisml-compiler src/erisml_compiler/runtime/scene.py:11-25,109-129; runtime/agent.py:5-21,105-113
+% src: erisml-compiler src/erisml_compiler/process/model.py:139-251
+\begin{tikzpicture}[house]
+\node[panel=Green, text width=44mm, minimum height=44mm, anchor=north] (load) at (0,0) {};
+\node[step=Green] (s1) at ([yshift=-5.5mm]load.north) {1};
+\node[stepname=Green, below=1mm of s1] (n1) {Filled by the loader};
+\node[desc, below=0.3mm of n1, text width=42mm] (d1) {what a scene file declares};
+\node[detail, below=1.5mm of d1, text width=40mm] {\texttt{document}\\\texttt{stakeholders}\quad\texttt{relations}\\\texttt{events}\quad\texttt{commitments}\\\texttt{norms}\quad\texttt{ethical\_facts}\\\texttt{extra}};
+
+\node[panel=Grey, text width=44mm, minimum height=44mm, anchor=north] (pipe) at (52mm,0) {};
+\node[step=Grey] (s2) at ([yshift=-5.5mm]pipe.north) {2};
+\node[stepname=Grey, below=1mm of s2] (n2) {Filled by the pipeline};
+\node[desc, below=0.3mm of n2, text width=42mm] (d2) {Chapters 5 and 6};
+\node[detail, below=1.5mm of d2, text width=40mm] {\texttt{segments}\quad\texttt{conflicts}\\\texttt{moral\_vectors}\quad\texttt{timeline}\\\texttt{moral\_tensor\_v3}\\\texttt{em\_outputs}\quad\texttt{deme\_verdict}\\\texttt{graph}\quad\texttt{projections}\\\texttt{decision\_proof}\quad\texttt{audit}};
+
+\node[panel=Amber, text width=44mm, minimum height=44mm, anchor=north] (extra) at (104mm,0) {};
+\node[step=Amber] (s3) at ([yshift=-5.5mm]extra.north) {3};
+\node[stepname=Amber, below=1mm of s3] (n3) {Keys of \texttt{extra}};
+\node[desc, below=0.3mm of n3, text width=42mm] (d3) {read by the runtime, the agent\\and the process loader};
+\node[detail, below=1.5mm of d3, text width=40mm] {\texttt{agent}\quad\texttt{role}\\\texttt{capabilities}\quad\texttt{conditions}\\\texttt{oversight}\quad\texttt{strata}\\\texttt{event\_types}\quad\texttt{actors}\\\texttt{default\_action}\\\texttt{processes}};
+
+\draw[flow] (load.east) -- (pipe.west);
+\draw[flow] (load.north) .. controls +(0,11mm) and +(0,11mm) .. node[flowlabel, above]{the \texttt{extra} block of panel 1, opened up} (extra.north);
+\end{tikzpicture}

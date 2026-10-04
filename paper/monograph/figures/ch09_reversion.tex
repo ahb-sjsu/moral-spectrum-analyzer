@@ -1,0 +1,40 @@
+% Chapter 9. How rights lapse with their evidence: an illustration of the rule in twin/brain.py
+% _lapse, not a recorded run. The time axis is in units of the lapse window Lambda = 60 s
+% (scene evidence_lapse_s). The bars are the scene's and the brain's (3 restraint, 2 emergency).
+% src: twin/brain.py:46-47, 380-425 (_step_ruling, _lapse)
+% src: twin/scene/margaret_home.erisml:805-809 (evidence_lapse_s: 60), 873-880 (situation)
+\begin{tikzpicture}[house, x=11mm, y=7mm,
+  ev/.style={step=#1, minimum size=5mm, font=\sffamily\bfseries\scriptsize},
+  win/.style={draw=hsGrey, line width=0.8pt, |<->|}]
+% axes
+\draw[->, draw=hsGrey, line width=0.8pt] (0,0) -- (13.3,0) node[desc, anchor=west]{time};
+\draw[->, draw=hsGrey, line width=0.8pt] (0,0) -- (0,4.4) node[desc, anchor=south]{$W$};
+\foreach \w in {0,1,2,3}{\node[desc, anchor=east] at (-0.1,\w) {\w};}
+% the bars
+\draw[draw=hsPurple, line width=1pt, dashed] (0,3) -- (13,3) node[desc, anchor=west, text=hsPurple]{$b=3$};
+\draw[draw=hsTeal, line width=1pt, dashed] (0,2) -- (13,2) node[desc, anchor=west, text=hsTeal]{$b=2$};
+% an illustrative witness count
+\draw[draw=hsBlue, line width=1.6pt] (0.5,3) -- (2,3) -- (2,2) -- (6,2) -- (6,1) -- (7.5,1) -- (7.5,2) -- (8.5,2) -- (8.5,1) -- (12.6,1);
+% events
+\node[ev=Green] at (0.5,3.6) {1};
+\node[ev=Purple] at (5,3.6) {2};
+\node[ev=Blue] at (7.5,2.6) {3};
+\node[ev=Red] at (11.5,1.6) {4};
+\draw[draw=hsGrey, dotted] (5,0) -- (5,3.3);
+\draw[draw=hsGrey, dotted] (11.5,0) -- (11.5,1.3);
+% windows of length Lambda
+\draw[win] (2,-0.6) -- node[desc, below]{$\Lambda$ below 3} (5,-0.6);
+\draw[win] (6,-0.6) -- node[desc, below]{restarts} (7.5,-0.6);
+\draw[win] (8.5,-0.6) -- node[desc, below]{$\Lambda$ below 2} (11.5,-0.6);
+% the strata the robot is in
+\node[panel=Teal, minimum width=121mm, minimum height=5mm, anchor=west, inner sep=1pt, font=\sffamily\scriptsize] at (0.5,-2.6) {situation emergency};
+\node[panel=Grey, minimum width=16mm, minimum height=5mm, anchor=west, inner sep=1pt, font=\sffamily\scriptsize] at (11.5,-2.6) {ordinary};
+\node[panel=Purple, minimum width=49mm, minimum height=5mm, anchor=west, inner sep=1pt, font=\sffamily\scriptsize] at (0.5,-3.6) {restraint granted};
+\node[panel=Grey, minimum width=71mm, minimum height=5mm, anchor=west, inner sep=1pt, font=\sffamily\scriptsize] at (5,-3.6) {restraint lapsed, the emergency stands};
+% key
+\node[desc, anchor=north west, text width=150mm, align=left] at (0,-4.4)
+  {\textcolor{hsGreen}{\bfseries 1} elevate at three witnesses\quad
+   \textcolor{hsPurple}{\bfseries 2} restraint alone lapses\quad
+   \textcolor{hsBlue}{\bfseries 3} the count is back at two, so the window restarts\\
+   \textcolor{hsRed}{\bfseries 4} the emergency lapses, and with it EMS authority and the privacy override};
+\end{tikzpicture}

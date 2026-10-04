@@ -1,0 +1,46 @@
+% Chapter 12. From hidden states to the registered tests.
+% src: docs/PREREG_IEIP_TWIN.md:54-96, 132-139, 149-164, 168-176
+% src: twin/ieip/analysis.py:41-56, 331-433
+\begin{tikzpicture}[house,
+  p/.style={minimum width=23mm, minimum height=44mm, text width=21mm, anchor=north},
+  d/.style={detail, text width=19mm}]
+\foreach \i/\col/\x in {1/Purple/0, 2/Blue/25.5, 3/Teal/51, 4/Green/76.5, 5/Amber/102, 6/Orange/127.5}{
+  \node[panel=\col, p] (P\i) at (\x mm,0) {};
+  \node[step=\col] at ([yshift=-5mm]P\i.north) {\i};
+}
+\node[stepname=Purple, below=10mm of P1.north] (n1) {States};
+\node[desc, below=0mm of n1, text width=21mm] (e1) {$x$ and 5 rewrites};
+\node[d, below=1.5mm of e1] {last prompt\\token, layers at\\25, 50, 75 and\\90 percent};
+
+\node[stepname=Blue, below=10mm of P2.north] (n2) {Project};
+\node[desc, below=0mm of n2, text width=21mm] (e2) {per layer};
+\node[d, below=1.5mm of e2] {top 32\\components of\\calibration $x$\\(A2)};
+
+\node[stepname=Teal, below=10mm of P3.north] (n3) {Fit $\hat\rho$};
+\node[desc, below=0mm of n3, text width=21mm] (e3) {per rewrite, layer};
+\node[d, below=1.5mm of e3] {ridge least\\squares on the\\calibration half\\then frozen};
+
+\node[stepname=Green, below=10mm of P4.north] (n4) {Noise};
+\node[desc, below=0mm of n4, text width=21mm] (e4) {per rewrite, layer};
+\node[d, below=1.5mm of e4] {median and\\median absolute\\deviation of $e$\\(A3)};
+
+\node[stepname=Amber, below=10mm of P5.north] (n5) {Score};
+\node[desc, below=0mm of n5, text width=21mm] (e5) {one $z$ per cycle};
+\node[d, below=1.5mm of e5] {largest over\\$g_1$ to $g_4$ and\\layers\\flag if $z > 3$};
+
+\node[stepname=Orange, below=10mm of P6.north] (n6) {Test};
+\node[desc, below=0mm of n6, text width=21mm] (e6) {H1 and H2};
+\node[d, below=1.5mm of e6] {cluster bootstrap\\over scenarios\\10{,}000 draws\\5th percentile};
+
+\foreach \a/\b in {1/2, 2/3, 3/4, 4/5, 5/6}{
+  \draw[flow] ([yshift=-22mm]P\a.north east) -- ([yshift=-22mm]P\b.north west);
+}
+% the split
+\node[panel=Teal, anchor=north, minimum width=74mm, minimum height=7mm] (cal) at ([yshift=-6mm]P3.south) {calibration half\quad odd-numbered scenarios};
+\node[panel=Orange, anchor=north, minimum width=48mm, minimum height=7mm] (tst) at ([yshift=-6mm, xshift=12.75mm]P5.south) {test half\quad even-numbered scenarios};
+\draw[flow] (cal.north -| P2.south) -- (P2.south);
+\draw[flow] (cal.north -| P3.south) -- (P3.south);
+\draw[flow] (cal.north -| P4.south) -- (P4.south);
+\draw[flow] (tst.north -| P5.south) -- (P5.south);
+\draw[flow] (tst.north -| P6.south) -- (P6.south);
+\end{tikzpicture}

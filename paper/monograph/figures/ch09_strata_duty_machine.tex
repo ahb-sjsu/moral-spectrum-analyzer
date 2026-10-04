@@ -1,0 +1,28 @@
+% Chapter 9. reporting_duty (no authority or absorbing state: adding a duty grants nothing) and
+% machine_standing (compromised is absorbing; only the centre's oversight leaves it).
+% src: twin/scene/margaret_home.erisml:893-922, 539-548 (p5r)
+% src: twin/brain.py:83-87, 155-159, 494-498
+\begin{tikzpicture}[house, lab/.style={flowlabel, font=\sffamily\scriptsize}]
+% reporting_duty
+\node[stratum] (rn) at (0,0) {none};
+\node[stratum] (rs) at (34mm,0) {suspicion};
+\node[stratum] (rr) at (68mm,0) {reported};
+\draw[untrusted] (rn.north east) to[bend left=25] node[lab, above]{crime suspected} (rs.north west);
+\draw[flow] (rn.south east) to[bend right=25] node[lab, below]{attack measured} (rs.south west);
+\draw[flow] (rs) -- node[lab, below, align=center]{reported to\\the centre} (rr);
+\draw[flow] (rr.south) .. controls (68mm,-18mm) and (0,-18mm) .. node[lab, below]{the centre stands the case down} (rn.south);
+\draw[untrusted] (rr.north) .. controls (68mm,12mm) and (40mm,12mm) .. node[lab, above]{a new suspicion} (rs.north east);
+\begin{scope}[on background layer]
+\node[panel=Grey, fit=(rn)(rr), inner xsep=6mm, inner ysep=24mm] (S1) {};
+\end{scope}
+\node[stepname=Grey, anchor=north west] at ([xshift=2mm, yshift=-1mm]S1.north west) {\code{reporting\_duty}};
+% machine_standing
+\node[stratum] (mt) at (96mm,0) {trusted};
+\node[absorbing] (mc) at (133mm,0) {compromised};
+\draw[flow] (mt.north east) to[bend left=22] node[lab, above, align=center]{attestation fails\\its integrity} (mc.north west);
+\draw[flow] (mc.south west) to[bend left=22] node[lab, below, align=center]{the centre clears\\the devices (oversight)} (mt.south east);
+\begin{scope}[on background layer]
+\node[panel=Grey, fit=(mt)(mc), inner xsep=5mm, inner ysep=24mm] (S2) {};
+\end{scope}
+\node[stepname=Grey, anchor=north west] at ([xshift=2mm, yshift=-1mm]S2.north west) {\code{machine\_standing}};
+\end{tikzpicture}

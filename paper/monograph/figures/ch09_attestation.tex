@@ -1,0 +1,38 @@
+% Chapter 9. From a device's signed reading to the witness count W.
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/Perception.cs:106-136 (GovernorSensors)
+% src: twin/brain.py:71-167 (Readings), 494-498 (device_compromised)
+% src: C:/source/erisml-compiler-monitor/src/erisml_compiler/ir/evidence.py:71-73, 126-169
+% src: twin/scene/margaret_home.erisml:1062-1081 (sensor_substrates), 916-922 (machine_standing)
+\begin{tikzpicture}[house,
+  p/.style={minimum width=36mm, minimum height=42mm, text width=34mm},
+  d/.style={detail, text width=32mm, anchor=south}]
+\node[panel=Purple, p] (P1) at (0,0) {};
+\node[panel=Blue, p] (P2) at (42mm,0) {};
+\node[panel=Orange, p] (P3) at (84mm,0) {};
+\node[panel=Green, p] (P4) at (126mm,0) {};
+\foreach \P/\c/\n/\name/\dsc/\dtl in {
+  P1/Purple/1/Device signs/{one reading}/{payload is name, value,\\alert bit and note\\HMAC-SHA256 over\\hash, counter, time},
+  P2/Blue/2/Brain verifies/{on arrival, per channel}/{signature and hash\\names its own device\\counter not behind\\signed within 30 s},
+  P3/Orange/3/Inventory/{15 devices}/{unlisted device\\never counts\\quarantined device\\never counts},
+  P4/Green/4/Substrates/{6 substrates}/{alerting, physical\\and verified\\one witness each\\plus the camera}}{
+  \node[step=\c] at ([yshift=-5mm]\P.north) {\n};
+  \node[stepname=\c] at ([yshift=-11.5mm]\P.north) {\name};
+  \node[desc, text width=33mm] at ([yshift=-15.5mm]\P.north) {\dsc};
+  \node[d] at ([yshift=1.5mm]\P.south) {\dtl};
+}
+\draw[flow] (P1.east) -- (P2.west);
+\draw[flow] (P2.east) -- (P3.west);
+\draw[flow] (P3.east) -- (P4.west);
+% the witness count leaves to the governor
+\node[panel=Red, minimum width=36mm, text width=34mm] (W) at (126mm,-36mm)
+  {\textcolor{hsRed}{\bfseries witness count $W$}\\[1pt]{\scriptsize\color{hsTextMid} to the governor's gate 2}};
+\draw[grant] (P4.south) -- (W.north);
+% failures
+\node[panel=Red, minimum width=36mm, text width=34mm] (Q) at (60mm,-36mm)
+  {\textcolor{hsRed}{\bfseries quarantine}\\[1pt]{\scriptsize\color{hsTextMid} \code{device\_compromised}\\until \code{device\_cleared}}};
+\node[panel=Grey, minimum width=36mm, text width=34mm] (X) at (0mm,-36mm)
+  {\textcolor{hsGrey}{\bfseries does not count}\\[1pt]{\scriptsize\color{hsTextMid} stale or replayed\\no compromise}};
+\draw[flow] ([xshift=-8mm]P2.south) |- node[flowlabel, left, pos=0.2]{too old or behind} (X.east);
+\draw[flow] ([xshift=8mm]P2.south) -- node[flowlabel, right]{integrity fails} ([xshift=8mm]P2.south |- Q.north);
+\draw[flow] (Q.east) -| (P3.south);
+\end{tikzpicture}

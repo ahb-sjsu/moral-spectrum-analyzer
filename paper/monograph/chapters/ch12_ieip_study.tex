@@ -1,0 +1,401 @@
+\chapter{The I-EIP monitor study}\label{ch:ieip}
+% src: docs/PREREG_IEIP_TWIN.md
+% src: C:\source\erisml-lib\docs\I-EIP_Monitor_Whitepaper.md
+% src: twin/ieip/analysis.py, twin/ieip/gpu_capture.py, twin/ieip/nrp.py
+
+The containment of Chapter~\ref{ch:lean} keeps the robot's language models away from authority.
+It does not make their readings of the world correct.
+The robot's classifier can still report a fall that did not happen or miss one that did.
+Such an error cannot by itself grant authority, but it can make the robot check in when it
+need not, or fail to ask when it should.
+This chapter describes a preregistered study of one way to catch such errors.
+The study asks whether a check on the classifier's hidden states predicts that its output is
+wrong.
+The study was registered on 2 October 2026, before any activation was captured, any replay
+classification was produced or the ground-truth labeller was written.
+% src: docs/PREREG_IEIP_TWIN.md:3-6
+At the time of writing its results are not available.
+Every outcome below is a slot to be filled from the graded record.
+
+\section{The question is whether internal inconsistency predicts error}
+
+The robot's classifier turns perception facts into scene events.
+Its weakness is a plausible output produced for the wrong internal reason.
+% src: docs/PREREG_IEIP_TWIN.md:10-11
+The Internal Epistemic Invariance Principle (I-EIP) gives a criterion for such failures
+\cite{bond2026ieip}.
+Let $x$ be an input, $g$ a transform that rewrites $x$ without changing its meaning, and
+$h_\ell(x)$ the model's hidden state at layer $\ell$.
+The criterion says the hidden state should change by a fixed linear map $\rho_\ell(g)$ that
+depends on the transform and the layer but not on the input.
+\begin{equation}\label{eq:ieip}
+  h_\ell(g\,x) \;\approx\; \rho_\ell(g)\, h_\ell(x).
+\end{equation}
+% src: C:\source\erisml-lib\docs\I-EIP_Monitor_Whitepaper.md:36-42
+% src: docs/PREREG_IEIP_TWIN.md:11-14
+The criterion comes from section 16 of the GUASS-SAI report \cite{bond2025guass}.
+The I-EIP Monitor whitepaper extends it from monitoring to gating.
+% src: C:\source\erisml-lib\docs\I-EIP_Monitor_Whitepaper.md:16
+The whitepaper argues that the internal form is stronger than a check on outputs.
+A model whose outputs are invariant under a rewrite but whose hidden states are not may be
+reaching the same answer by a different computation.
+% src: C:\source\erisml-lib\docs\I-EIP_Monitor_Whitepaper.md:44-50
+The whitepaper also lists what the monitor cannot detect.
+A model whose hidden states stay consistent while its goal is wrong passes the check.
+So do transforms outside the declared set.
+% src: C:\source\erisml-lib\docs\I-EIP_Monitor_Whitepaper.md:332-343
+
+The study tests two claims.
+The first is that a failure of equation~\eqref{eq:ieip}, measured on the classifier's own hidden
+states, predicts that its classification is wrong.
+The second is that it says more than a check of the outputs alone.
+% src: docs/PREREG_IEIP_TWIN.md:14-16
+
+\paragraph{The prior favours failure.}
+The preregistration states its prior before any data.
+A consumer-relative variant of this monitor, called CR-IEIP, failed all three of its sealed
+families.
+No ordering variable predicted when the monitor helped.
+A failure here is therefore the expected outcome, and it will be reported as plainly as a pass.
+% src: docs/PREREG_IEIP_TWIN.md:18-21
+
+\section{The classifier under test is the robot's on-board model}
+
+The classifier under test is Qwen2.5-7B-Instruct \cite{qwen2024qwen25} in bfloat16.
+It runs as the robot's scene classifier, with the \erisml{} compiler's
+\code{ObservationClassifier} prompt and the event vocabulary of the scene file.
+Decoding is greedy, with at most 512 new tokens.
+% src: docs/PREREG_IEIP_TWIN.md:25-27
+% src: twin/ieip/analysis.py:41,57
+This is the on-robot classifier the robot reasons with when communications are down.
+The cloud classifier exposes no activations and is not tested.
+% src: docs/PREREG_IEIP_TWIN.md:27-29
+The run uses the model revision held in Atlas's Hugging Face cache, \code{a09a354}.
+% src: docs/PREREG_IEIP_TWIN.md:205
+% src: twin/ieip/nrp.py:82-83
+
+The inputs are the perception facts of every robot decision cycle recorded in the brain's
+hash chain.
+The facts are replayed and nothing is re-simulated.
+% src: docs/PREREG_IEIP_TWIN.md:30-32
+Amendment A5 fixes the data as three development runs, \code{dev7}, \code{dev8r} and
+\code{dev9r}.
+Two earlier runs, \code{dev8} and \code{dev9}, were void.
+The brain on Atlas had run a stale library whose DEME gate raised on every request, so the
+robot never acted and those runs hold no decision cycles.
+% src: docs/PREREG_IEIP_TWIN.md:181-187
+The three results files are committed with their SHA-256 hashes, and the replay reads them only
+from that commit.
+% src: twin/ieip/inputs/SHA256SUMS
+% src: twin/ieip/nrp.py:101
+The prompt for every cycle is built by the current isolated classifier.
+For \code{dev8r} and \code{dev9r} the replayed prompt is byte-identical to the live one.
+For \code{dev7}, which ran before the scene agent was isolated, it is not.
+Replay is also history-free, since a cycle's recent events are not logged with it.
+% src: docs/PREREG_IEIP_TWIN.md:145-148
+% src: docs/PREREG_IEIP_TWIN.md:188-192
+The number of decision cycles in the three runs is \RESULT{cycles per run and in total}.
+
+\section{Five rewrites, four layers and one score per cycle}
+
+\subsection{The transforms}
+
+Each cycle's facts $x$ are rewritten by five deterministic transforms, seeded by the cycle's
+hash.
+% src: docs/PREREG_IEIP_TWIN.md:40-41
+\begin{description}
+  \item[$g_0$, the null transform.] The same JSON with different whitespace and indentation.
+  It changes tokens but not meaning and sets the noise floor.
+  \item[$g_1$.] Every object's keys in a different order.
+  \item[$g_2$.] Distances in centimetres instead of metres.
+  \item[$g_3$.] The clock time in twelve-hour form.
+  \item[$g_4$.] Fixed synonyms for the simulator's activity and behaviour labels, from a table
+  committed before any replay.
+  A label not in the table is left as it is.
+\end{description}
+% src: docs/PREREG_IEIP_TWIN.md:43-50
+% src: twin/ieip/analysis.py:60-77 (SYNONYMS)
+% src: twin/ieip/analysis.py:91-140 (g0 to g4)
+The synonym table maps, for example, \code{sleep} to \code{asleep} and \code{reading} to
+\code{reading a book}.
+% src: twin/ieip/analysis.py:61,70
+Each cycle thus yields six prompts, the original and its five rewrites.
+% src: twin/ieip/analysis.py:143-150 (transformed returns x and the five rewrites)
+Figure~\ref{fig:ieip-transforms} shows the five rewrites.
+
+\begin{figure}[t]
+  \centering
+  \input{figures/ch12_transforms}
+  \caption{The five rewrites applied to the perception facts of each decision cycle. Each keeps
+  the meaning of the facts and changes their tokens. The null rewrite changes only whitespace and
+  sets the noise floor.}
+  \label{fig:ieip-transforms}
+\end{figure}
+
+\subsection{The representation and the error}
+
+The representation is the hidden state of the last prompt token at four layers.
+They sit at 25, 50, 75 and 90 percent of the model's depth, rounded down.
+% src: docs/PREREG_IEIP_TWIN.md:54-55
+% src: twin/ieip/gpu_capture.py:37-39
+Amendment A2 projects each layer's states onto the top 32 principal components of the
+calibration half's untransformed states before anything else is fitted.
+The model's hidden states have 3584 dimensions and the calibration half has a few hundred
+cycles, so a full map would be badly underdetermined.
+% src: docs/PREREG_IEIP_TWIN.md:132-136
+% src: twin/ieip/analysis.py:44 (PCA_K = 32)
+On the projected states the map $\rho_\ell(g)$ is fitted by regularized least squares on the
+calibration half and then frozen.
+% src: docs/PREREG_IEIP_TWIN.md:56-57
+% src: C:\source\erisml-lib\src\erisml\ieip\rho.py:73-95 (estimate_rho)
+The whitepaper writes the estimate as follows, with $X$ and $Y$ the stacked states of the
+original and rewritten inputs and $\lambda > 0$ a ridge coefficient.
+\begin{equation}
+  \hat\rho_\ell(g) \;=\; Y X^{\top} \bigl( X X^{\top} + \lambda I \bigr)^{-1}.
+\end{equation}
+% src: C:\source\erisml-lib\docs\I-EIP_Monitor_Whitepaper.md:187-189
+The error of cycle $x$ under transform $g$ at layer $\ell$ is the relative residual.
+\begin{equation}
+  e(x, g, \ell) \;=\; \frac{\bigl\lVert h_\ell(g\,x) - \hat\rho_\ell(g)\, h_\ell(x) \bigr\rVert}
+  {\lVert h_\ell(x) \rVert}.
+\end{equation}
+% src: docs/PREREG_IEIP_TWIN.md:58
+% src: docs/PREREG_IEIP_TWIN.md:137-139
+% src: twin/ieip/analysis.py:367-369
+
+\subsection{The score and the flag}
+
+Errors are measured in units of their own noise.
+For each transform $g$ and layer $\ell$, let $m_{g,\ell}$ be the median of $e(\cdot, g, \ell)$
+on the calibration half and $s_{g,\ell}$ its median absolute deviation.
+The score of a cycle is its largest standardized error over the four real rewrites and the
+four layers.
+\begin{equation}
+  z(x) \;=\; \max_{g \in \{g_1, \dots, g_4\}} \; \max_{\ell} \;
+  \frac{e(x, g, \ell) - m_{g,\ell}}{s_{g,\ell}}.
+\end{equation}
+A cycle is flagged when $z(x) > 3$.
+% src: docs/PREREG_IEIP_TWIN.md:156-162 (amendment A3)
+% src: twin/ieip/analysis.py:45 (FLAG_Z = 3.0)
+% src: twin/ieip/analysis.py:371-384
+The registration first measured every transform against the null transform's noise.
+A dry run on synthetic states showed that any real rewrite leaves a residual above the null
+floor, so every cycle flagged.
+Amendment A3 replaced it with each transform's own noise.
+The null transform's score is still reported per cycle as a sanity check.
+% src: docs/PREREG_IEIP_TWIN.md:154-162
+Figure~\ref{fig:ieip-scoring} shows the path from hidden states to the registered tests.
+
+\begin{figure}[t]
+  \centering
+  \input{figures/ch12_scoring}
+  \caption{From hidden states to the registered tests. The projection, the maps and the noise
+  units are fitted on the calibration half only and then frozen. The test half is scored with
+  them and is the only data the hypotheses see.}
+  \label{fig:ieip-scoring}
+\end{figure}
+
+\subsection{Output invariance and ground truth}
+
+A cycle is output-invariant when the classifier's event set is the same on $x$ and on all five
+rewrites.
+% src: docs/PREREG_IEIP_TWIN.md:63-64
+% src: twin/ieip/analysis.py:388
+Ground truth comes from a labelling function on the world state the cycle's facts record.
+It labels the event types the world settles unambiguously.
+They are falls, harm and its severity band, attacks by animals and by people, smoke, unexpected
+visitors, media content and unresponsiveness.
+% src: docs/PREREG_IEIP_TWIN.md:65-69
+Amendment A1 dropped the two check-in types, which are system events the classifier can never
+emit.
+It also allowed a label to be unsettled, in which case the cycle is excluded for that type.
+% src: docs/PREREG_IEIP_TWIN.md:116-127
+A classification is an error when the classifier's events, restricted to the labelled types,
+contain a false event or miss a true one.
+% src: docs/PREREG_IEIP_TWIN.md:70-71
+
+\section{Three hypotheses on a split fixed by scenario}
+
+\subsection{The split}
+
+Cycles are split by scenario, so no scenario contributes to both halves.
+Odd-numbered development scenarios calibrate and even-numbered ones test.
+% src: docs/PREREG_IEIP_TWIN.md:75-77
+% src: twin/ieip/analysis.py:50-52 (in_calibration)
+The registration first sent every later scenario to the test half.
+Amendment A4 continued the parity rule instead.
+The first run produced 26 decision cycles over 21 scenarios, too few for the test half to reach
+its floor.
+Eight longer scenarios were added, and under the first rule the calibration half would have had
+fewer cycles than the 32 components of the projection.
+The assignment is fixed by scenario number, before any run of the new scenarios.
+% src: docs/PREREG_IEIP_TWIN.md:166-176
+
+\subsection{The hypotheses}
+
+All tests are on the test half and one-sided.
+Each uses a cluster bootstrap over scenarios, the unit the covariates live on, with 10{,}000
+resamples and seed 20261002.
+% src: docs/PREREG_IEIP_TWIN.md:81-82
+% src: twin/ieip/analysis.py:46-47
+The one-sided 95 percent lower bound is the 5th percentile of the bootstrap distribution.
+% src: docs/PREREG_IEIP_TWIN.md:149-150
+% src: twin/ieip/analysis.py:390-433 (_bootstrap_diff)
+Let $\Delta$ be the error rate among flagged cycles minus the error rate among unflagged cycles.
+\begin{description}
+  \item[H1, detection.] On the test half $\Delta > 0$.
+  It passes if the lower bound of $\Delta$ is above zero.
+  \item[H2, beyond the outputs.] The same difference and rule, among output-invariant cycles
+  only.
+  This is the claim that the internal check sees what an output check does not.
+  \item[H3, gating end to end.] Run only if H1 passes.
+  The on-board classifier runs live with gating, so a flagged cycle steps no classified events
+  and the robot checks in instead.
+  A sealed, unread scenario set is run twice, gating off and on, with everything else frozen at
+  one commit.
+  It passes if, with gating on, false clears are no more frequent, over-restriction is no more
+  frequent and class-correct is at most one scenario lower.
+\end{description}
+% src: docs/PREREG_IEIP_TWIN.md:84-92
+
+\subsection{The inconclusive rule}
+
+A hypothesis is graded inconclusive, not pass or fail, when its test cycles number fewer than
+50, its errors fewer than 5 or its flagged cycles fewer than 5.
+% src: docs/PREREG_IEIP_TWIN.md:94-96
+% src: twin/ieip/analysis.py:55 (MIN_CYCLES, MIN_ERRORS, MIN_FLAGGED)
+Amendment A3 adds that a test half with no flagged or no unflagged cycles leaves $\Delta$
+undefined, which is also inconclusive.
+% src: docs/PREREG_IEIP_TWIN.md:163-164
+% src: twin/ieip/analysis.py:418-425
+Whatever the outcome, the report gives the base error rate, the flag rate, the count in each
+cell, the interval for each hypothesis, the per-transform and per-layer error distributions and
+every flagged cycle with its scenario.
+It also reports the whitepaper's named failure modes, \code{group\_symmetry\_break} and
+\code{layerwise\_drift}, where they apply.
+% src: docs/PREREG_IEIP_TWIN.md:100-102
+
+\section{The capture ran on NRP A10 GPUs with weights on parallel volumes}
+
+The analysis has three stages.
+Prompts are built on a CPU.
+GPU shards capture hidden states and generate classifications.
+The shards are then merged and graded on a CPU.
+% src: twin/ieip/analysis.py:2-17
+% src: docs/PREREG_IEIP_TWIN.md:193-202
+
+The prompts are built twice from the same commit, once on the National Research Platform's
+Nautilus cluster and once on Atlas.
+They must match byte for byte, by SHA-256, before any GPU job is sent.
+% src: docs/PREREG_IEIP_TWIN.md:194-195
+Each GPU shard loads the model once.
+The compiler's \code{HuggingFaceActivationSource} wraps the loaded model's base, so the hidden
+states are captured with the same hooks and forward pass without a second copy of the weights.
+The classification is then generated greedily from the same text in a second pass.
+% src: twin/ieip/gpu_capture.py:5-17
+% src: docs/PREREG_IEIP_TWIN.md:196-200
+The capture reads up to 8192 prompt tokens, since the library's default of 512 would cut the
+facts out of the prompt.
+% src: twin/ieip/analysis.py:56
+% src: docs/PREREG_IEIP_TWIN.md:140-144
+The states are stored as their exact bfloat16 bit patterns, and this exactness is checked.
+A shard's outputs are written under temporary names and renamed last, so a shard is either
+complete or absent.
+% src: twin/ieip/gpu_capture.py:11-16
+% src: docs/PREREG_IEIP_TWIN.md:204
+
+The GPUs are NVIDIA A10s in the UNL zone of the cluster.
+% src: twin/ieip/nrp.py:53-54
+The weights first sat on a shared CephFS volume, which pods read at 14.9 MB/s on one stream and
+38.3 MB/s on three.
+Each A10 would have idled for about seven minutes while loading, which the cluster's rules
+forbid.
+% src: docs/PREREG_IEIP_TWIN.md:211-214
+% src: twin/ieip/nrp.py:13-16
+Four linstor block volumes read in parallel gave 578.5 MB/s, against 149.2 MB/s for one.
+Each GPU pod therefore mounts its own set of four volumes, holding one weight file each, and
+loads the four files in parallel.
+Volume 0 also holds the environment, the code, the prompts and that pod's outputs.
+% src: docs/PREREG_IEIP_TWIN.md:215-219
+% src: twin/ieip/nrp.py:64-66 (LIN_CLASS, SETS, WEIGHT_FILES)
+The weights are the same files from the same revision, verified file by file against the
+hashes of Atlas's cache.
+% src: docs/PREREG_IEIP_TWIN.md:205-206
+Amendment A6 records that this changes only where bytes are read from.
+% src: docs/PREREG_IEIP_TWIN.md:220-221
+Figure~\ref{fig:ieip-nrp} shows the steps of the capture and the volumes of one GPU pod.
+
+\begin{figure}[t]
+  \centering
+  \input{figures/ch12_nrp_capture}
+  \caption{The capture on the Nautilus cluster. CPU jobs stage the weights and build the
+  prompts, A10 pods capture states and replies, and the outputs return to Atlas for grading.
+  Each pod reads its weights from its own four block volumes in parallel, so the GPU does not
+  wait idle on a slow shared volume.}
+  \label{fig:ieip-nrp}
+\end{figure}
+
+The submitter scores each job against the cluster's rules in code rather than by recall.
+CPU jobs use one core and 2 GiB.
+A GPU job installs and downloads nothing, since CPU jobs stage everything first.
+A pilot shard is sized by a stated model, and later shards by the pilot's measured usage.
+Requests equal limits, every command is bounded by a timeout and at most four GPU pods run at
+once.
+% src: twin/ieip/nrp.py:21-33
+% src: twin/ieip/nrp.py:107-113
+The pilot's measured load time is \RESULT{load time from the first GPU pod's log}.
+% src: docs/PREREG_IEIP_TWIN.md:221-223
+
+\section{Results}
+
+No result is available at the time of writing.
+The committed script will write the graded record to the repository file
+\code{docs/RESULTS\_IEIP\_TWIN.md}.
+% src: docs/PREREG_IEIP_TWIN.md:111
+The slots below follow the list the preregistration requires.
+% src: docs/PREREG_IEIP_TWIN.md:100-102
+
+\begin{table}[ht]
+  \centering
+  \small
+  \begin{tabular}{ll}
+    \hline
+    Quantity & Value \\
+    \hline
+    Test cycles, errors, flagged cycles & \RESULT{counts} \\
+    Base error rate on the test half & \RESULT{rate} \\
+    Flag rate on the test half & \RESULT{rate} \\
+    H1 difference and one-sided lower bound & \RESULT{H1 interval} \\
+    H1 grade & \RESULT{pass, fail or inconclusive} \\
+    Output-invariant test cycles & \RESULT{count} \\
+    H2 difference and one-sided lower bound & \RESULT{H2 interval} \\
+    H2 grade & \RESULT{pass, fail or inconclusive} \\
+    H3 & \RESULT{run only if H1 passes} \\
+    \hline
+  \end{tabular}
+  \caption{Registered outcomes of the I-EIP study. Every entry awaits the graded record.}
+  \label{tab:ieip-results}
+\end{table}
+
+\RESULT{per-transform and per-layer error distributions}
+
+\RESULT{flagged cycles with their scenarios, and the null transform's score per cycle}
+
+\RESULT{named failure modes group\_symmetry\_break and layerwise\_drift, where they apply}
+
+\section{What a pass or a failure would mean}
+
+A pass on H1 would show that the internal check carries information about the classifier's
+errors on this robot's inputs.
+A pass on H2 would show that it carries information an output check does not.
+Neither would change what is proved in Chapter~\ref{ch:lean}.
+The containment does not depend on the classifier being right.
+A gate built on the monitor would act only by withholding classified events, which can make the
+robot ask more often but cannot grant it anything.
+That is why H3 measures false clears and over-restriction together.
+
+A failure would agree with the stated prior.
+It would add another negative result for this family of monitors, on a different model and
+task from the sealed families of CR-IEIP.
+
+\RESULT{interpretation after grading}

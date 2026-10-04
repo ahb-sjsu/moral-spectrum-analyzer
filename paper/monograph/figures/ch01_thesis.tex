@@ -1,0 +1,32 @@
+% Chapter 1 thesis figure: what models may do, and where authority comes from.
+\begin{tikzpicture}[house, node distance=5mm and 7mm]
+% left column: what models do
+\node[panel=Blue, minimum width=52mm, minimum height=58mm] (mdl) {};
+\node[stepname=Blue, anchor=north] at ($(mdl.north)+(0,-2mm)$) {Language models};
+\node[desc, anchor=north, text width=46mm] at ($(mdl.north)+(0,-7mm)$) {read the world and choose};
+\node[step=Blue] (m1) at ($(mdl.north west)+(7mm,-19mm)$) {1};
+\node[detail, right=2mm of m1, text width=36mm] (d1) {turn facts into events of the home model};
+\node[step=Blue] (m2) at ($(m1)+(0,-12mm)$) {2};
+\node[detail, right=2mm of m2, text width=36mm] (d2) {pick one action from the allowed set};
+\node[step=Blue] (m3) at ($(m2)+(0,-12mm)$) {3};
+\node[detail, right=2mm of m3, text width=36mm] (d3) {speak for the centre, the dispatcher and Margaret};
+% right column: what grants
+\node[panel=Red, minimum width=52mm, minimum height=58mm, right=24mm of mdl] (auth) {};
+\node[stepname=Red, anchor=north] at ($(auth.north)+(0,-2mm)$) {Structure};
+\node[desc, anchor=north, text width=46mm] at ($(auth.north)+(0,-7mm)$) {grants authority};
+\node[step=Red] (a1) at ($(auth.north west)+(7mm,-19mm)$) {1};
+\node[detail, right=2mm of a1, text width=36mm] {signed readings from independent physical sensors};
+\node[step=Red] (a2) at ($(a1)+(0,-12mm)$) {2};
+\node[detail, right=2mm of a2, text width=36mm] {messages on authenticated channels};
+\node[step=Red] (a3) at ($(a2)+(0,-12mm)$) {3};
+\node[detail, right=2mm of a3, text width=36mm] {the governor's ruling on those witnesses};
+% the wall between them
+\draw[hsGreyLine, line width=2.4pt, dash pattern=on 5pt off 3pt]
+  ($(mdl.north east)!0.5!(auth.north west)+(0,2mm)$) -- ($(mdl.south east)!0.5!(auth.south west)+(0,-2mm)$);
+\node[flowlabel, fill=white, align=center] at ($(mdl.east)!0.5!(auth.west)$) {no path\\from left\\to right};
+% below: the action
+\node[panel=Green, below=9mm of $(mdl.south)!0.5!(auth.south)$, minimum width=80mm] (act)
+  {\textcolor{hsGreen}{\textbf{An action with authority}}\\[1pt]{\scriptsize call emergency services, restrain, open the door, override her privacy}};
+\draw[untrusted] ($(mdl.south)+(-8mm,0)$) |- node[flowlabel, pos=0.25, left]{proposes} (act.west);
+\draw[grant] ($(auth.south)+(8mm,0)$) |- node[flowlabel, pos=0.25, right]{permits} (act.east);
+\end{tikzpicture}

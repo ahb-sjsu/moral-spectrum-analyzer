@@ -1,0 +1,47 @@
+% Chapter 6. The twin's output gate: where the facts come from and the four outcomes, in the order
+% OutputGate.check tests them.
+% src: gtc-prototype twin/output_gate.py:98-168 (facts), 179-250 (check)
+% src: gtc-prototype twin/brain.py:319-321, 623 (the chooser's proposal reaches the gate)
+\begin{tikzpicture}[house,
+  gbox/.style={minimum width=31mm, minimum height=14mm},
+  res/.style={minimum width=33mm, minimum height=32mm},
+  dtl/.style={detail, text width=30mm, anchor=south}]
+\node[panel=Grey, gbox] (cls) at (0,0) {};
+\node[stepname=Grey] at ([yshift=2.2mm]cls.center) {Classifier (model)};
+\node[desc] at ([yshift=-2.5mm]cls.center) {proposes events};
+\node[panel=Blue, gbox] (st) at (0,-20mm) {};
+\node[stepname=Blue] at ([yshift=2.2mm]st.center) {Canonical state};
+\node[desc] at ([yshift=-2.5mm]st.center) {norms, machines, events};
+\node[panel=Purple, gbox] (sc) at (0,-40mm) {};
+\node[stepname=Purple] at ([yshift=2.2mm]sc.center) {Scene profiles};
+\node[desc] at ([yshift=-2.5mm]sc.center) {capability\_ethics, refusals};
+\node[panel=Grey, gbox] (ch) at (42mm,0) {};
+\node[stepname=Grey] at ([yshift=2.2mm]ch.center) {Chooser (model)};
+\node[desc] at ([yshift=-2.5mm]ch.center) {one allowed action};
+\node[panel=Green, gbox] (f) at (42mm,-30mm) {};
+\node[stepname=Green] at ([yshift=2.2mm]f.center) {EthicalFacts};
+\node[desc] at ([yshift=-2.5mm]f.center) {one per allowed action};
+\node[panel=Teal, gbox, minimum width=38mm, minimum height=30mm] (d) at (90mm,-15mm) {};
+\node[stepname=Teal] at ([yshift=10mm]d.center) {DEMEPipeline};
+\node[desc, text width=36mm] at ([yshift=-3mm]d.center) {GenevaEMV2 tier 0\\AutonomyConsentEMV2 tier 2\\TragicConflictEM tier 3\\fail\_closed};
+\draw[untrusted] (cls) -- node[flowlabel, right]{accepted events} (st);
+\draw[flow] (st.east) -- (f.west);
+\draw[flow] (sc.east) -- (f.west);
+\draw[untrusted] (ch.east) -- node[flowlabel, above]{proposal} (ch.east -| d.west);
+\draw[flow] (f.east) -- (f.east -| d.west);
+% outcomes
+\foreach \c/\x/\n/\t/\b in {
+  Red/0/1/DEME raised/{every option vetoed\\wait\_and\_observe\\gate\_error kept},
+  Amber/36/2/Tragic and deliberate/{contact the\\monitoring centre\\with the triggers},
+  Orange/72/3/Forbidden or not allowed/{best ranked allowed\\action, else\\wait\_and\_observe},
+  Green/108/4/Otherwise/{the proposal\\passes unchanged}}{
+  \node[panel=\c, res] (o\n) at (\x mm,-74mm) {};
+  \node[step=\c, minimum size=5.5mm] at ([yshift=-4.5mm]o\n.north) {\n};
+  \node[stepname=\c, text width=31mm, align=center] at ([yshift=-12mm]o\n.north) {\t};
+  \node[dtl] at ([yshift=1.5mm]o\n.south) {\b};
+}
+\draw[draw=hsFlow, line width=1.6pt] (d.south) -- (d.south |- 0,-51mm);
+\draw[draw=hsFlow, line width=1.6pt] (o1.north |- 0,-51mm) -- (o4.north |- 0,-51mm);
+\foreach \n in {1,...,4}{\draw[flow] (o\n.north |- 0,-51mm) -- (o\n.north);}
+\node[flowlabel, anchor=south west] at (d.south |- 0,-51mm) {tested in this order};
+\end{tikzpicture}

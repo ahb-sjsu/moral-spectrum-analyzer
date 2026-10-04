@@ -1,0 +1,83 @@
+\chapter{Limits and Open Problems}
+\label{ch:limits}
+% src: formal/twin-containment/README.md (not covered); docs/AUTONOMY_PLAN.md section 6;
+% docs/STRATA_TAXONOMY.md; paper/aies2027/kit/CALIBRATION.md; owner decisions of 2026-10-04.
+
+The structure keeps a misreading from becoming permission. It does not keep the robot from
+misreading, and in our runs the misreadings were common. This chapter states what the results rest
+on, what the proofs leave out and which choices in the home model belong to people rather than to
+engineering.
+
+\section{What the results rest on}
+
+The evaluation uses one simulated home, one set of rules that we wrote and scenarios that we wrote
+or that a separate agent wrote from our protocol. The simulated world reports itself truthfully to
+the robot's perception. A camera that misses Margaret on the floor, a microphone that mishears her
+or a vision model that invents a person would add failures this evaluation cannot show. The
+held-out set is blind by procedure. A separate agent wrote it and only its hashes were committed
+before the system was frozen, but no third party wrote or kept it.
+
+The development runs before the harness fix measured the test harness as much as the robot. In
+those runs 44 of the 63 check-ins recorded as unanswered followed an answer Margaret had given. The
+class accuracy of every run before that fix is confounded, including some of its successes, since a
+lost answer also pushed real emergencies up the ladder. The containment and privacy results of
+those runs are not confounded, because they judge the robot's own actions against the rulings it
+had.
+
+One harness defect is still open. The runner opens each scenario's window by counting the robot's
+records once the world is reset, and a decision that lands in between falls outside the window. In
+dev13 that happened once, in d36, and the grader flagged an authorized emergency call as a breach.
+A grader that reads the decision service's ledger, rather than the runner's window, would not
+miss it. Until that change, a flagged breach is checked by hand against the ledger.
+
+\section{What the proofs leave out}
+
+The Lean model treats every model output as arbitrary and proves that none reaches authority. It
+says nothing about sensors that lie below their signatures. A device whose key is stolen, or a
+physical event staged in front of two working sensors, produces valid witnesses. It says nothing
+about who writes the home model and its bars, and a careless author can make any action
+unguarded. Two learned models reach authority, and the proofs cover neither. The monitoring centre
+reads Margaret's own words with a model, so a misread request for help can send emergency services.
+The robot's own messages cannot reach that decision, but hers can. The camera's person detector is a
+learned vision model whose output is one witness. A detector that sees a fall that did not happen
+adds a false witness, and when the centre cannot be reached that one witness is enough to call
+emergency services. In the twin the decision service attests the detector's output itself and does
+not check that signature, so the camera witness is as trustworthy as the service that runs it. Static tests tie the model to the
+code by requiring the real home model to have the model's shape. They do not prove that the Python
+implements the model.
+
+\section{Choices that belong to people}
+
+Several rules in the home model are policy, and the owner set them on 2026-10-04 after the
+development runs. The robot never lifts a person who has fallen, except to move her away from a
+danger in the home, because a hidden injury can be made worse. The dispatcher sends police only on
+stated facts of a crime, such as an assault, a forced entry, a demand for her money or a theft,
+and never for a stranger merely present. The robot is a mandatory reporter. An articulable
+suspicion of a crime against Margaret obliges it to report to the monitoring centre before
+anything else, and no refusal of hers waives the report. Each choice trades her autonomy against
+her safety or against a third party's interest, and people who deploy such a robot should make
+them deliberately.
+
+Two thresholds are of the same kind. Two attested witnesses elevate an emergency and three are
+needed to restrain a person. A minute below the bar ends a right. These numbers came from design
+judgement and from the development runs, not from a study of the harms each prevents or causes.
+
+\section{Open problems}
+
+The world can change between a decision and the act, as when an animal leaves or responders enter.
+Every graded run in Chapter~\ref{ch:evaluation} judged an action at the record that chose it, so
+those runs show permission at the decision, not at the act. The robot now checks again at the act
+(Section~\ref{sec:home-act}). That check is built and tested but was not in any graded run, and the
+held-out run will be the first to measure it. It closes the gap inside the robot, where one ledger
+orders every event. When the monitoring centre and the dispatcher keep ledgers of their own,
+ordering their events against the robot's will need vector clocks or a similar causal order.
+
+The other kinds of machine that can enter a home, a peer robot, a delivery drone or an unknown
+robot, currently pass through the visitor rules and the network-message rules. A household with
+several robots needs strata of its own for them.
+
+Finally, the preregistered study of an internal monitor for the robot's classifier
+(Chapter~\ref{ch:ieip}) asks whether a failure of representation equivariance in the classifier's
+hidden states predicts its classification errors. If it does, the robot could check in rather than
+act on a reading its own classifier is unsure of. The preregistration states its prior that the
+monitor will fail, as its consumer-relative variant did, and the outcome is reported either way.

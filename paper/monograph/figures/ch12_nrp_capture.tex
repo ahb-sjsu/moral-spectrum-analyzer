@@ -1,0 +1,52 @@
+% Chapter 12. The capture on NRP Nautilus and the layout of a GPU pod's volumes.
+% src: twin/ieip/nrp.py:1-33 (steps, layout, rules), 53-66, 101, 107-113
+% src: docs/PREREG_IEIP_TWIN.md:193-223 (A5, A6)
+% src: twin/ieip/gpu_capture.py:1-17
+\begin{tikzpicture}[house,
+  p/.style={minimum width=23mm, minimum height=50mm, text width=21mm, anchor=north},
+  d/.style={detail, text width=19mm},
+  vol/.style={detail, text width=26mm, minimum height=14mm, draw=hsGreenLine, line width=0.6pt}]
+\foreach \i/\col/\x in {1/Purple/0, 2/Grey/25.5, 3/Blue/51, 4/Green/76.5, 5/Teal/102, 6/Orange/127.5}{
+  \node[panel=\col, p] (P\i) at (\x mm,0) {};
+  \node[step=\col] at ([yshift=-5mm]P\i.north) {\i};
+}
+\node[stepname=Purple, below=10mm of P1.north] (n1) {Inputs};
+\node[desc, below=0mm of n1, text width=21mm] (e1) {three runs};
+\node[d, below=1.5mm of e1] {dev7, dev8r\\dev9r\\committed with\\SHA-256};
+
+\node[stepname=Grey, below=10mm of P2.north] (n2) {Stage};
+\node[desc, below=0mm of n2, text width=21mm] (e2) {CPU jobs};
+\node[d, below=1.5mm of e2] {env, code and\\weights verified\\file by file\\onto each set};
+
+\node[stepname=Blue, below=10mm of P3.north] (n3) {Prepare};
+\node[desc, below=0mm of n3, text width=21mm] (e3) {CPU, twice};
+\node[d, below=1.5mm of e3] {on NRP and on\\Atlas, prompts\\must match by\\SHA-256};
+
+\node[stepname=Green, below=10mm of P4.north] (n4) {Capture};
+\node[desc, below=0mm of n4, text width=21mm] (e4) {A10 GPUs at UNL};
+\node[d, below=1.5mm of e4] {pilot, then\\shards, at most\\four pods\\states, then reply};
+
+\node[stepname=Teal, below=10mm of P5.north] (n5) {Collect};
+\node[desc, below=0mm of n5, text width=21mm] (e5) {fetch to Atlas};
+\node[d, below=1.5mm of e5] {every prompt\\exactly once\\exact bf16\\bit patterns};
+
+\node[stepname=Orange, below=10mm of P6.north] (n6) {Grade};
+\node[desc, below=0mm of n6, text width=21mm] (e6) {committed script};
+\node[d, below=1.5mm of e6] {H1, H2\\written to\\\code{RESULTS\_}\\\code{IEIP\_TWIN.md}};
+
+\foreach \a/\b in {1/2, 2/3, 3/4, 4/5, 5/6}{
+  \draw[flow] ([yshift=-21mm]P\a.north east) -- ([yshift=-21mm]P\b.north west);
+}
+
+% one GPU pod and its own set of four linstor volumes
+\node[vol] (v0) at (16mm,-74mm) {volume 0\\weight file 1\\env, code, prompts\\outputs};
+\node[vol, right=4mm of v0] (v1) {volume 1\\weight file 2};
+\node[vol, right=4mm of v1] (v2) {volume 2\\weight file 3};
+\node[vol, right=4mm of v2] (v3) {volume 3\\weight file 4};
+\node[panel=Green, text width=40mm] (pod) at ($(v1.south)!0.5!(v2.south)+(0,-14mm)$) {\textbf{GPU pod}\quad one A10\\loads the four files in parallel};
+\foreach \v in {v0,v1,v2,v3}{ \draw[flow] (\v.south) -- (pod.north); }
+\begin{scope}[on background layer]
+  \node[panel=Grey, fit=(v0)(v3)(pod), inner sep=3mm,
+        label={[stepname=Grey, anchor=south west]north west:One set of four linstor volumes per pod (A6)}] (set) {};
+\end{scope}
+\end{tikzpicture}

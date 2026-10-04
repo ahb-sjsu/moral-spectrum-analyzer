@@ -1,0 +1,52 @@
+% Chapter 7. The three moral state machines, with the transitions their tables define.
+% The red edge is the transition that lifts a promise's prohibitions. Dashed edges are in the
+% machine's table but the scene runtime never sends their event tag. Double-bordered states are
+% absorbing.
+% src: erisml-compiler src/erisml_compiler/fsm/commitment_fsm.py:37-71
+% src: erisml-compiler src/erisml_compiler/fsm/consent_fsm.py:18-21, 30-37
+% src: erisml-compiler src/erisml_compiler/fsm/legitimacy_fsm.py:33-52, 67-74
+% src: erisml-compiler src/erisml_compiler/runtime/scene.py:48-66, 214-230 (which tags the runtime sends)
+\begin{tikzpicture}[house, lbl/.style={font=\sffamily\tiny, text=hsTextMid}, e/.style={->, draw=hsGreyLine, line width=0.9pt}]
+% ---------------- commitment
+\node[panel=Green, minimum width=158mm, minimum height=37mm, anchor=north west] (pc) at (0,0) {};
+\node[stepname=Green, anchor=north west] at ([shift={(2mm,-1.5mm)}]pc.north west) {Commitment};
+\node[stratum] (act) at (26mm,-14mm) {active};
+\node[stratum, text width=20mm, align=center] (abd) at (76mm,-14mm) {active but\\defeasible};
+\node[absorbing] (ful) at (132mm,-8mm) {fulfilled};
+\node[absorbing] (vio) at (132mm,-19mm) {violated};
+\node[absorbing] (exp) at (132mm,-30mm) {expired};
+\node[absorbing] (voi) at (26mm,-30mm) {void};
+\node[absorbing] (def) at (76mm,-30mm) {defeated};
+\draw[grant] (act.north east) to[bend left=14] node[lbl, above]{condition triggered} (abd.north west);
+\draw[e] (abd.west) -- node[lbl, below]{resolved in favour} (act.east);
+\draw[e] (abd.east) -- (ful.west);
+\draw[e] (abd.east) -- (vio.west);
+\draw[e] (abd.east) -- (exp.west);
+\draw[e, dashed] (act) -- node[lbl, left]{legitimacy collapses} (voi);
+\draw[e, dashed] (abd) -- node[lbl, right]{overrides} (def);
+\node[lbl, align=center] at (104mm,-35mm) {fulfilling, violating, expiration, from either live state};
+% ---------------- consent
+\node[panel=Purple, minimum width=76mm, minimum height=30mm, anchor=north west] (pk) at (0,-40mm) {};
+\node[stepname=Purple, anchor=north west] at ([shift={(2mm,-1.5mm)}]pk.north west) {Consent};
+\node[stratum, minimum width=14mm] (no) at (13mm,-57mm) {not obtained};
+\node[stratum, minimum width=14mm] (ob) at (41mm,-50mm) {obtained};
+\node[absorbing, minimum width=12mm] (co) at (41mm,-64mm) {coerced};
+\node[absorbing, minimum width=12mm] (wd) at (65mm,-50mm) {withdrawn};
+\draw[e] (no) -- node[lbl, above left]{given} (ob);
+\draw[e] (no) -- node[lbl, below left]{coerced assent} (co);
+\draw[e] (ob) -- node[lbl, above]{withdrawn} (wd);
+\draw[e, dashed] (ob) -- node[lbl, right]{revisit} (co);
+% ---------------- legitimacy
+\node[panel=Blue, minimum width=79mm, minimum height=30mm, anchor=north west] (pl) at (79mm,-40mm) {};
+\node[stepname=Blue, anchor=north west] at ([shift={(2mm,-1.5mm)}]pl.north west) {Legitimacy};
+\node[stratum, minimum width=12mm] (fl) at (94mm,-57mm) {legitimate};
+\node[stratum, minimum width=12mm] (df) at (114mm,-49mm) {defeasible};
+\node[stratum, minimum width=12mm] (cr) at (132mm,-57mm) {coercive};
+\node[stratum, minimum width=12mm] (fr) at (114mm,-65mm) {fraudulent};
+\node[stratum, minimum width=12mm] (ty) at (149mm,-49mm) {tyrannical};
+\node[absorbing, minimum width=10mm] (vd) at (149mm,-65mm) {void};
+\draw[e] (fl) -- (df); \draw[e] (df) -- (cr); \draw[e] (fl) -- (cr);
+\draw[e] (fl) -- (fr); \draw[e] (df) -- (fr);
+\draw[e] (cr) -- (ty); \draw[e] (cr) -- (vd); \draw[e] (ty) -- (vd); \draw[e] (fr) -- (vd);
+\draw[e] (df.west) to[bend right=25] node[lbl, above left]{restored} (fl.north);
+\end{tikzpicture}

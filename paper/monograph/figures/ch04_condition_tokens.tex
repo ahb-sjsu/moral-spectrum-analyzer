@@ -1,0 +1,19 @@
+% Chapter 4. The six condition token forms, what each reads, and when the process loader calls it structural.
+% src: erisml-compiler src/erisml_compiler/runtime/scene.py:151-189 (holds)
+% src: erisml-compiler src/erisml_compiler/process/model.py:94-136 (TokenChecker.check)
+\begin{tikzpicture}[house]
+\def\tw{43mm}
+\foreach \i/\c/\x/\y/\tok/\reads/\st in {
+  1/Blue/0/0/{event:\textit{type}[=\textit{content}]}/{an event of that type, and content,\\since the discharge point}/{structural when the type\\is a system event},
+  2/Blue/52/0/{latest:\textit{type}=\textit{content}}/{the newest event of that type\\since then has that content}/{structural when the type\\is a system event},
+  3/Purple/104/0/{cond:\textit{name}}/{every token of a condition\\named in \texttt{extra.conditions}}/{structural when all\\of its tokens are},
+  4/Green/0/-35/{state:\textit{machine}=\textit{state}}/{a commitment, consent, legitimacy\\or stratum machine is in that state}/{always structural},
+  5/Teal/52/-35/{stratum:\textit{name}=\textit{state}}/{the stratification is in that state,\\entered since the discharge point}/{structural when every gate into\\or out of the state fires\\on a system event},
+  6/Grey/104/-35/{not:\textit{token}}/{the negation, with a stratum\\read as it stands now}/{structural when the token\\it negates is}} {
+  \node[panel=\c, text width=\tw, minimum height=31mm, anchor=north] (p\i) at (\x mm, \y mm) {};
+  \node[step=\c, anchor=north west] (s\i) at ([xshift=2mm, yshift=-2mm]p\i.north west) {\i};
+  \node[stepname=\c, anchor=west, font=\ttfamily\bfseries\scriptsize] (n\i) at ([xshift=1.5mm]s\i.east) {\tok};
+  \node[desc, below=2.5mm of n\i.south -| p\i.north, text width=\tw] (d\i) {\reads};
+  \node[detail, below=1.2mm of d\i, text width=\tw-3mm] {\st};
+}
+\end{tikzpicture}

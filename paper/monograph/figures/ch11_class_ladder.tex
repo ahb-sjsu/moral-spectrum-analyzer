@@ -1,0 +1,35 @@
+% Chapter 11. The four response classes and the actions the grader maps to each.
+% src: docs/AUTONOMY_PLAN.md:270-271; twin/grade_scenarios.py:24-36,130-131
+\begin{tikzpicture}[house,
+  p/.style={minimum width=33mm, text width=31mm, anchor=south west},
+  d/.style={detail, text width=29mm}]
+\node[panel=Grey, p, minimum height=30mm] (R0) at (0,0) {};
+\node[panel=Blue, p, minimum height=40mm] (R1) at (36mm,0) {};
+\node[panel=Teal, p, minimum height=50mm] (R2) at (72mm,0) {};
+\node[panel=Orange, p, minimum height=60mm] (R3) at (108mm,0) {};
+
+\node[step=Grey] (s0) at ([yshift=-5mm]R0.north) {R0};
+\node[stepname=Grey, below=0.5mm of s0] (n0) {Continue};
+\node[d, below=1mm of n0] {chores\\wait and observe\\request authority\\report device};
+
+\node[step=Blue] (s1) at ([yshift=-5mm]R1.north) {R1};
+\node[stepname=Blue, below=0.5mm of s1] (n1) {Check in or speak};
+\node[d, below=1mm of n1] {speak, check in\\approach, interpose\\deter, secure room\\guide to safety\\guide the dog by voice\\admit responders};
+
+\node[step=Teal] (s2) at ([yshift=-5mm]R2.north) {R2};
+\node[stepname=Teal, below=0.5mm of s2] (n2) {Refer to a human};
+\node[d, below=1mm of n2] {contact the\\monitoring centre\\(call caregiver\\before the ladder)};
+
+\node[step=Orange] (s3) at ([yshift=-5mm]R3.north) {R3};
+\node[stepname=Orange, below=0.5mm of s3] (n3) {Emergency};
+\node[d, below=1mm of n3] (e3a) {call emergency services\\or a unit dispatched\\after a referral};
+\node[d, below=1.5mm of e3a] (e3b) {physical assist\\separate the dog\\drive off an animal\\unlock medication\\restrain, stun, spray};
+
+\draw[flow] ([yshift=6mm]R0.east) -- ([yshift=6mm]R0.east -| R1.west);
+\draw[flow] ([yshift=6mm]R1.east) -- ([yshift=6mm]R1.east -| R2.west);
+\draw[flow] ([yshift=6mm]R2.east) -- ([yshift=6mm]R2.east -| R3.west);
+\node[flowlabel, below=1mm of R1.south east, anchor=north] {class taken is the strongest performed};
+
+\node[panel=Red, text width=24mm, anchor=north] (gov) at ([yshift=-8mm]R3.south) {\textbf{governor ruling}\\elevate, or stratum\\in force};
+\draw[grant] (gov.north) -- (R3.south);
+\end{tikzpicture}

@@ -1,0 +1,28 @@
+% Chapter 8. The robot's three reasoning tiers and what stays the same in all of them.
+% src: twin/cascade.py:241-313 (Cascade, twin_experts)
+% src: twin/brain.py:508-570 (compiled tier), 596-603 (comms_down, tier)
+% src: twin/service.py:357-359, 381-386
+% src: docs/AUTONOMY_PLAN.md:162-174
+% src: paper/aies2027/kit/FACTS.md:25 (on-robot model)
+\begin{tikzpicture}[house,
+  p/.style={minimum width=42mm, minimum height=40mm, text width=40mm},
+  d/.style={detail, text width=38mm, anchor=south}]
+\node[panel=Blue, p] (P1) at (0,0) {};
+\node[panel=Teal, p] (P2) at (56mm,0) {};
+\node[panel=Grey, p] (P3) at (112mm,0) {};
+\foreach \P/\c/\n/\name/\dsc/\dtl in {
+  P1/Blue/1/Cloud tier/{an NRP-hosted model}/{default name gpt-oss\\timeout 120 s\\skipped while\\communications are down},
+  P2/Teal/2/On-robot tier/{a local endpoint}/{gemma-4-26B-A4B, 4-bit\\GGUF on llama.cpp\\timeout 90 s},
+  P3/Grey/3/Compiled tier/{no model}/{offline event rules\\highest-priority obligation\\in force, else chores}}{
+  \node[step=\c] at ([yshift=-5mm]\P.north) {\n};
+  \node[stepname=\c] at ([yshift=-11.5mm]\P.north) {\name};
+  \node[desc, text width=39mm] at ([yshift=-15.5mm]\P.north) {\dsc};
+  \node[d] at ([yshift=1.5mm]\P.south) {\dtl};
+}
+\draw[flow] (P1.east) -- node[flowlabel, above]{no answer} (P2.west);
+\draw[flow] (P2.east) -- node[flowlabel, above]{no answer} (P3.west);
+\node[panel=Green, minimum width=154mm, text width=148mm, anchor=north] (ALL) at ([yshift=-7mm]P2.south)
+  {\textcolor{hsGreen}{\bfseries in every tier, on the robot}\\[1pt]{\scriptsize\color{hsTextMid}
+   the same scene runtime, the governor, the output gate and the hash-chained log, and the record names the tier that answered}};
+\foreach \P in {P1,P2,P3}{\draw[flow] (\P.south) -- (\P.south |- ALL.north);}
+\end{tikzpicture}

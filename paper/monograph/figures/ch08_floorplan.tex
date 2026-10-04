@@ -1,0 +1,60 @@
+% Chapter 8. Margaret's home to scale (9 m by 6 m, 9.5 mm per metre), its devices and the six
+% substrates they ride on. World x runs east, world z runs north.
+% src: twin/unity/TwinWorld/Assets/Twin/Editor/HomeRoom.cs:4-10 (9 m by 6 m), 30-76 (furniture, spots, dock, room camera)
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/World.cs:43-44 (detectors), 58 (Door), 109-112 (devices)
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/RobotAgent.cs:254 (medication box at 1.8, 2.4)
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/Perception.cs:30 (room split at x = 0)
+% src: twin/scene/margaret_home.erisml:1062-1081 (sensor_substrates)
+\begin{tikzpicture}[house, x=9.5mm, y=9.5mm,
+  furn/.style={panel=Grey, inner sep=1pt, font=\sffamily\tiny, text=hsTextMid},
+  dev/.style={step=#1, minimum size=4.6mm, font=\sffamily\bfseries\scriptsize},
+  sub/.style={minimum width=64mm, text width=61mm, minimum height=9.4mm, align=left, anchor=west}]
+% the shell
+\draw[draw=hsGrey, line width=1.2pt, rounded corners=2pt] (-4.5,-3) rectangle (4.5,3);
+\draw[untrusted, -] (0,-3) -- (0,3);
+\node[desc, anchor=south] at (-2.25,3.02) {living area (west)};
+\node[desc, anchor=south] at (2.25,3.02) {sleeping area (east)};
+% the front door on the south wall, and outside
+\draw[draw=hsTeal, line width=2.4pt] (-1.05,-3) -- (-0.15,-3);
+\node[desc, anchor=north] at (-0.6,-3.08) {front door};
+% furniture
+\node[furn, minimum width=19mm, minimum height=6mm] at (-2.2,2.3) {sofa};
+\node[furn, minimum width=5mm, minimum height=8mm] at (-4.15,0.6) {TV};
+\node[furn, minimum width=7mm, minimum height=7mm] at (-0.5,1.3) {chair};
+\node[furn, minimum width=7mm, minimum height=5mm] at (-0.9,-1.6) {dog};
+\node[furn, minimum width=6mm, minimum height=17mm] at (-2.6,-1.4) {mat};
+\node[furn, minimum width=14mm, minimum height=19mm] at (2.9,1.9) {bed};
+\node[furn, minimum width=6mm, minimum height=5mm, fill=hsRedFill, draw=hsRedLine] at (1.8,2.4) {med};
+% devices at their places, numbered by substrate
+\node[dev=Amber] at (-2,0) {1};
+\node[dev=Orange] at (2.75,1.15) {2};
+\node[dev=Blue] at (3.3,1.15) {3};
+\node[dev=Blue] at (-0.5,-2.55) {3};
+\node[dev=Purple] at (-0.55,0.55) {4};
+\node[desc, anchor=east] at (-0.8,0.55) {Margaret};
+\node[dev=Green] at (0.6,-1.9) {5};
+\node[desc, anchor=west] at (0.85,-1.9) {robot, at its dock};
+\node[dev=Teal] at (0.38,-2.62) {C};
+% substrates, beside the plan
+\begin{scope}[x=1mm, y=1mm]
+\node[panel=Amber, sub] (s1) at (50,30) {};
+\node[panel=Orange, sub, below=1.2mm of s1.south west, anchor=north west] (s2) {};
+\node[panel=Blue, sub, below=1.2mm of s2.south west, anchor=north west] (s3) {};
+\node[panel=Purple, sub, below=1.2mm of s3.south west, anchor=north west] (s4) {};
+\node[panel=Green, sub, below=1.2mm of s4.south west, anchor=north west] (s5) {};
+\node[panel=Grey, sub, below=1.2mm of s5.south west, anchor=north west] (s6) {};
+\node[panel=Teal, sub, below=1.2mm of s6.south west, anchor=north west] (s7) {};
+\foreach \s/\c/\n/\name/\what in {
+  s1/Amber/1/{smoke detector, living}/{battery, standalone},
+  s2/Orange/2/{smoke detector, bedroom}/{battery, standalone},
+  s3/Blue/3/home hub/{heat (bedroom), CO alarm, motion, fall},
+  s4/Purple/4/wearable/{heart rate, impact, no movement},
+  s5/Green/5/robot body/{smoke, heat, flame, CO, CO$_2$, O$_2$, sound},
+  s6/Grey/6/network/{not physical, never a witness},
+  s7/Teal/C/room camera/{the service's detector, at most one witness}}{
+  \node[dev=\c] at ([xshift=4mm]\s.west) {\n};
+  \node[stepname=\c, anchor=north west] at ([xshift=8mm, yshift=-0.8mm]\s.north west) {\name};
+  \node[desc, anchor=north west, align=left, text width=54mm] at ([xshift=8mm, yshift=-4.4mm]\s.north west) {\what};
+}
+\end{scope}
+\end{tikzpicture}

@@ -1,0 +1,34 @@
+% Chapter 5. The default EM-DAG as configured (default.yaml), circles give the topological order.
+% src: C:\source\erisml-compiler-monitor\src\erisml_compiler\em_dag\profiles\default.yaml:11-24
+% src: C:\source\erisml-compiler-monitor\src\erisml_compiler\em_dag\modules\*.py (dependencies)
+% src: C:\source\erisml-compiler-monitor\src\erisml_compiler\silicon\examples\erisml_em_dag.cpp:5 (order)
+\begin{tikzpicture}[house,
+  em/.style={panel=#1, text width=29mm, minimum height=13mm}]
+% roots
+\node[em=Teal] (harm) at (-6mm,4.5mm) {\textcolor{hsTeal}{\textbf{harm}}\\{\scriptsize\ttfamily physical\_harm}};
+\node[em=Teal] (legit) at (-6mm,-33.5mm) {\textcolor{hsTeal}{\textbf{legitimacy}}\\{\scriptsize\ttfamily legitimacy\_trust}};
+\node[em=Teal] (rights) at (-6mm,-64mm) {\textcolor{hsTeal}{\textbf{rights}}\\{\scriptsize\ttfamily rights\_respect}};
+\node[em=Teal] (fair) at (44mm,-64mm) {\textcolor{hsTeal}{\textbf{fairness}}\\{\scriptsize\ttfamily fairness\_equity}};
+\node[em=Teal] (epi) at (88mm,-64mm) {\textcolor{hsTeal}{\textbf{epistemic}}\\{\scriptsize\ttfamily epistemic\_quality}};
+% second tier
+\node[em=Blue] (ext) at (44mm,14mm) {\textcolor{hsBlue}{\textbf{externality}}\\{\scriptsize\ttfamily third\_party\_externality}};
+\node[em=Blue] (care) at (44mm,-5mm) {\textcolor{hsBlue}{\textbf{care}}\\{\scriptsize\ttfamily care\_protection}};
+\node[em=Blue] (auto) at (44mm,-24mm) {\textcolor{hsBlue}{\textbf{autonomy}}\\{\scriptsize\ttfamily autonomy\_consent}};
+\node[em=Blue] (fid) at (44mm,-43mm) {\textcolor{hsBlue}{\textbf{fidelity}}\\{\scriptsize\ttfamily vow\_fidelity}};
+% composition
+\node[em=Orange] (rep) at (88mm,-14.5mm) {\textcolor{hsOrange}{\textbf{repair}}\\{\scriptsize\ttfamily repair\_residue}};
+% topological order from Kahn's algorithm
+\foreach \n/\c/\k in {harm/Teal/1, rights/Teal/2, fair/Teal/3, legit/Teal/4, epi/Teal/5, ext/Blue/6, care/Blue/7, auto/Blue/8, fid/Blue/9, rep/Orange/10}
+  { \node[step=\c] at (\n.north west) {\k}; }
+% dependency edges that carry data
+\draw[flow] (harm.east) -- (care.west);
+\draw[flow] (legit.east) -- (auto.west);
+\draw[flow] (ext.east) -| ([xshift=-4mm]rep.north);
+\draw[flow] (fid.east) -- ([xshift=4mm]rep.south west);
+\draw[flow] (harm.north) |- ($(ext.north)+(0,6mm)$) -| ([xshift=6mm]rep.north);
+% declared edges whose upstream output the module does not read
+\draw[flow, draw=hsGreyLine] (harm.east) -- node[flowlabel, above, sloped, pos=0.5]{order only} (ext.west);
+\draw[flow, draw=hsGreyLine] (legit.east) -- node[flowlabel, below, sloped, pos=0.5]{order only} (fid.west);
+% legend
+\node[desc, text width=34mm, align=left] at (88mm,-36mm) {Teal roots read facts only.\\Blue modules read one root.\\Repair averages three.};
+\end{tikzpicture}
