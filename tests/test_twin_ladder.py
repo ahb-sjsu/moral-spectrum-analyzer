@@ -1135,6 +1135,21 @@ def test_a_refusal_she_can_no_longer_voice_does_not_bind(brain):
     assert action == EMS and not gate["vetoed"]
 
 
+def test_her_old_words_re_read_after_a_lapse_do_not_refuse_again(brain):
+    """dev12b d27: the classifier re-read "you don't need to call anyone", said before she
+    collapsed, as a fresh refusal while she lay unresponsive, and DEME vetoed the EMS call."""
+    b, _ = brain
+    _corroborated_fall(b)
+    b.agent.record(REFUSE_EMS)
+    b.agent.record(ev("check_in_unanswered", actor="margaret"))
+    b.agent.record(REFUSE_EMS)  # re-read, not re-said
+    assert EMS not in b.gate.refused()
+    # once she answers again she can refuse again, and that refusal binds
+    b.agent.record(ev("check_in_answered", "I'm fine, no ambulance", actor="margaret"))
+    b.agent.record(REFUSE_EMS)
+    assert EMS in b.gate.refused()
+
+
 def test_a_reflex_against_a_refusal_is_not_redirected_but_deme_still_vetoes_it(brain):
     b, _ = brain
     _corroborated_fall(b)
@@ -1930,3 +1945,10 @@ def test_the_live_view_follows_the_chain_since_the_last_reset():
     assert elements[0] == "s_fall" and "t_operator" in elements and v["current"] == "m_reply"
     assert "t_ems" not in elements
     assert [n["by"] for n in v["interventions"]] == ["governor", "ethics gate"]
+
+
+def test_a_sensor_reading_is_never_a_person():
+    """dev11b: 30 readings tagged unknown_person read downstream as an intruder (d23, d25, d27)."""
+    types = load_structured_input(SCENE).extra["event_types"]
+    assert types["sensor_reading"]["actors"] == ["device"]
+    assert types["media_content"]["actors"] == ["media"]

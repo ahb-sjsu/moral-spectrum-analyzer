@@ -65,12 +65,19 @@ class OutputGate:
     def refused(self) -> set[str]:
         """The capabilities Margaret's standing refusals cover: a refusal holds from when she makes
         it until she can no longer voice one, and covers nothing while a hazard it does not reach
-        (its not_during) holds."""
+        (its not_during) holds. After a lapse, a refusal counts again only once she has shown she
+        can voice one (she answered a check-in): the classifier re-reading her earlier words while
+        she lies unresponsive is not her refusing (dev12b d27: her "you don't need to call
+        anyone", said before she collapsed, re-recorded after, vetoed the authorized EMS call)."""
         kinds: set[str] = set()
+        voiced = True
         for e in self.rt.events:
             if e.type in self.lapses:
                 kinds.clear()
-            elif e.type == "refusal_made" and (e.actor or "margaret") == "margaret" and e.content in self.refusals:
+                voiced = False
+            elif e.type == "check_in_answered":
+                voiced = True
+            elif e.type == "refusal_made" and voiced and (e.actor or "margaret") == "margaret" and e.content in self.refusals:
                 kinds.add(e.content)
         out: set[str] = set()
         for k in kinds:

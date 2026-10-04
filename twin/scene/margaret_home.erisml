@@ -1079,8 +1079,8 @@ extra:
     person_left: {description: a visitor has left the home}
     visit_arranged: {description: 'the monitoring centre, over its authenticated channel, announces a visit it arranged; content is its purpose', content: [caregiver, plumber, electrician, delivery, family, other], source: system}
     visitor_cleared: {description: 'the monitoring centre, over its authenticated channel, clears a visitor who had attacked Margaret (oversight)', content: [visitor], source: system}
-    media_content: {description: something said or shown by a television, radio or network message; content is what}
-    sensor_reading: {description: a sensor reports; content is the sensor, conditions say physical or not, attested or not, corroborates or does_not_corroborate}
+    media_content: {description: something said or shown by a television, radio or network message; content is what, actors: [media]}
+    sensor_reading: {description: a sensor reports; content is the sensor, conditions say physical or not, attested or not, corroborates or does_not_corroborate, actors: [device]}
     feed_stale: {description: a sensor's feed stopped updating; content is the sensor}
     attack_by_animal: {description: 'an animal is biting or mauling Margaret; actor is the animal', content: [mild, moderate, severe]}
     attack_by_person: {description: 'a person is striking, grabbing or otherwise attacking Margaret; actor is who', content: [mild, moderate, severe]}
