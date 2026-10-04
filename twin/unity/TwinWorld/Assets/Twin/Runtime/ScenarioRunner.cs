@@ -92,23 +92,39 @@ public class ScenarioRunner : MonoBehaviour
         Debug.Log("SCENARIOS_ALL_DONE");
         Application.Quit(0);
     }
-    // one framed render of the room, without the UI: the view camera aimed at the middle of who is
-    // there (Margaret, the robot, the dog, a visitor, the coyote) and drawn back to fit them all
+    // where a body is drawn: root transforms of the imported avatars sit away from their meshes
+    static Vector3 Drawn(GameObject g)
+    {
+        var rs = g.GetComponentsInChildren<Renderer>().Where(r => r.enabled).ToList();
+        if (rs.Count == 0) return g.transform.position;
+        var b = rs[0].bounds; foreach (var r in rs) b.Encapsulate(r.bounds);
+        return b.center;
+    }
+
+    // one framed render of the room, without the UI: from inside the room, high in the corner
+    // farthest from the action (below the ceiling), aimed at the middle of who is there
+    // (Margaret, the robot, the dog, a visitor, the coyote)
     IEnumerator Shot(string label, float delay)
     {
         if (delay > 0f) yield return new WaitForSeconds(delay);
         string id = storyId;
         if (storyCam == null || id == null) yield break;
         yield return new WaitForEndOfFrame();
-        var pts = new List<Vector3> { world.margaret.transform.position, robot.transform.position };
+        var pts = new List<Vector3> { Drawn(world.margaret), Drawn(robot.gameObject) };
         foreach (var g in new[] { world.dog, world.stranger, world.wildAnimal })
-            if (g && g.activeInHierarchy) pts.Add(g.transform.position);
+            if (g && g.activeInHierarchy) pts.Add(Drawn(g));
+        var floor = GameObject.Find("floor")?.GetComponent<Renderer>();
+        var room = floor ? floor.bounds : new Bounds(Vector3.zero, new Vector3(8.4f, 0.1f, 6f));
+        pts = pts.Select(p => new Vector3(Mathf.Clamp(p.x, room.min.x, room.max.x), p.y, Mathf.Clamp(p.z, room.min.z, room.max.z))).ToList();
         var mid = pts.Aggregate(Vector3.zero, (a, p) => a + p) / pts.Count;
-        float r = pts.Max(p => Vector3.Distance(p, mid));
-        var pivot = mid + Vector3.up * 0.7f;
-        float dist = Mathf.Clamp(3f + r * 1.8f, 3.4f, 9f);
+        var pivot = new Vector3(mid.x, 0.8f, mid.z);
+        var corners = new[] { new Vector3(room.min.x, 0, room.min.z), new Vector3(room.min.x, 0, room.max.z),
+                              new Vector3(room.max.x, 0, room.min.z), new Vector3(room.max.x, 0, room.max.z) };
+        var far = corners.OrderByDescending(c => (c - new Vector3(mid.x, 0, mid.z)).sqrMagnitude).First();
+        var inset = (new Vector3(mid.x, 0, mid.z) - far).normalized * 0.35f;
+        float fov0 = storyCam.fieldOfView; storyCam.fieldOfView = 62f;
         var tr = storyCam.transform; var pos0 = tr.position; var rot0 = tr.rotation;
-        tr.position = pivot + Quaternion.Euler(38f, -35f, 0f) * new Vector3(0f, 0f, -dist);
+        tr.position = far + inset + Vector3.up * 2.35f;
         tr.LookAt(pivot);
         var rt = RenderTexture.GetTemporary(1600, 900, 24);
         var target0 = storyCam.targetTexture; storyCam.targetTexture = rt; storyCam.Render(); storyCam.targetTexture = target0;
@@ -116,7 +132,7 @@ public class ScenarioRunner : MonoBehaviour
         var tex = new Texture2D(1600, 900, TextureFormat.RGB24, false);
         tex.ReadPixels(new Rect(0, 0, 1600, 900), 0, 0); tex.Apply();
         RenderTexture.active = active0; RenderTexture.ReleaseTemporary(rt);
-        tr.SetPositionAndRotation(pos0, rot0);
+        tr.SetPositionAndRotation(pos0, rot0); storyCam.fieldOfView = fov0;
         storyN++;
         string name = $"{id}_{storyN:00}.png";
         File.WriteAllBytes(Path.Combine(storyDir, name), tex.EncodeToPNG());
