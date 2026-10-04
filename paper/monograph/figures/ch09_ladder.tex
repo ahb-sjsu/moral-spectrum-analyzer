@@ -9,46 +9,46 @@
   ev/.style={step=#1, minimum size=3.6mm},
   lab/.style={flowlabel, font=\sffamily\scriptsize}]
 % lanes
-\node[lane=Green, minimum height=30mm] (L1) at (0,0) {};
+\node[lane=Green, minimum height=36mm] (L1) at (0,0) {};
 \node[lane=Purple, minimum height=14mm, below=1.2mm of L1.south west, anchor=north west] (L2) {};
-\node[lane=Blue, minimum height=18mm, below=1.2mm of L2.south west, anchor=north west] (L3) {};
+\node[lane=Blue, minimum height=22mm, below=1.2mm of L2.south west, anchor=north west] (L3) {};
 \node[lane=Orange, minimum height=14mm, below=1.2mm of L3.south west, anchor=north west] (L4) {};
 \node[lname=Green] at ([xshift=4mm]L1.west) {robot};
 \node[lname=Purple] at ([xshift=4mm]L2.west) {Margaret};
 \node[lname=Blue] at ([xshift=4mm]L3.west) {centre};
 \node[lname=Orange] at ([xshift=4mm]L4.west) {EMS};
 % robot lane
-\node[ev=Green] (sc) at (16mm,9mm) {};
-\node[lab, anchor=west] at (19mm,11.5mm) {a corroborated emergency};
-\node[ev=Green] (so) at (16mm,-5mm) {};
-\node[lab, anchor=north, align=center] at (16mm,-7.5mm) {fall, inactivity\\or a request};
-\node[task] (ask) at (40mm,-5mm) {Ask Margaret};
-\node[task] (ref) at (76mm,-5mm) {Refer to the centre};
-\node[task] (gov) at (110mm,-5mm) {Ask the governor};
-\node[task] (ems) at (149mm,-1mm) {Call emergency services};
-\node[ev=Green] (watch) at (130mm,-11mm) {};
-\node[lab, anchor=north] at (130mm,-12.5mm) {keep watching};
+\node[ev=Green] (sc) at (16mm,12mm) {};
+\node[lab, anchor=west] at (19mm,14.5mm) {a corroborated emergency};
+\node[ev=Green] (so) at (16mm,-3mm) {};
+\node[lab, anchor=north, align=center] at (16mm,-5.5mm) {fall, inactivity\\or a request};
+\node[task] (ask) at (40mm,-3mm) {Ask Margaret};
+\node[task] (ref) at (77mm,-3mm) {Refer to the centre};
+\node[task] (gov) at (106mm,-3mm) {Ask the governor};
+\node[task, text width=24mm] (ems) at (146mm,4mm) {Call emergency\\services};
+\node[ev=Green] (watch) at (125mm,-12mm) {};
+\node[lab, anchor=west] at ([xshift=1mm]watch.east) {keep watching};
 % Margaret lane
 \node[ev=Purple] (fine) at (40mm,0 |- L2.center) {};
 \node[lab, anchor=west] at ([xshift=2mm]fine.east) {she is alright};
 % centre lane
-\node[task] (op) at (76mm,0 |- L3.center) {The operator calls her};
-\node[ev=Blue] (has) at (46mm,0 |- L3.center) {};
+\node[task] (op) at ($(77mm,0 |- L3.center)+(0,2mm)$) {The operator\\calls her};
+\node[ev=Blue] (has) at (46mm,0 |- op.center) {};
 \node[lab, anchor=north, align=center] at ([yshift=-1mm]has.south) {has her, or stood down};
 % EMS lane
-\node[task] (disp) at (76mm,0 |- L4.center) {The dispatcher sends help};
+\node[task] (disp) at (77mm,0 |- L4.center) {The dispatcher sends help};
 \node[ev=Orange] (help) at (128mm,0 |- L4.center) {};
 \node[lab, anchor=north west] at ([xshift=0.5mm, yshift=-0.3mm]help.south east) {help on its way};
 % flows
 \draw[flow] (so) -- (ask);
-\draw[flow] (ask) -- node[lab, right]{answers} (fine);
+\draw[flow] (ask) -- node[lab, right, pos=0.3]{answers} (fine);
 \draw[flow] (ask) -- node[lab, above]{no answer} (ref);
 \draw[flow] (ref) -- (op);
 \draw[flow] (op) -- (has);
-\draw[flow] (op) -- node[lab, right]{sent EMS} (disp);
+\draw[flow] (op) -- node[lab, right, pos=0.3]{sent EMS} (disp);
 \draw[flow] (op.east) -| node[lab, right, pos=0.75]{unreachable} (gov.south);
-\draw[grant] (gov.east) -- node[lab, above, sloped]{authorized} (ems.west);
-\draw[flow] (gov.south east) -- node[lab, above, pos=0.6]{refused} (watch);
+\draw[grant] (gov.east) -- node[lab, above, sloped, pos=0.45]{authorized} (ems.west);
+\draw[flow] (gov.south east) -- node[lab, below, sloped, pos=0.5]{refused} (watch);
 \draw[grant] (sc) -| node[lab, above, pos=0.25]{elevate} (ems.north);
 \draw[flow] (ems.south) |- (help.east);
 \draw[flow] (disp) -- (help);

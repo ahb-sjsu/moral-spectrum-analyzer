@@ -15,7 +15,7 @@
   1/Teal/57/Strata/{each gate that\\fires on the event}/{first match wins\\records \texttt{entered\_at}\\a crossing if it moved},
   2/Green/90/Machines/{consent, legitimacy,\\commitment}/{each steps on its\\mapped event types},
   3/Orange/123/Defeasibility/{override or restore\\a commitment}/{a named condition\\overrides, only an\\oversight event restores}} {
-  \node[panel=\c, text width=\tw, minimum height=36mm, anchor=north] (p\i) at (\x mm, 12mm) {};
+  \node[panel=\c, text width=\tw, minimum height=38mm, anchor=north] (p\i) at (\x mm, 12mm) {};
   \node[step=\c] (s\i) at ([yshift=-5mm]p\i.north) {\i};
   \node[stepname=\c, below=0.8mm of s\i] (n\i) {\name};
   \node[desc, below=0.2mm of n\i, text width=\tw] (d\i) {\what};
@@ -25,13 +25,13 @@
 \foreach \i/\c/\x/\name/\what/\det in {
   4/Amber/123/Discharge/{if the event is\\\texttt{action\_performed}}/{each obligation on\\that action records\\the event index},
   5/Blue/90/Norms in force/{commitment source\\and every token}/{prohibitions win ties\\against permissions}} {
-  \node[panel=\c, text width=\tw, minimum height=33mm, anchor=north] (p\i) at (\x mm, -30mm) {};
+  \node[panel=\c, text width=\tw, minimum height=38mm, anchor=north] (p\i) at (\x mm, -33mm) {};
   \node[step=\c] (s\i) at ([yshift=-5mm]p\i.north) {\i};
   \node[stepname=\c, below=0.8mm of s\i] (n\i) {\name};
   \node[desc, below=0.2mm of n\i, text width=\tw] (d\i) {\what};
   \node[detail, below=1mm of d\i, text width=\tw-2mm] {\det};
 }
-\node[panel=Grey, text width=40mm, minimum height=33mm, anchor=north] (snap) at (46mm, -30mm) {};
+\node[panel=Grey, text width=40mm, minimum height=38mm, anchor=north] (snap) at (46mm, -33mm) {};
 \node[stepname=Grey, below=2mm of snap.north] (sn) {Snapshot};
 \node[detail, below=1mm of sn, text width=37mm, align=left] {\texttt{prohibited}\quad\texttt{allowed}\\\texttt{obliged}\quad\texttt{obliged\_tiers}\\\texttt{machines}\quad\texttt{reasons}\\\texttt{norms\_in\_force}\\\texttt{crossings}};
 \draw[flow] (ev.east) -- (ev.east -| p1.west);

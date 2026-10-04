@@ -32,9 +32,9 @@
 \draw[flow] ([yshift=5mm]R.west) -- node[lab]{speech} ([yshift=5mm]M.east);
 \draw[untrusted] ([yshift=-5mm]M.east) -- node[flowlabel, below]{her answer} ([yshift=-5mm]R.west);
 % robot and centre
-\draw[untrusted] ([yshift=17mm]R.east) -- node[lab]{message, a claim} ([yshift=5mm]O.west);
-\draw[flow] ([yshift=10mm]R.east) -- node[lab]{signed telemetry} ([yshift=-4mm]O.west);
-\draw[grant] ([yshift=-13mm]O.west) -- node[flowlabel, sloped, below]{replies, visits, restore} ([yshift=2mm]R.east);
+\draw[untrusted] ([yshift=18mm]R.east) -- node[lab]{message, a claim} ([yshift=3mm]O.west);
+\draw[flow] ([yshift=6mm]R.east) -- node[lab]{signed telemetry} ([yshift=-7mm]O.west);
+\draw[grant] ([yshift=-13mm]O.west) -- node[flowlabel, sloped, below, pos=0.6]{replies, visits, restore} ([yshift=-1mm]R.east);
 % robot and dispatcher
 \draw[flow] ([yshift=-6mm]R.east) -- node[lab]{call, on a ruling} ([yshift=12mm]E.west);
 \draw[grant] ([yshift=2mm]E.west) -- node[flowlabel, sloped, below]{units at the door} ([yshift=-15mm]R.east);

@@ -6,7 +6,7 @@
 \def\pw{25mm}
 \def\ph{47mm}
 % five numbered panels
-\foreach \i/\c/\x in {1/Purple/0, 2/Blue/29.5, 3/Green/59, 4/Orange/88.5, 5/Teal/118} {
+\foreach \i/\c/\x in {1/Purple/0, 2/Blue/33, 3/Green/66, 4/Orange/99, 5/Teal/132} {
   \node[panel=\c, minimum width=\pw+3mm, minimum height=\ph, anchor=north] (p\i) at (\x mm, 0) {};
   \node[step=\c] (s\i) at ([yshift=-5.5mm]p\i.north) {\i};
 }

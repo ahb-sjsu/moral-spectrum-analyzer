@@ -9,7 +9,7 @@
   cell/.style={font=\sffamily\scriptsize, text=hsText, align=center}]
 \def\cw{27mm}
 \foreach \j/\ev in {1/{\texttt{animal\_seen}\\\texttt{=venomous}}, 2/{\texttt{action\_}\\\texttt{performed}\\\texttt{=speak}}, 3/{\texttt{activity\_}\\\texttt{started}}, 4/{\texttt{animal\_clear}}, 5/{\texttt{animal\_seen}\\\texttt{=venomous}}} {
-  \node[panel=Purple, text width=\cw-9mm, minimum height=11mm, inner sep=2pt, font=\sffamily\scriptsize] (h\j) at (\j*\cw, 0) {\ev};
+  \node[panel=Purple, text width=\cw-8mm, minimum height=11mm, inner sep=2pt, font=\sffamily\scriptsize] (h\j) at (\j*\cw, 0) {\ev};
   \node[step=Purple, anchor=south] at ([yshift=-1mm]h\j.north) {\j};
 }
 \node[row] at (0.45*\cw, 0) {event};
@@ -27,8 +27,8 @@
 \node[row] at (0.45*\cw, -26mm) {discharge point};
 % owed rows
 \foreach \j/\now/\old in {1/Green/Green, 2/Grey/Green, 3/Grey/Green, 4/Grey/Grey, 5/Green/Green} {
-  \node[panel=\now, minimum width=16mm, minimum height=6mm, inner sep=1pt, font=\sffamily\scriptsize] at (\j*\cw, -35mm) {};
-  \node[panel=\old, minimum width=16mm, minimum height=6mm, inner sep=1pt, font=\sffamily\scriptsize, dashed] at (\j*\cw, -44mm) {};
+  \node[panel=\now, minimum width=21mm, minimum height=6mm, inner sep=1pt, font=\sffamily\scriptsize] at (\j*\cw, -35mm) {};
+  \node[panel=\old, minimum width=21mm, minimum height=6mm, inner sep=1pt, font=\sffamily\scriptsize, dashed] at (\j*\cw, -44mm) {};
 }
 \foreach \j/\a/\b in {1/owed/owed, 2/discharged/still owed, 3/discharged/still owed, 4/not in stratum/not in stratum, 5/owed/owed} {
   \node[font=\sffamily\scriptsize, text=hsText] at (\j*\cw, -35mm) {\a};

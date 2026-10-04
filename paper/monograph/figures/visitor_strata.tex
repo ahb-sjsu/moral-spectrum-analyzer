@@ -12,7 +12,7 @@
 \node[absorbing] (hos) at (112mm,0) {hostile};
 \draw[untrusted] (none) -- node[lab, above left]{someone enters} (str);
 \draw[untrusted] (str) -- node[lab, above]{she welcomes him} (wel);
-\draw[grant] (none) -- node[lab, pos=0.3, below left]{visit arranged} (arr);
+\draw[grant] (none) -- node[lab, pos=0.55, above right]{visit arranged} (arr);
 \draw[grant] (wel) -- node[lab, right, align=left]{credential\\verified} (hh);
 \draw[flow] (wel) -- node[lab, above right]{attack measured} (hos);
 \draw[flow] (hh) -- (hos);

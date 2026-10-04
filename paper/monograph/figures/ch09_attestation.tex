@@ -32,7 +32,7 @@
   {\textcolor{hsRed}{\bfseries quarantine}\\[1pt]{\scriptsize\color{hsTextMid} \code{device\_compromised}\\until \code{device\_cleared}}};
 \node[panel=Grey, minimum width=36mm, text width=34mm] (X) at (0mm,-36mm)
   {\textcolor{hsGrey}{\bfseries does not count}\\[1pt]{\scriptsize\color{hsTextMid} stale or replayed\\no compromise}};
-\draw[flow] ([xshift=-8mm]P2.south) |- node[flowlabel, left, pos=0.3]{too old or behind} (X.east);
-\draw[flow] ([xshift=8mm]P2.south) -- node[flowlabel, left]{integrity fails} ([xshift=8mm]P2.south |- Q.north);
+\draw[flow] ([xshift=-8mm]P2.south) |- node[flowlabel, left, pos=0.2]{too old or behind} (X.east);
+\draw[flow] ([xshift=8mm]P2.south) -- node[flowlabel, right]{integrity fails} ([xshift=8mm]P2.south |- Q.north);
 \draw[flow] (Q.east) -| (P3.south);
 \end{tikzpicture}

@@ -4,7 +4,7 @@
 \begin{tikzpicture}[house,
   p/.style={minimum width=23mm, minimum height=46mm, text width=21mm, anchor=north},
   d/.style={detail, text width=19mm}]
-\foreach \i/\col/\x in {1/Purple/0, 2/Blue/25.5, 3/Teal/51, 4/Green/76.5, 5/Amber/102, 6/Orange/127.5}{
+\foreach \i/\col/\x in {1/Purple/0, 2/Blue/28, 3/Teal/56, 4/Green/84, 5/Amber/112, 6/Orange/140}{
   \node[panel=\col, p] (P\i) at (\x mm,0) {};
   \node[step=\col] at ([yshift=-5mm]P\i.north) {\i};
 }

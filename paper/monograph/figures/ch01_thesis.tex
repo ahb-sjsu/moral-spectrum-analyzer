@@ -27,6 +27,6 @@
 % below: the action
 \node[panel=Green, below=9mm of $(mdl.south)!0.5!(auth.south)$, minimum width=80mm] (act)
   {\textcolor{hsGreen}{\textbf{An action with authority}}\\[1pt]{\scriptsize call emergency services, restrain, open the door, override her privacy}};
-\draw[untrusted] (mdl.south) |- node[flowlabel, pos=0.75, above]{proposes} (act.west);
-\draw[grant] (auth.south) |- node[flowlabel, pos=0.75, above]{permits} (act.east);
+\draw[untrusted] ($(mdl.south)+(-8mm,0)$) |- node[flowlabel, pos=0.25, left]{proposes} (act.west);
+\draw[grant] ($(auth.south)+(8mm,0)$) |- node[flowlabel, pos=0.25, right]{permits} (act.east);
 \end{tikzpicture}

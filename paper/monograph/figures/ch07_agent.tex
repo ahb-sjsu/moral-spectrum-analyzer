@@ -8,11 +8,11 @@
 \def\tw{23mm}
 \foreach \i/\c/\x/\name/\what/\det in {
   1/Grey/0/Facts/{perception, any JSON}/{readings, poses,\\words heard,\\text on a screen},
-  2/Orange/31/Classifier/{a model proposes\\events}/{scene text,\\vocabulary,\\last 8 events,\\facts},
-  3/Blue/62/Checks/{reject, snap,\\quarantine}/{bad types and\\contents rejected,\\actors snapped,\\free text\\quarantined},
-  4/Green/93/Runtime/{steps the canonical\\events}/{allowed,\\obliged by urgency,\\prohibited,\\machines},
-  5/Orange/124/Chooser/{a model proposes\\one action}/{last 16 events,\\moral state,\\never the facts}} {
-  \node[panel=\c, text width=\tw, minimum height=38mm, anchor=north] (p\i) at (\x mm, 0) {};
+  2/Orange/35.5/Classifier/{a model proposes\\events}/{scene text,\\vocabulary,\\last 8 events,\\facts},
+  3/Blue/71/Checks/{reject, snap,\\quarantine}/{bad types and\\contents rejected,\\actors snapped,\\free text\\quarantined},
+  4/Green/106.5/Runtime/{steps the canonical\\events}/{allowed,\\obliged by urgency,\\prohibited,\\machines},
+  5/Orange/142/Chooser/{a model proposes\\one action}/{last 16 events,\\moral state,\\never the facts}} {
+  \node[panel=\c, text width=\tw, minimum height=42mm, anchor=north] (p\i) at (\x mm, 0) {};
   \node[step=\c] (s\i) at ([yshift=-5mm]p\i.north) {\i};
   \node[stepname=\c, below=0.8mm of s\i] (n\i) {\name};
   \node[desc, below=0.2mm of n\i, text width=\tw] (d\i) {\what};

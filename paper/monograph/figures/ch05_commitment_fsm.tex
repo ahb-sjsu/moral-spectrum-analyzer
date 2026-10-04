@@ -2,30 +2,32 @@
 % src: C:\source\erisml-compiler-monitor\src\erisml_compiler\fsm\commitment_fsm.py:55-93
 % src: C:\source\erisml-compiler-monitor\src\erisml_compiler\silicon\hls_emit.py:37-50 (ap_uint<3>, ap_uint<4>)
 \begin{tikzpicture}[house]
-\node[stratum, minimum width=26mm] (act) at (0,0) {active};
-\node[stratum, minimum width=26mm] (def) at (0,-36mm) {active but defeasible};
-\node[absorbing, minimum width=22mm] (ful) at (70mm,12mm) {fulfilled};
-\node[absorbing, minimum width=22mm] (vio) at (70mm,0mm) {violated};
-\node[absorbing, minimum width=22mm] (voi) at (70mm,-12mm) {void};
-\node[absorbing, minimum width=22mm] (exp) at (70mm,-24mm) {expired};
-\node[absorbing, minimum width=22mm] (dft) at (70mm,-38mm) {defeated};
+\node[stratum, minimum width=26mm] (act) at (0,13.2mm) {active};
+\node[stratum, minimum width=26mm] (def) at (0,-38mm) {active but defeasible};
+\node[absorbing, minimum width=22mm] (ful) at (76mm,12mm) {fulfilled};
+\node[absorbing, minimum width=22mm] (vio) at (76mm,0mm) {violated};
+\node[absorbing, minimum width=22mm] (voi) at (76mm,-12mm) {void};
+\node[absorbing, minimum width=22mm] (exp) at (76mm,-24mm) {expired};
+\node[absorbing, minimum width=22mm] (dft) at (76mm,-38mm) {defeated};
 % between the two live states
 \draw[flow] ([xshift=-5mm]act.south) -- node[flowlabel, left, align=right]{defeasibility\\condition\\triggered} ([xshift=-5mm]def.north);
 \draw[flow] ([xshift=5mm]def.north) -- node[flowlabel, right, align=left]{resolved\\in favour} ([xshift=5mm]act.south);
 % from active
-\draw[flow] (act.east) -- node[flowlabel, above, pos=0.8, sloped]{fulfilling} (ful.west);
-\draw[flow] (act.east) -- node[flowlabel, above, pos=0.8, sloped]{violating} (vio.west);
-\draw[flow] (act.east) -- node[flowlabel, above, pos=0.8, sloped]{legitimacy collapses} (voi.west);
-\draw[flow] (act.east) -- node[flowlabel, above, pos=0.8, sloped]{expiration} (exp.west);
+\coordinate (abus) at (28mm,0);
+\coordinate (dbus) at (52mm,0);
+\foreach \t/\l in {ful/fulfilling, vio/violating, voi/{legitimacy\\collapses}, exp/expiration} {
+  \coordinate (ain) at ([yshift=1.2mm]\t.west);
+  \draw[flow] (act.east) -- (act.east -| abus) |- node[flowlabel, pos=0.5, anchor=south west, xshift=1mm, align=left]{\l} (ain);
+}
 % from defeasible, the same four tags plus the override
-\draw[flow, draw=hsFlow!60] (def.east) -- (ful.west);
-\draw[flow, draw=hsFlow!60] (def.east) -- (vio.west);
-\draw[flow, draw=hsFlow!60] (def.east) -- (voi.west);
-\draw[flow, draw=hsFlow!60] (def.east) -- (exp.west);
+\foreach \t in {ful, vio, voi, exp} {
+  \coordinate (din) at ([yshift=-1.2mm]\t.west);
+  \draw[flow, draw=hsFlow!60] (def.east) -| (din -| dbus) -- (din);
+}
 \draw[flow] (def.east) -- node[flowlabel, below, sloped]{defeasibility overrides} (dft.west);
 % register note
-\node[panel=Grey, text width=40mm, anchor=north west] at (-14mm,-48mm)
+\node[panel=Grey, text width=40mm, anchor=north west] at (-14mm,-50mm)
   {{\scriptsize state in an \texttt{ap\_uint<3>} register,\\event tag in \texttt{ap\_uint<4>}}};
-\node[panel=Red, text width=40mm, anchor=north west] at (52mm,-48mm)
+\node[panel=Red, text width=40mm, anchor=north west] at (52mm,-50mm)
   {{\scriptsize terminal states absorb every event,\\an unknown tag keeps the state}};
 \end{tikzpicture}

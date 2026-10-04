@@ -9,7 +9,7 @@
 \node[stratum] (rr) at (68mm,0) {reported};
 \draw[untrusted] (rn.north east) to[bend left=25] node[lab, above]{crime suspected} (rs.north west);
 \draw[flow] (rn.south east) to[bend right=25] node[lab, below]{attack measured} (rs.south west);
-\draw[flow] (rs) -- node[lab, above, align=center]{reported to\\the centre} (rr);
+\draw[flow] (rs) -- node[lab, below, align=center]{reported to\\the centre} (rr);
 \draw[flow] (rr.south) .. controls (68mm,-18mm) and (0,-18mm) .. node[lab, below]{the centre stands the case down} (rn.south);
 \draw[untrusted] (rr.north) .. controls (68mm,12mm) and (40mm,12mm) .. node[lab, above]{a new suspicion} (rs.north east);
 \begin{scope}[on background layer]

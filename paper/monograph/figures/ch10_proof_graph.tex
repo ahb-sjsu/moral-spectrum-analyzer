@@ -39,14 +39,14 @@
 \draw[dep] (psn) -- (ewp);
 
 % non-interference and the gate
-\node[lem] (fms) at (12mm, -66mm) {filterMap\_strip};
-\node[lem] (ans) at (12mm, -78mm) {any\_strip};
-\node[res] (nmi) at (50mm, -72mm) {no\_model\_influence};
-\node[res] (rch) at (50mm, -86mm) {reasoning\_cannot\_help};
-\node[res] (fbp) at (100mm, -66mm) {fallback\_permitted};
-\node[res] (gpm) at (138mm, -66mm) {gate\_permitted};
-\node[res] (gsr) at (138mm, -80mm) {gated\_step\_reachable};
-\node[res] (gps) at (100mm, -80mm) {gate\_passes};
+\node[lem] (fms) at (12mm, -64mm) {filterMap\_strip};
+\node[lem] (ans) at (50mm, -64mm) {any\_strip};
+\node[res] (nmi) at (31mm, -75mm) {no\_model\_influence};
+\node[res] (rch) at (31mm, -86mm) {reasoning\_cannot\_help};
+\node[res] (fbp) at (100mm, -64mm) {fallback\_permitted};
+\node[res] (gpm) at (100mm, -75mm) {gate\_permitted};
+\node[res] (gsr) at (100mm, -86mm) {gated\_step\_reachable};
+\node[res] (gps) at (138mm, -64mm) {gate\_passes};
 \begin{scope}[on background layer]
   \node[panel=Teal, fit=(fms)(ans)(nmi)(rch), inner sep=3mm, label={[stepname=Teal]north:Non-interference}] {};
   \node[panel=Green, fit=(fbp)(gpm)(gsr)(gps), inner sep=3mm, label={[stepname=Green]north:Output gate}] {};

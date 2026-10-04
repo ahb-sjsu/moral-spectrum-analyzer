@@ -23,5 +23,5 @@
 \node[panel=Teal, text width=60mm, below=8mm of p2, xshift=16mm] (tr) {\textcolor{hsTeal}{\bfseries Trace}\\{\scriptsize\color{hsTextMid}records of a run activate starts, messages and tasks\\gateways, timers and other parties' tasks fill the path\\a view of what happened, it decides nothing}};
 \draw[flow] (p2.south) -- (p2.south |- tr.north);
 \node[panel=Grey, text width=28mm, below=8mm of p5] (run) {\textcolor{hsGrey}{\bfseries agent records}\\{\scriptsize\color{hsTextMid}events stepped,\\actions performed}};
-\draw[flow] (run.west) -- (tr.east);
+\draw[flow] (run.west) -- (run.west -| tr.east);
 \end{tikzpicture}

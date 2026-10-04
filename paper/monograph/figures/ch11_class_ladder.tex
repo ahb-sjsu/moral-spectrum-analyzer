@@ -25,11 +25,11 @@
 \node[d, below=1mm of n3] (e3a) {call emergency services\\or a unit dispatched\\after a referral};
 \node[d, below=1.5mm of e3a] (e3b) {physical assist\\separate the dog\\drive off an animal\\unlock medication\\restrain, stun, spray};
 
-\draw[flow] ([yshift=6mm]R0.east) -- ([yshift=6mm]R1.west);
-\draw[flow] ([yshift=6mm]R1.east) -- ([yshift=6mm]R2.west);
-\draw[flow] ([yshift=6mm]R2.east) -- ([yshift=6mm]R3.west);
+\draw[flow] ([yshift=6mm]R0.east) -- ([yshift=6mm]R0.east -| R1.west);
+\draw[flow] ([yshift=6mm]R1.east) -- ([yshift=6mm]R1.east -| R2.west);
+\draw[flow] ([yshift=6mm]R2.east) -- ([yshift=6mm]R2.east -| R3.west);
 \node[flowlabel, below=1mm of R1.south east, anchor=north] {class taken is the strongest performed};
 
 \node[panel=Red, text width=24mm, anchor=north] (gov) at ([yshift=-8mm]R3.south) {\textbf{governor ruling}\\elevate, or stratum\\in force};
-\draw[grant] (gov.north) -- (e3b.south);
+\draw[grant] (gov.north) -- (R3.south);
 \end{tikzpicture}
