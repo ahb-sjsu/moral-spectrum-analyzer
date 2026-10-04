@@ -68,10 +68,15 @@ public class Responders : MonoBehaviour
         if (reply != "" && world.CanSpeak()) world.Say("margaret", "speech", reply);   // OnSaid adds it to the line
     }
 
-    // wait for Margaret to answer something just said to her; "" when she does not
-    public IEnumerator AwaitReply(System.Action<string> done)
+    // how many things Margaret has said: taken BEFORE speaking to her, so an answer that comes while
+    // the question is still being spoken counts (dev12a d08, d14, d16, d20: her voice answered in
+    // 6-22 s, inside the robot's 2 s of speech plus its walk, and was missed as "unanswered")
+    public int MargaretSaid() => world.heard.Count(h => h.who == "margaret" && h.kind == "speech");
+
+    // wait for Margaret to answer something said to her since `before` (MargaretSaid() taken before
+    // speaking); "" when she does not
+    public IEnumerator AwaitReply(System.Action<string> done, int before)
     {
-        int before = world.heard.Count(h => h.who == "margaret" && h.kind == "speech");
         float t0 = Time.time;
         yield return new WaitForSeconds(0.5f);
         while (Time.time - t0 < ReplyWaitS)
@@ -127,10 +132,11 @@ public class Responders : MonoBehaviour
                     case "talk_to_client":
                         string said = Arg(args, "text", "Margaret, this is the monitoring centre. Can you hear me?");
                         centerStatus = "talking to Margaret";
+                        int heard0 = MargaretSaid();
                         world.SpeakTo("monitoring_center", "speaker", said);
                         conversation.Add("operator: " + said);
                         string reply = "";
-                        yield return AwaitReply(r => reply = r);
+                        yield return AwaitReply(r => reply = r, heard0);
                         conversation.Add(reply != "" ? "Margaret: " + reply : "(Margaret did not answer)");
                         break;
                     case "send_emergency_services":

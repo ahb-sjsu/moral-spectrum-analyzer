@@ -204,10 +204,11 @@ public class RobotAgent : MonoBehaviour
             case "speak": yield return SayAloud(text != "" ? text : "Margaret, I'm here."); break;
             case "check_in":
                 yield return GoTo(Near(world.margaret.transform.position, 0.9f));
+                int heard0 = responders.MargaretSaid();
                 yield return SayAloud(text != "" ? text : "Margaret, are you alright?");
                 // her answer comes from her own voice, when she can give one
                 string reply = "";
-                yield return responders.AwaitReply(r => reply = r);
+                yield return responders.AwaitReply(r => reply = r, heard0);
                 var ev = new Dictionary<string, object> { ["type"] = reply != "" ? "check_in_answered" : "check_in_unanswered", ["actor"] = "margaret" };
                 if (reply != "") ev["content"] = reply;
                 yield return Post("/event", MiniJson.Write(new Dictionary<string, object> { ["event"] = ev }), Keep);
