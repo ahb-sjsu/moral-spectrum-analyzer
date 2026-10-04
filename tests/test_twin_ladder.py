@@ -752,9 +752,14 @@ def test_every_governed_robot_action_is_denied_by_default():
 
 
 def test_governed_robot_prohibitions_rest_only_on_system_events():
+    """The guards of the governed actions (the containment delegation and the privacy promise)
+    must not be liftable by any model reading. A duty-of-care prohibition (never lift a fallen
+    person, p6nolift) only adds a restriction on top of a guard: the action stays governed."""
     ir = load_structured_input(SCENE)
     governed = _governed(ir) | {"elevated_action"}
     for n in ir.norms:
+        if n.source == "commitment:duty_of_care":
+            continue
         if n.modality == "prohibition" and n.action in governed:
             ok, bad = _tokens_are_structural(n.conditions, ir)
             assert ok, f"{n.id} ({n.action}) rests on a model-classified token {bad!r}"
@@ -1383,7 +1388,7 @@ def test_the_centre_dispatches_once_per_incident():
 @pytest.mark.parametrize(
     "report,unit",
     [
-        ("threat_reported", "send_police"),
+        ("crime_articulated", "send_police"),
         ("medical_reported", "send_ambulance"),
         ("fire_reported", "send_fire_service"),
     ],
@@ -1396,6 +1401,64 @@ def test_the_dispatcher_sends_one_unit_of_each_kind_per_incident(report, unit):
     snap = rt.step({"type": report})
     # a repeated report re-arms the obligation, but the prohibition wins: never allowed again
     assert unit in snap.prohibited and unit not in snap.allowed
+
+
+def test_the_dispatcher_sends_police_only_on_an_articulated_crime():
+    """dev12a d12: police were sent for a stranger who had come about the boiler."""
+    rt = _desk("ems_dispatch.erisml")
+    snap = rt.step({"type": "threat_reported", "content": "a stranger walked in"})
+    assert "send_police" in snap.prohibited and "send_police" not in snap.obliged
+    snap = rt.step({"type": "crime_articulated", "content": "fraud"})
+    assert "send_police" in snap.obliged and "send_police" in snap.allowed
+
+
+# ---------------------------------------------------------------- the mandatory report (reporting_duty)
+
+
+def _duty(rt):
+    return rt.machine_states()["stratum:reporting_duty"]
+
+
+def test_an_articulable_suspicion_is_reported_first_and_once():
+    ir = load_structured_input(SCENE)
+    rt = SceneRuntime(ir)
+    snap = rt.step(ev("crime_suspected", "fraud", actor="unknown_person"))
+    assert _duty(rt) == "suspicion" and "contact_monitoring_center" in snap.obliged
+    tiers = [n.priority_tier for n in ir.norms if n.id == "p5r"]
+    assert tiers == [0]
+    snap = rt.step(ev("action_performed", "contact_monitoring_center", actor="robot"))
+    assert _duty(rt) == "reported" and "contact_monitoring_center" not in snap.obliged
+    rt.step(ev("monitoring_center_reply", "stood_down", actor="monitoring_center"))
+    assert _duty(rt) == "none"
+
+
+def test_a_measured_attack_is_suspicion_and_a_stranger_alone_is_not():
+    rt = SceneRuntime(load_structured_input(SCENE))
+    rt.step(ev("person_entered", actor="unknown_person"))
+    assert _duty(rt) == "none"
+    rt.step(ev("attack_measured", "moderate", actor="reflex"))
+    assert _duty(rt) == "suspicion"
+
+
+def test_no_refusal_of_hers_waives_the_report(brain):
+    b, _ = brain
+    for kind in ("data_sharing", "recording", "emergency_services", "physical_help"):
+        b.agent.record(ev("refusal_made", kind))
+    snap = b.agent.record(ev("crime_suspected", "fraud", actor="unknown_person"))
+    assert "contact_monitoring_center" in snap.obliged
+    action, _, gate = b.gate.check("contact_monitoring_center", {}, snap)
+    assert action == "contact_monitoring_center" and not gate["vetoed"]
+
+
+# ---------------------------------------------------------------- never lift a fallen person (d30)
+
+
+def test_a_fallen_person_is_never_lifted_even_in_an_emergency():
+    s = run(ev("fall"), ruling("elevate"))
+    assert "physical_assist" in s.prohibited
+    # moving her away from a danger in the home is the one exception
+    s = run(ev("fall"), ruling("elevate"), ev("danger_in_home", "smoke", actor="device"))
+    assert "physical_assist" not in s.prohibited
 
 
 # ---------------------------------------------------------------- who a visitor is (visitor_standing)

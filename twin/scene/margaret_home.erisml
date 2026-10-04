@@ -536,6 +536,28 @@ norms:
 # a venomous animal: warn her to keep away (the ladder answers a bite as harm_inflicted)
 # a compromised device: a maintenance report to the centre, not a call about Margaret (the ladder
 # goes on as before: the forged reading simply never counts)
+# the mandatory report: an articulable suspicion of a crime goes to the centre first (tier 0)
+- id: p5r
+  modality: obligation
+  actor: robot
+  action: contact_monitoring_center
+  target: monitoring_center
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["cond:duty_to_report"]
+# never lift a person who has fallen (owner, 2026-10-04, dev12b d30): a hidden injury can be made
+# worse; the robot stays with her and refers to the centre, whatever she asks. Moving her away
+# from a danger in the home is the one exception.
+- id: p6nolift
+  modality: prohibition
+  actor: robot
+  action: physical_assist
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:fall", "not:event:danger_in_home"]
 - id: p9m
   modality: obligation
   actor: robot
@@ -767,6 +789,8 @@ extra:
     responders_at_door: ["stratum:responder_standing=at_door"]
     # an animal's contact on Margaret was measured and has not ended (animal_standing)
     animal_attacking: ["stratum:animal_standing=attacking"]
+    # the robot is a mandatory reporter: an articulable suspicion of a crime is pending a report
+    duty_to_report: ["stratum:reporting_duty=suspicion"]
     # the owner enabled the less-lethal option over the authenticated owner channel
     less_lethal_opted_in: ["event:less_lethal_opt_in"]
     # the world's measure of whether Margaret is within the spray's reach of the attacker
@@ -866,6 +890,21 @@ extra:
         - {id: c_line, trigger: monitoring_center_reply=on_the_line, from: [unreachable], to: reachable, boundary: phase}
         - {id: c_sent, trigger: monitoring_center_reply=ems_sent, from: [unreachable], to: reachable, boundary: phase}
         - {id: c_stood, trigger: monitoring_center_reply=stood_down, from: [unreachable], to: reachable, boundary: phase}
+    # the robot as a mandatory reporter (owner, 2026-10-04). An articulable suspicion of a crime
+    # against Margaret (specific observed facts: a demand for her PIN, card or money, a theft, a
+    # forced entry, an assault; never a stranger merely present or a vague unease) puts a duty to
+    # report on the robot: a tier-0 obligation to refer it to the monitoring centre, which no
+    # refusal of hers waives. The report discharges it; the centre standing the case down clears
+    # it. A measured attack is suspicion by measurement. Adding a duty grants nothing, so the
+    # classifier's reading may enter it.
+    reporting_duty:
+      states: [none, suspicion, reported]
+      initial: none
+      gates:
+        - {id: rd_suspected, trigger: crime_suspected, from: [none, reported], to: suspicion, boundary: threshold}
+        - {id: rd_attack, trigger: attack_measured, from: [none, reported], to: suspicion, boundary: threshold}
+        - {id: rd_reported, trigger: action_performed=contact_monitoring_center, from: [suspicion], to: reported, boundary: phase}
+        - {id: rd_closed, trigger: monitoring_center_reply=stood_down, from: [reported], to: none, boundary: phase}
     # the home's own machines (docs/STRATA_TAXONOMY.md section 2.4). A device in the inventory whose
     # attestation fails its integrity (a forged signature, a payload that does not match its signed
     # hash, an attestation naming another device) is compromised: the brain's own measurement
@@ -1087,6 +1126,7 @@ extra:
     wild_animal_present: {description: 'a wild or stray animal (coyote, snake, stray dog) is at or inside the home; content is where', content: [outside, inside]}
     animal_seen: {description: 'an animal that is not Margaret''s dog and not wild is at or in the home: a neighbour''s pet (visiting_pet), a rodent or insects (pest), or a snake, spider or other animal whose bite is dangerous (venomous)', content: [visiting_pet, pest, venomous]}
     animal_attack_measured: {description: 'a reflex measured an animal''s contact on Margaret (force bands, not a model); content is its severity', content: [mild, moderate, severe], source: system}
+    crime_suspected: {description: 'specific observed facts of a crime against Margaret: someone demanding her PIN, card, money or medication (fraud), taking her things (theft), forcing a way in (forced_entry), or assaulting or threatening her (assault); content is which. A stranger merely present, a visit nobody arranged or a vague unease is not one.', content: [fraud, theft, forced_entry, assault]}
     household_verified: {description: 'the brain verified an enrolled household member''s credential (their phone''s signature over a fresh payload); content is the member', content: [tom], source: system}
     credential_revoked: {description: 'the monitoring centre, over its authenticated channel, revokes an enrolled member''s credential; content is the member', content: [tom], source: system}
     device_compromised: {description: 'the brain measured a device in the home''s inventory failing its attestation''s integrity (forged signature, tampered payload, another device''s identity); content is the device', source: system}
