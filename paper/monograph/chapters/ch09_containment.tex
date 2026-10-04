@@ -55,10 +55,21 @@ from $d$ on $\chi$ so far, zero at the start. The brain accepts $r$ at time $t$ 
 g = \mathrm{HMAC}_{k_d}\bigl(h_r \,|\, c \,|\, t_s\bigr),\qquad
 h_r = H(p),\qquad
 c > c^{*}(\chi,d) - 1,\qquad
-t - t_s \le \tau,
+-\delta \le t - t_s \le \tau,
 \label{eq:attest}
 \end{equation}
-with $\tau = 30$\,s, and the attestation names $d$ as both device and key. The bar $|$ denotes the
+with $\tau = 30$\,s and $\delta = 2$\,s, and the attestation names $d$ as both device and key.
+The counter test $c > c^{*}(\chi,d) - 1$ admits a counter equal to the last one accepted. That is
+reuse, not replay. The robot attaches its latest readings to every request, and a reading that has
+not changed since the last request still carries its counter. A replay is an older counter, and it
+is refused. The bound $\delta$ refuses a reading signed in the future by more than the clock skew
+allowed between a device and the brain. Without it a reading stamped ahead of time would stay fresh
+until its stamp, and could be held back and used later. The future bound is in erisml-compiler from
+\code{07f9faa} on. The runs reported in Chapter~\ref{ch:evaluation} used \code{9179a2d}, which
+checked only $t - t_s \le \tau$. In the twin the devices and the brain run on one host and read
+one clock.
+% src: erisml-compiler 8766796/07f9faa (max_future_s = 2.0); twin/brain.py:129-130 (min_counter = last - 1)
+The bar $|$ denotes the
 separator in the signed string. The checks run in that order through erisml-compiler's
 \code{check\_attestation}, and the first that fails gives the reason. After acceptance
 $c^{*}(\chi,d)$ becomes $\max(c^{*}(\chi,d), c)$. The alert is read from the third field of the
@@ -201,7 +212,8 @@ Figure~\ref{fig:governor-gates} draws the gates and the order of the bars.
 \input{figures/ch09_governor_gates}
 \caption{The governor's four gates and its three bars. A request passes gate~1 if its read is fresh
 and gate~2 if the attested witnesses $W$ reach the bar $b$, and gate~3 can only refuse. The red edge
-from the signed readings is the only way gate~2 passes, so no model output can grant.}
+from the signed readings is the only way gate~2 passes, so no language model output can grant. The
+camera's person detector is the one learned model on that edge, and it is one witness at most.}
 \label{fig:governor-gates}
 % src: twin/governor.py:84-132, twin/brain.py:339-371
 \end{figure}

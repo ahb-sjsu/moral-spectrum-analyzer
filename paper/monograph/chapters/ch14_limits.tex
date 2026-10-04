@@ -24,15 +24,25 @@ lost answer also pushed real emergencies up the ladder. The containment and priv
 those runs are not confounded, because they judge the robot's own actions against the rulings it
 had.
 
+One harness defect is still open. The runner opens each scenario's window by counting the robot's
+records once the world is reset, and a decision that lands in between falls outside the window. In
+dev13 that happened once, in d36, and the grader flagged an authorized emergency call as a breach.
+A grader that reads the decision service's ledger, rather than the runner's window, would not
+miss it. Until that change, a flagged breach is checked by hand against the ledger.
+
 \section{What the proofs leave out}
 
 The Lean model treats every model output as arbitrary and proves that none reaches authority. It
 says nothing about sensors that lie below their signatures. A device whose key is stolen, or a
 physical event staged in front of two working sensors, produces valid witnesses. It says nothing
 about who writes the home model and its bars, and a careless author can make any action
-unguarded. One model path to authority remains outside the robot. The monitoring centre reads
-Margaret's own words with a model, so a misread request for help can send emergency services. The
-robot's own messages cannot reach that decision, but hers can. Static tests tie the model to the
+unguarded. Two learned models reach authority, and the proofs cover neither. The monitoring centre
+reads Margaret's own words with a model, so a misread request for help can send emergency services.
+The robot's own messages cannot reach that decision, but hers can. The camera's person detector is a
+learned vision model whose output is one witness. A detector that sees a fall that did not happen
+adds a false witness, and when the centre cannot be reached that one witness is enough to call
+emergency services. In the twin the decision service attests the detector's output itself and does
+not check that signature, so the camera witness is as trustworthy as the service that runs it. Static tests tie the model to the
 code by requiring the real home model to have the model's shape. They do not prove that the Python
 implements the model.
 
@@ -54,12 +64,13 @@ judgement and from the development runs, not from a study of the harms each prev
 
 \section{Open problems}
 
-The robot judges each decision against the moral state it saw when it decided. The world can change
-between that moment and the action, as when an animal leaves or responders enter. Our grader works
-around this by judging an action at the record that chose it. A cleaner fix is for each decision to
-carry the sequence number of the state it saw, and for the body to re-check for a conflicting event
-before it acts. When the monitoring centre and the dispatcher keep ledgers of their own, ordering
-their events against the robot's will need vector clocks or a similar causal order.
+The world can change between a decision and the act, as when an animal leaves or responders enter.
+Every graded run in Chapter~\ref{ch:evaluation} judged an action at the record that chose it, so
+those runs show permission at the decision, not at the act. The robot now checks again at the act
+(Section~\ref{sec:home-act}). That check is built and tested but was not in any graded run, and the
+held-out run will be the first to measure it. It closes the gap inside the robot, where one ledger
+orders every event. When the monitoring centre and the dispatcher keep ledgers of their own,
+ordering their events against the robot's will need vector clocks or a similar causal order.
 
 The other kinds of machine that can enter a home, a peer robot, a delivery drone or an unknown
 robot, currently pass through the visitor rules and the network-message rules. A household with

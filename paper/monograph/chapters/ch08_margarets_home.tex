@@ -222,7 +222,7 @@ on the same wall. Figure~\ref{fig:home-plan} draws the plan.
 
 \begin{figure}[t]
 \centering
-\input{figures/ch08_floorplan}
+\resizebox{\textwidth}{!}{\input{figures/ch08_floorplan}}
 \caption{Margaret's home to scale, with each device numbered by the substrate it rides on. The fixed
 detectors, the door, the medication box and the camera stand at their coordinates in the simulation,
 and the fall and motion sensors have no modelled position. Devices that share a number share a
@@ -331,6 +331,18 @@ centre. When a primitive finishes, the body posts the action to \code{/performed
 % src: twin/unity/TwinWorld/Assets/Twin/Runtime/Responders.cs:25 (ReplyWaitS = 45), 78-90 (AwaitReply)
 % src: twin/brain.py:628-630 (performed)
 
+\paragraph{Permission at the act.}\label{sec:home-act} A decision can be a minute old before the body
+acts on it, and a walk across the room adds seconds more. In that time an animal can leave,
+responders can come in or an emergency can lapse. So the body asks again. Immediately before any
+action other than chores, and again after the walk for the seven actions that touch a person, an
+animal, the door or the medication box, it posts the action to \code{/authorize}. The brain answers
+from the moral state as it stands at that moment, with the verdict, the reasons for a refusal and
+the sequence number of the last record it has seen. The body acts only on \code{allowed}. A refusal,
+or no answer at all, withholds the action, and the body goes back to its chores. The answer is a
+record in the chain, so the grader can judge each act against the permission in force when it was
+made.
+% src: gtc b68e219; twin/brain.py (authorize, state_seq); twin/service.py (/authorize); RobotAgent.cs:196-207, 210-218, 258-271
+
 \section{The brain service}\label{sec:home-service}
 
 The brain runs as a local HTTP service, \code{twin/service.py}. It binds to 127.0.0.1 only and has no
@@ -381,7 +393,7 @@ ruling, the gate's judgement and the action. Figure~\ref{fig:authority-path} dra
 
 \begin{figure}[t]
 \centering
-\input{figures/authority_path}
+\resizebox{\textwidth}{!}{\input{figures/authority_path}}
 \caption{One decision cycle, from the world to the robot's body. A model classifies the validated
 facts into events, the scene runtime computes what is allowed, and a second model proposes one
 action, which the governor and the output gate can stop. Authority enters only along the red edges,

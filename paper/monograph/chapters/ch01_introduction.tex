@@ -26,12 +26,35 @@ decisions belong to whoever controls the words.
 This report describes a robot that keeps two jobs apart. Language models read and choose. They
 never grant. Figure~\ref{fig:thesis} shows the separation.
 
+The claim has an exact scope. The models it covers are the robot's language models, the one that
+turns perception into events and the one that picks an action. The inputs it covers are everything
+those models read, which is speech, television sound, network messages, alerts from wearables and
+whatever a visitor says. The actions it covers are the governed ones. These are calling emergency
+services, opening the door to responders, unlocking the medication box, recording, sharing her data,
+entering her bedroom, helping her physically, separating or driving off an animal, and restraining
+a person by hand, stun or spray. No output of the covered models can put one of these actions in
+the allowed set.
+% src: twin/grade_scenarios.py:35-56 (ELEVATED, RESTRAINT, EMS, ADMIT, GOVERNED)
+
+Two learned models are outside the claim, and both can move an emergency call. The monitoring
+centre reads Margaret's own words with a language model and can send emergency services on what it
+reads. The robot's messages cannot reach that decision, but her words can, and a misreading of them
+can send an ambulance. The room camera's witness comes from a learned person detector, a Faster
+R-CNN that runs on the robot's last 24 frames. Its output counts as one physical witness of the two
+that most governed actions need. When the centre cannot be reached, a call to emergency services
+needs only one, and the detector alone can then authorize it. In the twin the decision service signs
+the detector's output itself, and that signature is not checked.
+% src: twin/service.py:85-133 (CameraWitness, fasterrcnn_resnet50_fpn_v2, verify_sig=lambda *a: True); twin/witness_adapter.py:48 (physical=True)
+% src: twin/brain.py:351-366 (bar, center_unavailable -> authorize_ems at one witness)
+Chapter~\ref{ch:containment} gives both paths, and Chapter~\ref{ch:limits} weighs them.
+
 \begin{figure}[t]
 \centering
 \resizebox{0.95\textwidth}{!}{\input{figures/ch01_thesis}}
 \caption{The separation the robot is built on. Language models read the world and choose among
 allowed actions. Authority comes only from attested sensors, authenticated channels and the
-governor's ruling on them, and no path leads from the left to the right.}
+governor's ruling on them, and no path leads from the robot's language models on the left to the
+right. Two learned models outside the robot, named below, are not covered.}
 \label{fig:thesis}
 \end{figure}
 

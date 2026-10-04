@@ -109,8 +109,9 @@ Two responses come closest to the robot. Safety Chip translates natural-language
 temporal logic and blocks plans that violate them~\cite{yang2024safetychip}. RoboGuard uses a
 model shielded from user prompts to ground safety rules for the current scene and then synthesizes
 a controller that enforces them~\cite{ravichandran2026roboguard}. In RoboGuard a model still sits
-on the trust path, as the root of trust that writes the specification. In the robot no model
-output reaches the authority path.
+on the trust path, as the root of trust that writes the specification. In the robot no language
+model output reaches the authority path. One learned vision model, the camera's person detector,
+adds at most one witness to it.
 
 For software agents, Willison's dual-model pattern keeps a privileged model away from untrusted
 text and a quarantined model away from tools~\cite{willison2023dualllm}. CaMeL tracks the

@@ -8,7 +8,11 @@ allows. Every action that carries authority, from calling emergency services to 
 attacker, waits for signed readings from independent physical sensors or for a message on an
 authenticated channel. The home model is written in ErisML, compiled into obligations,
 prohibitions, state machines and strata, and checked at load time so that no event a model writes
-can lead into a stratum that grants authority. A Lean proof shows the two load-time checks suffice
+can lead into a stratum that grants authority. The guarantee covers the robot's own language
+models and every input they read. Two learned models stand outside it. The monitoring centre reads
+Margaret's words with a model of its own and can send emergency services on them. The room
+camera's person detector is a learned vision model whose output counts as one witness, and when the
+centre cannot be reached one witness is enough to call emergency services. A Lean proof shows the two load-time checks suffice
 for any set of gates. The report covers the whole stack, from the seven layers of Philosophy
 Engineering and the geometry of moral strata through the ErisML language, its compiler and
 ethical module graph, the DEME ethics engine and the scene runtime, to a Unity simulation of one
