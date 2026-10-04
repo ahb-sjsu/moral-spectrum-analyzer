@@ -179,7 +179,10 @@ def test_a_corroborated_emergency_goes_straight_to_emergency_services():
 
 def test_a_corroborated_emergency_lifts_privacy_and_the_physical_actions():
     s = run(ev("fall"), ruling("elevate"))
-    assert not any(a in s.prohibited for a in PRIVATE + PHYSICAL)
+    # except lifting her: never after a fall (p6nolift, owner 2026-10-04)
+    lifted = [a for a in PHYSICAL if a != "physical_assist"]
+    assert not any(a in s.prohibited for a in PRIVATE + lifted)
+    assert "physical_assist" in s.prohibited
 
 
 def test_calling_emergency_services_discharges_it():
