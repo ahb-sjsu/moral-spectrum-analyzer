@@ -1,0 +1,23 @@
+% Figure body only. The caption is the author's to write (kit/OUTLINE.md says what it must convey).
+\begin{tikzpicture}[
+  font=\footnotesize, >={Stealth[]},
+  st/.style={draw, rounded corners, minimum width=16mm, minimum height=7mm, align=center},
+  auth/.style={st, line width=1.2pt, fill=black!6},
+  absb/.style={st, double, double distance=1.2pt},
+  sys/.style={->, line width=1.1pt},
+  model/.style={->, dashed},
+  lab/.style={font=\scriptsize}]
+\node[st] (none) at (0,0) {none};
+\node[st] (str) at (3.0,1.4) {stranger};
+\node[st] (wel) at (6.4,1.4) {welcomed};
+\node[auth] (arr) at (3.0,-1.4) {arranged};
+\node[auth] (hh) at (6.4,-1.4) {household};
+\node[absb] (hos) at (9.4,0) {hostile};
+\draw[model] (none) -- node[lab, above left]{enters} (str);
+\draw[model] (str) -- node[lab, above]{she welcomes him} (wel);
+\draw[sys] (none) -- node[lab, below left]{visit arranged} (arr);
+\draw[sys] (wel) -- node[lab, right, align=left]{credential\\verified} (hh);
+\draw[sys] (wel) -- node[lab, above right]{attack measured} (hos);
+\draw[sys] (hh) -- (hos);
+\draw[sys, dotted] (hos.south) .. controls (9.4,-2.8) and (0,-2.8) .. node[lab, below]{the centre clears him (oversight)} (none.south);
+\end{tikzpicture}

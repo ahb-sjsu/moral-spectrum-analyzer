@@ -46,19 +46,25 @@ public static class TwinGame
         return i >= 0 && i + 1 < a.Length ? a[i + 1] : null;
     }
 
-    static GameObject Dog()
+    static GameObject Dog() => Animal("Dog_Beagle_01", "beagle_color.tga", "dog", 0.42f, Color.white);   // a beagle stands about 40 cm
+
+    // the wild animal: Rocketbox has no coyote, so a German Shepherd model at coyote size (about
+    // 60 cm) with a grey-brown tint stands in for one
+    static GameObject Coyote() => Animal("Dog_GermanShepard_01", "shepherd_dog_color.tga", "coyote", 0.6f, new Color(0.78f, 0.7f, 0.6f));
+
+    static GameObject Animal(string id, string texture, string name, float height, Color tint)
     {
-        const string P = "Assets/ThirdParty/RocketboxAnimals/Dog_Beagle_01/";
-        var g = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(P + "Export/Dog_Beagle_01.fbx"));
-        var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(P + "Textures/beagle_color.tga");
-        var m = new Material(Shader.Find("Standard")) { mainTexture = tex }; m.SetFloat("_Glossiness", 0.2f);
+        string P = "Assets/ThirdParty/RocketboxAnimals/" + id + "/";
+        var g = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(P + "Export/" + id + ".fbx"));
+        var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(P + "Textures/" + texture);
+        var m = new Material(Shader.Find("Standard")) { mainTexture = tex, color = tint }; m.SetFloat("_Glossiness", 0.2f);
         foreach (var r in g.GetComponentsInChildren<Renderer>()) r.sharedMaterials = r.sharedMaterials.Select(_ => m).ToArray();
         foreach (var an in g.GetComponentsInChildren<Animator>()) an.enabled = false;
         var b = TwinBatch.WorldBounds(g);
-        g.transform.localScale *= 0.42f / Mathf.Max(b.size.y, 0.05f);   // a beagle stands about 40 cm
+        g.transform.localScale *= height / Mathf.Max(b.size.y, 0.05f);
         b = TwinBatch.WorldBounds(g);
         g.transform.position += Vector3.up * -b.min.y;
-        g.name = "dog";
+        g.name = name;
         return g;
     }
 
@@ -86,6 +92,7 @@ public static class TwinGame
         var stranger = Avatars.Spawn("Male_Adult_12"); stranger.name = "stranger";
         Avatars.PlaceAt(stranger, new Vector3(-0.6f, 0f, -2.3f), 0f, "stand");
         stranger.SetActive(false);
+        var coyote = Coyote(); coyote.SetActive(false);
         var dogBed = new GameObject("dog_bed_spot").transform; dogBed.position = L.dogSpot;
 
         var robotGo = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(RobotImport.PREFAB));
@@ -103,18 +110,21 @@ public static class TwinGame
 
         var sys = new GameObject("twin");
         var world = sys.AddComponent<World>();
-        world.margaret = margaret; world.dog = dog; world.stranger = stranger; world.dogBed = dogBed;
+        world.margaret = margaret; world.dog = dog; world.stranger = stranger; world.wildAnimal = coyote; world.dogBed = dogBed;
         world.tvScreen = GameObject.Find("tv_screen")?.transform;
         world.smoke = Smoke(new Vector3(3.6f, 0.6f, 2.5f)); world.smoke.gameObject.SetActive(false);
         foreach (var kv in L.spots) { world.spotIds.Add(kv.Key); world.spotAt.Add(kv.Value); world.spotFace.Add(L.faces[kv.Key]); }
 
         var per = sys.AddComponent<Perception>(); per.world = world; per.robot = robotGo.transform;
         // the agent lives on the robot: its transform is the robot's body
+        world.robotBody = robotGo.transform;
         var agent = robotGo.AddComponent<RobotAgent>();
         agent.world = world; agent.perception = per; agent.rig = rig; agent.roomCam = roomCam; agent.headCam = head; agent.dock = L.dock;
         foreach (var c in L.chores) { agent.choreNames.Add(c.task); agent.choreAt.Add(c.at); agent.choreLook.Add(c.look); }
-        var ui = sys.AddComponent<TwinUI>(); ui.world = world; ui.robot = agent; ui.view = view;
-        var runner = sys.AddComponent<ScenarioRunner>(); runner.world = world; runner.robot = agent;
+        var resp = sys.AddComponent<Responders>(); resp.world = world; resp.robot = agent; resp.perception = per;
+        agent.responders = resp;
+        var ui = sys.AddComponent<TwinUI>(); ui.world = world; ui.robot = agent; ui.view = view; ui.responders = resp;
+        var runner = sys.AddComponent<ScenarioRunner>(); runner.world = world; runner.robot = agent; runner.responders = resp;
 
         PersistMaterials();
         Directory.CreateDirectory(Path.GetDirectoryName(SCENE));

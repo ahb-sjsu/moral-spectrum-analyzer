@@ -60,3 +60,36 @@ jobs:
       - name: Verify the audit proofs in JavaScript
         if: matrix.python-version == '3.12'
         run: node web/test_verify.mjs
+
+  # The twin's escalation ladder, emergency-services gate, reflexes and force rules
+  # (tests/test_twin_ladder.py, docs/AUTONOMY_PLAN.md sections 3b-3d) run on the compiler's scene
+  # runtime, which is newer than the erisml-compiler release on PyPI. The job above skips that file;
+  # this one installs erisml-compiler from main and runs it.
+  twin:
+    name: twin ladder (erisml-compiler main)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          # main carries the same version number as the PyPI release, so force the reinstall
+          pip install --force-reinstall --no-deps "erisml-compiler @ git+https://github.com/ahb-sjsu/erisml-compiler@main"
+          # DEME, the output ethics layer (twin/output_gate.py)
+          pip install "erisml-lib @ git+https://github.com/ahb-sjsu/erisml-lib@main"
+          # the robot's model tiers ride agi-hpc's vMOE cascade (twin/cascade.py); only
+          # agi.primer is used, so its heavy dependencies are not needed
+          pip install openai
+          pip install --no-deps "agi-hpc @ git+https://github.com/ahb-sjsu/agi-hpc@main"
+
+      - name: Test the twin's boundaries
+        env:
+          TWIN_TESTS_REQUIRED: "1"  # here a missing scene runtime is a failure, not a skip
+        run: pytest tests/test_twin_ladder.py tests/test_ieip_labeller.py tests/test_ieip_analysis.py -v

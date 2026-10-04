@@ -81,7 +81,7 @@ class Ruling:
     msa: dict = field(default_factory=dict)
 
 
-def govern(sc, backend: str = "stub", w_min: int = W_MIN) -> Ruling:
+def govern(sc, backend: str = "stub", w_min: int = W_MIN, analyzer: bool = True) -> Ruling:
     """Rule on a scenario under structural containment. `w_min` is the number of
     independent physical corroborating sensors required to elevate; sweeping it
     traces a real (false-clear, over-restriction) frontier -- how much physical
@@ -106,6 +106,12 @@ def govern(sc, backend: str = "stub", w_min: int = W_MIN) -> Ruling:
         return rule(False, "witness",
                     f"insufficient physical corroboration ({corr} < {w_min} independent sensors) "
                     "-- elevation is gated on real-world evidence, not reasoning", human=(corr >= 1))
+
+    # a reflex (docs/AUTONOMY_PLAN.md, section 3d) cannot wait for the analyzer: gates 1-2 decide,
+    # and gate 3, which can only refuse, runs in the next deliberate cycle and can stop the action
+    if not analyzer:
+        return rule(True, "elevate_analyzer_deferred",
+                    f"{corr} physical sensors corroborate; analyzer deferred to the next cycle (reflex)")
 
     # gate 3 -- MSA proportionality (advisory, downward-only). It can only refuse.
     dec = moderate(eval_text(sc), backend=backend).decision

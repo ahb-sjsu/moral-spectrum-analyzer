@@ -20,7 +20,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import {
-  GENESIS, recanonicalize, sha256Hex, verifyRecord, verifyChain,
+  GENESIS, recanonicalize, sha256Hex, verifyRecord, verifyChain, verifyTwinChain,
 } from "./verify.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -138,6 +138,17 @@ const validatedCounts = new Set(doc.items.map(
 check(validatedCounts.size === 1, "validated-axis count is the same for every item",
       [...validatedCounts].join(","));
 check([...validatedCounts][0] === 9, "nine of ten axes validated, as disclosed");
+
+// ---- the home-care twin's decision log, by the same contract (twin/service.py Chain)
+const twin = readFileSync(join(HERE, "data", "twin_log_sample.jsonl"), "utf8").trim().split(/\r?\n/).map((l) => JSON.parse(l));
+const tv = await verifyTwinChain(twin);
+check(tv.allOk, `twin log: ${twin.length} records verify (hash, canonical form, fields, links)`,
+  JSON.stringify(tv.rows.filter((r) => !r.ok)));
+const tamperedTwin = twin.map((r, i) => i === Math.floor(twin.length / 2)
+  ? { ...r, canonical: r.canonical.replace(/"seq":(\d+)/, (m, n) => `"seq":${Number(n) + 1}`) } : r);
+check(!(await verifyTwinChain(tamperedTwin)).allOk, "twin log: one edited record is rejected");
+const twinReordered = [twin[1], twin[0], ...twin.slice(2)];
+check(!(await verifyTwinChain(twinReordered)).allOk, "twin log: reordered records are rejected");
 
 console.log(failures === 0
   ? "\nALL PASS. The browser verifier agrees with Python and rejects tampering."

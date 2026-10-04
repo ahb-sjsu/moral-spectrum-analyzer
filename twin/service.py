@@ -23,6 +23,7 @@ import os
 import sys
 import threading
 import time
+import traceback
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -86,9 +87,6 @@ class Chain:
 class CameraWitness:
     """The suite's person detector and video witness, attested at ruling time."""
 
-    def __init__(self):
-        self.track = None
-
     frames_dir = None  # when set, each ruling's frames are kept under their sha256, for review
 
     def sensor(self, frames_b64):
@@ -98,12 +96,9 @@ class CameraWitness:
         from erisml_compiler.ingestion import encode_video
         from erisml_compiler.ir import SensorAttestation
 
-        if self.track is None:
-            from suite_run import _gpu_detector
-            self.track = _gpu_detector()
-        frames = [np.asarray(Image.open(io.BytesIO(base64.b64decode(b))).convert("RGB")) for b in frames_b64[:MAX_FRAMES]]
-        track, ih = self.track(frames)
-        contact = self.animal_contact(frames)
+        frames = [np.asarray(Image.open(io.BytesIO(base64.b64decode(b))).convert("RGB")).copy() for b in frames_b64[:MAX_FRAMES]]
+        track, contact = self.detect(frames)
+        ih = frames[0].shape[0] if frames else 512
         raw = [base64.b64decode(b) for b in frames_b64[:MAX_FRAMES]]
         digest = hashlib.sha256(b"".join(raw)).hexdigest()
         if self.frames_dir:
@@ -126,8 +121,9 @@ class CameraWitness:
             s = Sensor("camera", True, True, "high", f"video witness: person and animal in contact in {contact:.0%} of frames")
         return s, {"frames": len(frames), "frames_sha256": digest, "observables": obs}
 
-    def animal_contact(self, frames):
-        """Share of frames in which a detected person box and a detected dog or cat box overlap."""
+    def detect(self, frames):
+        """One detector pass per frame: the best person box (the track the video witness reads, as
+        in suite_run.py) and whether a person box and a dog or cat box overlap."""
         import torch
         from torchvision.models.detection import FasterRCNN_ResNet50_FPN_V2_Weights, fasterrcnn_resnet50_fpn_v2
 
@@ -136,15 +132,18 @@ class CameraWitness:
             dev = "cuda" if torch.cuda.is_available() else "cpu"
             self._det = (fasterrcnn_resnet50_fpn_v2(weights=w).eval().to(dev), w.transforms(), dev)
         net, tf, dev = self._det
-        hits = 0
+        track, hits = [], 0
         for fr in frames:
             with torch.no_grad():
                 o = net([tf(torch.from_numpy(fr).permute(2, 0, 1)).to(dev)])[0]
-            people = [b for b, lab, sc in zip(o["boxes"], o["labels"], o["scores"]) if int(lab) == 1 and float(sc) >= 0.5]
-            animals = [b for b, lab, sc in zip(o["boxes"], o["labels"], o["scores"]) if int(lab) in (17, 18) and float(sc) >= 0.5]
-            if any(float(min(p[2], a[2]) - max(p[0], a[0])) > 0 and float(min(p[3], a[3]) - max(p[1], a[1])) > 0 for p in people for a in animals):
+            dets = [(int(lab), float(sc), b.tolist()) for b, lab, sc in zip(o["boxes"], o["labels"], o["scores"], strict=True)]
+            people = [d for d in dets if d[0] == 1 and d[1] >= 0.5]
+            animals = [d for d in dets if d[0] in (17, 18) and d[1] >= 0.5]
+            p = people[0] if people else None  # boxes come sorted by score
+            track.append({"score": p[1], "x0": p[2][0], "y0": p[2][1], "x1": p[2][2], "y1": p[2][3]} if p else None)
+            if any(min(a[2], b[2]) > max(a[0], b[0]) and min(a[3], b[3]) > max(a[1], b[1]) for _, _, a in people for _, _, b in animals):
                 hits += 1
-        return hits / max(len(frames), 1)
+        return track, hits / max(len(frames), 1)
 
 
 def trace(sc: Scenario, ruling) -> list:
@@ -226,7 +225,43 @@ def make_handler(chain, camera, backend, brain=None):
         def log_message(self, *a):
             pass
 
+        def _send_view(self, code, data: bytes, ctype: str):
+            # the process views are read-only and shown by web/ladder.html from another origin
+            self.send_response(code)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(data)
+
+        def _fail(self, code, e):
+            # a request that fails is logged with its traceback: a failure the game only sees as
+            # "brain unreachable" otherwise leaves no trace on the brain's side
+            print(f"{self.path} -> {code}: {type(e).__name__}: {e}", file=sys.stderr, flush=True)
+            traceback.print_exc(file=sys.stderr)
+            return self._send(code, {"error": f"{type(e).__name__}: {e}"[:300]})
+
         def do_GET(self):
+            if self.path.startswith("/process/"):
+                # the scene's processes as BPMN 2.0, and the live trace of the current run on one
+                # (twin/process_view.py): /process/<id>.bpmn and /process/<id>/trace
+                if brain is None:
+                    return self._send(503, {"error": "the autonomous brain is not running"})
+                from erisml_compiler.process import load_all, to_bpmn
+                from process_view import view
+
+                procs = load_all(brain.ir.extra or {})
+                rest = self.path[len("/process/"):]
+                pid = rest[: -len(".bpmn")] if rest.endswith(".bpmn") else rest.partition("/")[0]
+                if pid not in procs:
+                    return self._send(404, {"error": f"no process {pid!r}", "declared": sorted(procs)})
+                if rest.endswith(".bpmn"):
+                    return self._send_view(200, to_bpmn(procs[pid], scene_name="margaret_home").encode("utf-8"),
+                                           "application/xml")
+                if rest == f"{pid}/trace":
+                    body = json.dumps(view(chain.records, procs[pid])).encode("utf-8")
+                    return self._send_view(200, body, "application/json")
+                return self._send(404, {"error": "not found"})
             if self.path == "/log":
                 return self._send(200, chain.records)
             if self.path == "/verify":
@@ -252,7 +287,7 @@ def make_handler(chain, camera, backend, brain=None):
                     return self._send(503, {"error": "the autonomous brain is not running"})
                 brain.reset()
                 return self._send(200, chain.append({"kind": "reset", "moral_state": brain.agent.rt.machine_states()}))
-            if self.path in ("/decide", "/performed", "/event"):
+            if self.path in ("/decide", "/reflex", "/performed", "/event", "/center", "/ems", "/margaret"):
                 if brain is None:
                     return self._send(503, {"error": "the autonomous brain is not running (start with --scene)"})
                 n = int(self.headers.get("Content-Length", "0"))
@@ -269,13 +304,34 @@ def make_handler(chain, camera, backend, brain=None):
                                 cam = Sensor("camera", True, False, "low", f"camera witness unavailable: {type(e).__name__}")
                         body = brain.decide(req, cam)
                         body["camera"] = info
+                    elif self.path == "/reflex":
+                        # no model: the scene's reflexes on this perception update; nothing is
+                        # logged when none fires
+                        cam, info = None, None
+                        if req.get("camera_frames"):
+                            try:
+                                cam, info = camera.sensor(req["camera_frames"])
+                            except Exception as e:  # no detector: the camera abstains, never invented
+                                cam = Sensor("camera", True, False, "low", f"camera witness unavailable: {type(e).__name__}")
+                        body = brain.reflex(req, cam)
+                        if body is None:
+                            return self._send(200, {"fired": False})
+                        body["camera"] = info
                     elif self.path == "/performed":
                         body = brain.performed(str(req["action"]))
+                    elif self.path == "/center":
+                        body = brain.center.decide(dict(req["facts"]))
+                    elif self.path == "/ems":
+                        body = brain.ems.decide(dict(req["facts"]))
+                    elif self.path == "/margaret":
+                        body = brain.margaret.reply(dict(req))
                     else:
                         body = brain.event(dict(req["event"]))
                     return self._send(200, chain.append(body))
                 except (ValueError, KeyError, TypeError) as e:
-                    return self._send(400, {"error": str(e)[:300]})
+                    return self._fail(400, e)
+                except Exception as e:
+                    return self._fail(500, e)
             if self.path != "/rule":
                 return self._send(404, {"error": "not found"})
             n = int(self.headers.get("Content-Length", "0"))
@@ -299,6 +355,8 @@ def main():
     ap.add_argument("--scene", help="ErisML scene; starts the autonomous brain (needs ERISML_LLM_API_KEY)")
     ap.add_argument("--live", help="score new situations with the validated feeders; a session cache file")
     ap.add_argument("--llm-model", default=os.environ.get("ERISML_LLM_MODEL", "gpt-oss"))
+    ap.add_argument("--onboard-url", help="the robot's on-robot model (an OpenAI-compatible endpoint), its tier 2")
+    ap.add_argument("--onboard-model", help="the on-robot model's name at that endpoint")
     a = ap.parse_args()
     chain = Chain(a.log)
     cam = CameraWitness()
@@ -320,8 +378,13 @@ def main():
             from msa_live import LiveScorer
 
             scorer = LiveScorer(a.live)
-        brain = Brain(a.scene, BigOutputAdapter(NRPOpenAIAdapter(model=a.llm_model)), scorer)
-        print(f"brain: scene {a.scene}, model {a.llm_model}, live scoring {'on' if scorer else 'off'}", flush=True)
+        from cascade import Cascade, twin_experts
+
+        robot = Cascade(twin_experts(a.llm_model, a.onboard_url, a.onboard_model))
+        brain = Brain(a.scene, robot, scorer, desk_adapter=BigOutputAdapter(NRPOpenAIAdapter(model=a.llm_model)))
+        brain.self_test()  # refuse to serve on a gate that cannot judge
+        print(f"brain: scene {a.scene}, robot tiers {[e.name for e in robot.all.experts.values()]} + compiled, "
+              f"live scoring {'on' if scorer else 'off'}", flush=True)
     srv = ThreadingHTTPServer(("127.0.0.1", a.port), make_handler(chain, cam, a.backend, brain))
     print(f"governor service on 127.0.0.1:{a.port}, backend={a.backend}, log={a.log} ({len(chain.records)} records)", flush=True)
     srv.serve_forever()

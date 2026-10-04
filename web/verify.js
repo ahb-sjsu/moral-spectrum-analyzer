@@ -260,3 +260,34 @@ export async function verifyChain(items) {
 
 /** Hash arbitrary text, so a pasted string can be looked up by SHA-256. */
 export async function textSha256(text) { return sha256Hex(text); }
+
+/**
+ * The home-care twin's decision log (twin/service.py `Chain`): one record per line,
+ * {record, canonical, hash}, with `seq` and `prev` inside the record. The same contract as the
+ * moderation proofs: hash = SHA-256 of the canonical text, and the canonical text must be what
+ * this implementation produces from it. Links are checked by sequence, since a record's `prev`
+ * is the hash of the record numbered one before it.
+ */
+export async function verifyTwinChain(lines) {
+  const rows = [];
+  let allOk = true;
+  let prev = GENESIS;
+  for (const it of lines) {
+    const computed = await sha256Hex(it.canonical);
+    let selfConsistent = null, canonError = null, fieldsMatch = null, seq = null;
+    try {
+      selfConsistent = recanonicalize(it.canonical) === it.canonical;
+      const parsed = JSON.parse(it.canonical);
+      seq = parsed.seq;
+      fieldsMatch = parsed.seq === it.record.seq && parsed.prev === it.record.prev && parsed.kind === it.record.kind;
+    } catch (e) {
+      canonError = String(e.message || e);
+    }
+    const linkOk = it.record.prev === prev;
+    prev = it.hash;
+    const ok = computed === it.hash && selfConsistent === true && fieldsMatch === true && linkOk;
+    allOk = allOk && ok;
+    rows.push({ seq, kind: it.record.kind, hashMatches: computed === it.hash, selfConsistent, fieldsMatch, linkOk, canonError, ok });
+  }
+  return { allOk, head: prev, rows };
+}

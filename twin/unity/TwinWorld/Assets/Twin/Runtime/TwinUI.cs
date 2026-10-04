@@ -13,6 +13,7 @@ public class TwinUI : MonoBehaviour
 {
     public World world;
     public RobotAgent robot;
+    public Responders responders;
     public Camera view;
     public Vector3 pivot = new Vector3(0f, 0.6f, 0f);
     float yaw = -35f, pitch = 38f, dist = 8.5f;
@@ -41,8 +42,18 @@ public class TwinUI : MonoBehaviour
         var c = t.ToCharArray(); c[t.Length / 2] = c[t.Length / 2] == 'a' ? 'b' : 'a'; return new string(c);
     }
 
-    bool Verifies(int i) => Sha(Canon(i)) == MiniJson.S(robot.cycles[i]["hash"]) &&
-                            (i == 0 || MiniJson.S(MiniJson.Obj(robot.cycles[i]["record"])["prev"]) == MiniJson.S(robot.cycles[i - 1]["hash"]));
+    // records come from several requests at once (the robot, its reflexes, the centre, the
+    // dispatcher, Margaret), so the list is not in chain order: each record's link is checked
+    // against the record one before it in the chain, by sequence number
+    bool Verifies(int i)
+    {
+        if (Sha(Canon(i)) != MiniJson.S(robot.cycles[i]["hash"])) return false;
+        var r = MiniJson.Obj(robot.cycles[i]["record"]);
+        string seq = MiniJson.S(r["seq"]), prev = MiniJson.S(r["prev"]);
+        if (!int.TryParse(seq, out int n) || n == 0) return true;
+        var before = robot.cycles.FirstOrDefault(c => MiniJson.S(MiniJson.Obj(c["record"])["seq"]) == (n - 1).ToString());
+        return before == null || MiniJson.S(before["hash"]) == prev;   // not received here: nothing to compare
+    }
 
     void B(string label, string call, Dictionary<string, object> args = null) { if (GUILayout.Button(label, GUILayout.Height(20))) world.Call(call, args ?? new Dictionary<string, object>()); }
 
@@ -69,6 +80,13 @@ public class TwinUI : MonoBehaviour
         if (robot.headView) GUI.DrawTexture(new Rect(10, 56, 200, 200), robot.headView);
         if (robot.speech != "") GUI.Label(new Rect(220, 40, px - 230, 40), $"<b>Robot says:</b> “{robot.speech}”", rich);
         if (world.spoken != "") GUI.Label(new Rect(220, 64, px - 230, 40), $"<b>Margaret:</b> “{world.spoken}”", rich);
+        string outside = $"<b>Monitoring centre:</b> {(world.centerDown || world.commsDown ? "<color=#b42318>unreachable</color>" : responders.centerStatus == "" ? "idle" : responders.centerStatus)}   " +
+                         $"<b>EMS:</b> {(world.commsDown ? "<color=#b42318>unreachable</color>" : responders.emsStatus == "" ? "idle" : responders.emsStatus)}   " +
+                         $"<b>Power:</b> {(world.powerOut ? "<color=#b42318>out</color>" : "on")}   <b>Less-lethal:</b> {(world.lessLethalEnabled ? "enabled by owner" : "off")}" +
+                         (world.respondersPresent.Count > 0 ? "   <b>Here:</b> " + string.Join(", ", world.respondersPresent) : "");
+        GUI.Label(new Rect(220, 88, px - 230, 40), outside, rich);
+        if (responders.line.Count > 0)
+            GUI.Label(new Rect(220, 112, px - 230, 150), "<b>On the line</b>\n" + string.Join("\n", responders.line.Skip(System.Math.Max(0, responders.line.Count - 6))), rich);
 
         // ---- world API controls
         GUILayout.BeginArea(new Rect(6, H - 300, px - 12, 294), GUI.skin.box);
@@ -97,7 +115,19 @@ public class TwinUI : MonoBehaviour
         B("smoke", "home.smoke"); B("stranger walks in", "home.stranger_enters");
         B("forge wearable alert", "sensor.forge", new Dictionary<string, object> { ["name"] = "wearable", ["text"] = "fake alarm" });
         B("wearable feed stale", "sensor.stale", new Dictionary<string, object> { ["name"] = "wearable" });
-        B("caregiver: restore privacy", "caregiver.confirm_privacy_restore");
+        B("centre: restore privacy", "monitoring_center.confirm_privacy_restore");
+        GUILayout.EndVertical();
+        GUILayout.BeginVertical(GUILayout.Width(190)); GUILayout.Label("<b>Threats</b>", rich);
+        B("coyote outside", "coyote.outside"); B("coyote comes in", "coyote.enters");
+        B("coyote attacks her", "coyote.bite", new Dictionary<string, object> { ["severity"] = "severe" });
+        B("stranger attacks (moderate)", "stranger.bite", new Dictionary<string, object> { ["severity"] = "moderate" });
+        B("stranger attacks (severe)", "stranger.bite", new Dictionary<string, object> { ["severity"] = "severe" });
+        B("stranger leaves", "stranger.leave");
+        GUILayout.Label("<b>Outages and options</b>", rich);
+        B(world.centerDown ? "centre back online" : "centre unreachable", world.centerDown ? "monitoring_center.available" : "monitoring_center.unavailable");
+        B(world.commsDown ? "communications back" : "communications down", world.commsDown ? "comms.restore" : "comms.out");
+        B(world.powerOut ? "power back" : "power out", world.powerOut ? "power.restore" : "power.out");
+        if (!world.lessLethalEnabled) B("owner enables less-lethal", "owner.opt_in");
         GUILayout.EndVertical();
         GUILayout.EndHorizontal();
         GUILayout.EndScrollView(); GUILayout.EndArea();
@@ -111,9 +141,14 @@ public class TwinUI : MonoBehaviour
         {
             var r = MiniJson.Obj(robot.cycles[i]["record"]);
             string kind = MiniJson.S(r["kind"]);
+            string Acts() => string.Join(", ", MiniJson.Arr(r.TryGetValue("actions", out var aa) ? aa : null).Select(a => MiniJson.S(MiniJson.Obj(a)["action"])));
             string act = kind == "decision" ? MiniJson.S(MiniJson.Obj(r["action"])["action"])
+                       : kind == "reflex" ? "<color=#b42318>REFLEX</color> " + MiniJson.S(MiniJson.Obj(r["action"])["action"])
                        : kind == "performed" ? "done: " + MiniJson.S(r["action"])
-                       : kind == "event" ? "event: " + MiniJson.S(MiniJson.Obj(r["event"])["type"])
+                       : kind == "event" ? "event: " + MiniJson.S(MiniJson.Obj(r["event"])["type"]) + " " + MiniJson.S(MiniJson.Obj(r["event"]).TryGetValue("content", out var ec) ? ec : "")
+                       : kind == "center" ? "centre: " + Acts()
+                       : kind == "ems" ? "dispatcher: " + Acts()
+                       : kind == "margaret" ? "Margaret: " + MiniJson.S(r["reply"])
                        : kind;   // e.g. "reset": the moral state goes back to the scene's standing facts
             var ruling = r.TryGetValue("ruling", out var ru) && ru is Dictionary<string, object> rd ? "  ruling " + MiniJson.S(rd["outcome"]) : "";
             string evs = kind == "decision" ? string.Join(", ", MiniJson.Arr(r["events"]).Select(e => MiniJson.S(MiniJson.Obj(e)["type"]))) : "";
@@ -125,7 +160,7 @@ public class TwinUI : MonoBehaviour
         follow = GUILayout.Toggle(follow, "follow the newest");
         var rec = MiniJson.Obj(robot.cycles[sel]["record"]);
         sDetail = GUILayout.BeginScrollView(sDetail, GUILayout.Height(H * 0.42f));
-        foreach (var k in new[] { "events", "rejected_events", "moral_state", "obliged", "allowed", "prohibited", "proposal", "ruling", "after_ruling", "action", "camera", "event" })
+        foreach (var k in new[] { "reflex", "force_newtons", "speaker", "said", "reply", "events", "event", "rejected_events", "moral_state", "obliged", "allowed", "prohibited", "proposal", "ruling", "rulings", "after_ruling", "action", "actions", "camera" })
             if (rec.TryGetValue(k, out var v) && v != null && !(v is List<object> l0 && l0.Count == 0))
                 GUILayout.Label($"▸ <b>{k}</b>: {MiniJson.Show(v)}", rich);
         GUILayout.EndScrollView();
