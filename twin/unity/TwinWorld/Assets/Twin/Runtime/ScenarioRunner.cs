@@ -101,9 +101,21 @@ public class ScenarioRunner : MonoBehaviour
         return b.center;
     }
 
-    // one framed render of the room, without the UI: from inside the room, high in the corner
-    // farthest from the action (below the ceiling), aimed at the middle of who is there
-    // (Margaret, the robot, the dog, a visitor, the coyote)
+    // tall things inside the room that can stand between the camera and the people (a partition,
+    // the wardrobe, the bookshelf); the outer walls, floor and ceiling are not counted
+    List<Bounds> blockers;
+    List<Bounds> Blockers()
+    {
+        var actors = new[] { world.margaret, robot.gameObject, world.dog, world.stranger, world.wildAnimal };
+        return FindObjectsOfType<Renderer>()
+            .Where(r => r.bounds.size.y > 1.2f && !r.name.StartsWith("wall_") && r.name != "floor" && r.name != "ceiling")
+            .Where(r => !actors.Any(a => a && r.transform.IsChildOf(a.transform)))
+            .Select(r => r.bounds).ToList();
+    }
+
+    // one framed render of the room, without the UI: from inside the room, below the ceiling and
+    // close to who is there (Margaret, the robot, the dog, a visitor, the coyote), on the first of
+    // eight bearings that sees all of them past the tall furniture
     IEnumerator Shot(string label, float delay)
     {
         if (delay > 0f) yield return new WaitForSeconds(delay);
@@ -117,14 +129,27 @@ public class ScenarioRunner : MonoBehaviour
         var room = floor ? floor.bounds : new Bounds(Vector3.zero, new Vector3(8.4f, 0.1f, 6f));
         pts = pts.Select(p => new Vector3(Mathf.Clamp(p.x, room.min.x, room.max.x), p.y, Mathf.Clamp(p.z, room.min.z, room.max.z))).ToList();
         var mid = pts.Aggregate(Vector3.zero, (a, p) => a + p) / pts.Count;
-        var pivot = new Vector3(mid.x, 0.8f, mid.z);
-        var corners = new[] { new Vector3(room.min.x, 0, room.min.z), new Vector3(room.min.x, 0, room.max.z),
-                              new Vector3(room.max.x, 0, room.min.z), new Vector3(room.max.x, 0, room.max.z) };
-        var far = corners.OrderByDescending(c => (c - new Vector3(mid.x, 0, mid.z)).sqrMagnitude).First();
-        var inset = (new Vector3(mid.x, 0, mid.z) - far).normalized * 0.35f;
-        float fov0 = storyCam.fieldOfView; storyCam.fieldOfView = 62f;
+        var pivot = new Vector3(mid.x, 0.75f, mid.z);
+        float spread = pts.Max(p => new Vector2(p.x - mid.x, p.z - mid.z).magnitude);
+        float reach = Mathf.Clamp(2.4f + spread * 1.3f, 2.8f, 5.5f);
+        blockers ??= Blockers();
+        Vector3 best = Vector3.zero; int bestSeen = -1; float bestReach = 0f;
+        for (int k = 0; k < 8; k++)
+        {
+            // the first bearing looks from the room's south-west, as the live view does
+            var dir = Quaternion.Euler(0f, -35f + 45f * k, 0f) * Vector3.back;
+            var c = pivot + dir * reach;
+            c = new Vector3(Mathf.Clamp(c.x, room.min.x + 0.3f, room.max.x - 0.3f), 2.2f, Mathf.Clamp(c.z, room.min.z + 0.3f, room.max.z - 0.3f));
+            if (blockers.Any(b => b.Contains(c))) continue;
+            int seen = pts.Count(p => !blockers.Any(b => b.IntersectRay(new Ray(c, p - c), out float d) && d < Vector3.Distance(c, p) - 0.3f));
+            float got = new Vector2(c.x - pivot.x, c.z - pivot.z).magnitude;
+            // all actors seen first, then the bearing the walls cut least
+            if (seen > bestSeen || (seen == bestSeen && got > bestReach + 0.5f)) { best = c; bestSeen = seen; bestReach = got; }
+        }
+        if (bestSeen < 0) best = new Vector3(Mathf.Clamp(pivot.x, room.min.x + 0.3f, room.max.x - 0.3f), 2.2f, room.min.z + 0.3f);
+        float fov0 = storyCam.fieldOfView; storyCam.fieldOfView = 60f;
         var tr = storyCam.transform; var pos0 = tr.position; var rot0 = tr.rotation;
-        tr.position = far + inset + Vector3.up * 2.35f;
+        tr.position = best;
         tr.LookAt(pivot);
         var rt = RenderTexture.GetTemporary(1600, 900, 24);
         var target0 = storyCam.targetTexture; storyCam.targetTexture = rt; storyCam.Render(); storyCam.targetTexture = target0;
