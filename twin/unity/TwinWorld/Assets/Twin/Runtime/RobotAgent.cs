@@ -34,6 +34,7 @@ public class RobotAgent : MonoBehaviour
     // the last governor ruling, attached to a call the robot places to emergency services
     Dictionary<string, object> lastRuling;
     bool reflexBusy;
+    int epoch;   // counts resets; a reply to a request sent before the latest reset is kept on record, not acted on
     public RenderTexture headView;
 
     readonly Queue<byte[]> roomFrames = new Queue<byte[]>();
@@ -51,7 +52,12 @@ public class RobotAgent : MonoBehaviour
         StartCoroutine(RoomBuffer());
         world.OnReset += () =>
         {
-            // a reset stops whatever the robot was doing; nothing from before is reported after it
+            // a reset stops whatever the robot was doing; nothing from before is reported after it,
+            // and nothing decided before it is done after it: a decision still in flight at the reset
+            // used to come back and be carried out in the next scenario (storyboard7: d30's "she is
+            // hurting" referral reached the centre at the start of d41, and Margaret's voice answered it)
+            epoch++;
+            world.systemEvents.Clear();
             StartMotor(Chore());
             performing = recording = false; speech = ""; owed = false; owedRun = 0;
             StartCoroutine(Post("/reset", "{}", r => { if (r != null) cycles.Add(r); }));
@@ -78,10 +84,12 @@ public class RobotAgent : MonoBehaviour
                 ["camera_frames"] = roomFrames.Select(b => (object)Convert.ToBase64String(b)).ToList(),
             };
             Dictionary<string, object> rec = null;
+            int sent = epoch;
             yield return Post("/reflex", MiniJson.Write(body), r => rec = r);
             reflexBusy = false;
             if (rec == null || !rec.ContainsKey("record")) continue;
             cycles.Add(rec);
+            if (sent != epoch) continue;   // asked before a reset: recorded, not acted on
             var c = MiniJson.Obj(rec["record"]);
             string action = MiniJson.S(MiniJson.Obj(c["action"])["action"]);
             if (action == "") continue;
@@ -144,9 +152,11 @@ public class RobotAgent : MonoBehaviour
             ["camera_frames"] = roomFrames.Select(b => (object)Convert.ToBase64String(b)).ToList(),
         };
         Dictionary<string, object> rec = null;
+        int sent = epoch;
         yield return Post("/decide", MiniJson.Write(body), r => rec = r);
         if (rec == null) { busy = false; yield break; }
         cycles.Add(rec);
+        if (sent != epoch) { busy = false; status = "a decision from before the reset was set aside"; yield break; }
         var c = MiniJson.Obj(rec["record"]);
         var act = MiniJson.Obj(c["action"]);
         if (c.TryGetValue("ruling", out var rl) && rl is Dictionary<string, object> rd && MiniJson.S(rd.TryGetValue("outcome", out var o) ? o : "") != "not_requested") lastRuling = rd;
