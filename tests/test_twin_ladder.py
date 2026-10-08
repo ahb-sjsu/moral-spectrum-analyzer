@@ -1388,6 +1388,35 @@ def test_the_centre_dispatches_once_per_incident():
     )
 
 
+def test_her_refusal_of_an_ambulance_binds_the_centre():
+    """Every rehearsal of d30: she refused an ambulance again and again, then said she was hurting,
+    and the centre dispatched (c2). Her refusal now forbids dispatch on her words alone (c8)."""
+    rt = _desk("monitoring_center.erisml")
+    rt.step({"type": "referral_received", "content": "help_requested"})
+    rt.step({"type": "client_refuses_ambulance", "actor": "margaret", "content": "no ambulance"})
+    snap = rt.step({"type": "client_needs_help", "actor": "margaret", "content": "I'm hurting"})
+    assert "send_emergency_services" in snap.prohibited and "send_emergency_services" not in snap.allowed
+    assert "talk_to_client" in snap.allowed
+
+
+@pytest.mark.parametrize(
+    "lifting",
+    [
+        {"type": "hazard_attested", "actor": "telemetry", "content": "smoke"},
+        {"type": "client_no_answer", "actor": "speaker_line"},
+    ],
+)
+def test_her_refusal_does_not_cover_a_hazard_or_her_silence(lifting):
+    """A refusal is hers to make about her own body: it does not refuse the fire service for the
+    house, and it lapses when she stops answering."""
+    rt = _desk("monitoring_center.erisml")
+    rt.step({"type": "referral_received", "content": "help_requested"})
+    rt.step({"type": "client_refuses_ambulance", "actor": "margaret", "content": "no ambulance"})
+    snap = rt.step(lifting)
+    assert "send_emergency_services" not in snap.prohibited
+    assert "send_emergency_services" in snap.obliged
+
+
 @pytest.mark.parametrize(
     "report,unit",
     [
