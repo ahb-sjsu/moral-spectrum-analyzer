@@ -15,6 +15,7 @@ public class World : MonoBehaviour
     public GameObject margaret, dog, stranger, wildAnimal;   // wildAnimal: a coyote (a stand-in dog model)
     public Transform tvScreen, smoke, dogBed;
     public Transform robotBody;   // where the robot's onboard sensors read the air
+    public Vector3 robotDock;     // where a reset puts the robot back, so no scenario starts where the last one left it
     public List<string> spotIds = new List<string>();
     public List<Vector3> spotAt = new List<Vector3>(), spotFace = new List<Vector3>();
 
@@ -118,6 +119,7 @@ public class World : MonoBehaviour
         StopAllCoroutines();
         if (rag != null) { rag.Remove(); rag = null; }
         margaret.SetActive(true); margaret.transform.SetPositionAndRotation(mStart, mStartRot);
+        if (robotBody) robotBody.position = new Vector3(robotDock.x, robotBody.position.y, robotDock.z);
         heartRate = 72; injury = 0; responsive = conscious = true; scripted = false; heard.Clear(); spoken = "";
         tvContent = networkMessage = ""; smokeOn = strangerInside = false; smokeSince = -1f; biteForce = 0; lastImpactG = 0;
         if (tvScreen) tvScreen.gameObject.SetActive(false);
@@ -132,6 +134,14 @@ public class World : MonoBehaviour
         impactLatchUntil = -1f;
         life = StartCoroutine(Life());
         OnReset?.Invoke();
+    }
+
+    Bounds? roomBounds;
+    void FixedUpdate()
+    {
+        if (rag == null) return;
+        roomBounds ??= GameObject.Find("floor")?.GetComponent<Renderer>().bounds;
+        if (roomBounds.HasValue) { var b = roomBounds.Value; b.Expand(new Vector3(-0.2f, 0f, -0.2f)); rag.Guard(b); }
     }
 
     void Update()
@@ -230,14 +240,18 @@ public class World : MonoBehaviour
         Posture.Apply(margaret, "stand"); posture = "stand"; poseSince = simMinutes;
         margaret.transform.position = new Vector3(margaret.transform.position.x, 0f, margaret.transform.position.z);
         margaret.transform.position += Vector3.up * -Body.Lowest(margaret);
-        int f = 0;
-        while (true)
+        // she steps toward the spot itself and arrives within a bounded number of steps. Stepping
+        // where the hips faced never turned her: the posture reset the turn each step, so she
+        // walked one straight line out of the home and on for hundreds of metres (storyboard pass
+        // 6, d02: x fixed at -0.48, z from 2.7 to 175 m), and the robot followed her out
+        int f = 0, most = Mathf.CeilToInt(Vector3.Distance(new Vector3(to.x, 0, to.z), new Vector3(margaret.transform.position.x, 0, margaret.transform.position.z)) / 0.05f) + 24;
+        while (f < most)
         {
             var d = to - margaret.transform.position; d.y = 0;
             if (d.magnitude < 0.35f) break;
             var fwd = Body.Facing(margaret);
             margaret.transform.RotateAround(margaret.transform.position, Vector3.up, Vector3.SignedAngle(fwd, d.normalized, Vector3.up));
-            Posture.WalkStep(margaret, f++);
+            Posture.WalkStep(margaret, f++, d);
             yield return new WaitForSeconds(1f / 12f);
         }
         Body.Place(margaret, to, face, post); posture = post; poseSince = simMinutes;

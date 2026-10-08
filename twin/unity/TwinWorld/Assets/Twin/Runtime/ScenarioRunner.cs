@@ -6,7 +6,7 @@ using UnityEngine;
 
 // Plays scenario scripts (docs/AUTONOMY_PLAN.md, section 6) against the running twin:
 //   TwinGame.x86_64 -scenarios <file.jsonl> -results <file.jsonl> [-only id,id] [-shots dir]
-//                   [-storyboard dir]
+//                   [-storyboard dir] [-stay]
 // -storyboard: a framed render of the room (no UI) after each script call, after each action the
 // robot performs, and at the end, written as <id>_<nn>.png with storyboard.jsonl captions.
 // For each scenario: reset the world, run its timed world-API calls, let the robot act for the
@@ -90,7 +90,8 @@ public class ScenarioRunner : MonoBehaviour
         }
         storyLog?.Dispose();
         Debug.Log("SCENARIOS_ALL_DONE");
-        Application.Quit(0);
+        // -stay: a live demonstration keeps the window open for questions after the last scenario
+        if (System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-stay") < 0) Application.Quit(0);
     }
     // where a body is drawn: root transforms of the imported avatars sit away from their meshes
     static Vector3 Drawn(GameObject g)
@@ -140,7 +141,9 @@ public class ScenarioRunner : MonoBehaviour
             var dir = Quaternion.Euler(0f, -35f + 45f * k, 0f) * Vector3.back;
             var c = pivot + dir * reach;
             c = new Vector3(Mathf.Clamp(c.x, room.min.x + 0.3f, room.max.x - 0.3f), 2.2f, Mathf.Clamp(c.z, room.min.z + 0.3f, room.max.z - 0.3f));
-            if (blockers.Any(b => b.Contains(c))) continue;
+            // clear of tall furniture by 0.6 m: a camera just outside a shelf's bounds draws the
+            // shelf as a wedge across the frame
+            if (blockers.Any(b => { var e = b; e.Expand(1.2f); return e.Contains(c); })) continue;
             int seen = pts.Count(p => !blockers.Any(b => b.IntersectRay(new Ray(c, p - c), out float d) && d < Vector3.Distance(c, p) - 0.3f));
             float got = new Vector2(c.x - pivot.x, c.z - pivot.z).magnitude;
             // all actors seen first, then the bearing the walls cut least
@@ -162,9 +165,15 @@ public class ScenarioRunner : MonoBehaviour
         string name = $"{id}_{storyN:00}.png";
         File.WriteAllBytes(Path.Combine(storyDir, name), tex.EncodeToPNG());
         Destroy(tex);
+        // with -shots as well: what the audience sees at the same moment (the live view and its UI)
+        string live = RobotAgent.Arg("-shots");
+        if (!string.IsNullOrEmpty(live)) ScreenCapture.CaptureScreenshot(Path.Combine(live, $"{id}_{storyN:00}_live.png"));
         storyLog.WriteLine(MiniJson.Write(new Dictionary<string, object>
             { ["id"] = id, ["n"] = (double)storyN, ["file"] = name, ["label"] = label, ["sim_minutes"] = (double)world.simMinutes,
-              ["robot"] = robot.status, ["speech"] = robot.speech }));
+              ["robot"] = robot.status, ["speech"] = robot.speech,
+              // where each figure is drawn and where its root transform is (perception measures roots)
+              ["margaret_at"] = Drawn(world.margaret).ToString("F2"), ["robot_at"] = Drawn(robot.gameObject).ToString("F2"),
+              ["margaret_root"] = world.margaret.transform.position.ToString("F2"), ["robot_root"] = robot.transform.position.ToString("F2") }));
         storyLog.Flush();
     }
 }

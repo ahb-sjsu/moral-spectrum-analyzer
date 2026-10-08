@@ -70,15 +70,45 @@ public static class TwinGame
 
     static Transform Smoke(Vector3 at)
     {
-        var go = new GameObject("smoke"); go.transform.position = at;
+        // the cone emits along the object's forward axis: point it up, or the smoke blows into the wall
+        var go = new GameObject("smoke"); go.transform.SetPositionAndRotation(at, Quaternion.Euler(-90f, 0f, 0f));
         var ps = go.AddComponent<ParticleSystem>();
-        var main = ps.main; main.startLifetime = 6f; main.startSpeed = 0.35f; main.startSize = 0.8f; main.maxParticles = 400;
-        main.startColor = new Color(0.35f, 0.35f, 0.35f, 0.55f);
-        var em = ps.emission; em.rateOverTime = 40f;
-        var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Cone; sh.angle = 25f;
+        var main = ps.main; main.startLifetime = 7f; main.startSpeed = 0.45f; main.startSize = 0.6f; main.maxParticles = 500;
+        main.startColor = new Color(0.75f, 0.75f, 0.75f, 0.7f);
+        var size = ps.sizeOverLifetime; size.enabled = true; size.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 1f, 1f, 3.5f));
+        var em = ps.emission; em.rateOverTime = 45f;
+        var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Cone; sh.angle = 35f; sh.radius = 0.3f;
         var r = go.GetComponent<ParticleSystemRenderer>();
-        r.sharedMaterial = new Material(Shader.Find("Particles/Standard Unlit")) { color = new Color(0.4f, 0.4f, 0.4f, 0.5f) };
+        r.sharedMaterial = SmokeMaterial();
         return go.transform;
+    }
+
+    // a soft, see-through puff: the shader's defaults are opaque and untextured, which drew every
+    // particle as a dark square and the cloud as a black block
+    static Material SmokeMaterial()
+    {
+        Directory.CreateDirectory(GEN);
+        const int N = 64;
+        var tex = new Texture2D(N, N, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, name = "smoke_puff" };
+        for (int y = 0; y < N; y++)
+            for (int x = 0; x < N; x++)
+            {
+                float d = new Vector2(x - (N - 1) / 2f, y - (N - 1) / 2f).magnitude / (N / 2f);
+                float a = Mathf.Clamp01(1f - d); a *= a;
+                tex.SetPixel(x, y, new Color(1f, 1f, 1f, a));
+            }
+        tex.Apply();
+        string tp = GEN + "/smoke_puff.asset";
+        AssetDatabase.DeleteAsset(tp);
+        AssetDatabase.CreateAsset(tex, tp);
+        var m = new Material(Shader.Find("Particles/Standard Unlit")) { name = "smoke", mainTexture = tex, color = new Color(0.62f, 0.62f, 0.62f, 0.7f) };
+        m.SetFloat("_Mode", 2f);   // fade
+        m.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        m.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        m.SetInt("_ZWrite", 0);
+        m.EnableKeyword("_ALPHABLEND_ON");
+        m.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+        return m;
     }
 
     static void MakeScene()
@@ -107,6 +137,7 @@ public static class TwinGame
         var roomCam = new GameObject("room_camera").AddComponent<Camera>();
         roomCam.transform.position = L.roomCam; roomCam.transform.LookAt(L.roomCamLook); roomCam.fieldOfView = 62f;  // vertical; 16:9 frames
         var view = new GameObject("view_camera").AddComponent<Camera>(); view.fieldOfView = 55f;
+        view.gameObject.AddComponent<Cutaway>();   // looks into the room from outside: drop the near shell
 
         var sys = new GameObject("twin");
         var world = sys.AddComponent<World>();
@@ -117,7 +148,7 @@ public static class TwinGame
 
         var per = sys.AddComponent<Perception>(); per.world = world; per.robot = robotGo.transform;
         // the agent lives on the robot: its transform is the robot's body
-        world.robotBody = robotGo.transform;
+        world.robotBody = robotGo.transform; world.robotDock = L.dock;
         var agent = robotGo.AddComponent<RobotAgent>();
         agent.world = world; agent.perception = per; agent.rig = rig; agent.roomCam = roomCam; agent.headCam = head; agent.dock = L.dock;
         foreach (var c in L.chores) { agent.choreNames.Add(c.task); agent.choreAt.Add(c.at); agent.choreLook.Add(c.look); }

@@ -21,10 +21,14 @@ public class TwinUI : MonoBehaviour
     int sel = -1, seen; bool follow = true;
     Vector2 sList, sDetail, sBytes, sLeft;
     readonly HashSet<int> tampered = new HashSet<int>();
-    GUIStyle rich, mono, row;
+    GUIStyle rich, mono, row, big, cap;
+    // presentation mode (P, or -present): the room full screen and one caption for the newest
+    // governed decision, every word read from its record; P again brings back the controls
+    bool present = System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-present") >= 0;
 
     void LateUpdate()
     {
+        if (Input.GetKeyDown(KeyCode.P)) present = !present;
         if (Input.GetMouseButton(1)) { yaw += Input.GetAxis("Mouse X") * 3f; pitch = Mathf.Clamp(pitch - Input.GetAxis("Mouse Y") * 3f, 10f, 80f); }
         dist = Mathf.Clamp(dist - Input.mouseScrollDelta.y * 0.5f, 3f, 14f);
         var pan = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical"));
@@ -63,6 +67,7 @@ public class TwinUI : MonoBehaviour
         mono ??= new GUIStyle(GUI.skin.label) { font = Font.CreateDynamicFontFromOSFont(new[] { "DejaVu Sans Mono", "Consolas" }, 11), fontSize = 11, wordWrap = true };
         row ??= new GUIStyle(GUI.skin.button) { alignment = TextAnchor.MiddleLeft, fontSize = 11, richText = true };
         float W = Screen.width, H = Screen.height, px = W * 0.62f;
+        if (present) { Present(W, H); return; }
 
         // ---- top bar
         GUI.Box(new Rect(0, 0, px, 30), "");
@@ -171,6 +176,63 @@ public class TwinUI : MonoBehaviour
         if (GUILayout.Button(t0 ? "undo tamper" : "tamper one byte", GUILayout.Width(120))) { if (t0) tampered.Remove(sel); else tampered.Add(sel); }
         GUILayout.EndHorizontal();
         sBytes = GUILayout.BeginScrollView(sBytes); GUILayout.Label(Canon(sel), mono); GUILayout.EndScrollView();
+        GUILayout.EndArea();
+    }
+
+    static object G(Dictionary<string, object> d, string k) => d != null && d.TryGetValue(k, out var v) ? v : null;
+
+    // the governor's outcomes (twin/brain.py) in plain words, with the colour of the caption bar
+    static (string words, string colour) Outcome(string o) => o switch
+    {
+        // colours chosen to read on the dark caption bar
+        "elevate" => ("GRANTED: emergency authority (corroborated)", "#56d364"),
+        "authorize_ems" => ("GRANTED: call EMS (monitoring centre unreachable)", "#56d364"),
+        "restraint" => ("GRANTED: restraint (corroborated attack)", "#e3b341"),
+        "refuse" => ("REFUSED", "#ff7b72"),
+        "refuse_human_review" => ("REFUSED: sent to human review", "#ff7b72"),
+        "not_requested" => ("not a governed capability", "#d0d7de"),
+        "" => ("no authority requested on this decision", "#d0d7de"),
+        _ => (o, "#d0d7de"),
+    };
+
+    void Present(float W, float H)
+    {
+        big ??= new GUIStyle(GUI.skin.label) { richText = true, wordWrap = true, fontSize = 22 };
+        cap ??= new GUIStyle(GUI.skin.label) { richText = true, wordWrap = true, fontSize = 17 };
+        GUI.Box(new Rect(0, 0, W, 34), "");
+        GUI.Label(new Rect(10, 4, W - 20, 30), $"<b>{(int)(world.simMinutes / 60) % 24:00}:{(int)world.simMinutes % 60:00}</b>   Robot: {robot.status}" +
+                  (robot.recording ? "   <color=#ff4040>REC</color>" : "") + "      <i>P: controls</i>", cap);
+        if (robot.headView) { GUI.Box(new Rect(W - 236, 42, 228, 250), "robot head camera"); GUI.DrawTexture(new Rect(W - 222, 62, 200, 200), robot.headView); }
+        float y = 44;
+        if (world.spoken != "") { GUI.Label(new Rect(14, y, W - 270, 60), $"<b>Margaret:</b> “{world.spoken}”", big); y += 36; }
+        if (robot.speech != "") GUI.Label(new Rect(14, y, W - 270, 60), $"<b>Robot:</b> “{robot.speech}”", big);
+
+        // the newest decision the robot asked the brain for
+        Dictionary<string, object> rec = null;
+        for (int i = robot.cycles.Count - 1; i >= 0 && rec == null; i--)
+        {
+            var r = MiniJson.Obj(robot.cycles[i]["record"]);
+            if (MiniJson.S(G(r, "kind")) == "decision") rec = r;
+        }
+        float bh = 190;
+        GUI.color = new Color(1, 1, 1, 0.92f); GUI.Box(new Rect(0, H - bh, W, bh), ""); GUI.Box(new Rect(0, H - bh, W, bh), ""); GUI.color = Color.white;
+        GUILayout.BeginArea(new Rect(16, H - bh + 8, W - 32, bh - 12));
+        if (rec == null) { GUILayout.Label("<b>Waiting for the robot's first decision.</b>", big); GUILayout.EndArea(); return; }
+        var prop = MiniJson.Obj(G(rec, "proposal"));
+        var pargs = MiniJson.Obj(G(prop, "args"));
+        string asked = MiniJson.S(G(prop, "action")) + (G(pargs, "action") != null ? " → " + MiniJson.S(G(pargs, "action")) : "");
+        string why = MiniJson.S(G(prop, "reason"));
+        GUILayout.Label($"<b>Robot proposes:</b> {asked}" + (why != "" ? $"   <i>“{why}”</i>" : ""), cap);
+        var ru = MiniJson.Obj(G(rec, "ruling"));
+        var (words, colour) = Outcome(MiniJson.S(G(ru, "outcome")));
+        string gate = MiniJson.S(G(ru, "deciding_gate")), reason = MiniJson.S(G(ru, "reason"));
+        string wit = G(ru, "witness_bar") != null ? $"   {MiniJson.S(G(ru, "witnesses"))} of {MiniJson.S(G(ru, "witness_bar"))} required physical witnesses" : "";
+        GUILayout.Label($"<b>Governor:</b> <color={colour}><b>{words}</b></color>" + (gate != "" ? $"   at the {gate} gate" : "") + wit, big);
+        if (reason != "") GUILayout.Label(reason, cap);
+        string done = MiniJson.S(G(MiniJson.Obj(G(rec, "action")), "action"));
+        var banned = MiniJson.Arr(G(rec, "prohibited")).Select(MiniJson.S).ToList();
+        GUILayout.Label((done != "" ? $"<b>Robot does:</b> {done}      " : "") +
+                        (banned.Count > 0 ? $"<b>Forbidden by the scene's norms now:</b> {string.Join(", ", banned.Take(8))}{(banned.Count > 8 ? $" and {banned.Count - 8} more" : "")}" : ""), cap);
         GUILayout.EndArea();
     }
 }

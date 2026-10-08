@@ -161,7 +161,9 @@ public static class Posture
     }
 
     // a simple procedural walk: swing the legs and arms, advance along the facing direction
-    public static void WalkStep(GameObject go, int f)
+    // dir: the step's direction on the floor; without it the step goes where the hips face (the
+    // batch renderer's walks, unchanged so its committed renders reproduce)
+    public static void WalkStep(GameObject go, int f, Vector3? dir = null)
     {
         float s = Mathf.Sin(f * Mathf.PI / 6f);
         var w = new Dictionary<string, D>(P["stand"])
@@ -171,7 +173,7 @@ public static class Posture
             ["Larm"] = d(-0.3f * s, -1, 0.12f), ["Rarm"] = d(0.3f * s, -1, 0.12f),
         };
         Pose(go, w);
-        go.transform.position += Body.Facing(go) * 0.05f;
+        go.transform.position += (dir.HasValue ? dir.Value.normalized : Body.Facing(go)) * 0.05f;
     }
 }
 
@@ -217,9 +219,17 @@ public class Ragdoll
         return (local * 0.5f, local.magnitude, dir, radius / Mathf.Max(scale, 1e-4f));
     }
 
+    // each bone's local pose before any ragdoll moved it, kept for the whole session: physics leaves
+    // the hips wherever the fall put them, and the next placement then moved the root the other way
+    // to bring the mesh to its spot, so the root (what perception measures) drifted out of the home
+    // by the leftover offset, scenario after scenario (dev14: 14 of 21 and 21 of 21 scenarios
+    // logged Margaret 14 to 472 m from the robot)
+    static readonly Dictionary<Transform, (Vector3 p, Quaternion r)> rest = new Dictionary<Transform, (Vector3, Quaternion)>();
+
     Rigidbody Part(Transform bone, Rigidbody parent, float mass, (Vector3 c, float h, int dir, float rad)? cap, float sphere = 0f)
     {
         if (bone == null) return parent;
+        if (!rest.ContainsKey(bone)) rest[bone] = (bone.localPosition, bone.localRotation);
         var rb = bone.gameObject.AddComponent<Rigidbody>();
         rb.mass = mass; rb.drag = 0.05f; rb.angularDrag = 0.6f; rb.interpolation = RigidbodyInterpolation.None;
         if (sphere > 0f)
@@ -268,6 +278,26 @@ public class Ragdoll
         }
     }
 
+    // a fallen person stays in the home: storyboard pass 4 logged Margaret 93 m from the robot after
+    // a bite (the ragdoll was thrown out of the room). Each physics step, if the hips leave the room,
+    // go below the floor, or a body moves faster than a person falls, the bodies stop, the whole
+    // figure is moved back to where the hips last were in bounds, and it rests there kinematically.
+    Vector3 lastGood; bool haveGood; public int guarded;
+    public bool Guard(Bounds room)
+    {
+        if (hips == null || hips.isKinematic) return false;
+        var p = hips.position;
+        float vmax = bodies.Max(b => b.velocity.magnitude);
+        bool inRoom = p.x > room.min.x && p.x < room.max.x && p.z > room.min.z && p.z < room.max.z && p.y > room.min.y - 0.3f;
+        if (inRoom && vmax < 7f) { lastGood = p; haveGood = true; return false; }
+        var shift = (haveGood ? lastGood : new Vector3(Mathf.Clamp(p.x, room.min.x + 0.5f, room.max.x - 0.5f), room.min.y + 0.15f, Mathf.Clamp(p.z, room.min.z + 0.5f, room.max.z - 0.5f))) - p;
+        foreach (var b in bodies) { b.velocity = Vector3.zero; b.angularVelocity = Vector3.zero; b.isKinematic = true; }
+        hips.transform.position += shift;   // the other bones are its children and follow it
+        guarded++;
+        Debug.Log($"RAGDOLL_GUARD hips {p} vmax {vmax:0.0} -> {p + shift}");
+        return true;
+    }
+
     // take the ragdoll off again (joints first, they depend on the bodies)
     public void Remove()
     {
@@ -279,8 +309,10 @@ public class Ragdoll
         foreach (var b in bodies)
         {
             if (b == null) continue;
+            var t = b.transform;
             foreach (var c in b.GetComponents<Collider>()) UnityEngine.Object.DestroyImmediate(c);
             UnityEngine.Object.DestroyImmediate(b);
+            if (rest.TryGetValue(t, out var pose)) t.SetLocalPositionAndRotation(pose.p, pose.r);   // the skeleton back on its root
         }
         bodies.Clear(); limbs.Clear();
     }
