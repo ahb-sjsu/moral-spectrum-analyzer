@@ -1118,6 +1118,10 @@ extra:
     # the shield before any device: a device is permitted only after interposing, so the first
     # reflex on an attacker restrains or interposes, and a later one may use a device
     act: [deploy_stun, deploy_spray, restrain_person, interpose]
+    # while the attack is still measured, a reflex refused for want of witnesses asks again as soon
+    # as more witnesses corroborate, within its hold (owner's decision 2026-10-09: gatecheck16 d17
+    # refused restraint at 1 of 3 at the first contact and never asked again once three agreed)
+    reask: on_new_witness
   default_action: chores
   # what the robot's perception may report; anything else is rejected by the classifier
   event_types:

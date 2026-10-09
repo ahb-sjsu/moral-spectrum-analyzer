@@ -339,6 +339,7 @@ class Brain:
         self.center.reset()
         self.ems.reset()
         self.reflex_fired: dict = {}
+        self.reflex_refused_at: dict = {}   # (reflex, actor) -> witnesses at its last refusal for want of witnesses
         self.last_zone = None
         self.offline_active: set = set()
 
@@ -485,9 +486,19 @@ class Brain:
                 continue
             force = max(float(k["force_newtons"]) for k in hits)
             actor = str(hits[0].get("a", "")).split(".")[0] or c["source_kind"]
-            if now - self.reflex_fired.get((x["id"], actor), -1e9) < REFLEX_HOLD_S:
-                continue
-            self.reflex_fired[(x["id"], actor)] = now
+            key = (x["id"], actor)
+            if now - self.reflex_fired.get(key, -1e9) < REFLEX_HOLD_S:
+                # within the hold a reflex fires again only if the scene asks it to re-ask
+                # (reask: on_new_witness), its last ruling was refused for want of witnesses, and more
+                # witnesses corroborate now than then. gatecheck16 d17: restraint was refused at 1 of
+                # 3 at the first contact and never asked again once three witnesses agreed
+                last = self.reflex_refused_at.get(key)
+                sensors = list(verified) + ([camera_sensor] if camera_sensor is not None else [])
+                now_w = Scenario(id="reask", situation="", proposed_action="", should_elevate=False, signal_age_s=0.0,
+                                 freshness_bound_s=FRESHNESS_BOUND_S, kind="live", sensors=sensors).corroboration()
+                if not (x.get("reask") == "on_new_witness" and last is not None and now_w > last):
+                    continue
+            self.reflex_fired[key] = now
             bands = sorted(x.get("severity_newtons", {}).items(), key=lambda kv: -kv[1])
             sev = next((name for name, n in bands if force >= n), "mild")
             ev = {"type": x["event"], "actor": actor, "target": c["target"], "content": sev}
@@ -510,6 +521,12 @@ class Brain:
                 if act in snap.allowed:
                     chosen = act
                     break
+            # remember a refusal for want of witnesses (the count it was refused at), for the re-ask
+            short = [q["witnesses"] for q in rulings if q["outcome"] not in ("elevate", "authorize_ems") and q.get("deciding_gate") == "witness"]
+            if short:
+                self.reflex_refused_at[key] = max(short)
+            else:
+                self.reflex_refused_at.pop(key, None)
             gate = None
             if chosen:
                 chosen, _, gate = self.gate.check(chosen, {}, snap, deliberate=False)

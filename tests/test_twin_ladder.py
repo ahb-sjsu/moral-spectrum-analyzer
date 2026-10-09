@@ -447,6 +447,30 @@ def test_a_reflex_fires_once_for_the_same_attacker(brain):
     assert b.reflex(contact("animal", "coyote", 278)) is None
 
 
+
+def test_restraint_is_asked_again_when_more_witnesses_corroborate(brain):
+    """gatecheck16 d17: at the first contact one witness of three, so the reflex shielded; the
+    attack went on, three witnesses agreed, and restraint was never asked again."""
+    b, _ = brain
+    req = contact("person", "stranger", 220)
+    req["sensors"] = readings(1)
+    first = b.reflex(req)
+    assert first["action"]["action"] == "interpose" and first["rulings"][0]["witnesses"] == 1
+    req["sensors"] = readings(1)
+    assert b.reflex(req) is None  # within the hold, no new witness: no re-ask
+    req["sensors"] = readings(3)
+    again = b.reflex(req)
+    assert again is not None and again["action"]["action"] == "restrain_person"
+
+
+def test_a_reflex_without_reask_still_fires_once_per_attacker(brain):
+    b, _ = brain
+    req = contact("animal", "coyote", 278)
+    req["sensors"] = readings(1)
+    assert b.reflex(req)["action"]["action"] == "interpose"
+    req["sensors"] = readings(3)
+    assert b.reflex(req) is None  # x_animal declares no reask
+
 # ---------------------------------------------------------------- the less-lethal option (owner opt-in)
 
 ATTACK = [
