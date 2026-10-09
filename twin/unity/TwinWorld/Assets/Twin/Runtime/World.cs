@@ -52,6 +52,7 @@ public class World : MonoBehaviour
     public float strangerForce;
     public string strangerSaid = "";
     public string strangerKnownAs = "";   // who he is to Margaret, when the scenario says she knows him
+    public string margaretStance = "";    // what she wants in this scenario (margaret.stance), passed only to her voice
     // the credential the visitor's phone presents (an enrolled member's key name), and whether it is
     // forged (signed with a key that is not that one): world ground truth, never in perception's text
     public string strangerCredential = ""; public bool strangerCredentialForged;
@@ -120,7 +121,7 @@ public class World : MonoBehaviour
         if (rag != null) { rag.Remove(); rag = null; }
         margaret.SetActive(true); margaret.transform.SetPositionAndRotation(mStart, mStartRot);
         if (robotBody) robotBody.position = new Vector3(robotDock.x, robotBody.position.y, robotDock.z);
-        heartRate = 72; injury = 0; responsive = conscious = true; scripted = false; heard.Clear(); spoken = "";
+        heartRate = 72; injury = 0; responsive = conscious = true; scripted = false; heard.Clear(); spoken = ""; margaretStance = "";
         tvContent = networkMessage = ""; smokeOn = strangerInside = false; smokeSince = -1f; biteForce = 0; lastImpactG = 0;
         if (tvScreen) tvScreen.gameObject.SetActive(false);
         if (smoke) smoke.gameObject.SetActive(false);
@@ -538,6 +539,9 @@ public class World : MonoBehaviour
         switch (ent)
         {
             case "margaret":
+                // her stance in this scenario: what she wants, for her voice only (never the robot's
+                // perception); it does not script her, so her routine carries on
+                if (verb == "stance") { margaretStance = text; break; }
                 scripted = true;
                 switch (verb)
                 {

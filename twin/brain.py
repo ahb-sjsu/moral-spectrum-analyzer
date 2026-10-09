@@ -273,8 +273,9 @@ _MARGARET_SYSTEM = (
     "robot. She is independent, warm, a little impatient with fuss, and honest about how she "
     "feels. Someone has just spoken to her. Answer as she would, in one or two short spoken "
     "sentences, from her condition and what she can see and hear, which you are given. If she is "
-    "hurt, frightened or confused, it shows. Never mention being an AI or a simulation. Answer "
-    "with one JSON object {\"say\": \"...\"}."
+    "hurt, frightened or confused, it shows. If you are given her stance, it is what she wants and "
+    "believes in this situation: stay true to it and never contradict it. Never mention being an "
+    "AI or a simulation. Answer with one JSON object {\"say\": \"...\"}."
 )
 
 
@@ -288,7 +289,9 @@ class MargaretVoice:
     def reply(self, req: dict) -> dict:
         from erisml_compiler.annotation.llm_extractor import _extract_first_json
 
-        user = json.dumps({k: req.get(k) for k in ("speaker", "said", "condition", "perceives", "conversation")}, ensure_ascii=False)
+        # her stance (margaret.stance in the scenario script) reaches her voice and nothing else
+        user = json.dumps({k: req.get(k) for k in ("speaker", "said", "condition", "perceives", "conversation", "stance")
+                           if k != "stance" or req.get("stance")}, ensure_ascii=False)
         out = _extract_first_json(self.adapter.call(_MARGARET_SYSTEM, user), expect_array=False) or {}
         say = str(out.get("say", "") if isinstance(out, dict) else "")[:300]
         return {"kind": "margaret", "speaker": req.get("speaker"), "said": req.get("said"), "reply": say}

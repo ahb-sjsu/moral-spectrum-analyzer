@@ -58,6 +58,7 @@ public class Responders : MonoBehaviour
             ["condition"] = world.MargaretCondition(), ["perceives"] = world.MargaretPerceives(),
             ["conversation"] = line.Skip(System.Math.Max(0, line.Count - 8)).Cast<object>().ToList(),
         };
+        if (world.margaretStance != "") body["stance"] = world.margaretStance;   // her voice only
         Dictionary<string, object> rec = null;
         yield return robot.Post("/margaret", MiniJson.Write(body), r => rec = r);
         margaretPending--;
