@@ -1,0 +1,33 @@
+% Chapter 9. The actuation boundary: the capability manifest from the scene to the body.
+% src: twin/manifest.py, twin/service.py (load_verified), twin/brain.py (_in_manifest, authorize)
+% src: twin/unity/TwinWorld/Assets/Twin/Editor/TwinGame.cs (PinnedManifest)
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/RobotAgent.cs (CheckManifest, Actuates)
+\begin{tikzpicture}[house,
+  p/.style={minimum width=27mm, minimum height=36mm, text width=25mm},
+  d/.style={detail, text width=24mm, anchor=south}]
+\node[panel=Blue, p] (P1) at (0,0) {};
+\node[panel=Teal, p] (P2) at (31mm,0) {};
+\node[panel=Purple, p] (P3) at (62mm,0) {};
+\node[panel=Amber, p] (P4) at (93mm,0) {};
+\node[panel=Green, p] (P5) at (124mm,0) {};
+\foreach \P/\c/\n/\name/\dtl in {
+  P1/Blue/1/Scene/{capabilities\\their effects\\norms and\\refusals},
+  P2/Teal/2/Compile/{one typed entry\\per action\\its tier and\\its witnesses},
+  P3/Purple/3/Sign/{canonical text\\its SHA-256\\signed with\\Ed25519},
+  P4/Amber/4/Brain/{starts only if it\\verifies and\\matches the scene\\refuses the rest},
+  P5/Green/5/Body/{runs only listed\\actions\\locks on a\\hash mismatch}}{
+  \node[step=\c] at ([yshift=-5mm]\P.north) {\n};
+  \node[stepname=\c] at ([yshift=-11.5mm]\P.north) {\name};
+  \node[d] at ([yshift=1.5mm]\P.south) {\dtl};
+}
+\draw[flow] (P1.east) -- (P2.west);
+\draw[flow] (P2.east) -- (P3.west);
+\draw[flow] (P3.east) -- (P4.west);
+\draw[flow] (P4.east) -- (P5.west);
+% the hash is pinned into the build
+\draw[flow] (P3.south) -- ++(0,-6mm) -| node[flowlabel, below, pos=0.25]{the hash is pinned into the game's build} (P5.south);
+% the models only propose
+\node[panel=Grey, minimum width=40mm, text width=38mm] (M) at (93mm,32mm)
+  {\textcolor{hsGreyLine}{\bfseries language models}\\[1pt]{\scriptsize\color{hsTextMid} propose one action}};
+\draw[untrusted] (M.south) -- node[flowlabel, right]{a proposal} (P4.north);
+\end{tikzpicture}

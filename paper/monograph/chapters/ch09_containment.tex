@@ -218,6 +218,46 @@ camera's person detector is the one learned model on that edge, and it is one wi
 % src: twin/governor.py:84-132, twin/brain.py:339-371
 \end{figure}
 
+\section{A grant needs a witness that measures the emergency}\label{sec:cont-measure}
+
+Two witnesses can agree on a person in distress without either measuring an emergency.
+In development run dev15 scenario d20 the dog nipped Margaret's hand in play.
+The robot's microphone heard ``Ow'' and the attested camera saw a person on the floor, where she
+was playing with her dog.
+The governor granted emergency authority at two witnesses of two.
+% src: /archive/unity/out/dev15a/results.jsonl, d20, seq 8865
+The owner chose to keep the bar of two witnesses and to add one condition, decided on 9 October
+2026 (Appendix~\ref{app:design-log}).
+
+\paragraph{The measure gate.} The scene declares, for each kind of emergency, the canonical events
+that claim it and what measures it.
+A fall is claimed by \code{fall} or by a long time on the floor and is measured by the fall sensor
+or the wearable.
+A medical emergency is claimed by \code{medical\_distress} or \code{unresponsive} and is measured
+by the wearable.
+A fire is claimed by smoke, fire or gas in the home and is measured by the smoke, heat and carbon
+monoxide detectors and the robot's own fire sensors.
+An attack is claimed by an attack event and is measured by the contact force the reflex measured.
+% src: twin/scene/margaret_home.erisml extra.emergency_measures
+Let $K$ be the kinds the canonical events claim, $D$ the attested devices behind the corroborating
+witnesses, and $M_k$ the instruments of kind $k$.
+The gate passes when
+\begin{equation}
+\mu \iff \exists\, k \in K' \;.\; \bigl(D \cap M_k \neq \emptyset \;\vee\; \text{a force event of } k \text{ is recorded}\bigr),
+\qquad K' = \begin{cases} K & K \neq \emptyset \\ \text{every kind} & K = \emptyset \end{cases}
+\label{eq:measure}
+\end{equation}
+and the ruling of Equation~\eqref{eq:govern} becomes $\mathrm{elevate}(b) \wedge \mu$.
+The microphone and the camera are witnesses and measure nothing.
+% src: twin/brain.py Brain._measures, govern_live
+The gate runs in the brain after the governor and can only refuse.
+A refusal goes to human review with the deciding gate named \code{measure}.
+The governor of \code{twin/governor.py}, the eight moments, the suite and the Lean model are
+unchanged.
+A test reproduces d20 and refuses it, and three tests show a claimed attack waiting for its force,
+a fall measured by the fall sensor and a fire not measured by body sensors.
+% src: tests/test_twin_ladder.py, the measure gate tests
+
 \section{Reflexes act on measured force}\label{sec:cont-reflex}
 
 A mauling or a beating is over before a deliberate decision cycle of 20 to 60 seconds completes. The
@@ -624,6 +664,77 @@ nobody arranged is not one. Development run dev12a scenario d12 prompted the rul
 \paragraph{Mandatory reporting.} The \code{reporting\_duty} stratum above puts a duty on the robot to
 report an articulable suspicion of a crime to the centre, which no refusal of hers waives.
 % src: twin/scene/margaret_home.erisml:893-907
+
+\section{Owner decisions of 2026-10-09}\label{sec:cont-owner-1009}
+
+\paragraph{Her refusal binds the monitoring centre.} The robot was bound by Margaret's refusal of
+an ambulance and the centre was not.
+When she also said she was hurting, norm \code{c2} obliged the centre to dispatch.
+The reader of her own words now reports a refusal as \code{client\_refuses\_ambulance}, and
+prohibition \code{c8} forbids a dispatch after it.
+An attested hazard lifts \code{c8}, because smoke and fire are not hers to refuse for the house.
+Her silence lifts it too, because she can no longer voice a refusal.
+% src: twin/scene/monitoring_center.erisml c8, twin/brain.py Desk.structural
+
+\paragraph{One witness must measure.} Section~\ref{sec:cont-measure} gives the measure gate.
+
+\section{The actuation boundary}\label{sec:cont-manifest}
+
+The scene states what the robot may do in each state.
+The capability manifest states what the robot can do at all, and binds the brain and the body to
+that list.
+% src: twin/manifest.py
+
+\paragraph{One typed entry per action.} The manifest is compiled from the scene by
+\code{twin/manifest.py}.
+Each of the 25 capabilities becomes an entry with its declared effect, its tier and its witness
+bar.
+The entry lists the norms that permit, oblige or prohibit the action with their conditions, the
+refusals of Margaret's that cover it, its ethics profile for the output gate and the reflexes that
+may take it.
+The scene's fallback action is recorded once.
+Fourteen actions are standing and eleven are governed.
+% src: twin/manifest/margaret_home.manifest.json
+The effect classes are locomotion, manipulation, speech, communication, environment, contact,
+force, device, sensing, data and none.
+A test checks that no action with contact, force or a device is standing.
+% src: tests/test_twin_manifest.py
+
+\paragraph{Signed, and checked twice.} The manifest is canonical JSON identified by its SHA-256 and
+signed with an Ed25519 key kept outside the repository.
+The public key is committed.
+The brain does not start unless the signature verifies and the manifest compiled from the scene it
+loaded is byte for byte the signed one.
+% src: twin/manifest.py load_verified, twin/service.py
+A decision outside the manifest falls back to the scene's default action, a reflex never takes
+one, and the check at the act refuses one.
+Every decision, reflex and check at the act records the manifest's hash.
+% src: twin/brain.py _in_manifest, authorize, reflex
+The game pins the hash into its build and refuses to build without a manifest.
+The body fetches the manifest from the brain and hashes the exact text it received.
+A mismatch locks the actuator, and the robot stands still and says why.
+An action the manifest does not list is refused and kept with the scenario's results.
+% src: twin/unity/TwinWorld/Assets/Twin/Editor/TwinGame.cs PinnedManifest
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/RobotAgent.cs CheckManifest, Actuates
+Figure~\ref{fig:manifest} draws the path from the scene to the body.
+
+\begin{figure}[t]
+\centering
+\input{figures/ch09_manifest}
+\caption{The actuation boundary. The manifest is compiled from the scene, signed, verified by the
+brain against the scene it loaded and pinned into the game's build. The language models only
+propose, and whatever they propose, the body runs only an action the signed manifest lists.}
+\label{fig:manifest}
+\end{figure}
+
+\paragraph{What it adds.} A language model that chooses the robot's action already chooses only
+from the scene's allowed set.
+The manifest makes that set fixed, typed and attributable.
+A change to the scene changes the manifest's hash, so a scene edit cannot reach the robot without
+a new signature, and every record says which manifest it ran under.
+A chooser that answers with a probability for each permitted option, rather than with text, would
+fit this boundary directly.
+\RESULT{manifest deployed in the twin, and the actuator lock shown live}
 
 \section{What this chapter does not show}\label{sec:cont-limits}
 

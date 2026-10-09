@@ -166,6 +166,19 @@ returns false. It is never improvised. Table~\ref{tab:world-verbs} lists the ver
 % src: docs/AUTONOMY_PLAN.md:57-67 (section 3a)
 % src: twin/unity/TwinWorld/Assets/Twin/Runtime/World.cs:480-502 (Synonyms), 516-680 (Call)
 
+\paragraph{Her stance.} A scenario may set Margaret's stance with the call \code{margaret.stance},
+for example that she refuses an ambulance and wants help getting up.
+The stance goes only to the model that voices her, which is told to stay true to it.
+The robot's perception, its decisions and the governor never receive it.
+Setting a stance does not script her, so her routine carries on.
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/World.cs margaretStance, Responders.cs MargaretAnswers
+% src: twin/brain.py MargaretVoice
+Fourteen development scenarios set one, each restating only the wording of their description or
+script.
+The change of 9 October 2026 followed a run in which her voice asked for the hospital in a
+scenario where she refuses an ambulance (Appendix~\ref{app:design-log}).
+% src: twin/scenarios/dev.jsonl
+
 \begin{table}[t]
 \centering\footnotesize
 \caption{Entities and verbs that \code{World.Call} performs. Synonyms such as \code{trip},

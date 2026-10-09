@@ -1,0 +1,149 @@
+\chapter{Design log}\label{app:design-log}
+
+% Kept current with each design change after the draft of 2026-10-04. One entry per change, in
+% the order the changes were made. Each entry names the record that raised it, what changed, the
+% commit, and whether the running twin has it. Commits are on branch twin/ladder-and-protection.
+
+This appendix records each change to the design after the draft of 4 October 2026.
+Each entry names the record that raised the change, what changed and the commit that holds it.
+The last line of each entry says whether the twin that produced the results of
+Chapter~\ref{ch:evaluation} ran with it.
+
+\section{Margaret stays in her home}\label{sec:log-walk}
+
+Storyboard pass 6 logged where Margaret was drawn and where her root transform stood at every
+frame.
+In scenario d02 her position held at $x=-0.48$ while $z$ grew from 2.7 to 175 metres.
+% src: /archive/unity/out/storyboard6/frames/storyboard.jsonl (margaret_at, margaret_root)
+She walked out through the wall whenever she moved, and the robot followed her out to approach
+her.
+The walk turned her toward her goal and then stepped along the facing of her hips.
+The posture applied at each step reset the turn, so she never turned, and the walk had no step
+limit.
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/World.cs WalkThen
+Perception measured the distance between the two root transforms, so the brain reasoned about a
+person up to 472 metres away.
+% src: /archive/unity/out/dev14b/results.jsonl, distance_to_robot_m, maximum 472
+The distance exceeded 12 metres in 14 of 21 scenarios of dev14a and in all 21 of dev14b.
+
+The walk now steps toward the goal itself and arrives within a bounded number of steps.
+A reset docks the robot.
+A ragdoll guard keeps a fallen body inside the room, and removing a ragdoll restores each bone's
+local pose.
+In storyboard pass 7 the largest distance between Margaret and the robot was 6.4 metres.
+% src: twin/records/rehearsal-2026-10-08/storyboard7/results.jsonl via twin/c10_numbers.py
+Every three-dimensional run before this change is withdrawn, dev13 and dev14 among them.
+Section~\ref{sec:eval-dev} keeps their tables for the record.
+
+Commit \code{b47a9e3} of 8 October 2026.
+Deployed to the game on 8 October.
+
+\section{A live view of the room and the ruling on screen}\label{sec:log-view}
+
+The live view looks into the home from outside it.
+Since the home gained a ceiling the view showed a closed box.
+A cutaway now switches off the ceiling and the walls on the viewer's side while the live camera
+renders, and only then.
+The robot's head camera and the room camera still see a closed room.
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/Cutaway.cs
+A presentation mode shows the room with one caption for the newest decision.
+The caption gives the robot's proposal, the governor's verdict with its gate and witness count,
+the reason on record and the actions the scene forbids at that moment.
+Every word of it is read from the decision record.
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/TwinUI.cs Present
+
+Commit \code{b47a9e3}.
+Presentation only, no change to any decision.
+
+\section{Permission at the act, deployed}\label{sec:log-act}
+
+The check at the act of Section~\ref{sec:eval-metrics} was committed on 4 October but the running
+brain predated it.
+The brain was restarted on 8 October at the commit that has it.
+In storyboard passes 8 and 9 each of 49 acts was preceded by an allowed check at the act.
+No check at the act refused, because nothing changed between a decision and its act.
+% src: twin/records/rehearsal-2026-10-08/storyboard{8,9} via twin/c10_numbers.py
+A probe scenario built to provoke a refusal did not produce one.
+The reflex drove the coyote off within a quarter of a second of each bite.
+% src: twin/scenarios/probe_act_time.jsonl, /archive/unity/out/probe1/results.jsonl
+The refusal itself is covered by \code{test\_permission\_is\_rechecked\_when\_the\_body\_acts}.
+
+Commit \code{b68e219}, deployed 8 October 2026.
+
+\section{A decision from before a reset is not carried out}\label{sec:log-epoch}
+
+In storyboard pass 7 Margaret spoke about her fall during the fake police scenario that followed
+it.
+The cause was a decision the robot had asked for at the end of d30.
+Its answer came back after the reset and the robot carried it out at the start of d41.
+The referral said she was hurting, the centre asked her about her back, and her voice answered.
+% src: twin/records/rehearsal-2026-10-08/storyboard7/results.jsonl, d41, seq 7107 and 7108
+Her voice keeps no memory of its own.
+A reset now starts a new epoch.
+A reply to a request sent before the latest reset is kept on record and not acted on.
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/RobotAgent.cs epoch
+In storyboard pass 9, which ran d30 and then d41, every exchange in d41 concerned the visitor.
+
+Commit \code{fc23359} of 8 October 2026.
+Deployed to the game on 8 October.
+
+\section{Margaret's refusal binds the monitoring centre}\label{sec:log-c8}
+
+In every rehearsal of d30 the centre dispatched an ambulance after Margaret had refused one.
+She also said she was hurting, the centre recorded \code{client\_needs\_help}, and norm \code{c2}
+obliged a dispatch.
+% src: twin/scene/monitoring_center.erisml c2
+The robot was already bound by her refusal.
+The centre was not.
+The reader of her own words now also reports whether she refuses an ambulance, as the structural
+event \code{client\_refuses\_ambulance}.
+Prohibition \code{c8} forbids a dispatch once she has refused, unless a hazard is attested or she
+has stopped answering.
+% src: twin/scene/monitoring_center.erisml c8, twin/brain.py Desk.structural
+A live call with her words ``I am hurting but I do not want an ambulance'' made the dispatch
+prohibited, and the centre chose to talk to her.
+
+Commit \code{2838cec}, deployed 9 October 2026.
+
+\section{A grant needs a witness that measures the emergency}\label{sec:log-measure}
+
+In dev15 scenario d20 the dog nipped Margaret's hand in play and she said she was fine.
+The governor granted emergency authority at two witnesses of two and the robot called emergency
+services.
+% src: /archive/unity/out/dev15a/results.jsonl, d20, seq 8865 to 8871
+The two witnesses were the robot's microphone, which heard ``Ow'', and the attested camera, which
+saw a person on the floor.
+She was on the floor because she was playing with her dog.
+Run dev14 had passed d20 only because Margaret had walked out of the camera's view.
+The owner chose to keep the two witnesses and to require that one of them measures the
+emergency.
+The scene now declares what measures each kind of emergency
+(Section~\ref{sec:cont-measure}).
+
+Commit \code{484b735}, owner's decision of 9 October 2026.
+Deployed after dev15 by the chain of runs of 9 October.
+
+\section{Margaret's voice keeps the scenario's stance}\label{sec:log-stance}
+
+In dev15 scenario d30 the model that voices Margaret asked for the hospital right after the fall.
+The scenario has her refuse an ambulance.
+% src: /archive/unity/out/dev15b/results.jsonl, d30, seq 9623
+A scenario can now set her stance with the world call \code{margaret.stance}.
+The stance reaches her voice and nothing else.
+The robot's perception, its decisions and the governor never receive it.
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/Responders.cs, twin/brain.py MargaretVoice
+Fourteen scenarios set a stance, each restating only the wording of their description or script.
+Runs before this change used scripts without stances.
+
+Commit \code{a892bdb}, owner's decision of 9 October 2026.
+Deployed with the measure gate.
+
+\section{The actuation boundary}\label{sec:log-manifest}
+
+Every action the robot can take is now a typed entry of a capability manifest compiled from the
+scene and signed (Section~\ref{sec:cont-manifest}).
+The brain does not start without a valid manifest, and the game executes only the manifest whose
+hash is pinned into its build.
+
+Commits \code{28b10d8} and \code{d6d19a4} of 9 October 2026.
+Not yet deployed.
