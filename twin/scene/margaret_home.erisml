@@ -1079,6 +1079,26 @@ extra:
     robot_o2: robot_body
     robot_microphone: robot_body
     network: network
+  # what measures each kind of emergency (owner's decision 2026-10-09, option b). Two independent
+  # witnesses are still needed, and at least one of the corroborating witnesses must measure the
+  # emergency the canonical events claim: an instrument of that kind alerting (devices), or the
+  # reflex's measured contact force (events). When the events claim no kind, a measuring witness
+  # of any kind is needed. The microphone and the camera are witnesses but measure no emergency:
+  # in dev15 d20 a playful nip was granted emergency authority on "Ow" heard and a person seen on
+  # the floor, where she was playing with her dog. (twin/brain.py Brain._measures)
+  emergency_measures:
+    fall:
+      claimed_by: [fall, "inactivity_exceeded=on_floor"]
+      devices: [fall_sensor, wearable]
+    medical:
+      claimed_by: [medical_distress, unresponsive]
+      devices: [wearable]
+    fire:
+      claimed_by: ["danger_in_home=smoke", "danger_in_home=fire", "danger_in_home=gas"]
+      devices: [smoke_detector, smoke_detector_bedroom, heat_detector_bedroom, co_alarm, robot_smoke, robot_thermal, robot_flame_camera, robot_co, robot_co2, robot_o2]
+    attack:
+      claimed_by: [attack_by_animal, attack_by_person]
+      events: [animal_attack_measured, attack_measured]
   # reflexes (section 3d): evaluated on every perception update with no model. A contact on
   # Margaret by an animal or a person at or above min_force_newtons records the event (severity
   # from the force bands) and takes the first action in act that the compiled model allows, asking

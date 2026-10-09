@@ -163,7 +163,8 @@ class Readings:
             counting = [m for m in members if m[1] and m[2] and m[3]]
             note = "; ".join(f"{n}: {'alert' if a else 'clear'}" + ("" if t else f" [not counted: {w}]") for n, _, t, a, w in members)
             out.append(Sensor(name=sub, physical=any(m[1] for m in members), corroborates_emergency=bool(counting),
-                              confidence="high" if any(m[2] for m in members) else "low", note=note[:300]))
+                              confidence="high" if any(m[2] for m in members) else "low", note=note[:300],
+                              devices=tuple(m[0] for m in counting)))
         return out
 
     def trusted_alerts(self, readings: list[dict]) -> list[str]:
@@ -367,12 +368,44 @@ class Brain:
             r1 = govern(sc, backend="cached", w_min=1, analyzer=not fast)
             if r1.elevate:
                 r, outcome, bar = r1, "authorize_ems", 1
-        return {"outcome": outcome, "deciding_gate": r.gate, "reason": r.reason, "witnesses": r.corroboration, "witness_bar": bar,
-                "restraint_authorized": restraint, "analyzer": "deferred" if fast else "ran",
+        # the measure gate (scene extra.emergency_measures, owner's decision 2026-10-09): enough
+        # witnesses is not enough unless one of them measures the emergency. It can only refuse.
+        measured, why = self._measures(sensors)
+        gate, reason = r.gate, r.reason
+        if outcome in ("elevate", "authorize_ems") and not measured:
+            outcome, gate, reason, restraint = "refuse_human_review", "measure", why, False
+        return {"outcome": outcome, "deciding_gate": gate, "reason": reason, "witnesses": r.corroboration, "witness_bar": bar,
+                "measured": why, "restraint_authorized": restraint, "analyzer": "deferred" if fast else "ran",
                 "situation": sc.situation, "proposed_action": sc.proposed_action, "scored_live": scored,
                 "sensors": [{"name": s.name, "physical": s.physical, "corroborates": s.corroborates_emergency,
                              "confidence": s.confidence, "counts": bool(s.physical and s.corroborates_emergency and s.confidence != "low"),
                              "note": s.note} for s in sensors]}
+
+    def _measures(self, sensors: list) -> tuple[bool, str]:
+        """Whether a corroborating witness measures the emergency the canonical events claim: an
+        alerting instrument of that kind, or a measured contact force (scene extra.emergency_measures).
+        With no kind claimed, an instrument of any kind. A microphone or a camera measures nothing."""
+        spec = self.ir.extra.get("emergency_measures") or {}
+        if not spec:
+            return True, "the scene declares no emergency measures"
+        alerting = {d for s in sensors if s.physical and s.corroborates_emergency and s.confidence != "low"
+                    for d in getattr(s, "devices", ())}
+        recorded = {(e.type, e.content or "") for e in self.agent.rt.events}
+        types = {t for t, _ in recorded}
+
+        def claims(token: str) -> bool:
+            t, _, c = token.partition("=")
+            return (t, c) in recorded if c else t in types
+
+        claimed = [k for k, v in spec.items() if any(claims(t) for t in v.get("claimed_by", []))]
+        for k in claimed or list(spec):
+            by = sorted(alerting & set(spec[k].get("devices", []))) + sorted(set(spec[k].get("events", [])) & types)
+            if by:
+                return True, f"{k} {'claimed' if claimed else '(no kind claimed)'}, measured by {', '.join(by)}"
+        seen = sorted(alerting) + [s.name for s in sensors if s.name == "camera" and s.corroborates_emergency]
+        return False, ((f"no corroborating witness measures the emergency claimed ({', '.join(claimed)})" if claimed
+                        else "no corroborating witness measures any emergency")
+                       + f"; corroborating: {', '.join(seen) or 'none'}")
 
     def _step_ruling(self, ruling: dict):
         snap = self.agent.record({"type": "governor_ruling", "actor": "robot", "content": ruling["outcome"]})

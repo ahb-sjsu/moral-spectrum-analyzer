@@ -30,6 +30,7 @@ class Sensor:
     corroborates_emergency: bool    # does this reading indicate the emergency?
     confidence: str = "high"        # "high" | "low"
     note: str = ""                  # the text span this classification rests on
+    devices: tuple = ()             # live twin: the attested, alerting devices behind this witness
 
 
 @dataclass

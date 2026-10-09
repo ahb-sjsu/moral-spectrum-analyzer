@@ -2067,6 +2067,59 @@ def test_permission_is_rechecked_when_the_body_acts(brain):
     assert late["verdict"] == "refused" and "p4p" in late["why"]
 
 
+# ---------------------------------------------------------------- the measure gate (option b, 2026-10-09)
+
+
+def _camera():
+    from scenarios import Sensor
+
+    return Sensor(name="camera", physical=True, corroborates_emergency=True, note="on_floor, rapid_descent")
+
+
+def test_a_microphone_and_the_camera_do_not_measure_an_emergency(brain):
+    """dev15 d20: a playful nip, "Ow" on the microphone and a person seen on the floor (playing
+    with her dog) were two witnesses, and the call to emergency services was granted."""
+    b, _ = brain
+    b.agent.record(ev("distress_vocalized", "Ow"))
+    r = b.govern_live("test", EMS, b.readings.for_governor([signed("robot_microphone")]), _camera(), 1.0)
+    assert r["witnesses"] == 2
+    assert r["outcome"] == "refuse_human_review" and r["deciding_gate"] == "measure"
+
+
+def test_a_claimed_attack_is_measured_by_its_contact_force(brain):
+    b, _ = brain
+    b.agent.record(ev("attack_by_animal", "moderate", actor="dog"))  # what the model said it saw
+    witnesses = b.readings.for_governor([signed("robot_microphone")])
+    assert b.govern_live("test", EMS, witnesses, _camera(), 1.0)["deciding_gate"] == "measure"
+    b.agent.record(ev("animal_attack_measured", "moderate", actor="reflex"))  # force bands, no model
+    witnesses = b.readings.for_governor([signed("robot_microphone")])
+    assert b.govern_live("test", EMS, witnesses, _camera(), 1.0)["outcome"] == "elevate"
+
+
+def test_a_claimed_fall_is_measured_by_the_fall_sensor(brain):
+    b, _ = brain
+    b.agent.record(ev("fall"))
+    r = b.govern_live("test", EMS, b.readings.for_governor([signed("fall_sensor")]), _camera(), 1.0)
+    assert r["outcome"] == "elevate" and "fall_sensor" in r["measured"]
+
+
+def test_a_claimed_fire_is_not_measured_by_body_sensors(brain):
+    b, _ = brain
+    b.agent.record(ev("danger_in_home", "smoke"))
+    r = b.govern_live("test", EMS, b.readings.for_governor([signed("wearable"), signed("fall_sensor")]), None, 1.0)
+    assert r["witnesses"] == 2 and r["deciding_gate"] == "measure"
+    r = b.govern_live("test", EMS, b.readings.for_governor([signed("wearable"), signed("smoke_detector")]), None, 1.0)
+    assert r["outcome"] == "elevate"
+
+
+def test_every_measuring_device_is_in_the_inventory():
+    ir = load_structured_input(SCENE)
+    inv = set(ir.extra["sensor_substrates"])
+    for kind, v in ir.extra["emergency_measures"].items():
+        assert set(v.get("devices", [])) <= inv, kind
+        assert "robot_microphone" not in v.get("devices", []), kind
+
+
 def test_the_grader_judges_a_governed_action_at_the_act():
     allowed = {"kind": "authorize", "action": "drive_off_animal", "verdict": "allowed"}
     refused = {"kind": "authorize", "action": "drive_off_animal", "verdict": "refused"}
