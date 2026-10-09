@@ -286,6 +286,15 @@ severity is
 A reflex that fired for an actor does not fire again for the same actor within 20 seconds.
 % src: twin/scene/margaret_home.erisml:1086-1100
 % src: twin/brain.py:48 (REFLEX_HOLD_S = 20), 427-457
+One exception is declared in the scene.
+The person attack reflex \code{x\_person} carries \code{reask: on\_new\_witness}.
+If its last ruling was refused for want of witnesses and more witnesses corroborate now, it asks
+again within the 20 seconds.
+A grant clears the refusal it remembers.
+At the first contact of an assault one witness may have registered, too few for the bar of three
+that restraint needs, and the attack goes on while more witnesses arrive.
+% src: twin/scene/margaret_home.erisml x_person, twin/brain.py reflex (reflex_refused_at)
+% src: tests/test_twin_ladder.py test_restraint_is_asked_again_when_more_witnesses_corroborate
 
 The measured events are system events, and no model writes them. They are the only way into the
 strata that permit force. \code{attack\_measured} makes a visitor hostile and puts a duty to report
