@@ -312,6 +312,8 @@ class Brain:
         self.center = Desk("center", os.path.join(scene_dir, "monitoring_center.erisml"), desk_adapter, max_turns=1, inventory=inventory)
         self.ems = Desk("ems", os.path.join(scene_dir, "ems_dispatch.erisml"), desk_adapter, max_turns=4, inventory=inventory)
         self.margaret = MargaretVoice(desk_adapter)
+        # the signed capability manifest (twin/manifest.py); the service sets it after verifying it
+        self.manifest = None
         self.reset()
 
     def reset(self):
@@ -511,7 +513,10 @@ class Brain:
             gate = None
             if chosen:
                 chosen, _, gate = self.gate.check(chosen, {}, snap, deliberate=False)
+            if not self._in_manifest(chosen):
+                chosen = ""   # a reflex never takes an action the manifest does not list
             return {"kind": "reflex", "reflex": x["id"], "facts": facts, "event": ev, "force_newtons": force, "rulings": rulings,
+                    "manifest": self._manifest_sha(),
                     "allowed": snap.allowed, "obliged": snap.obliged, "prohibited": snap.prohibited, "moral_state": snap.machines,
                     "ethics_gate": gate, "action": {"action": chosen, "args": {}, "reason": f"reflex {x['id']}: {actor} attack, {sev}"}}
         return None
@@ -663,8 +668,18 @@ class Brain:
         action, args, gate = self.gate.check(action, args, self.agent.rt.snapshot())
         cycle["ethics_gate"] = gate
         cycle["action"] = {"action": action, "args": args, "reason": reason if not gate["vetoed"] else "DEME vetoed the proposal: " + gate["proposal"]}
+        if not self._in_manifest(action):   # the actuation boundary: never an action the manifest does not list
+            fb = self.manifest["body"]["fallback"]
+            cycle["action"] = {"action": fb, "args": {}, "reason": f"{action!r} is not in the signed manifest; fallback {fb}"}
         cycle["state_seq"] = len(self.agent.rt.events)  # the state the choice was made on (authorize re-checks at the act)
+        cycle["manifest"] = self._manifest_sha()
         return cycle
+
+    def _in_manifest(self, action: str) -> bool:
+        return self.manifest is None or not action or action in self.manifest["actions"]
+
+    def _manifest_sha(self):
+        return self.manifest["sha256"] if self.manifest else None
 
     def authorize(self, action: str) -> dict:
         """Permission at the moment the body acts, not only when the action was chosen. The world
@@ -673,10 +688,12 @@ class Brain:
         only on `allowed`. Judged on the moral state as it stands now, with the sequence number
         of that state, so the chain records the permission the act rested on."""
         snap = self.agent.rt.snapshot()
-        allowed = action in snap.allowed
+        listed = self._in_manifest(action)
+        allowed = listed and action in snap.allowed
+        why = [] if allowed else (snap.reasons.get(action, []) if listed else ["not in the signed manifest"])
         return {"kind": "authorize", "action": action, "verdict": "allowed" if allowed else "refused",
-                "state_seq": len(self.agent.rt.events), "why": snap.reasons.get(action, []) if not allowed else [],
-                "moral_state": snap.machines}
+                "state_seq": len(self.agent.rt.events), "why": why, "moral_state": snap.machines,
+                "manifest": self._manifest_sha()}
 
     def performed(self, action: str) -> dict:
         snap = self.agent.record({"type": "action_performed", "actor": "robot", "content": action})

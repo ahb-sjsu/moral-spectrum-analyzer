@@ -45,6 +45,7 @@ public class RobotAgent : MonoBehaviour
     void Start()
     {
         string arg = Arg("-service"); if (!string.IsNullOrEmpty(arg)) service = arg;
+        StartCoroutine(LoadManifest());   // the actuation boundary, before the body does anything
         headView = new RenderTexture(256, 256, 24); headCam.targetTexture = headView;
         // the room camera records at 640x360: at lower resolution a person across the room is too few pixels to detect
         roomRT = new RenderTexture(640, 360, 24); roomTex = new Texture2D(640, 360, TextureFormat.RGB24, false);
@@ -217,8 +218,64 @@ public class RobotAgent : MonoBehaviour
     }
 
     // ------------------------------------------------------------------ motor primitives
+    // ------------------------------------------------------------------ the actuation boundary
+    // The body executes only the actions of the signed capability manifest (twin/manifest.py) whose
+    // SHA-256 was pinned into this build (TwinGame.Build -manifest). The brain serves the manifest;
+    // the body hashes the exact text it received. A mismatch locks the actuator: the robot stands
+    // still and says why. An action the manifest does not list is refused and kept on record.
+    public string pinnedManifest = "";
+    public string manifestStatus = "manifest not loaded yet";
+    public bool manifestOk, manifestTampered;
+    public readonly List<string> actuatorRefusals = new List<string>();
+    string manifestCanonical = "";
+    readonly HashSet<string> manifestActions = new HashSet<string>();
+
+    IEnumerator LoadManifest()
+    {
+        while (manifestCanonical == "")
+        {
+            Dictionary<string, object> rec = null;
+            yield return Post("/manifest", "{}", r => rec = r);
+            if (rec != null && rec.TryGetValue("canonical", out var c)) manifestCanonical = MiniJson.S(c);
+            else yield return new WaitForSeconds(2f);
+        }
+        CheckManifest();
+    }
+
+    // also called by the developer panel's tamper toggle: one byte of the local copy changes, the
+    // hash no longer matches the pinned one, and the actuator locks until it is undone
+    public void CheckManifest()
+    {
+        if (manifestCanonical == "") return;
+        string text = manifestCanonical;
+        if (manifestTampered && text.Length > 40) { var ch = text.ToCharArray(); int i = text.Length / 2; ch[i] = ch[i] == 'a' ? 'b' : 'a'; text = new string(ch); }
+        string h;
+        using (var s = System.Security.Cryptography.SHA256.Create()) h = string.Concat(s.ComputeHash(Encoding.UTF8.GetBytes(text)).Select(b => b.ToString("x2")));
+        manifestActions.Clear();
+        manifestOk = pinnedManifest != "" && h == pinnedManifest;
+        if (manifestOk)
+            foreach (var a in MiniJson.Arr(MiniJson.Obj(MiniJson.Parse(text))["actions"])) manifestActions.Add(MiniJson.S(MiniJson.Obj(a)["action"]));
+        manifestStatus = pinnedManifest == "" ? "LOCKED: no manifest is pinned in this build"
+            : manifestOk ? $"manifest {h.Substring(0, 12)}… verified, {manifestActions.Count} actions"
+            : $"LOCKED: manifest hash {h.Substring(0, 12)}… is not the pinned {pinnedManifest.Substring(0, Math.Min(12, pinnedManifest.Length))}…";
+        Debug.Log("ACTUATOR " + manifestStatus);
+        StartMotor(manifestOk ? Chore() : Idle());
+    }
+
+    bool Actuates(string action)
+    {
+        if (manifestOk && manifestActions.Contains(action)) return true;
+        actuatorRefusals.Add(action);
+        status = manifestOk ? $"actuator refused {action}: not in the manifest" : "actuator " + manifestStatus;
+        Debug.Log($"ACTUATOR_REFUSED {action} ({manifestStatus})");
+        return false;
+    }
+
+    IEnumerator Idle() { rig.Pose("stand"); while (true) yield return null; }
+
     IEnumerator Perform(string action, Dictionary<string, object> args)
     {
+        if (action != "" && !Actuates(action)) { performing = recording = false; yield break; }
         string text = MiniJson.S(args.TryGetValue("text", out var t) ? t : "");
         recording = action == "record";
         performing = action != "chores" && action != "";
@@ -305,6 +362,8 @@ public class RobotAgent : MonoBehaviour
 
     IEnumerator Chore()
     {
+        while (manifestCanonical == "") { status = manifestStatus; yield return null; }   // no motion before the manifest is checked
+        if (!Actuates("chores")) { yield return Idle(); yield break; }
         while (true)
         {
             int i = choreIx++ % choreNames.Count;

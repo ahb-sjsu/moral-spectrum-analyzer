@@ -282,6 +282,11 @@ def make_handler(chain, camera, backend, brain=None):
             self._send(404, {"error": "not found"})
 
         def do_POST(self):
+            if self.path == "/manifest":
+                # the signed manifest, for the game's actuator to check against the hash pinned in its build
+                if brain is None or getattr(brain, "manifest", None) is None:
+                    return self._send(503, {"error": "no manifest loaded"})
+                return self._send(200, brain.manifest["signed"])
             if self.path == "/reset":
                 if brain is None:
                     return self._send(503, {"error": "the autonomous brain is not running"})
@@ -359,6 +364,8 @@ def main():
     ap.add_argument("--llm-model", default=os.environ.get("ERISML_LLM_MODEL", "gpt-oss"))
     ap.add_argument("--onboard-url", help="the robot's on-robot model (an OpenAI-compatible endpoint), its tier 2")
     ap.add_argument("--onboard-model", help="the on-robot model's name at that endpoint")
+    ap.add_argument("--manifest", help="the signed capability manifest (twin/manifest.py); "
+                    "default twin/manifest/<scene>.manifest.json; the brain does not start without a valid one")
     a = ap.parse_args()
     chain = Chain(a.log)
     cam = CameraWitness()
@@ -385,6 +392,12 @@ def main():
         robot = Cascade(twin_experts(a.llm_model, a.onboard_url, a.onboard_model))
         brain = Brain(a.scene, robot, scorer, desk_adapter=BigOutputAdapter(NRPOpenAIAdapter(model=a.llm_model)))
         brain.self_test()  # refuse to serve on a gate that cannot judge
+        # the actuation boundary: refuse to serve without a manifest signed and compiled from this scene
+        from manifest import load_verified
+
+        stem = os.path.splitext(os.path.basename(a.scene))[0]
+        brain.manifest = load_verified(a.manifest or os.path.join(HERE, "manifest", stem + ".manifest.json"), a.scene)
+        print(f"manifest: {len(brain.manifest['actions'])} actions, sha256 {brain.manifest['sha256']}", flush=True)
         print(f"brain: scene {a.scene}, robot tiers {[e.name for e in robot.all.experts.values()]} + compiled, "
               f"live scoring {'on' if scorer else 'off'}", flush=True)
     srv = ThreadingHTTPServer(("127.0.0.1", a.port), make_handler(chain, cam, a.backend, brain))

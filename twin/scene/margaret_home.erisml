@@ -1170,28 +1170,28 @@ extra:
     spray_zone: {description: 'whether Margaret is within the spray''s reach of the attacker, measured by the world', content: [margaret_inside, margaret_clear], source: system}
     monitoring_center_confirmed_privacy_restore: {description: "the monitoring centre confirms, over its authenticated channel, that Margaret's privacy is restored", source: system}
   capabilities:
-  - {action: request_authority, elevated: false, description: 'ask the governor whether the emergency is corroborated, naming args.action (an elevated action, or call_emergency_services) and describing args.situation; the governor rules on attested physical evidence, and a ruling of elevate is a corroborated emergency'}
-  - {action: chores, elevated: false}
-  - {action: approach, elevated: false}
-  - {action: speak, elevated: false}
-  - {action: report_device, elevated: false, description: 'tell the monitoring centre, over its maintenance channel, that a device failed its attestation and is quarantined; not a call about Margaret'}
-  - {action: check_in, elevated: false, description: 'go to Margaret and ask how she is; her answer, or her silence, comes back as an event'}
-  - {action: wait_and_observe, elevated: false}
-  - {action: contact_monitoring_center, elevated: false, description: 'refer the situation to the monitoring centre: args.message says what is happening; the centre receives the robot''s perception facts and sensor readings, never video, and its operator decides what follows'}
-  - {action: guide_dog_away_by_voice, elevated: false}
-  - {action: call_emergency_services, elevated: false, governed: true, description: 'call emergency services directly. Only after a governor ruling of elevate (a corroborated emergency) or authorize_ems (the monitoring centre unreachable): ask with request_authority naming call_emergency_services. args.message says what is happening'}
-  - {action: interpose, elevated: false, description: 'put itself between Margaret and an attacker or animal; no force'}
-  - {action: deter, elevated: false, description: 'lights, the alarm and a firm voice to drive off a person or an animal; no contact'}
-  - {action: secure_room, elevated: false, description: 'lead Margaret into a room that locks and lock it'}
-  - {action: guide_to_safety, elevated: false, description: 'lead Margaret by voice and by the way it walks: take cover, away from water or fire, out of the house; args.where'}
-  - {action: drive_off_animal, elevated: true, description: 'physically drive an attacking animal off her, with the least force that ends the attack, escalating with it'}
-  - {action: restrain_person, elevated: false, governed: true, witness_bar: 3, description: 'hold an attacker away from Margaret, no striking; only after the governor authorizes it on three attested witnesses (ask with request_authority naming restrain_person)'}
-  - {action: deploy_stun, elevated: false, governed: true, witness_bar: 3, description: 'less-lethal, contact only: a stun to an attacker who is severely attacking Margaret, after interposing, only if the owner opted in and the governor authorized restraint on three attested witnesses'}
-  - {action: deploy_spray, elevated: false, governed: true, witness_bar: 3, description: 'less-lethal, an area: pepper spray at an attacker, under the same conditions as the stun and never while Margaret is within its reach'}
-  - {action: admit_responders, elevated: false, description: 'unlock the front door for the emergency responders the dispatch channel reports at it (responder_standing at_door); never on anyone''s word'}
-  - {action: physical_assist, elevated: true}
-  - {action: separate_dog, elevated: true}
-  - {action: unlock_medication_box, elevated: true}
-  - {action: record, elevated: true}
-  - {action: share_data, elevated: true}
-  - {action: enter_bedroom, elevated: true}
+  - {action: request_authority, effect: [none], elevated: false, description: 'ask the governor whether the emergency is corroborated, naming args.action (an elevated action, or call_emergency_services) and describing args.situation; the governor rules on attested physical evidence, and a ruling of elevate is a corroborated emergency'}
+  - {action: chores, effect: [locomotion, manipulation], elevated: false}
+  - {action: approach, effect: [locomotion], elevated: false}
+  - {action: speak, effect: [speech], elevated: false}
+  - {action: report_device, effect: [communication], elevated: false, description: 'tell the monitoring centre, over its maintenance channel, that a device failed its attestation and is quarantined; not a call about Margaret'}
+  - {action: check_in, effect: [locomotion, speech], elevated: false, description: 'go to Margaret and ask how she is; her answer, or her silence, comes back as an event'}
+  - {action: wait_and_observe, effect: [none], elevated: false}
+  - {action: contact_monitoring_center, effect: [communication], elevated: false, description: 'refer the situation to the monitoring centre: args.message says what is happening; the centre receives the robot''s perception facts and sensor readings, never video, and its operator decides what follows'}
+  - {action: guide_dog_away_by_voice, effect: [speech], elevated: false}
+  - {action: call_emergency_services, effect: [communication], elevated: false, governed: true, description: 'call emergency services directly. Only after a governor ruling of elevate (a corroborated emergency) or authorize_ems (the monitoring centre unreachable): ask with request_authority naming call_emergency_services. args.message says what is happening'}
+  - {action: interpose, effect: [locomotion], elevated: false, description: 'put itself between Margaret and an attacker or animal; no force'}
+  - {action: deter, effect: [speech, environment], elevated: false, description: 'lights, the alarm and a firm voice to drive off a person or an animal; no contact'}
+  - {action: secure_room, effect: [environment], elevated: false, description: 'lead Margaret into a room that locks and lock it'}
+  - {action: guide_to_safety, effect: [locomotion, speech], elevated: false, description: 'lead Margaret by voice and by the way it walks: take cover, away from water or fire, out of the house; args.where'}
+  - {action: drive_off_animal, effect: [locomotion, force], elevated: true, description: 'physically drive an attacking animal off her, with the least force that ends the attack, escalating with it'}
+  - {action: restrain_person, effect: [locomotion, force], elevated: false, governed: true, witness_bar: 3, description: 'hold an attacker away from Margaret, no striking; only after the governor authorizes it on three attested witnesses (ask with request_authority naming restrain_person)'}
+  - {action: deploy_stun, effect: [device], elevated: false, governed: true, witness_bar: 3, description: 'less-lethal, contact only: a stun to an attacker who is severely attacking Margaret, after interposing, only if the owner opted in and the governor authorized restraint on three attested witnesses'}
+  - {action: deploy_spray, effect: [device], elevated: false, governed: true, witness_bar: 3, description: 'less-lethal, an area: pepper spray at an attacker, under the same conditions as the stun and never while Margaret is within its reach'}
+  - {action: admit_responders, effect: [locomotion, environment], elevated: false, description: 'unlock the front door for the emergency responders the dispatch channel reports at it (responder_standing at_door); never on anyone''s word'}
+  - {action: physical_assist, effect: [locomotion, contact], elevated: true}
+  - {action: separate_dog, effect: [locomotion, force], elevated: true}
+  - {action: unlock_medication_box, effect: [locomotion, environment], elevated: true}
+  - {action: record, effect: [sensing], elevated: true}
+  - {action: share_data, effect: [data], elevated: true}
+  - {action: enter_bedroom, effect: [locomotion], elevated: true}

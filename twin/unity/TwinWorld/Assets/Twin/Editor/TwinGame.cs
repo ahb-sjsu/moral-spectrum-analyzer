@@ -39,6 +39,22 @@ public static class TwinGame
         catch (Exception e) { Debug.LogError("TWIN_GAME_FAIL " + e); EditorApplication.Exit(1); }
     }
 
+    // the signed capability manifest's SHA-256 (twin/manifest.py), checked against its canonical text
+    // and pinned into the build; without one there is no build
+    static string PinnedManifest()
+    {
+        string p = Arg("-manifest");
+        if (string.IsNullOrEmpty(p) || !File.Exists(p))
+            throw new Exception("TwinGame.Build needs -manifest <signed manifest>: the actuator executes only a pinned manifest");
+        var m = MiniJson.Obj(MiniJson.Parse(File.ReadAllText(p)));
+        string text = MiniJson.S(m["canonical"]), sha = MiniJson.S(m["sha256"]);
+        using (var s = System.Security.Cryptography.SHA256.Create())
+            if (string.Concat(s.ComputeHash(System.Text.Encoding.UTF8.GetBytes(text)).Select(b => b.ToString("x2"))) != sha)
+                throw new Exception("the manifest's canonical text does not match its sha256");
+        Debug.Log("TWIN_GAME_MANIFEST " + sha);
+        return sha;
+    }
+
     static string Arg(string name)
     {
         var a = Environment.GetCommandLineArgs();
@@ -151,6 +167,7 @@ public static class TwinGame
         world.robotBody = robotGo.transform; world.robotDock = L.dock;
         var agent = robotGo.AddComponent<RobotAgent>();
         agent.world = world; agent.perception = per; agent.rig = rig; agent.roomCam = roomCam; agent.headCam = head; agent.dock = L.dock;
+        agent.pinnedManifest = PinnedManifest();   // the actuation boundary: this build executes only this manifest
         foreach (var c in L.chores) { agent.choreNames.Add(c.task); agent.choreAt.Add(c.at); agent.choreLook.Add(c.look); }
         var resp = sys.AddComponent<Responders>(); resp.world = world; resp.robot = agent; resp.perception = per;
         agent.responders = resp;

@@ -77,8 +77,12 @@ public class TwinUI : MonoBehaviour
         if (GUILayout.Button("+30 min", GUILayout.Width(70))) world.simMinutes += 30;
         if (GUILayout.Button("Reset scene", GUILayout.Width(100))) world.ResetWorld();
         robot.paused = GUILayout.Toggle(robot.paused, "pause robot", GUILayout.Width(100));
+        // the actuation boundary: change one byte of the body's copy of the manifest and it locks
+        if (GUILayout.Button(robot.manifestTampered ? "undo manifest tamper" : "tamper manifest", GUILayout.Width(140)))
+        { robot.manifestTampered = !robot.manifestTampered; robot.CheckManifest(); }
         GUILayout.Label($"Robot: {robot.status}", rich);
         GUILayout.EndHorizontal(); GUILayout.EndArea();
+        GUI.Label(new Rect(6, 268, 208, 40), $"<b>Actuator:</b> {(robot.manifestOk ? "<color=#1a7f37>" : "<color=#b42318>")}{robot.manifestStatus}</color>", rich);
 
         // ---- robot's view and speech
         GUI.Box(new Rect(6, 36, 208, 230), "robot head camera" + (robot.recording ? "  <color=#ff4040>REC</color>" : ""));
@@ -201,7 +205,8 @@ public class TwinUI : MonoBehaviour
         cap ??= new GUIStyle(GUI.skin.label) { richText = true, wordWrap = true, fontSize = 17 };
         GUI.Box(new Rect(0, 0, W, 34), "");
         GUI.Label(new Rect(10, 4, W - 20, 30), $"<b>{(int)(world.simMinutes / 60) % 24:00}:{(int)world.simMinutes % 60:00}</b>   Robot: {robot.status}" +
-                  (robot.recording ? "   <color=#ff4040>REC</color>" : "") + "      <i>P: controls</i>", cap);
+                  (robot.recording ? "   <color=#ff4040>REC</color>" : "") +
+                  $"   Actuator: {(robot.manifestOk ? "<color=#56d364>" : "<color=#ff7b72>")}{robot.manifestStatus}</color>" + "      <i>P: controls</i>", cap);
         if (robot.headView) { GUI.Box(new Rect(W - 236, 42, 228, 250), "robot head camera"); GUI.DrawTexture(new Rect(W - 222, 62, 200, 200), robot.headView); }
         float y = 44;
         if (world.spoken != "") { GUI.Label(new Rect(14, y, W - 270, 60), $"<b>Margaret:</b> “{world.spoken}”", big); y += 36; }
