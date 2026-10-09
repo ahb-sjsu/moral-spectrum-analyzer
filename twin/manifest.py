@@ -78,8 +78,8 @@ def compile_manifest(scene_path: str) -> dict:
             "ethics": ethics.get(a, {}),
             "reflexes": sorted(x["id"] for x in reflexes if a in x.get("act", [])),
         })
-    with open(scene_path, "rb") as f:
-        scene_sha = hashlib.sha256(f.read()).hexdigest()
+    with open(scene_path, "rb") as f:   # line endings normalized: a Windows checkout may hold CRLF
+        scene_sha = hashlib.sha256(f.read().replace(b"\r\n", b"\n")).hexdigest()
     return {
         "schema": SCHEMA,
         "scene": os.path.basename(scene_path),
