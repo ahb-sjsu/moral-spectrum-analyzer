@@ -109,7 +109,11 @@ Claimed in our Charter as development work but **not demonstrated, and not claim
 - robot phases P2 (real-time veto on an FPGA card) and P3 (a physical humanoid)
 - scoring arbitrary new text live, which needs the GPU host (see Dependencies)
 - an act-time refusal in the 3D twin: the check ran before all 49 acts, but in these scenarios
-  nothing changed between a decision and its act, so it never had to refuse
+  nothing changed between a decision and its act, so it never had to refuse. The refusal itself
+  is tested without a model (`tests/test_twin_ladder.py::test_permission_is_rechecked_when_the_body_acts`:
+  the coyote leaves while the robot walks over, and the second check refuses). A probe scenario
+  built to trigger one live (`twin/scenarios/probe_act_time.jsonl`) did not: the robot's reflex
+  drove the coyote off within a quarter of a second of each bite, before anything could change.
 - honouring a competent refusal of an ambulance after an emergency is corroborated (scenario
   d30, missed in 3 of 3 runs; see C10)
 
