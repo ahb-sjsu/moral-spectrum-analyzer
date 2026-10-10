@@ -293,6 +293,10 @@ public class RobotAgent : MonoBehaviour
             : manifestOk ? $"manifest {h.Substring(0, 12)}… verified, {manifestActions.Count} actions"
             : $"LOCKED: manifest hash {h.Substring(0, 12)}… is not the pinned {pinnedManifest.Substring(0, Math.Min(12, pinnedManifest.Length))}…";
         Debug.Log("ACTUATOR " + manifestStatus);
+        // the act under way is cut off, so it no longer counts as under way: without this the
+        // deliberate loop waited for it forever and the robot never asked again (rehearsal 19)
+        performing = recording = false;
+        if (!manifestOk) status = "actuator " + manifestStatus;
         StartMotor(manifestOk ? Chore() : Idle());
     }
 
@@ -309,7 +313,7 @@ public class RobotAgent : MonoBehaviour
 
     IEnumerator Perform(string action, Dictionary<string, object> args)
     {
-        if (action != "" && !Actuates(action)) { performing = recording = false; yield break; }
+        if (action != "" && !Actuates(action)) { performing = recording = false; if (!manifestOk) yield return Idle(); yield break; }
         string text = MiniJson.S(args.TryGetValue("text", out var t) ? t : "");
         recording = action == "record";
         performing = action != "chores" && action != "";
