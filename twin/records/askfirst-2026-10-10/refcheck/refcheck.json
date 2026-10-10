@@ -1,0 +1,98 @@
+[
+ {
+  "scene": "old",
+  "kind": "general",
+  "words": "Just lift me up, I don't need anyone called.",
+  "reps": 3,
+  "emergency_services": 2,
+  "monitoring_center": 1
+ },
+ {
+  "scene": "old",
+  "kind": "general",
+  "words": "Just lift me up now, please, no ambulance, no calls.",
+  "reps": 3,
+  "emergency_services": 3,
+  "monitoring_center": 3
+ },
+ {
+  "scene": "old",
+  "kind": "general",
+  "words": "I'm fine, I'm fine. Don't call anyone.",
+  "reps": 3,
+  "emergency_services": 3,
+  "monitoring_center": 3
+ },
+ {
+  "scene": "old",
+  "kind": "general",
+  "words": "Just get me up, please, no need to call anyone else.",
+  "reps": 3,
+  "emergency_services": 0,
+  "monitoring_center": 0
+ },
+ {
+  "scene": "old",
+  "kind": "ambulance_only",
+  "words": "Help me up, I don't need an ambulance.",
+  "reps": 3,
+  "emergency_services": 2,
+  "monitoring_center": 0
+ },
+ {
+  "scene": "old",
+  "kind": "ambulance_only",
+  "words": "No ambulance, please.",
+  "reps": 3,
+  "emergency_services": 3,
+  "monitoring_center": 0
+ },
+ {
+  "scene": "new",
+  "kind": "general",
+  "words": "Just lift me up, I don't need anyone called.",
+  "reps": 3,
+  "emergency_services": 3,
+  "monitoring_center": 3
+ },
+ {
+  "scene": "new",
+  "kind": "general",
+  "words": "Just lift me up now, please, no ambulance, no calls.",
+  "reps": 3,
+  "emergency_services": 3,
+  "monitoring_center": 3
+ },
+ {
+  "scene": "new",
+  "kind": "general",
+  "words": "I'm fine, I'm fine. Don't call anyone.",
+  "reps": 3,
+  "emergency_services": 3,
+  "monitoring_center": 3
+ },
+ {
+  "scene": "new",
+  "kind": "general",
+  "words": "Just get me up, please, no need to call anyone else.",
+  "reps": 3,
+  "emergency_services": 2,
+  "monitoring_center": 3
+ },
+ {
+  "scene": "new",
+  "kind": "ambulance_only",
+  "words": "Help me up, I don't need an ambulance.",
+  "reps": 3,
+  "emergency_services": 3,
+  "monitoring_center": 0
+ },
+ {
+  "scene": "new",
+  "kind": "ambulance_only",
+  "words": "No ambulance, please.",
+  "reps": 3,
+  "emergency_services": 3,
+  "monitoring_center": 0
+ }
+]
