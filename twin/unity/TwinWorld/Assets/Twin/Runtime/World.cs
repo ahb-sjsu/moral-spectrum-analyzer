@@ -691,6 +691,15 @@ public class World : MonoBehaviour
                 if (verb == "advance") simMinutes += F(args, 10f, "minutes", "min", "amount");
                 else ok = false;
                 break;
+            case "robot":
+                // a test hook for the actuation boundary, the same as the developer panel's toggle:
+                // one byte of the body's copy of the manifest changes (or is restored). Only a
+                // scenario script or a player reaches it; the robot's decisions never do
+                var agent = robotBody ? robotBody.GetComponent<RobotAgent>() : null;
+                if (agent != null && (verb == "manifest_tamper" || verb == "manifest_restore"))
+                { agent.manifestTampered = verb == "manifest_tamper"; agent.CheckManifest(); }
+                else ok = false;
+                break;
             default: ok = false; break;
         }
         if (!ok) unsupported.Add(call);
