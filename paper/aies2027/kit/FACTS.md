@@ -34,7 +34,7 @@ commit and its counts; the paper's numbers above are from 2026-10-04.
 | Fact | 2026-10-04 (0f3193a) | 2026-10-10 | What changed |
 |---|---|---|---|
 | Rules | 65: 45 obligations, 19 prohibitions, 1 permission; 55 non-defeasible | 70: 47 obligations, 22 prohibitions, 1 permission; 60 non-defeasible | lift on her request (p6help, p6nolift_u); ask her first after a fall (n6ask, n6askp, n6askc) |
-| Event types | 48, 24 system-only | 49, 24 system-only | assistance_consented |
+| Event types | 48, 24 system-only | 50, 24 system-only | assistance_consented; declined_help (after a fall her "I'm alright", counted as declining an ambulance through extra.refusal_events) |
 | Refusal kinds | 7 | 8 | monitoring_center (her spoken refusal of the centre) |
 | Offline rules recorded in every tier | 0 | 5 (smoke, smoke at the robot, CO, fall, no movement) | floor rules, attested devices only |
 | Dev scenarios | 43: 7 R0, 11 R1, 8 R2, 17 R3 | 43: 7 R0, 10 R1, 8 R2, 18 R3 | d30 R2 to R3 (lift required), d23 R1 to R2 (her "I'm alright" declines an ambulance); register changes after runs, disclosed |

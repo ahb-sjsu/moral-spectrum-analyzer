@@ -384,11 +384,18 @@ With the trip working, d23 raised a question of policy.
 She told the robot she was shaken but alright, did not refuse an ambulance, and under ask first
 an answer that is not a refusal leaves the call owed, so the robot called.
 The owner decided that after a fall her saying she is alright declines an ambulance.
-The scene now says so to the classifier, the gate's route of the refused call to the centre still
-stands unless she refuses calls in general, and d23 expects R2 instead of R1.
-% src: twin/scene/margaret_home.erisml event_types.refusal_made; twin/scenarios/dev.jsonl d23
-\RESULT{the classifier check of "I'm alright" and the deployed check of d23}
+Written into the description of a refusal, the classifier read her words as declining in 3 of 6
+tries with the fall in context.
+% src: twin/records/askfirst-2026-10-10/finecheck (finecheck2.json)
+As an event of its own, \code{declined\_help}, which the scene counts as a refusal of emergency
+services, it was read in 9 of 9 tries, and in none of 9 tries on requests for help.
+% src: twin/records/askfirst-2026-10-10/finecheck (finecheck3.json); twin/output_gate.py refusal_events
+The gate's route of the refused call to the centre still stands unless she refuses calls in
+general, and d23 expects R2 instead of R1.
+% src: twin/scenarios/dev.jsonl d23
+\RESULT{the deployed check of d23 on build 28}
 
 Commits \code{c46ad8c}, \code{13c9202} and \code{46291e8} of 10 October 2026, manifest
 \code{90ea3374}, deployed as build 27, which the live demo now runs.
-The change for her ``I'm alright'' is not yet deployed.
+The change for her ``I'm alright'' is commit \code{9d60a54}, manifest \code{e27a19e5}, not yet
+deployed.
