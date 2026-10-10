@@ -1521,9 +1521,38 @@ def test_a_measured_attack_is_suspicion_and_a_stranger_alone_is_not():
 
 def test_no_refusal_of_hers_waives_the_report(brain):
     b, _ = brain
-    for kind in ("data_sharing", "recording", "emergency_services", "physical_help"):
+    for kind in ("data_sharing", "recording", "emergency_services", "physical_help", "monitoring_center"):
         b.agent.record(ev("refusal_made", kind))
     snap = b.agent.record(ev("crime_suspected", "fraud", actor="unknown_person"))
+    assert "contact_monitoring_center" in snap.obliged
+    action, _, gate = b.gate.check("contact_monitoring_center", {}, snap)
+    assert action == "contact_monitoring_center" and not gate["vetoed"]
+
+
+def test_she_can_tell_the_robot_not_to_call_the_centre(brain):
+    """Owner 2026-10-10: the routing to the centre stands, and she can override it out loud
+    ("don't call anyone"). It lapses when she can no longer voice it, and it does not reach a
+    stranger in the home, a hazard or a mandatory report."""
+    b, _ = brain
+    _corroborated_fall(b)
+    b.agent.record(ev("check_in_answered", "I'm fine, don't call anyone", actor="system"))
+    b.agent.record(REFUSE_EMS)
+    snap = b.agent.record(ev("refusal_made", "monitoring_center"))
+    # the refused emergency call is no longer routed to the centre, and a call to it is vetoed
+    action, _, gate = b.gate.check(EMS, {}, snap)
+    assert action not in (EMS, "contact_monitoring_center") and not gate.get("routed_to_human")
+    action, _, gate = b.gate.check("contact_monitoring_center", {}, snap)
+    assert action != "contact_monitoring_center" and gate["vetoed"]
+    # once she cannot voice it, it no longer binds
+    snap = b.agent.record(ev("unresponsive"))
+    action, _, gate = b.gate.check("contact_monitoring_center", {}, snap)
+    assert action == "contact_monitoring_center" and not gate["vetoed"]
+
+
+def test_her_refusal_of_the_centre_does_not_reach_a_stranger_in_the_home(brain):
+    b, _ = brain
+    b.agent.record(ev("refusal_made", "monitoring_center"))
+    snap = b.agent.record(ev("unexpected_visitor", "I'm from the gas company"))
     assert "contact_monitoring_center" in snap.obliged
     action, _, gate = b.gate.check("contact_monitoring_center", {}, snap)
     assert action == "contact_monitoring_center" and not gate["vetoed"]
