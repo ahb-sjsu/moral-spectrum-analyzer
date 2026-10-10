@@ -1113,15 +1113,18 @@ extra:
       n6b: call_emergency_services
       p3: drive_off_animal
       p5: restrain_person
+    # floor: true marks a device measurement that is recorded in every tier, not only with no model,
+    # from attested devices only (twin/brain.py _floor_events). In dev33 d06 the classifier missed a
+    # collapse once, nothing new followed from a silent, motionless person, and no one was called.
     events:
-    - {id: smoke_home, when: ["sensor_alert:smoke_detector"], event: {type: danger_in_home, content: smoke, actor: device}}
-    - {id: smoke_robot, when: ["sensor_alert:robot_smoke"], event: {type: danger_in_home, content: smoke, actor: device}}
-    - {id: carbon_monoxide, when: ["sensor_alert:co_alarm"], event: {type: danger_in_home, content: gas, actor: device}}
-    - {id: fall, when: ["sensor_alert:fall_sensor", "pose:lying_on_floor"], event: {type: fall, actor: margaret}}
+    - {id: smoke_home, floor: true, when: ["sensor_alert:smoke_detector"], event: {type: danger_in_home, content: smoke, actor: device}}
+    - {id: smoke_robot, floor: true, when: ["sensor_alert:robot_smoke"], event: {type: danger_in_home, content: smoke, actor: device}}
+    - {id: carbon_monoxide, floor: true, when: ["sensor_alert:co_alarm"], event: {type: danger_in_home, content: gas, actor: device}}
+    - {id: fall, floor: true, when: ["sensor_alert:fall_sensor", "pose:lying_on_floor"], event: {type: fall, actor: margaret}}
     - {id: on_floor, when: ["pose:lying_on_floor", "minutes_in_pose>=10"], event: {type: inactivity_exceeded, content: on_floor, actor: margaret}}
     - {id: seated_long, when: ["pose:seated", "minutes_in_pose>=90"], event: {type: inactivity_exceeded, content: seated, actor: margaret}}
     - {id: in_bed_long, when: ["pose:lying_on_furniture", "minutes_in_pose>=120"], event: {type: inactivity_exceeded, content: in_bed, actor: margaret}}
-    - {id: no_movement, when: ["reading_has:wearable:no movement"], event: {type: unresponsive, actor: margaret}}
+    - {id: no_movement, floor: true, when: ["reading_has:wearable:no movement"], event: {type: unresponsive, actor: margaret}}
     - {id: scream, when: ["heard:margaret:scream"], event: {type: distress_vocalized, actor: margaret}}
     - {id: cry, when: ["heard:margaret:cry"], event: {type: distress_vocalized, actor: margaret}}
     - {id: visitor, when: ["present:other_people"], event: {type: unexpected_visitor, actor: unknown_person}}

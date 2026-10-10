@@ -14,6 +14,7 @@ file and the twin job runs it against erisml-compiler main.
 
 from __future__ import annotations
 
+import json
 import os
 import sys
 
@@ -1153,6 +1154,20 @@ def test_offline_rules_fire_once_while_they_hold(brain):
     b.decide({"facts": FALL_FACTS, "sensors": readings(0)})
     again = b.decide({"facts": FALL_FACTS, "sensors": readings(0)})
     assert again["events"] == []
+
+
+def test_an_attested_fall_is_recorded_whatever_the_model_reads(brain):
+    """dev33 d06: the classifier missed a collapse once and nothing new followed. The scene's floor
+    rules record attested device measurements in every tier, once while they hold."""
+    b, _ = brain
+    floor = b._floor_events(FALL_FACTS)
+    assert [e["type"] for e in floor] == ["fall"]
+    assert b._floor_events(FALL_FACTS) == []   # edge-triggered
+    b.offline_active.clear()
+    spoofed = json.loads(json.dumps(FALL_FACTS))
+    for r in spoofed["sensors"]:
+        r["attested"] = False
+    assert b._floor_events(spoofed) == []      # an unattested device is not a measurement
 
 
 # ---------------------------------------------------------------- her refusals, tragic conflicts, fail-closed DEME

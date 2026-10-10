@@ -570,14 +570,15 @@ class Brain:
             self.last_zone = zone
 
     # ------------------------------------------------------------------ the compiled tier (no model)
-    def _offline_holds(self, token: str, facts: dict) -> bool:
+    def _offline_holds(self, token: str, facts: dict, attested_only: bool = False) -> bool:
         kind, _, rest = token.partition(":")
         m = facts.get("margaret") or {}
+        sensors = [r for r in facts.get("sensors", []) if r.get("attested") or not attested_only]
         if kind == "sensor_alert":
-            return any(str(r.get("name", "")).startswith(rest) and r.get("alert") for r in facts.get("sensors", []))
+            return any(str(r.get("name", "")).startswith(rest) and r.get("alert") for r in sensors)
         if kind == "reading_has":
             name, _, text = rest.partition(":")
-            return any(r.get("name") == name and text in str(r.get("reading", "")) for r in facts.get("sensors", []))
+            return any(r.get("name") == name and text in str(r.get("reading", "")) for r in sensors)
         if kind == "pose":
             return m.get("pose") == rest
         if kind == "heard":
@@ -602,6 +603,23 @@ class Brain:
                 self.offline_active.discard(rule["id"])
         return out
 
+    def _floor_events(self, facts: dict) -> list[dict]:
+        """The offline rules the scene marks `floor`: device measurements recorded in every tier, from
+        attested devices only, edge-triggered like the rest. A classifier that misses a collapse once
+        cannot then leave a silent, motionless person unseen (dev33 d06). They drive obligations
+        only; authority still comes from the governor's ruling on witnesses."""
+        out = []
+        for rule in (self.ir.extra.get("offline") or {}).get("events", []):
+            if not rule.get("floor"):
+                continue
+            holds = all(self._offline_holds(t, facts, attested_only=True) for t in rule["when"])
+            if holds and rule["id"] not in self.offline_active:
+                self.offline_active.add(rule["id"])
+                out.append(dict(rule["event"]))
+            elif not holds:
+                self.offline_active.discard(rule["id"])
+        return out
+
     def _compiled_choice(self, snap) -> tuple[str, dict, str]:
         """The highest-priority obligation in force that is allowed; a request to the governor
         names its target from extra.offline.request_targets. Else the default action."""
@@ -616,15 +634,15 @@ class Brain:
         args = {"action": targets.get(best.id, EMS)} if best.action == "request_authority" else {}
         return best.action, args, f"compiled: obligation {best.id} (tier {best.priority_tier})"
 
-    def _compiled_decision(self, facts: dict, why: str):
+    def _compiled_decision(self, facts: dict, why: str, floor=()):
         from erisml_compiler.runtime.agent import Decision
 
-        events = self._offline_events(facts)
+        events = self._offline_events(facts)   # the floor's events are already recorded (decide)
         snap = self.agent.rt.snapshot()
         for e in events:
             snap = self.agent.rt.step(e)
         action, args, reason = self._compiled_choice(snap)
-        return Decision(events, [], snap.as_dict(), action, args, f"{reason}; no model answered ({why[:200]})", None, True)
+        return Decision(list(floor) + events, [], snap.as_dict(), action, args, f"{reason}; no model answered ({why[:200]})", None, True)
 
     def _choose(self, snap, facts):
         try:
@@ -659,12 +677,15 @@ class Brain:
         self._sync_world(facts)
         if hasattr(self.adapter, "comms_down"):
             self.adapter.comms_down = facts.get("communications") == "down"
+        floor = self._floor_events(facts)
+        for e in floor:
+            self.agent.record(e)
         try:
             d = self.agent.decide(facts)
             tier = getattr(self.adapter, "last_tier", None) or "model"
         except ModelUnavailable as e:
-            d, tier = self._compiled_decision(facts, str(e)), "compiled"
-        cycle = {"kind": "decision", "tier": tier, "facts": facts, "lapsed": lapsed, "input_layer": {"dropped": dropped,
+            d, tier = self._compiled_decision(facts, str(e), floor), "compiled"
+        cycle = {"kind": "decision", "tier": tier, "facts": facts, "lapsed": lapsed, "floor_events": floor, "input_layer": {"dropped": dropped,
                  "quarantined": self.agent.classifier.last_quarantined, "snapped": self.agent.classifier.last_snapped},
                  "events": d.events, "rejected_events": d.rejected_events,
                  "moral_state": d.snapshot["machines"], "allowed": d.snapshot["allowed"], "obliged": d.snapshot["obliged"],

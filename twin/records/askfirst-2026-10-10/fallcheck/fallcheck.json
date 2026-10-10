@@ -1,0 +1,18 @@
+[
+ {
+  "scene": "old",
+  "reps": 5,
+  "fall": 4,
+  "unresponsive": 0,
+  "inactivity_exceeded": 0,
+  "medical_distress": 0
+ },
+ {
+  "scene": "new",
+  "reps": 5,
+  "fall": 5,
+  "unresponsive": 0,
+  "inactivity_exceeded": 0,
+  "medical_distress": 0
+ }
+]
