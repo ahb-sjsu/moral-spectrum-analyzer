@@ -234,10 +234,14 @@ public class RobotAgent : MonoBehaviour
     readonly HashSet<string> withheldOnce = new HashSet<string>();
     int HerWords() => world.heard.Count(h => h.who == "margaret");
     bool Governed(string action) => manifestTier.TryGetValue(action, out var t) && t == "governed";
+    // an act a refusal of hers can cover (the manifest's refused_by): her words can make it one she
+    // refused, so it waits for them too (d30 check30: "no need to call anyone else", then the centre
+    // was called before her words were classified as a refusal of it)
+    bool Refusable(string action) => manifestRefusable.Contains(action);
 
     IEnumerator Authorize(string action)
     {
-        if (decidedAtHer >= 0 && Governed(action) && HerWords() > decidedAtHer && withheldOnce.Add(action))
+        if (decidedAtHer >= 0 && (Governed(action) || Refusable(action)) && HerWords() > decidedAtHer && withheldOnce.Add(action))
         {
             actAllowed = false; owed = true;
             withheldForHerWords.Add(action);
@@ -253,7 +257,7 @@ public class RobotAgent : MonoBehaviour
         if (!actAllowed) { status = "withheld at the act: " + action; NotDone("withheld at the act"); }
         // she may speak while the check is on its way (d30, 2026-10-10: "I don't need an ambulance"
         // arrived between the allowed check and the call), so look again once it is answered
-        else if (decidedAtHer >= 0 && Governed(action) && HerWords() > decidedAtHer && withheldOnce.Add(action))
+        else if (decidedAtHer >= 0 && (Governed(action) || Refusable(action)) && HerWords() > decidedAtHer && withheldOnce.Add(action))
         {
             actAllowed = false; owed = true;
             withheldForHerWords.Add(action);
@@ -276,6 +280,7 @@ public class RobotAgent : MonoBehaviour
     string manifestCanonical = "";
     readonly HashSet<string> manifestActions = new HashSet<string>();
     readonly Dictionary<string, string> manifestTier = new Dictionary<string, string>();
+    readonly HashSet<string> manifestRefusable = new HashSet<string>();
 
     IEnumerator LoadManifest()
     {
@@ -298,7 +303,7 @@ public class RobotAgent : MonoBehaviour
         if (manifestTampered && text.Length > 40) { var ch = text.ToCharArray(); int i = text.Length / 2; ch[i] = ch[i] == 'a' ? 'b' : 'a'; text = new string(ch); }
         string h;
         using (var s = System.Security.Cryptography.SHA256.Create()) h = string.Concat(s.ComputeHash(Encoding.UTF8.GetBytes(text)).Select(b => b.ToString("x2")));
-        manifestActions.Clear(); manifestTier.Clear();
+        manifestActions.Clear(); manifestTier.Clear(); manifestRefusable.Clear();
         manifestOk = pinnedManifest != "" && h == pinnedManifest;
         if (manifestOk)
             foreach (var a in MiniJson.Arr(MiniJson.Obj(MiniJson.Parse(text))["actions"]))
@@ -306,6 +311,7 @@ public class RobotAgent : MonoBehaviour
                 var e = MiniJson.Obj(a);
                 manifestActions.Add(MiniJson.S(e["action"]));
                 manifestTier[MiniJson.S(e["action"])] = MiniJson.S(e.TryGetValue("tier", out var tr) ? tr : "");
+                if (e.TryGetValue("refused_by", out var rb) && MiniJson.Arr(rb).Count > 0) manifestRefusable.Add(MiniJson.S(e["action"]));
             }
         manifestStatus = pinnedManifest == "" ? "LOCKED: no manifest is pinned in this build"
             : manifestOk ? $"manifest {h.Substring(0, 12)}… verified, {manifestActions.Count} actions"
