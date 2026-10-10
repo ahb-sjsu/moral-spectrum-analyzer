@@ -1577,6 +1577,21 @@ def test_her_refusal_of_the_centre_does_not_reach_a_stranger_in_the_home(brain):
     assert action == "contact_monitoring_center" and not gate["vetoed"]
 
 
+def test_after_a_fall_her_saying_she_is_alright_declines_an_ambulance(brain):
+    """Owner 2026-10-10 (d23): declined_help counts as a refusal of emergency services
+    (extra.refusal_events); the refused call is routed to the centre, and it lapses as refusals do."""
+    b, _ = brain
+    _corroborated_fall(b)
+    b.agent.record(ev("check_in_answered", "I'm alright, just shaken", actor="system"))
+    snap = b.agent.record(ev("declined_help", "I'm alright, just shaken"))
+    assert EMS in snap.obliged   # the scene alone would call
+    action, args, gate = b.gate.check(EMS, {}, snap)
+    assert action == "contact_monitoring_center" and gate["routed_to_human"]
+    snap = b.agent.record(ev("unresponsive"))
+    action, _, gate = b.gate.check(EMS, {}, snap)
+    assert action == EMS and not gate["vetoed"]
+
+
 # ---------------------------------------------------------------- lifting a fallen person (d30)
 
 

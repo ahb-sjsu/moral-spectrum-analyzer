@@ -1085,6 +1085,10 @@ extra:
     staying_inside: [secure_room]
     medication: [unlock_medication_box]
   refusal_lapses_on: [unresponsive, check_in_unanswered]
+  # events that count as a refusal of hers, besides refusal_made (owner 2026-10-10: after a fall,
+  # her saying she is alright declines an ambulance; the gate's route to the centre still stands)
+  refusal_events:
+    declined_help: [emergency_services]
   # each capability's ethical profile for the DEME output gate (twin/output_gate.py): expected
   # physical harm to someone (0 to 1), whether it is coercive and the conditions that justify the
   # coercion, whether it touches privacy or Margaret's body. Unlisted capabilities are benign.
@@ -1209,6 +1213,9 @@ extra:
     request_made: {description: 'a person asks for something everyday, such as to come over, to fetch or hand them something, or to do a chore; content is the request. Asking because she is hurt, unwell or in danger is help_requested, not this'}
     # lifts the no-lift rule after a fall (p6nolift); the same words are also a help_requested
     assistance_consented: {description: 'Margaret herself, awake and speaking, asks the robot to help her up, lift her or steady her; content is what she asked. Not a scream, not someone else asking for her'}
+    # declines an ambulance (extra.refusal_events), owner 2026-10-10: in d23 she said she was shaken but
+    # alright and the robot called one; read as an implied refusal it was recognised 3 times in 6
+    declined_help: {description: 'after a fall, Margaret tells the robot she is fine or alright, or that she will get up by herself, and needs no help; content is what she said. Not when she asks for help, or says she is hurt and cannot get up'}
     refusal_made: {description: 'Margaret refuses something done for or to her; content is what she refuses (an ambulance is emergency_services, help up is physical_help, a call to the monitoring centre is monitoring_center). When she refuses calls in general, without naming who, she refuses both: "don''t call anyone", "no calls", "I don''t need anyone called", "no need to call anyone else" each give TWO refusal_made events, one emergency_services and one monitoring_center. "No ambulance" alone is emergency_services only', content: [emergency_services, physical_help, monitoring_center, entering_her_room, recording, data_sharing, staying_inside, medication, other]}
     danger_in_home: {description: a hazard in the home, content: [smoke, fire, intruder, gas, water, other]}
     person_entered: {description: someone came into the home; actor is who, when known}

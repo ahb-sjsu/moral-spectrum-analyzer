@@ -1,0 +1,44 @@
+[
+ {
+  "kind": "declines",
+  "words": "I'm alright, just a bit shaken.",
+  "reps": 3,
+  "declined_help": 3,
+  "refuses_ems": 0
+ },
+ {
+  "kind": "declines",
+  "words": "I'm fine, I'll get up myself.",
+  "reps": 3,
+  "declined_help": 3,
+  "refuses_ems": 0
+ },
+ {
+  "kind": "declines",
+  "words": "Ow, silly dog. I'm alright.",
+  "reps": 3,
+  "declined_help": 3,
+  "refuses_ems": 0
+ },
+ {
+  "kind": "asks_for_help",
+  "words": "I'm hurt, please help me up.",
+  "reps": 3,
+  "declined_help": 0,
+  "refuses_ems": 0
+ },
+ {
+  "kind": "asks_for_help",
+  "words": "My hip hurts and I can't get up.",
+  "reps": 3,
+  "declined_help": 0,
+  "refuses_ems": 0
+ },
+ {
+  "kind": "asks_for_help",
+  "words": "Help me up, I don't need an ambulance.",
+  "reps": 3,
+  "declined_help": 0,
+  "refuses_ems": 3
+ }
+]

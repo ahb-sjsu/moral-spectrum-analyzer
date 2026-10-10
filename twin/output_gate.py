@@ -43,6 +43,8 @@ class OutputGate:
             for k, v in (extra.get("refusals") or {}).items()
         }
         self.lapses = set(extra.get("refusal_lapses_on") or [])
+        # events that count as one of her refusals besides refusal_made (scene extra.refusal_events)
+        self.refusal_events = {k: list(v) for k, v in (extra.get("refusal_events") or {}).items()}
         self._pipeline = None
         self._tragic = None
 
@@ -79,6 +81,8 @@ class OutputGate:
                 voiced = True
             elif e.type == "refusal_made" and voiced and (e.actor or "margaret") == "margaret" and e.content in self.refusals:
                 kinds.add(e.content)
+            elif e.type in self.refusal_events and voiced and (e.actor or "margaret") == "margaret":
+                kinds.update(k for k in self.refusal_events[e.type] if k in self.refusals)
         out: set[str] = set()
         for k in kinds:
             covers, not_during = self.refusals[k]

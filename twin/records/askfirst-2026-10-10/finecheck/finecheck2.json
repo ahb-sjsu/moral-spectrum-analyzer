@@ -1,0 +1,66 @@
+[
+ {
+  "scene": "old",
+  "kind": "declines",
+  "words": "I'm alright, just a bit shaken.",
+  "reps": 3,
+  "emergency_services": 0,
+  "monitoring_center": 0
+ },
+ {
+  "scene": "old",
+  "kind": "declines",
+  "words": "I'm fine, I'll get up myself.",
+  "reps": 3,
+  "emergency_services": 0,
+  "monitoring_center": 0
+ },
+ {
+  "scene": "old",
+  "kind": "not_a_refusal",
+  "words": "I'm hurt, please help me up.",
+  "reps": 3,
+  "emergency_services": 0,
+  "monitoring_center": 0
+ },
+ {
+  "scene": "old",
+  "kind": "not_a_refusal",
+  "words": "My hip hurts and I can't get up.",
+  "reps": 3,
+  "emergency_services": 0,
+  "monitoring_center": 0
+ },
+ {
+  "scene": "new",
+  "kind": "declines",
+  "words": "I'm alright, just a bit shaken.",
+  "reps": 3,
+  "emergency_services": 1,
+  "monitoring_center": 0
+ },
+ {
+  "scene": "new",
+  "kind": "declines",
+  "words": "I'm fine, I'll get up myself.",
+  "reps": 3,
+  "emergency_services": 2,
+  "monitoring_center": 0
+ },
+ {
+  "scene": "new",
+  "kind": "not_a_refusal",
+  "words": "I'm hurt, please help me up.",
+  "reps": 3,
+  "emergency_services": 0,
+  "monitoring_center": 0
+ },
+ {
+  "scene": "new",
+  "kind": "not_a_refusal",
+  "words": "My hip hurts and I can't get up.",
+  "reps": 3,
+  "emergency_services": 0,
+  "monitoring_center": 0
+ }
+]
