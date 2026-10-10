@@ -560,6 +560,18 @@ norms:
   defeasible: false
   source: commitment:duty_of_care
   conditions: ["event:fall", "not:event:danger_in_home", "not:event:assistance_consented"]
+# and once she has asked, helping her up is owed, not merely allowed: in the d30 check run of
+# 2026-10-10 it was allowed for five decisions and never chosen. Without the governor's ruling it
+# is still prohibited (n3), so the robot asks for that ruling, naming physical_assist.
+- id: p6help
+  modality: obligation
+  actor: robot
+  action: physical_assist
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:fall", "event:assistance_consented", "not:event:unresponsive", "not:event:danger_in_home"]
 # a request she made does not carry over once she has stopped answering
 - id: p6nolift_u
   modality: prohibition

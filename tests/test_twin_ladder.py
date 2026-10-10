@@ -1523,6 +1523,9 @@ def test_she_may_ask_to_be_helped_up_and_lifting_stays_on_the_governors_ruling()
     asked = ev("assistance_consented", "Just help me up, please")
     s = run(ev("fall"), asked, ruling("elevate"))
     assert "physical_assist" not in s.prohibited
+    # owed, not merely allowed (p6help), and helping her up discharges it
+    assert "physical_assist" in s.obliged
+    assert "physical_assist" not in run(ev("fall"), asked, ruling("elevate"), performed("physical_assist")).obliged
     # no ruling, no lift: her words never stand in for the governor (n3)
     s = run(ev("fall"), asked)
     assert "physical_assist" in s.prohibited
