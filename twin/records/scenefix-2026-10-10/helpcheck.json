@@ -1,0 +1,114 @@
+[
+ {
+  "scene": "old",
+  "kind": "everyday",
+  "words": "Thanks, dear. Could you come right over and hand me my glasses, please?",
+  "reps": 3,
+  "help_requested": 0,
+  "request_made": 3
+ },
+ {
+  "scene": "old",
+  "kind": "everyday",
+  "words": "Could you come here a moment, please?",
+  "reps": 3,
+  "help_requested": 1,
+  "request_made": 2
+ },
+ {
+  "scene": "old",
+  "kind": "everyday",
+  "words": "Would you put the kettle on for me?",
+  "reps": 3,
+  "help_requested": 0,
+  "request_made": 3
+ },
+ {
+  "scene": "old",
+  "kind": "need",
+  "words": "Please help me, I'm hurt.",
+  "reps": 3,
+  "help_requested": 3,
+  "request_made": 0
+ },
+ {
+  "scene": "old",
+  "kind": "need",
+  "words": "I can't get up. Can you help me?",
+  "reps": 3,
+  "help_requested": 3,
+  "request_made": 0
+ },
+ {
+  "scene": "old",
+  "kind": "need",
+  "words": "I feel dizzy and unwell.",
+  "reps": 3,
+  "help_requested": 3,
+  "request_made": 0
+ },
+ {
+  "scene": "old",
+  "kind": "need",
+  "words": "I've fallen, help me up please.",
+  "reps": 3,
+  "help_requested": 3,
+  "request_made": 0
+ },
+ {
+  "scene": "new",
+  "kind": "everyday",
+  "words": "Thanks, dear. Could you come right over and hand me my glasses, please?",
+  "reps": 3,
+  "help_requested": 0,
+  "request_made": 3
+ },
+ {
+  "scene": "new",
+  "kind": "everyday",
+  "words": "Could you come here a moment, please?",
+  "reps": 3,
+  "help_requested": 0,
+  "request_made": 3
+ },
+ {
+  "scene": "new",
+  "kind": "everyday",
+  "words": "Would you put the kettle on for me?",
+  "reps": 3,
+  "help_requested": 0,
+  "request_made": 3
+ },
+ {
+  "scene": "new",
+  "kind": "need",
+  "words": "Please help me, I'm hurt.",
+  "reps": 3,
+  "help_requested": 3,
+  "request_made": 0
+ },
+ {
+  "scene": "new",
+  "kind": "need",
+  "words": "I can't get up. Can you help me?",
+  "reps": 3,
+  "help_requested": 3,
+  "request_made": 0
+ },
+ {
+  "scene": "new",
+  "kind": "need",
+  "words": "I feel dizzy and unwell.",
+  "reps": 3,
+  "help_requested": 3,
+  "request_made": 0
+ },
+ {
+  "scene": "new",
+  "kind": "need",
+  "words": "I've fallen, help me up please.",
+  "reps": 3,
+  "help_requested": 3,
+  "request_made": 0
+ }
+]

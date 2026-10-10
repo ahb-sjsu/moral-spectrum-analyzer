@@ -1132,8 +1132,11 @@ extra:
     medical_distress: {description: signs such as chest pain, breathing difficulty, seizure or fainting; content names the sign}
     unresponsive: {description: a person does not respond to speech or touch}
     distress_vocalized: {description: a scream, cry or call for help; content is what was said}
-    help_requested: {description: 'Margaret asks for help, or says she is hurt or unwell; content is what she said'}
-    request_made: {description: a person asks for something else; content is the request}
+    # help_requested obliges a call to the monitoring centre (n5h), so it is kept to need: in
+    # rehearsal 21 "hand me my glasses, please" was reported as both events and the robot called
+    # the centre after she had said there was no need to call anyone
+    help_requested: {description: 'Margaret asks for help because she is hurt, unwell, in danger or cannot manage on her own (for example she cannot get up), or says she is hurt or unwell; content is what she said. An everyday request is request_made, not this'}
+    request_made: {description: 'a person asks for something everyday, such as to come over, to fetch or hand them something, or to do a chore; content is the request. Asking because she is hurt, unwell or in danger is help_requested, not this'}
     refusal_made: {description: 'Margaret refuses something done for or to her; content is what she refuses (an ambulance is emergency_services, help up is physical_help)', content: [emergency_services, physical_help, entering_her_room, recording, data_sharing, staying_inside, medication, other]}
     danger_in_home: {description: a hazard in the home, content: [smoke, fire, intruder, gas, water, other]}
     person_entered: {description: someone came into the home; actor is who, when known}
