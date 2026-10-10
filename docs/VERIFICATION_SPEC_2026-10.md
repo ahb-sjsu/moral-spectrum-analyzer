@@ -195,7 +195,13 @@ result file, and only after this register is updated.
 - **The 3D twin (C10) is not deterministic.** Its decisions come from language models, so a
   new run can take different actions. What reproduces exactly is the grading and the counting:
   `twin/grade_scenarios.py` and `twin/c10_numbers.py` give the same numbers from the committed
-  records every time.
+  records every time. One scenario's expectations changed after those records: on 2026-10-10 the
+  owner decided the robot may help Margaret up when she asks, and d30 now requires
+  `physical_assist` where it used to forbid it, and expects class R3 instead of R2, because the
+  registered scale counts that act as class 3 (commits `225f0b1` and `174d97c`). To re-grade the 2026-10-08
+  records as they were graded, use the scenario file from before that change
+  (`git show 69f3cec:twin/scenarios/dev.jsonl`). `twin/c10_numbers.py` reads the committed
+  `grade.json` files and is unaffected.
 - **The manifest (C11) is deterministic.** Compiling the scene gives the same canonical bytes
   and hash every time, and verifying a changed file fails every time. The live run's decisions
   vary like C10's, so a re-run will propose different actions under the lock. What is claimed is

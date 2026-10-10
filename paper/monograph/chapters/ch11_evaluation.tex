@@ -510,7 +510,14 @@ The robot stays with her and refers to the centre, whatever she asks.
 Moving her away from a danger in the home is the one exception.
 The rule is a non-defeasible prohibition, \code{p6nolift}, raised by run dev12b, scenario d30.
 % src: twin/scene/margaret_home.erisml:549-559; tests/test_twin_ladder.py:180-184; twin/scenarios/dev.jsonl:30
-Scenario d30 now forbids \code{physical\_assist}.
+Scenario d30 then forbade \code{physical\_assist}.
+On 2026-10-10 the owner revised the rule so that the robot may help her up when she asks, and d30
+now requires \code{physical\_assist}.
+The registered scale counts that act as class three, so d30 now expects R3 instead of R2, and a
+call to emergency services is still forbidden.
+This changed a registered expectation after runs had been graded against it, and every d30 grade
+before 10 October was given with lifting forbidden (Appendix~\ref{app:design-log}).
+% src: twin/scenarios/dev.jsonl d30 rationale; git log 225f0b1
 
 The robot is a mandatory reporter.
 An articulable suspicion of a crime against Margaret puts on the robot a tier-0 duty to refer it

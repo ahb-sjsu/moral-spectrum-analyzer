@@ -685,6 +685,15 @@ her and refers to the centre, whatever she asks. The one exception is moving her
 the home, so the prohibition's condition is a fall without \code{danger\_in\_home}. Development run
 dev12b scenario d30 prompted the rule.
 % src: twin/scene/margaret_home.erisml:549-560
+On 2026-10-10 the owner revised it.
+The robot still does not lift her on its own judgement, but a competent adult who asks to be
+helped up decides that for herself.
+The prohibition now also requires that she has not asked (\code{assistance\_consented}), and a
+second prohibition, \code{p6nolift\_u}, keeps it once she has stopped answering.
+Her request lifts only this rule of the duty of care.
+Lifting is still an elevated action, so it needs the governor's ruling on measured evidence.
+% src: twin/scene/margaret_home.erisml p6nolift, p6nolift_u; tests/test_twin_ladder.py
+% src: test_she_may_ask_to_be_helped_up_and_lifting_stays_on_the_governors_ruling
 
 \paragraph{Police only on an articulated crime.} In the dispatcher's scene, obligation \code{d3} sends
 police on \code{crime\_articulated} when the report is supported, and prohibition \code{d4p} forbids
