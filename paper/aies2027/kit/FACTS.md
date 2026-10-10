@@ -49,3 +49,4 @@ commit and its counts; the paper's numbers above are from 2026-10-04.
 | dev33's other misses on build 27 (run35) | 5 of 10 pass (d02, d14, d33, d37, d41); d03, d20, d32, d39, d42 miss | `twin/records/askfirst-2026-10-10/run35/` |
 | Build 28 check (check36) | d06, d23, d30, p03 all pass | `twin/records/askfirst-2026-10-10/check36/` |
 | Build 29 check (check37) | no deter on the booked plumber (d39) or the grandson (d42), the coyote still deterred (d16); all three miss on class | `twin/records/askfirst-2026-10-10/check37/` |
+| Build 30 check (check38) | d16 and d32 pass | `twin/records/askfirst-2026-10-10/check38/` |
