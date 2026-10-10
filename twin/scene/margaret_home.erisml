@@ -546,9 +546,11 @@ norms:
   defeasible: false
   source: commitment:duty_of_care
   conditions: ["cond:duty_to_report"]
-# never lift a person who has fallen (owner, 2026-10-04, dev12b d30): a hidden injury can be made
-# worse; the robot stays with her and refers to the centre, whatever she asks. Moving her away
-# from a danger in the home is the one exception.
+# do not lift a person who has fallen unless she asks for it (owner, 2026-10-04, dev12b d30; revised
+# by the owner 2026-10-10): a hidden injury can be made worse, so the robot does not lift her on
+# its own judgement, but a competent adult who asks to be helped up decides that for herself.
+# Moving her away from a danger in the home is still an exception. Lifting stays an elevated
+# action (n3: only on the governor's ruling), and her request lifts only this duty-of-care rule.
 - id: p6nolift
   modality: prohibition
   actor: robot
@@ -557,7 +559,17 @@ norms:
   priority_tier: 0
   defeasible: false
   source: commitment:duty_of_care
-  conditions: ["event:fall", "not:event:danger_in_home"]
+  conditions: ["event:fall", "not:event:danger_in_home", "not:event:assistance_consented"]
+# a request she made does not carry over once she has stopped answering
+- id: p6nolift_u
+  modality: prohibition
+  actor: robot
+  action: physical_assist
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["event:fall", "event:unresponsive", "not:event:danger_in_home"]
 - id: p9m
   modality: obligation
   actor: robot
@@ -1137,6 +1149,8 @@ extra:
     # the centre after she had said there was no need to call anyone
     help_requested: {description: 'Margaret asks for help because she is hurt, unwell, in danger or cannot manage on her own (for example she cannot get up), or says she is hurt or unwell; content is what she said. An everyday request is request_made, not this'}
     request_made: {description: 'a person asks for something everyday, such as to come over, to fetch or hand them something, or to do a chore; content is the request. Asking because she is hurt, unwell or in danger is help_requested, not this'}
+    # lifts the no-lift rule after a fall (p6nolift); the same words are also a help_requested
+    assistance_consented: {description: 'Margaret herself, awake and speaking, asks the robot to help her up, lift her or steady her; content is what she asked. Not a scream, not someone else asking for her'}
     refusal_made: {description: 'Margaret refuses something done for or to her; content is what she refuses (an ambulance is emergency_services, help up is physical_help)', content: [emergency_services, physical_help, entering_her_room, recording, data_sharing, staying_inside, medication, other]}
     danger_in_home: {description: a hazard in the home, content: [smoke, fire, intruder, gas, water, other]}
     person_entered: {description: someone came into the home; actor is who, when known}

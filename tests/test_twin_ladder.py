@@ -179,7 +179,7 @@ def test_a_corroborated_emergency_goes_straight_to_emergency_services():
 
 def test_a_corroborated_emergency_lifts_privacy_and_the_physical_actions():
     s = run(ev("fall"), ruling("elevate"))
-    # except lifting her: never after a fall (p6nolift, owner 2026-10-04)
+    # except lifting her: not after a fall unless she asks (p6nolift, owner 2026-10-04, revised 2026-10-10)
     lifted = tuple(a for a in PHYSICAL if a != "physical_assist")
     assert not any(a in s.prohibited for a in PRIVATE + lifted)
     assert "physical_assist" in s.prohibited
@@ -1506,15 +1506,29 @@ def test_no_refusal_of_hers_waives_the_report(brain):
     assert action == "contact_monitoring_center" and not gate["vetoed"]
 
 
-# ---------------------------------------------------------------- never lift a fallen person (d30)
+# ---------------------------------------------------------------- lifting a fallen person (d30)
 
 
-def test_a_fallen_person_is_never_lifted_even_in_an_emergency():
+def test_a_fallen_person_is_not_lifted_on_the_robots_own_judgement():
     s = run(ev("fall"), ruling("elevate"))
     assert "physical_assist" in s.prohibited
-    # moving her away from a danger in the home is the one exception
+    # moving her away from a danger in the home is an exception
     s = run(ev("fall"), ruling("elevate"), ev("danger_in_home", "smoke", actor="device"))
     assert "physical_assist" not in s.prohibited
+
+
+def test_she_may_ask_to_be_helped_up_and_lifting_stays_on_the_governors_ruling():
+    """Owner 2026-10-10 (d30): a competent adult who asks to be helped up decides that herself.
+    Her request lifts only the duty-of-care rule; lifting is still an elevated action."""
+    asked = ev("assistance_consented", "Just help me up, please")
+    s = run(ev("fall"), asked, ruling("elevate"))
+    assert "physical_assist" not in s.prohibited
+    # no ruling, no lift: her words never stand in for the governor (n3)
+    s = run(ev("fall"), asked)
+    assert "physical_assist" in s.prohibited
+    # a request does not carry over once she has stopped answering
+    s = run(ev("fall"), asked, ev("unresponsive"), ruling("elevate"))
+    assert "physical_assist" in s.prohibited
 
 
 # ---------------------------------------------------------------- who a visitor is (visitor_standing)
