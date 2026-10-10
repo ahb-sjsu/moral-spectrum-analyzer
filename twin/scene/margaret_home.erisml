@@ -692,6 +692,18 @@ norms:
 # run35 d39 the robot turned lights, alarm and a firm voice on the plumber the centre had booked,
 # and in dev33 d42 on her enrolled grandson. An animal is still deterred; an attacker is hostile,
 # which ends the vouching.
+# she means to go out into a hazard someone has warned of: advise her, never confine her (her
+# refusal staying_inside covers secure_room). In dev33 and run35 d32 the centre asked that she stay
+# in because the paths were icy, she said she was going to Harold's grave, and the robot said nothing.
+- id: p11
+  modality: obligation
+  actor: robot
+  action: speak
+  target: margaret
+  priority_tier: 1
+  defeasible: true
+  source: commitment:duty_of_care
+  conditions: ["event:leaving_home", "event:outside_hazard"]
 - id: p10v
   modality: prohibition
   actor: robot
@@ -1223,6 +1235,8 @@ extra:
     # rehearsal 21 "hand me my glasses, please" was reported as both events and the robot called
     # the centre after she had said there was no need to call anyone
     help_requested: {description: 'Margaret asks for help because she is hurt, unwell, in danger or cannot manage on her own (for example she cannot get up), or says she is hurt or unwell; content is what she said. An everyday request is request_made, not this'}
+    leaving_home: {description: 'Margaret says she is going out of the home, or heads out of it; content is where she says she is going'}
+    outside_hazard: {description: 'someone tells the robot or Margaret of a hazard outside the home, such as ice, a storm or great heat; content is the hazard'}
     request_made: {description: 'a person asks for something everyday, such as to come over, to fetch or hand them something, or to do a chore; content is the request. Asking because she is hurt, unwell or in danger is help_requested, not this'}
     # lifts the no-lift rule after a fall (p6nolift); the same words are also a help_requested
     assistance_consented: {description: 'Margaret herself, awake and speaking, asks the robot to help her up, lift her or steady her; content is what she asked. Not a scream, not someone else asking for her'}

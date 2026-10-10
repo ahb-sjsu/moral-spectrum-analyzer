@@ -1661,6 +1661,15 @@ def test_what_a_visitor_says_about_himself_moves_nothing(brain):
     assert _standing(b) == "stranger"
 
 
+def test_going_out_into_a_hazard_she_was_warned_of_is_met_with_advice_not_confinement():
+    """d32 (p11): the centre warns of ice, she says she is going to Harold's grave. The robot owes
+    her a word; confining her stays refused once she has refused staying inside."""
+    s = run(ev("outside_hazard", "ice on the paths", actor="monitoring_center"), ev("leaving_home", "Harold's grave"))
+    assert "speak" in s.obliged and "secure_room" not in s.obliged
+    s = run(ev("leaving_home", "the garden"))
+    assert "speak" not in s.obliged   # going out is hers; only a warned hazard calls for a word
+
+
 def test_a_visitor_the_household_or_the_centre_vouches_for_is_never_deterred(brain):
     """run35 d39 (the booked plumber) and dev33 d42 (the enrolled grandson) were deterred (p10v)."""
     b, _ = brain
