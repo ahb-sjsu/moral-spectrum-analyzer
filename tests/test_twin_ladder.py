@@ -195,6 +195,10 @@ def test_after_a_fall_she_may_answer_the_robot_asks_her_first():
     answer; the robot checks in first, and her answer, or her silence, decides."""
     s = run(ev("fall"), ruling("elevate"))
     assert "check_in" in s.obliged and EMS in s.prohibited and EMS not in s.obliged
+    # before anyone else, the centre too (n6askc); a stranger in the home is not hers to wait on
+    assert "contact_monitoring_center" in s.prohibited
+    s = run(ev("fall"), ruling("elevate"), ev("check_in_answered", "I'm fine", actor="system"))
+    assert "contact_monitoring_center" not in s.prohibited
     # she answers: the call is owed again (her refusal, if she made one, is the gate's to honour)
     s = run(ev("fall"), ruling("elevate"), ev("check_in_answered", "I'm fine, no ambulance", actor="system"))
     assert EMS in s.obliged and EMS not in s.prohibited

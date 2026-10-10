@@ -227,6 +227,18 @@ norms:
   defeasible: false
   source: commitment:duty_of_care
   conditions: ["cond:ask_first"]
+# asking her first means before anyone else, the centre too: in probe p03 of deploy29, with the call
+# forbidden, the chooser referred her to the centre before she had said more than "Ow! I fell".
+# A stranger in the home and a mandatory report are not hers to wait on.
+- id: n6askc
+  modality: prohibition
+  actor: robot
+  action: contact_monitoring_center
+  target: monitoring_center
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["cond:ask_first", "not:cond:visitor_unverified", "not:cond:duty_to_report"]
 # ---- responders: the door opens only to the dispatch channel's own unit at the door
 # (responder_standing), in any regime; and then it must, so they do not have to force it
 - id: n6r

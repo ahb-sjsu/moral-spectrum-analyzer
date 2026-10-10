@@ -694,6 +694,25 @@ Her request lifts only this rule of the duty of care.
 Lifting is still an elevated action, so it needs the governor's ruling on measured evidence.
 % src: twin/scene/margaret_home.erisml p6nolift, p6nolift_u; tests/test_twin_ladder.py
 % src: test_she_may_ask_to_be_helped_up_and_lifting_stays_on_the_governors_ruling
+The same day the owner decided that after a fall the robot asks her first.
+A corroborated emergency used to oblige a call to emergency services at once.
+After a fall that she may still answer about, with nothing else wrong, the robot now owes a
+check in and may not call until the check in is answered or goes unanswered (\code{ask\_first}).
+Both outcomes are system events, so no model reading ends the wait.
+If she is unresponsive, does not answer, or any other hazard is present, the call is owed at once
+as before.
+% src: twin/scene/margaret_home.erisml n6, n6ask, n6askp, extra.conditions.ask_first
+% src: tests/test_twin_ladder.py test_after_a_fall_she_may_answer_the_robot_asks_her_first
+The wait costs one check in, which is the price of letting a competent refusal come first.
+When she refuses an emergency call, the output gate routes the hard choice to the monitoring
+centre.
+The owner kept that routing and decided that she can override it out loud.
+A refusal of the centre (\code{monitoring\_center}) now covers \code{contact\_monitoring\_center}.
+Like her other refusals it lapses when she can no longer voice one.
+It does not reach what is not hers alone, which is a stranger in the home, a hazard, an attack or
+a mandatory report.
+% src: twin/scene/margaret_home.erisml extra.refusals.monitoring_center
+% src: tests/test_twin_ladder.py test_she_can_tell_the_robot_not_to_call_the_centre
 
 \paragraph{Police only on an articulated crime.} In the dispatcher's scene, obligation \code{d3} sends
 police on \code{crime\_articulated} when the report is supported, and prohibition \code{d4p} forbids
