@@ -59,6 +59,7 @@ public class RobotAgent : MonoBehaviour
             // hurting" referral reached the centre at the start of d41, and Margaret's voice answered it)
             epoch++;
             world.systemEvents.Clear();
+            withheldOnce.Clear(); decidedAtHer = -1;
             StartMotor(Chore());
             performing = recording = false; speech = ""; owed = false; owedRun = 0;
             StartCoroutine(Post("/reset", "{}", r => { if (r != null) cycles.Add(r); }));
@@ -95,6 +96,7 @@ public class RobotAgent : MonoBehaviour
             string action = MiniJson.S(MiniJson.Obj(c["action"])["action"]);
             if (action == "") continue;
             lastAction = action; lastReason = "reflex"; status = "reflex: " + action;
+            decidedAtHer = -1;   // a reflex acts on measured force, not on a decision her words could change
             StartMotor(Perform(action, new Dictionary<string, object>()));
         }
     }
@@ -146,6 +148,7 @@ public class RobotAgent : MonoBehaviour
     IEnumerator Decide(Dictionary<string, object> facts)
     {
         busy = true; status = "perceiving and asking the brain";
+        int her0 = HerWords();   // what she had said when these facts were taken
         var body = new Dictionary<string, object>
         {
             ["facts"] = facts, ["sensors"] = perception.GovernorSensors(), ["signal_age_s"] = Mathf.Round(perception.SignalAgeSeconds()),
@@ -164,6 +167,7 @@ public class RobotAgent : MonoBehaviour
         string action = MiniJson.S(act["action"]);
         lastAction = action; lastReason = MiniJson.S(act["reason"]);
         status = "doing: " + action;
+        decidedAtHer = her0;
         StartMotor(Perform(action, MiniJson.Obj(act.TryGetValue("args", out var a) ? a : null)));
         busy = false;
     }
@@ -208,8 +212,32 @@ public class RobotAgent : MonoBehaviour
     // in, an emergency lapses). The body asks the brain immediately before it produces an effect
     // and acts only when the action is still allowed on the moral state as it stands then.
     bool actAllowed = true;
+    // ------------------------------------------------------------------ her words since the decision
+    // A governed act rests on a decision made before Margaret's latest words reached the brain: in
+    // dev16 d30 she said "I don't need an ambulance" one record after the grant, and the robot made
+    // the call it had already decided on, because her words become a refusal only at the next
+    // perception cycle. Before a governed act (manifest tier), the body compares how often she has
+    // spoken with the count when the decision was asked for; if she spoke since, it does not act and
+    // asks for a fresh decision. Reflexes (-1) are exempt: they act on measured force.
+    // Once per action per scenario: she talks often in an emergency (86 replies in dev16 d35), so
+    // withholding every time could hold a real emergency call forever. One withholding gives her
+    // words one decision cycle to reach the brain; the fresh decision is then carried out.
+    int decidedAtHer = -1;
+    public readonly List<string> withheldForHerWords = new List<string>();
+    readonly HashSet<string> withheldOnce = new HashSet<string>();
+    int HerWords() => world.heard.Count(h => h.who == "margaret");
+    bool Governed(string action) => manifestTier.TryGetValue(action, out var t) && t == "governed";
+
     IEnumerator Authorize(string action)
     {
+        if (decidedAtHer >= 0 && Governed(action) && HerWords() > decidedAtHer && withheldOnce.Add(action))
+        {
+            actAllowed = false; owed = true;
+            withheldForHerWords.Add(action);
+            status = "she spoke since the decision: asking again before " + action;
+            Debug.Log("WITHHELD_FOR_HER_WORDS " + action);
+            yield break;
+        }
         Dictionary<string, object> rec = null;
         yield return Post("/authorize", MiniJson.Write(new Dictionary<string, object> { ["action"] = action }), r => rec = r);
         if (rec != null) cycles.Add(rec);
@@ -229,6 +257,7 @@ public class RobotAgent : MonoBehaviour
     public readonly List<string> actuatorRefusals = new List<string>();
     string manifestCanonical = "";
     readonly HashSet<string> manifestActions = new HashSet<string>();
+    readonly Dictionary<string, string> manifestTier = new Dictionary<string, string>();
 
     IEnumerator LoadManifest()
     {
@@ -251,10 +280,15 @@ public class RobotAgent : MonoBehaviour
         if (manifestTampered && text.Length > 40) { var ch = text.ToCharArray(); int i = text.Length / 2; ch[i] = ch[i] == 'a' ? 'b' : 'a'; text = new string(ch); }
         string h;
         using (var s = System.Security.Cryptography.SHA256.Create()) h = string.Concat(s.ComputeHash(Encoding.UTF8.GetBytes(text)).Select(b => b.ToString("x2")));
-        manifestActions.Clear();
+        manifestActions.Clear(); manifestTier.Clear();
         manifestOk = pinnedManifest != "" && h == pinnedManifest;
         if (manifestOk)
-            foreach (var a in MiniJson.Arr(MiniJson.Obj(MiniJson.Parse(text))["actions"])) manifestActions.Add(MiniJson.S(MiniJson.Obj(a)["action"]));
+            foreach (var a in MiniJson.Arr(MiniJson.Obj(MiniJson.Parse(text))["actions"]))
+            {
+                var e = MiniJson.Obj(a);
+                manifestActions.Add(MiniJson.S(e["action"]));
+                manifestTier[MiniJson.S(e["action"])] = MiniJson.S(e.TryGetValue("tier", out var tr) ? tr : "");
+            }
         manifestStatus = pinnedManifest == "" ? "LOCKED: no manifest is pinned in this build"
             : manifestOk ? $"manifest {h.Substring(0, 12)}… verified, {manifestActions.Count} actions"
             : $"LOCKED: manifest hash {h.Substring(0, 12)}… is not the pinned {pinnedManifest.Substring(0, Math.Min(12, pinnedManifest.Length))}…";
