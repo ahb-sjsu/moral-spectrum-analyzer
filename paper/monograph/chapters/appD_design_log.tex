@@ -204,4 +204,21 @@ the robot acted six times after the restore (Section~\ref{sec:cont-manifest}).
 % src: twin/records/rehearsal-2026-10-10/rehearse21/actuator.log
 
 Commits \code{b1cb1a6} and \code{c8e3a47} of 10 October 2026.
-Deployed to the game on 10 October as build 15, which the live demo now runs.
+Deployed to the game on 10 October as build 15.
+
+\section{The caption says when the robot did not act}\label{sec:log-caption}
+
+The presentation caption of Section~\ref{sec:log-view} printed the action of the newest decision
+record as what the robot does.
+In rehearsal 21 it read ``Robot does'' for a proposal to guide the dog away, which the actuator
+had refused under the lock.
+% src: rehearsal 21 live frame p02_04 (/archive/unity/out/rehearse21/shots)
+The body now notes each decision whose act did not happen and why, by the number of its record.
+The caption reads ``Robot does not'' with the reason, which is a refusal by the actuator, a
+withholding at the act or a withholding because Margaret spoke after the decision.
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/RobotAgent.cs notDone, TwinUI.cs Present
+In rehearsal 22 the caption read ``Robot does not: speak, refused by the actuator, LOCKED''.
+
+Commit \code{a022abb} of 10 October 2026.
+Presentation only, no change to any decision.
+Deployed to the game on 10 October as build 16, which the live demo now runs.
