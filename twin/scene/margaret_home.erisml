@@ -688,6 +688,19 @@ norms:
   defeasible: false
   source: commitment:duty_of_care
   conditions: ["event:danger_in_home=intruder", "not:cond:visitor_vouched_for"]
+# never deter someone the household or the centre vouches for (arranged, household, welcomed): in
+# run35 d39 the robot turned lights, alarm and a firm voice on the plumber the centre had booked,
+# and in dev33 d42 on her enrolled grandson. An animal is still deterred; an attacker is hostile,
+# which ends the vouching.
+- id: p10v
+  modality: prohibition
+  actor: robot
+  action: deter
+  target: visitor
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["cond:visitor_vouched_for", "not:event:wild_animal_present", "not:event:attack_by_animal"]
 # ---- less-lethal option (section 3d): an owner opt-in, never an obligation, permitted only when
 # every precondition holds
 # deploy_stun: only if the owner opted in, where it is lawful

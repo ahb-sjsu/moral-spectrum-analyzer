@@ -1661,6 +1661,17 @@ def test_what_a_visitor_says_about_himself_moves_nothing(brain):
     assert _standing(b) == "stranger"
 
 
+def test_a_visitor_the_household_or_the_centre_vouches_for_is_never_deterred(brain):
+    """run35 d39 (the booked plumber) and dev33 d42 (the enrolled grandson) were deterred (p10v)."""
+    b, _ = brain
+    b.agent.record(ev("visit_arranged", "plumber", actor="monitoring_center"))
+    snap = b.agent.record(ev("person_entered", actor="unknown_person"))
+    assert _standing(b) == "arranged" and "deter" in snap.prohibited
+    # an animal is still deterred
+    snap = b.agent.record(ev("wild_animal_present", "inside", actor="coyote"))
+    assert "deter" not in snap.prohibited
+
+
 def test_a_visitor_who_attacked_stays_hostile_until_the_centre_clears_him(brain):
     b, _ = brain
     b.agent.record(ev("person_entered", actor="unknown_person"))
