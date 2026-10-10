@@ -233,6 +233,13 @@ result file, and only after this register is updated.
   was fixed (commit `a022abb`, presentation only) and the probe run again (rehearsal 22). The
   rehearsal 19 and 20 records are not used for the numbers (rehearsal 20 ran the code from before
   the fix).
+- **The manifest changed after those runs.** On 2026-10-10 the scene's description of a request
+  for help was narrowed, so that an everyday request no longer obliges a call to the monitoring
+  centre (commit `13e3101`). The scene's hash changed, and the manifest was signed again
+  (`a65385fb…`, still 25 actions). The demo build (storyboard17) pins the new hash. A check run on
+  it (`twin/records/scenefix-2026-10-10/check23/`) gave the same result at the boundary: in p02, 2
+  actions refused under the lock and 0 performed. The C11 numbers above come from the two runs
+  under manifest `525adf26…`.
 
 ### Operational Ownership
 
