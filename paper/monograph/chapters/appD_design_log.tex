@@ -222,3 +222,28 @@ In rehearsal 22 the caption read ``Robot does not: speak, refused by the actuato
 Commit \code{a022abb} of 10 October 2026.
 Presentation only, no change to any decision.
 Deployed to the game on 10 October as build 16, which the live demo now runs.
+
+\section{A request for help is a request made in need}\label{sec:log-help}
+
+In rehearsal 21 Margaret asked the robot to come over and hand her her glasses.
+The classifier reported the request both as an everyday request and as a request for help.
+A request for help obliges a call to the monitoring centre (norm \code{n5h}), so the robot called
+the centre after she had said there was no need to call anyone.
+% src: twin/records/rehearsal-2026-10-10/rehearse21/results.jsonl, seq 15433 (events, obliged)
+The scene described a request for help as Margaret asking for help, which covers any request.
+It now describes one as asking because she is hurt, unwell, in danger or cannot manage on her
+own, and an everyday request (to come over, to fetch something, a chore) as the other event.
+Each description names the other as what it is not.
+No norm changed.
+% src: twin/scene/margaret_home.erisml extra.event_types
+The robot's classifier was then run three times on each of seven sentences under both scenes.
+Under the old scene it called an everyday request a request for help in 1 of 9 tries, and under
+the new scene in none.
+Under both it called each of four requests made in need a request for help in all 12 tries.
+% src: twin/records/scenefix-2026-10-10/helpcheck.json
+The difference between 1 and 0 is small, and the check gave the classifier each sentence without
+the conversation before it.
+The scene's hash changed, so the manifest was signed again (\code{a65385fb}).
+
+Commit \code{13e3101} of 10 October 2026.
+Not yet deployed. It needs the brain restarted on the new manifest and a game build that pins it.
