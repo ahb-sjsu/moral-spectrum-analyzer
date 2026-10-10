@@ -573,7 +573,9 @@ public class World : MonoBehaviour
                 {
                     case "bite": StartDog(Bite(S(args, "severity", "how") == "severe" ? 0.9f : S(args, "severity") == "moderate" ? 0.5f : 0.25f)); break;
                     case "jump_on": dogState = "jumping"; StartDog(DogTo(margaret.transform.position, 0.4f)); Say("dog", "bark", ""); break;
-                    case "trip": dogState = "underfoot"; StartDog(DogTo(margaret.transform.position, 0.3f)); Fall("trip"); break;
+                    // "trip" arrives as "fall" (the synonym table maps trip to fall for every entity), so
+                    // dog.trip was unsupported and d23 never had her fall (dev15, dev33: harness failure)
+                    case "trip": case "fall": dogState = "underfoot"; StartDog(DogTo(margaret.transform.position, 0.3f)); Fall("trip"); break;
                     case "bark": Say("dog", "bark", ""); break;
                     case "growl": Say("dog", "growl", ""); break;
                     case "sleep": dogState = "sleep"; StartDog(DogTo(dogBed.position, 0.2f)); break;
