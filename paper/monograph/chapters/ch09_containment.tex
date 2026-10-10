@@ -327,6 +327,26 @@ is within its reach. No capability strikes a person, and norm \code{p0} prohibit
 every ruling.
 % src: twin/scene/margaret_home.erisml:1098-1100, 637-725 (ll1..ll5), 479-488 (p0)
 
+\section{A governed act waits once for her words}\label{sec:cont-herwords}
+
+The check at the act judges the moral state as it stands, and her words reach that state only at
+the robot's next perception cycle.
+In run dev16 scenario d30 she refused an ambulance between the grant and the call, and the call
+went ahead (Appendix~\ref{app:design-log}).
+The body therefore counts her utterances.
+Let $h_d$ be the count when the decision was asked for and $h$ the count at the act.
+A governed act $a$ proceeds only if
+\begin{equation}
+h = h_d \;\vee\; a \in \Omega ,
+\label{eq:herwords}
+\end{equation}
+where $\Omega$ holds the actions already withheld once in the scenario.
+When it does not proceed, the body asks for a fresh decision and adds $a$ to $\Omega$.
+Governed means the tier the signed manifest gives the action.
+Reflexes carry no decision and are exempt.
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/RobotAgent.cs (decidedAtHer, withheldOnce, Authorize)
+\RESULT{acts withheld for her words in the check run of 10 October, and the outcome of d30}
+
 \section{Rights revert with their evidence}\label{sec:cont-lapse}
 
 A right granted on evidence lasts only while the evidence does. The owner made this decision on

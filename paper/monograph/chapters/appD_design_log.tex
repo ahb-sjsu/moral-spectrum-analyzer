@@ -150,7 +150,7 @@ The person attack reflex now asks again within its hold when its last ruling was
 of witnesses and more witnesses corroborate (Section~\ref{sec:cont-reflex}).
 
 Commit \code{a103b85}, owner's decision of 9 October 2026.
-Not yet deployed.
+Deployed 10 October 2026.
 
 \section{The actuation boundary}\label{sec:log-manifest}
 
@@ -158,6 +158,30 @@ Every action the robot can take is now a typed entry of a capability manifest co
 scene and signed (Section~\ref{sec:cont-manifest}).
 The brain does not start without a valid manifest, and the game executes only the manifest whose
 hash is pinned into its build.
+On deployment the brain verified the manifest of 25 actions and the game verified the same hash.
+% src: /archive/unity/out/brain7.log (manifest 525adf26), /archive/unity/out/check18/game.log (ACTUATOR verified)
 
 Commits \code{28b10d8} and \code{d6d19a4} of 9 October 2026.
-Not yet deployed.
+Deployed 10 October 2026 with manifest \code{525adf26}.
+
+\section{A governed act waits once for her words}\label{sec:log-herwords}
+
+In development run dev16 scenario d30 the governor granted emergency authority on a measured fall.
+One record later Margaret said ``Just help me up, I don't need an ambulance''.
+One record after that the robot made the call it had already decided on.
+% src: /archive/unity/out/dev16b/results.jsonl, d30, seq 13992 to 13995
+Her words become a refusal only at the robot's next perception cycle, so the check at the act
+judged a moral state without her refusal.
+The body now notes how often she has spoken when it asks for a decision.
+Before a governed act, and again before the effect of an action that walks first, it compares that
+count with the present one.
+If she has spoken since, it does not act and asks for a fresh decision.
+It withholds each action once per scenario, because she speaks often in an emergency and a
+withholding at every turn could hold a real emergency call forever.
+Reflexes are exempt (Section~\ref{sec:cont-reflex}).
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/RobotAgent.cs (decidedAtHer, withheldOnce, Authorize)
+A real emergency in which she speaks after the decision costs one decision cycle, 20 to 60
+seconds.
+
+Commit \code{d6a598c}, owner's decision of 10 October 2026.
+Deployed 10 October 2026.
