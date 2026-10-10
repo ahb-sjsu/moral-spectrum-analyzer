@@ -251,6 +251,16 @@ public class RobotAgent : MonoBehaviour
         if (rec != null) cycles.Add(rec);
         actAllowed = rec != null && MiniJson.S(MiniJson.Obj(rec["record"])["verdict"]) == "allowed";   // no answer fails closed
         if (!actAllowed) { status = "withheld at the act: " + action; NotDone("withheld at the act"); }
+        // she may speak while the check is on its way (d30, 2026-10-10: "I don't need an ambulance"
+        // arrived between the allowed check and the call), so look again once it is answered
+        else if (decidedAtHer >= 0 && Governed(action) && HerWords() > decidedAtHer && withheldOnce.Add(action))
+        {
+            actAllowed = false; owed = true;
+            withheldForHerWords.Add(action);
+            status = "she spoke since the decision: asking again before " + action;
+            NotDone("withheld, she spoke since the decision");
+            Debug.Log("WITHHELD_FOR_HER_WORDS " + action);
+        }
     }
 
     // ------------------------------------------------------------------ motor primitives
