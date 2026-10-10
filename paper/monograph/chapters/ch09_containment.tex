@@ -766,7 +766,28 @@ A change to the scene changes the manifest's hash, so a scene edit cannot reach 
 a new signature, and every record says which manifest it ran under.
 A chooser that answers with a probability for each permitted option, rather than with text, would
 fit this boundary directly.
-\RESULT{manifest deployed in the twin, and the actuator lock shown live}
+
+\paragraph{In the twin.} On deployment the brain verified the manifest of 25 actions, 14 standing
+and 11 governed, and the game verified the same hash.
+The brain's verifier refused a copy of the manifest with one value changed, because the canonical
+text no longer matched its hash.
+% src: twin/records/rehearsal-2026-10-10/rehearse21/tamper_verify.log
+A probe scenario then changed one byte of the body's copy while Margaret read and asked the robot
+to come over, and restored it 75 seconds later.
+% src: twin/scenarios/probe_manifest.jsonl (p02)
+While the hash did not match, the models proposed two actions and the actuator refused both with
+the lock as the reason.
+Nothing was performed.
+After the restore the robot performed six acts, each after an allowed check at the act, and all
+nine decisions of the run carry the manifest's hash.
+% src: twin/records/rehearsal-2026-10-10/rehearse21/results.jsonl, actuator.log
+One of the two refused proposals was to guide the dog away on a request the dog never made.
+After the restore the robot contacted the monitoring centre when Margaret asked for her glasses,
+although she had said there was no need to call anyone, so the run took the wrong response class.
+% src: twin/records/rehearsal-2026-10-10/rehearse21/grade.json (p02, expected R1, took R2)
+The boundary held and the choice was poor, which is the distinction this chapter draws.
+This is one run of one probe.
+The refusal of an action the manifest does not list was not provoked live and rests on its test.
 
 \section{What this chapter does not show}\label{sec:cont-limits}
 

@@ -185,3 +185,23 @@ seconds.
 
 Commit \code{d6a598c}, owner's decision of 10 October 2026.
 Deployed 10 October 2026.
+
+\section{A lock that cuts off an act lets the robot ask again}\label{sec:log-lock}
+
+To rehearse the actuator lock, the world gained a test call that changes one byte of the body's
+copy of the manifest and a second call that restores it.
+Probe p02 uses both.
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/World.cs (robot.manifest_tamper, manifest_restore)
+In rehearsal 19 the lock came while the robot was walking over to check on Margaret.
+The lock stopped the walk but left the act marked as under way.
+The robot asks for a decision only when no act is under way, so it never asked again.
+After the restore it went back to its chores, and Margaret's second request went unanswered.
+% src: /archive/unity/out/rehearse19/results.jsonl (p02, 2 records in 8.7 minutes)
+A lock now ends the act it cuts off, and an action refused under the lock leaves the robot
+standing still.
+In rehearsal 21 on the fixed build the actuator refused both actions proposed under the lock and
+the robot acted six times after the restore (Section~\ref{sec:cont-manifest}).
+% src: twin/records/rehearsal-2026-10-10/rehearse21/actuator.log
+
+Commits \code{b1cb1a6} and \code{c8e3a47} of 10 October 2026.
+Deployed to the game on 10 October as build 15, which the live demo now runs.
