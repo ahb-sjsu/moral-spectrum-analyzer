@@ -236,7 +236,10 @@ public class TwinUI : MonoBehaviour
         if (reason != "") GUILayout.Label(reason, cap);
         string done = MiniJson.S(G(MiniJson.Obj(G(rec, "action")), "action"));
         var banned = MiniJson.Arr(G(rec, "prohibited")).Select(MiniJson.S).ToList();
-        GUILayout.Label((done != "" ? $"<b>Robot does:</b> {done}      " : "") +
+        string act = done == "" ? ""
+            : robot.notDone.TryGetValue(MiniJson.S(G(rec, "seq")), out var nd) ? $"<b>Robot does not:</b> {done}, <color=#ff7b72>{nd}</color>      "
+            : $"<b>Robot does:</b> {done}      ";
+        GUILayout.Label(act +
                         (banned.Count > 0 ? $"<b>Forbidden by the scene's norms now:</b> {string.Join(", ", banned.Take(8))}{(banned.Count > 8 ? $" and {banned.Count - 8} more" : "")}" : ""), cap);
         GUILayout.EndArea();
     }

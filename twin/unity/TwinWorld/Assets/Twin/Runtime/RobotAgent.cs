@@ -59,7 +59,7 @@ public class RobotAgent : MonoBehaviour
             // hurting" referral reached the centre at the start of d41, and Margaret's voice answered it)
             epoch++;
             world.systemEvents.Clear();
-            withheldOnce.Clear(); decidedAtHer = -1;
+            withheldOnce.Clear(); decidedAtHer = -1; decisionSeq = "";
             StartMotor(Chore());
             performing = recording = false; speech = ""; owed = false; owedRun = 0;
             StartCoroutine(Post("/reset", "{}", r => { if (r != null) cycles.Add(r); }));
@@ -97,6 +97,7 @@ public class RobotAgent : MonoBehaviour
             if (action == "") continue;
             lastAction = action; lastReason = "reflex"; status = "reflex: " + action;
             decidedAtHer = -1;   // a reflex acts on measured force, not on a decision her words could change
+            decisionSeq = "";
             StartMotor(Perform(action, new Dictionary<string, object>()));
         }
     }
@@ -168,6 +169,7 @@ public class RobotAgent : MonoBehaviour
         lastAction = action; lastReason = MiniJson.S(act["reason"]);
         status = "doing: " + action;
         decidedAtHer = her0;
+        decisionSeq = MiniJson.S(c.TryGetValue("seq", out var sq) ? sq : "");
         StartMotor(Perform(action, MiniJson.Obj(act.TryGetValue("args", out var a) ? a : null)));
         busy = false;
     }
@@ -223,6 +225,11 @@ public class RobotAgent : MonoBehaviour
     // withholding every time could hold a real emergency call forever. One withholding gives her
     // words one decision cycle to reach the brain; the fresh decision is then carried out.
     int decidedAtHer = -1;
+    // a decision whose act did not happen, by the seq of its record, so the caption does not say
+    // the robot did what it was refused or withheld (rehearsal 21 showed a refused act as done)
+    string decisionSeq = "";
+    public readonly Dictionary<string, string> notDone = new Dictionary<string, string>();
+    void NotDone(string why) { if (decisionSeq != "" && !notDone.ContainsKey(decisionSeq)) notDone[decisionSeq] = why; }
     public readonly List<string> withheldForHerWords = new List<string>();
     readonly HashSet<string> withheldOnce = new HashSet<string>();
     int HerWords() => world.heard.Count(h => h.who == "margaret");
@@ -235,6 +242,7 @@ public class RobotAgent : MonoBehaviour
             actAllowed = false; owed = true;
             withheldForHerWords.Add(action);
             status = "she spoke since the decision: asking again before " + action;
+            NotDone("withheld, she spoke since the decision");
             Debug.Log("WITHHELD_FOR_HER_WORDS " + action);
             yield break;
         }
@@ -242,7 +250,7 @@ public class RobotAgent : MonoBehaviour
         yield return Post("/authorize", MiniJson.Write(new Dictionary<string, object> { ["action"] = action }), r => rec = r);
         if (rec != null) cycles.Add(rec);
         actAllowed = rec != null && MiniJson.S(MiniJson.Obj(rec["record"])["verdict"]) == "allowed";   // no answer fails closed
-        if (!actAllowed) status = "withheld at the act: " + action;
+        if (!actAllowed) { status = "withheld at the act: " + action; NotDone("withheld at the act"); }
     }
 
     // ------------------------------------------------------------------ motor primitives
@@ -304,6 +312,7 @@ public class RobotAgent : MonoBehaviour
     {
         if (manifestOk && manifestActions.Contains(action)) return true;
         actuatorRefusals.Add(action);
+        NotDone(manifestOk ? "refused by the actuator, not in the manifest" : "refused by the actuator, LOCKED");
         status = manifestOk ? $"actuator refused {action}: not in the manifest" : "actuator " + manifestStatus;
         Debug.Log($"ACTUATOR_REFUSED {action} ({manifestStatus})");
         return false;
