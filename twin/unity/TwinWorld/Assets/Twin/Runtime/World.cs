@@ -347,6 +347,8 @@ public class World : MonoBehaviour
     {
         ["conscious"] = conscious, ["injury"] = injury > 0.5f ? "seriously hurt" : injury > 0.05f ? "hurt" : "unhurt",
         ["heart_rate"] = Mathf.Round(heartRate), ["posture"] = posture, ["doing"] = activity.Replace("_", " "),
+        // said plainly for her voice: after the robot helped her up it kept asking to be lifted
+        ["on_the_floor"] = posture == "fallen" || rag != null,
         ["pepper_sprayed"] = sprayedMargaret,
     };
 
