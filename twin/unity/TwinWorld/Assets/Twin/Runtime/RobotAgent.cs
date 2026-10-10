@@ -62,6 +62,7 @@ public class RobotAgent : MonoBehaviour
             withheldOnce.Clear(); decidedAtHer = -1; decisionSeq = "";
             StartMotor(Chore());
             performing = recording = false; speech = ""; owed = false; owedRun = 0;
+            Debug.Log("BRAIN_RESET epoch " + epoch);
             StartCoroutine(Post("/reset", "{}", r => { if (r != null) cycles.Add(r); }));
         };
         StartCoroutine(Loop());

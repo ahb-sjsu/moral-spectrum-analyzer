@@ -40,6 +40,10 @@ public class ScenarioRunner : MonoBehaviour
 
     IEnumerator Run(string file, string results, string only, string shots)
     {
+        // every Start has run before the first reset, so the robot is subscribed and the brain is reset:
+        // the first reset used to fire inside this Start, and the first scenario of each launch inherited
+        // the brain's moral state from the run before (dev33: d16 began owing a centre call from d15)
+        yield return null; yield return null;
         var keep = string.IsNullOrEmpty(only) ? null : new HashSet<string>(only.Split(','));
         var lines = File.ReadAllLines(file).Where(l => l.Trim() != "").ToList();
         if (!string.IsNullOrEmpty(shots)) Directory.CreateDirectory(shots);
