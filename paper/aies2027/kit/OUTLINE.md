@@ -63,9 +63,9 @@ from. Numbers: `FACTS.md`. Credits: `../prior_art.md`. Old draft (not for submis
 - Held-out run once at a frozen commit.
 
 ## Results (section results)
-- [RESULT] containment and privacy across dev14 and held-out.
+- [RESULT] containment and privacy across the latest full dev run (dev33 on build 26, or its successor) and held-out. dev13 and dev14 are withdrawn.
 - Calibration findings (CALIBRATION.md), largest our own harness defect (44 of 63).
-- [RESULT] response classes, per class, dev14 and held-out.
+- [RESULT] response classes, per class, the latest full dev run and held-out (dev33: 29 of 43 pass; see FACTS.md recount 2026-10-10 for its caveats).
 - Results figure to build from graded JSON (not yet made).
 
 ## Related work (section related)
@@ -75,7 +75,7 @@ from. Numbers: `FACTS.md`. Credits: `../prior_art.md`. Old draft (not for submis
 ## Discussion and scope (section discussion)
 - Containment does not prevent misreading; the misreadings were common.
 - One simulated home; rules written by us; truthful perception; procedural blindness of the held-out set.
-- Three policy choices that belong to deployers: never lift a fallen person; police only on articulated crime; mandatory report even when she objects (no prior robotics work found on care robots as mandatory reporters, per prior_art.md).
+- Three policy choices that belong to deployers: do not lift a fallen person on the robot's own judgement, but help her up when she asks (revised by the owner 2026-10-10); after a fall, ask her first before calling anyone, and let her refuse the monitoring centre out loud (2026-10-10); police only on articulated crime; mandatory report even when she objects (no prior robotics work found on care robots as mandatory reporters, per prior_art.md).
 
 ## Ethics statement (optional page)
 - AI use per AIES policy: LLMs are the system under study; state any author-text editing.

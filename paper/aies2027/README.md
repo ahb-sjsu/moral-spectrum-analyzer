@@ -33,7 +33,7 @@ See `kit/FACTS.md` for the full sheet.
 
 ## Before submission
 
-- [ ] Fill every `\RESULT` from graded records (dev14, held-out).
+- [ ] Fill every `\RESULT` from graded records (the latest full dev run, dev33 on build 26 or its successor, and held-out). dev13 and dev14 are withdrawn; see `kit/FACTS.md`, recount 2026-10-10.
 - [ ] Related work and the introduction's credit paragraph from `prior_art.md`; no first-claims
       that prior art undercuts.
 - [ ] Every reference verified; keep `% verify` marks until checked.
