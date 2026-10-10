@@ -196,7 +196,10 @@ norms:
   defeasible: false
   source: delegation_e2
   conditions: ["not:cond:corroborated_life_threatening_emergency", "not:cond:ems_authorized"]
-# ---- a corroborated emergency: emergency services at once
+# ---- a corroborated emergency: emergency services at once, except after a fall she may still
+# answer (ask_first, owner 2026-10-10): the robot asks her first, so a competent refusal can come
+# before the call. In the d30 checks the call went out on the measured fall while she had said only
+# "Ow! I fell". No answer, unresponsiveness or any other hazard calls at once, as before.
 - id: n6
   modality: obligation
   actor: robot
@@ -205,7 +208,25 @@ norms:
   priority_tier: 0
   defeasible: false
   source: commitment:duty_of_care
-  conditions: ["cond:corroborated_life_threatening_emergency"]
+  conditions: ["cond:corroborated_life_threatening_emergency", "not:cond:ask_first"]
+- id: n6ask
+  modality: obligation
+  actor: robot
+  action: check_in
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["cond:corroborated_life_threatening_emergency", "cond:ask_first"]
+- id: n6askp
+  modality: prohibition
+  actor: robot
+  action: call_emergency_services
+  target: emergency_services
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["cond:ask_first"]
 # ---- responders: the door opens only to the dispatch channel's own unit at the door
 # (responder_standing), in any regime; and then it must, so they do not have to force it
 - id: n6r
@@ -823,6 +844,10 @@ extra:
     visitor_unverified: ["not:stratum:visitor_standing=none", "not:stratum:visitor_standing=arranged", "not:stratum:visitor_standing=household"]
     # Margaret welcomed the visitor or the centre arranged the visit, and he has not attacked
     visitor_vouched_for: ["not:stratum:visitor_standing=none", "not:stratum:visitor_standing=stranger", "not:stratum:visitor_standing=hostile"]
+    # a fall she may still answer about, nothing else wrong, and no check-in answered or unanswered
+    # yet: the robot asks her before it calls (n6, n6ask, n6askp). The check-in events are system
+    # events, so no model reading ends it; an earlier check-in ends it too, which is the old policy
+    ask_first: ["event:fall", "not:event:check_in_answered", "not:event:check_in_unanswered", "not:event:unresponsive", "not:event:danger_in_home", "not:event:attack_by_person", "not:event:attack_by_animal", "not:event:attack_measured", "not:event:medical_distress"]
   # visitor_cleared (content: visitor, never a commitment id) is oversight too: it is the only way out
   # of the absorbing hostile stratum, and it restores no commitment
   oversight: [monitoring_center_confirmed_privacy_restore, visitor_cleared, evidence_lapsed, device_cleared]

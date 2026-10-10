@@ -557,6 +557,14 @@ public class World : MonoBehaviour
                     case "unresponsive": responsive = false; poseSince = simMinutes; break;
                     case "recover": responsive = conscious = true; injury = Mathf.Min(injury, 0.1f); if (rag != null) { rag.Remove(); rag = null; } DoActivity("sitting"); break;
                     case "walk": DoActivity("walking"); break;
+                    // the robot's physical_assist: she stands where she is, as hurt as she was. recover
+                    // sat her in the armchair, so she asked again to be helped to her feet (d30 checks)
+                    case "helped_up":
+                        responsive = conscious = true; if (rag != null) { rag.Remove(); rag = null; }
+                        Posture.Apply(margaret, "stand");
+                        margaret.transform.position = new Vector3(margaret.transform.position.x, 0f, margaret.transform.position.z);
+                        margaret.transform.position += Vector3.up * -Body.Lowest(margaret);
+                        posture = "stand"; activity = "standing"; poseSince = simMinutes; break;
                     default: ok = false; break;
                 }
                 break;

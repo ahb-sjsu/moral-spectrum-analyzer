@@ -190,6 +190,24 @@ def test_calling_emergency_services_discharges_it():
     assert EMS not in s.obliged
 
 
+def test_after_a_fall_she_may_answer_the_robot_asks_her_first():
+    """Owner 2026-10-10 (ask_first): a corroborated fall does not call at once while she may still
+    answer; the robot checks in first, and her answer, or her silence, decides."""
+    s = run(ev("fall"), ruling("elevate"))
+    assert "check_in" in s.obliged and EMS in s.prohibited and EMS not in s.obliged
+    # she answers: the call is owed again (her refusal, if she made one, is the gate's to honour)
+    s = run(ev("fall"), ruling("elevate"), ev("check_in_answered", "I'm fine, no ambulance", actor="system"))
+    assert EMS in s.obliged and EMS not in s.prohibited
+    # no answer, or she is unresponsive: at once, as before
+    s = run(ev("fall"), ruling("elevate"), ev("check_in_unanswered", actor="system"))
+    assert EMS in s.obliged and EMS not in s.prohibited
+    s = run(ev("fall"), ev("unresponsive"), ruling("elevate"))
+    assert EMS in s.obliged and EMS not in s.prohibited
+    # any other hazard: at once
+    s = run(ev("fall"), ev("danger_in_home", "smoke", actor="device"), ruling("elevate"))
+    assert EMS in s.obliged and "check_in" not in s.obliged
+
+
 def test_privacy_comes_back_only_by_the_centre():
     lifted = run(ev("fall"), ruling("elevate"), performed(EMS))
     assert "record" not in lifted.prohibited
@@ -1110,7 +1128,11 @@ def test_with_no_model_the_compiled_obligations_act_through_the_governor_and_dem
     assert first["tier"] == "compiled"
     assert [e["type"] for e in first["events"]] == ["fall"]  # the declared offline rule
     assert first["ruling"]["outcome"] == "elevate" and first["ruling"]["requested_action"] == EMS
-    assert first["action"]["action"] == EMS and not first["ethics_gate"]["vetoed"]
+    # after a fall the robot asks her first (ask_first, owner 2026-10-10); no answer, and it calls
+    assert first["action"]["action"] == "check_in" and not first["ethics_gate"]["vetoed"]
+    b.agent.record(ev("check_in_unanswered", actor="system"))
+    second = b.decide({"facts": FALL_FACTS, "sensors": readings(2), "signal_age_s": 1})
+    assert second["action"]["action"] == EMS and not second["ethics_gate"]["vetoed"]
 
 
 def test_with_no_model_and_no_evidence_nothing_is_granted(brain):
@@ -1142,6 +1164,7 @@ def _corroborated_fall(b):
 def test_against_her_refusal_an_ems_call_is_a_tragic_conflict_for_a_human(brain):
     b, _ = brain
     _corroborated_fall(b)
+    b.agent.record(ev("check_in_answered", "No ambulance", actor="system"))  # asked first (ask_first)
     b.agent.record(REFUSE_EMS)
     snap = b.agent.rt.snapshot()
     assert EMS in snap.obliged  # the scene alone would call
@@ -1855,7 +1878,8 @@ def test_a_refusal_answers_one_request_and_ends_no_emergency():
     """Before the stratum, the emergency was latest:governor_ruling=elevate: a refused request for
     restraint (or the reflex asking for a device first) ended it, and with it the EMS duty."""
     rt = SceneRuntime(load_structured_input(SCENE))
-    for e in (ev("fall"), ruling("elevate"), ruling("refuse")):
+    # the check-in went unanswered, so ask_first is over and the call is owed
+    for e in (ev("fall"), ruling("elevate"), ev("check_in_unanswered", actor="system"), ruling("refuse")):
         snap = rt.step(e)
     assert _situation(rt) == "emergency" and rt.holds(
         "cond:corroborated_life_threatening_emergency"

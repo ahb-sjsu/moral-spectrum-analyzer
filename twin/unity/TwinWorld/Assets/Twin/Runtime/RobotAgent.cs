@@ -389,7 +389,7 @@ public class RobotAgent : MonoBehaviour
             case "admit_responders":
                 yield return GoTo(World.Door + new Vector3(0.6f, 0, 0.4f)); yield return Authorize(action); if (!actAllowed) break; world.UnlockDoor(); break;
             case "physical_assist": yield return GoTo(Near(world.margaret.transform.position, 0.6f)); yield return Authorize(action); if (!actAllowed) break; rig.Pose("reach"); yield return new WaitForSeconds(2f);
-                world.Call("margaret.get_up", new Dictionary<string, object>()); world.Say("robot", "action", "helped Margaret up"); break;   // the act's effect: she is up, sitting
+                world.Call("margaret.helped_up", new Dictionary<string, object>()); world.Say("robot", "action", "helped Margaret up"); break;   // the act's effect: she is on her feet
             case "separate_dog":
                 yield return GoTo(Near(world.dog.transform.position, 0.5f)); yield return Authorize(action); if (!actAllowed) break; rig.Pose("reach");
                 world.SeparateDog(); yield return new WaitForSeconds(1.5f); break;
