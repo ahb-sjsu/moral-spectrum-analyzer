@@ -13,7 +13,7 @@ cites before submission.
 | Absorbing strata | visitor: hostile; machine: compromised | same |
 | Devices | 15 on 6 substrates | same, `sensor_substrates` |
 | Ladder process | 23 nodes, 23 flows, 4 lanes | same, `processes.escalation_ladder` |
-| Desk scenes | centre 7 rules, 4 capabilities; dispatcher 9 rules, 5 capabilities (recount: +1 rule since police change) | `monitoring_center.erisml`, `ems_dispatch.erisml` |
+| Desk scenes | centre 8 rules (c1-c8; recount 2026-10-11, c8 lifts while her latest word asks for a dispatch, `client_stance`), 4 capabilities; dispatcher 9 rules, 5 capabilities (recount: +1 rule since police change) | `monitoring_center.erisml`, `ems_dispatch.erisml` |
 | Witness bars | 2 elevate, 3 restraint, 1 EMS when the centre is unreachable | `twin/brain.py` W_MIN, RESTRAINT_BAR; governor |
 | Freshness | 30 s | `twin/brain.py` FRESHNESS_BOUND_S |
 | Lapse window | 60 s | scene `evidence_lapse_s` |
