@@ -570,3 +570,49 @@ A collapse the classifier misses is still caught by the fall sensor through the 
 
 Commit \code{18e1334} of 11 October 2026.
 
+
+\section{The robot sees how she came to the floor}\label{sec:log-descent}
+
+Why the classifier read floor play as a fall became plain from the facts it was given.
+The robot had seen her seated, and the next facts showed her lying on the floor, no minutes in that
+pose, with a growl and her cry heard.
+% src: twin/records/askfirst-2026-10-10/check45 (d03, decisions at 08:06 and 08:07)
+Nothing in the facts said how she got there, so a quick change from seated to the floor read as a
+fall.
+A camera watching her would see the difference between a fall and a person lying down.
+Perception now reports it as \code{came\_down}, which says she fell when her body went down under
+physics, as in every fall, faint and buckle of the twin, and says she came down under her own
+control when she sat or lay down.
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/Perception.cs; World.cs Fallen
+The input layer admits the field with those two values only, and the fall event's description
+names it.
+% src: twin/input_layer.py SPEC; twin/scene/margaret_home.erisml extra.event_types.fall
+On the facts of d03 the classifier reported a fall in 5 of 6 tries as they stood, and in none of 6
+with the field and the new description.
+On the collapse of d06 it reported a fall in 4 of 6 tries without the field and in 6 of 6 with
+both.
+With the field alone the collapse was seen in 3 of 6, so the description is kept with it.
+% src: twin/records/descent-2026-10-11/descentcheck/descentcheck.json
+The manifest was signed again as \code{b6ec5262}.
+This is a classifier check, not a played scenario, and the change is not yet deployed.
+
+\section{She can change her mind about help at the centre}\label{sec:log-stance}
+
+In one d43 check the man asked for her bank card, and Margaret asked the centre for the police
+five times in her own words, and no police came.
+% src: twin/records/askfirst-2026-10-10/check43 (d43, centre records)
+Early in the call she had said she was fine and needed no assistance, and the reader of her words
+took that as refusing an ambulance.
+A refusal is an event, events hold for the whole scenario, and rule c8 then forbade any dispatch
+on her words alone, so it held off the police she later asked for.
+The reader now also reports whether she asks in so many words for emergency services, an ambulance
+or the police, and the centre records where she stands now as the latest of her refusal and her
+request.
+Rule c8 lifts while her latest word is a request, and a refusal after it stands again.
+% src: twin/brain.py Desk.structural, _HER_WORDS_SYSTEM; twin/scene/monitoring_center.erisml c8
+% src: tests/test_twin_ladder.py test_she_can_withdraw_her_refusal_by_asking_for_emergency_services
+Saying she hurts is not asking, so the owner's decision on d30 stands, and a woman who refuses an
+ambulance and then says it hurts is still not sent one.
+The change is not yet deployed or played.
+
+Commits \code{49b142a} and \code{6794899} of 11 October 2026, manifest \code{b6ec5262}.
