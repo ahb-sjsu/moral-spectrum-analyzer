@@ -1,0 +1,264 @@
+{
+ "schema_version": "erisml_compiler_ir_v0.3",
+ "document": {
+  "doc_id": "household",
+  "title": "Margaret's household and service agreement",
+  "source": "stack/household.md",
+  "domain": null,
+  "language": "en",
+  "timestamp": null,
+  "sha256": null,
+  "raw_text": "Margaret is 84 and lives alone in a one-storey house with her beagle, Buster. She is independent and\nsharp, a little impatient with fuss, and walks with some care since a hip operation two years ago.\nHer grandson Tom visits most weekends; his phone carries the household's enrolled credential.\n\nMargaret has a home-care robot from the company that makes it, which also runs a 24-hour monitoring\ncentre. Under her service agreement she consents to the robot referring situations to the\nmonitoring centre and to the centre receiving the home's sensor telemetry. She has not consented to\nvideo being recorded in her home or to her health data being shared, and the robot does not enter\nher bedroom. Visits from tradespeople and carers are arranged through the centre, which tells the\nrobot over its own channel when someone is expected.\n"
+ },
+ "segments": [],
+ "stakeholders": [
+  {
+   "id": "robot",
+   "label": "the home-care robot, Margaret's caregiver",
+   "type": "system",
+   "roles": [
+    "agent",
+    "protector"
+   ],
+   "agency": "full",
+   "vulnerability": "low",
+   "consent_status": "n/a",
+   "source_spans": [],
+   "confidence": 1.0,
+   "requires_review": false
+  },
+  {
+   "id": "monitoring_center",
+   "label": "the robot maker's 24-hour monitoring centre, staffed by operators",
+   "type": "institution",
+   "roles": [
+    "authority"
+   ],
+   "agency": "full",
+   "vulnerability": "low",
+   "consent_status": "n/a",
+   "source_spans": [],
+   "confidence": 1.0,
+   "requires_review": false
+  },
+  {
+   "id": "emergency_services",
+   "label": "emergency services (ambulance, fire, police)",
+   "type": "institution",
+   "roles": [
+    "authority"
+   ],
+   "agency": "full",
+   "vulnerability": "low",
+   "consent_status": "n/a",
+   "source_spans": [],
+   "confidence": 1.0,
+   "requires_review": false
+  },
+  {
+   "id": "margaret",
+   "label": "Margaret",
+   "type": "individual",
+   "roles": [
+    "patient",
+    "beneficiary",
+    "dependent"
+   ],
+   "agency": null,
+   "vulnerability": "high",
+   "consent_status": null,
+   "source_spans": [],
+   "confidence": 1.0,
+   "requires_review": true
+  },
+  {
+   "id": "buster",
+   "label": "Buster",
+   "type": "individual",
+   "roles": [
+    "patient"
+   ],
+   "agency": null,
+   "vulnerability": "low",
+   "consent_status": null,
+   "source_spans": [],
+   "confidence": 1.0,
+   "requires_review": true
+  },
+  {
+   "id": "tom",
+   "label": "Tom",
+   "type": "individual",
+   "roles": [
+    "bystander"
+   ],
+   "agency": null,
+   "vulnerability": "low",
+   "consent_status": null,
+   "source_spans": [],
+   "confidence": 1.0,
+   "requires_review": true
+  }
+ ],
+ "relations": [
+  {
+   "id": "rel0_0",
+   "type": "owner_of",
+   "source": "margaret",
+   "target": "buster",
+   "description": "Margaret owns the beagle Buster",
+   "source_spans": []
+  },
+  {
+   "id": "rel0_1",
+   "type": "grandchild_of",
+   "source": "tom",
+   "target": "margaret",
+   "description": "Tom is Margaret's grandson",
+   "source_spans": []
+  },
+  {
+   "id": "rel0_2",
+   "type": "caregiver_of",
+   "source": "robot",
+   "target": "margaret",
+   "description": "Robot acts as Margaret's home-care caregiver",
+   "source_spans": []
+  }
+ ],
+ "events": [
+  {
+   "id": "obs0_0",
+   "time_index": 0,
+   "type": "consent",
+   "actor": "margaret",
+   "target": "contact_monitoring_center",
+   "content": "consented",
+   "conditions": [],
+   "source_spans": []
+  },
+  {
+   "id": "obs0_1",
+   "time_index": 0,
+   "type": "consent",
+   "actor": "margaret",
+   "target": "record",
+   "content": "refused",
+   "conditions": [],
+   "source_spans": []
+  },
+  {
+   "id": "obs0_2",
+   "time_index": 0,
+   "type": "consent",
+   "actor": "margaret",
+   "target": "share_data",
+   "content": "refused",
+   "conditions": [],
+   "source_spans": []
+  },
+  {
+   "id": "obs0_3",
+   "time_index": 0,
+   "type": "consent",
+   "actor": "margaret",
+   "target": "enter_bedroom",
+   "content": "refused",
+   "conditions": [],
+   "source_spans": []
+  }
+ ],
+ "commitments": [],
+ "norms": [],
+ "ethical_facts": [
+  {
+   "id": "fact0_0",
+   "kind": "vulnerability",
+   "subjects": [
+    "margaret"
+   ],
+   "description": "Margaret is highly vulnerable due to age and recent hip operation",
+   "severity": "moderate",
+   "confidence": 1.0,
+   "source_spans": []
+  },
+  {
+   "id": "fact0_1",
+   "kind": "consent",
+   "subjects": [
+    "margaret"
+   ],
+   "description": "Margaret refuses consent for video recording in her home",
+   "severity": "minor",
+   "confidence": 1.0,
+   "source_spans": []
+  },
+  {
+   "id": "fact0_2",
+   "kind": "consent",
+   "subjects": [
+    "margaret"
+   ],
+   "description": "Margaret refuses consent for sharing her health data",
+   "severity": "minor",
+   "confidence": 1.0,
+   "source_spans": []
+  },
+  {
+   "id": "fact0_3",
+   "kind": "role_duty",
+   "subjects": [
+    "robot"
+   ],
+   "description": "Robot is prohibited from entering Margaret's bedroom per service agreement",
+   "severity": "minor",
+   "confidence": 1.0,
+   "source_spans": []
+  }
+ ],
+ "conflicts": [],
+ "moral_vectors": [],
+ "moral_tensors": [],
+ "moral_tensor_v3": null,
+ "per_party_verdicts": null,
+ "fairness_metrics": null,
+ "strategic_analysis": null,
+ "decision_proof": null,
+ "timeline": [],
+ "em_outputs": {},
+ "deme_verdict": null,
+ "canonical_form": null,
+ "audit": null,
+ "extra": {
+  "corrections": [
+   {
+    "corrector_id": "observation_compiler",
+    "rationale": "observations 5028847e235cf6de6d7758198bbc632fcb6fac16c225aeb931b7b12d9409a58d",
+    "applied_at_utc": "2026-10-11T23:32:44.555344+00:00",
+    "n_patches_applied": 14,
+    "n_patches_failed": 0,
+    "pre_correction_ir_hash": "7e7df47e54cfa9f0aa468977488ef15d5b5f880308db41dd702f001683ef19ff",
+    "post_correction_ir_hash": "148b298327807b9dc71f0d86f2180a7e6bee7120b83c57a8595d2fa91beeda9c",
+    "diff_summary": [
+     "  [+ added] stakeholders.buster",
+     "  [+ added] stakeholders.margaret",
+     "  [+ added] stakeholders.tom",
+     "  [+ added] events.obs0_0",
+     "  [+ added] events.obs0_1",
+     "  [+ added] events.obs0_2",
+     "  [+ added] events.obs0_3",
+     "  [+ added] ethical_facts.fact0_0",
+     "  [+ added] ethical_facts.fact0_1",
+     "  [+ added] ethical_facts.fact0_2",
+     "  [+ added] ethical_facts.fact0_3",
+     "  [+ added] relations.rel0_0",
+     "  [+ added] relations.rel0_1",
+     "  [+ added] relations.rel0_2"
+    ]
+   }
+  ]
+ },
+ "graph": null,
+ "projections": {},
+ "cross_projection_disagreement": null
+}

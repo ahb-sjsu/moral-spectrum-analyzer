@@ -36,7 +36,7 @@ from erisml_compiler.observation import (
     rebuild_runtime,
 )
 
-from stack.declarations import CAPABILITIES
+from stack.declarations import CAPABILITIES, DESCRIPTIONS
 from stack.mir_builder import EvidenceState, build_mir
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -83,7 +83,7 @@ class StackBrain(Brain):
         self.observer = ObservationCompiler(self.adapter)
         self.lens = load_profile(self.lens_path)
         self.last_proof = None
-        self.acts = {a: str(c.get("description") or a) for a, c in self.caps.items()
+        self.acts = {a: str(c.get("description") or DESCRIPTIONS[a]) for a, c in self.caps.items()
                      if a != "request_authority" and a in CAPABILITIES}
 
     def _rebuild(self):

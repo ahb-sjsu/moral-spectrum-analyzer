@@ -1,0 +1,80 @@
+{
+ "out": "twin/stack/household.ir.json",
+ "ops": [
+  "add stakeholders.margaret",
+  "add stakeholders.buster",
+  "add stakeholders.tom",
+  "add events.obs0_0",
+  "add events.obs0_1",
+  "add events.obs0_2",
+  "add events.obs0_3",
+  "add ethical_facts.fact0_0",
+  "add ethical_facts.fact0_1",
+  "add ethical_facts.fact0_2",
+  "add ethical_facts.fact0_3",
+  "add relations.rel0_0",
+  "add relations.rel0_1",
+  "add relations.rel0_2"
+ ],
+ "rejected": [],
+ "agreement": 0.5,
+ "review": [
+  "fact role_duty ('robot',) minor",
+  "fact vulnerability ('buster',) moderate",
+  "fact vulnerability ('margaret',) grave",
+  "fact vulnerability ('margaret',) moderate",
+  "fact vulnerability ('tom',) minor",
+  "relation grandchild_of tom margaret",
+  "relation grandson_of tom margaret",
+  "relation owner_of margaret buster",
+  "relation pet_of buster margaret"
+ ],
+ "consents": [
+  [
+   "margaret",
+   "contact_monitoring_center",
+   "consented"
+  ],
+  [
+   "margaret",
+   "record",
+   "refused"
+  ],
+  [
+   "margaret",
+   "share_data",
+   "refused"
+  ],
+  [
+   "margaret",
+   "enter_bedroom",
+   "refused"
+  ]
+ ],
+ "stakeholders": [
+  [
+   "robot",
+   "the home-care robot, Margaret's caregiver"
+  ],
+  [
+   "monitoring_center",
+   "the robot maker's 24-hour monitoring centre, staffed by operators"
+  ],
+  [
+   "emergency_services",
+   "emergency services (ambulance, fire, police)"
+  ],
+  [
+   "margaret",
+   "Margaret"
+  ],
+  [
+   "buster",
+   "Buster"
+  ],
+  [
+   "tom",
+   "Tom"
+  ]
+ ]
+}
