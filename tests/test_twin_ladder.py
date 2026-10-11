@@ -1176,6 +1176,24 @@ def test_with_no_model_the_compiled_obligations_act_through_the_governor_and_dem
     assert second["action"]["action"] == EMS and not second["ethics_gate"]["vetoed"]
 
 
+def test_nobody_is_asked_for_authority_to_do_what_she_refused(brain, monkeypatch):
+    """dev46 d30: the robot kept asking to call the ambulance she had refused, the governor at last
+    refused for want of sensors, and that ended the emergency and the lift she asked for."""
+    b, _ = brain
+    from erisml_compiler.runtime.agent import Decision
+
+    b.agent.record(ev("refusal_made", "emergency_services"))
+    asked = []
+    monkeypatch.setattr(b, "govern_live", lambda *a, **k: asked.append(a) or {"outcome": "refuse"})
+    snap = b.agent.rt.snapshot().as_dict()
+    monkeypatch.setattr(b.agent, "decide", lambda facts: Decision(
+        [], [], snap, "request_authority", {"action": EMS}, "ask for the ambulance", None, False))
+    cycle = b.decide({"facts": {"margaret": {"pose": "lying_on_floor"}}})
+    assert not asked
+    assert cycle["ruling"]["outcome"] == "not_requested" and cycle["ruling"]["requested_action"] == EMS
+    assert cycle["action"]["action"] not in ("request_authority", EMS)
+
+
 def test_with_no_model_and_no_evidence_nothing_is_granted(brain):
     b, _ = brain
     _no_model(b)

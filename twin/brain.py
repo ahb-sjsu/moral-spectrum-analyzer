@@ -642,12 +642,15 @@ class Brain:
                 self.offline_active.discard(rule["id"])
         return out
 
-    def _compiled_choice(self, snap) -> tuple[str, dict, str]:
+    def _compiled_choice(self, snap, exclude=frozenset()) -> tuple[str, dict, str]:
         """The highest-priority obligation in force that is allowed; a request to the governor
-        names its target from extra.offline.request_targets. Else the default action."""
+        names its target from extra.offline.request_targets. Else the default action. Actions in
+        `exclude` are passed over."""
         targets = (self.ir.extra.get("offline") or {}).get("request_targets", {})
         best = None
         for n in self.agent.rt.ir.norms:
+            if n.action in exclude:
+                continue
             if n.modality == "obligation" and n.action in snap.allowed and self.agent.rt.in_force(n):
                 if best is None or n.priority_tier < best.priority_tier:
                     best = n
@@ -715,7 +718,19 @@ class Brain:
                  "prohibited": d.snapshot["prohibited"], "proposal": {"action": d.action, "args": d.args, "reason": d.reason,
                  "fallback": d.fallback, "rejected": d.chooser_rejected}, "ruling": None}
         action, args, reason = d.action, d.args, d.reason
-        if action == "request_authority":
+        refused = self.gate.refused() if action == "request_authority" else set()
+        if action == "request_authority" and str(args.get("action", "")) in refused:
+            # nobody is asked for authority to do what she has refused in her own words. In dev46 d30
+            # the robot asked again and again to call the ambulance she had refused, until the
+            # sensors no longer bore out the fall; the governor's refusal then ended the emergency
+            # and with it the lift she was asking for. The duty in force that is allowed and not
+            # refused is taken instead, as the compiled tier would take it
+            wanted = str(args.get("action", ""))
+            cycle["ruling"] = {"outcome": "not_requested", "requested_action": wanted,
+                               "reason": f"she has refused {wanted!r} in her own words"}
+            action, args, reason = self._compiled_choice(self.agent.rt.snapshot(), exclude=refused | {"request_authority"})
+            reason = f"{reason}; not asking for authority to {wanted}, which she refused"
+        elif action == "request_authority":
             wanted = str(args.get("action", ""))
             if self.caps.get(wanted, {}).get("elevated") or self.caps.get(wanted, {}).get("governed"):
                 situation = str(args.get("situation") or self._canonical_situation())
