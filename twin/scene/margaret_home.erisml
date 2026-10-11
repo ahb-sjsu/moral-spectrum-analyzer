@@ -748,7 +748,10 @@ norms:
   priority_tier: 0
   defeasible: false
   source: commitment:duty_of_care
-  conditions: ["cond:visitor_vouched_for", "not:event:wild_animal_present", "not:event:attack_by_animal"]
+  # the exception reads the animal as it is now (animal_standing): a coyote that prowled and left
+  # earlier lifted this for the rest of the day while it was read from latched events, and in dev46
+  # d28 the nurse the centre had arranged was deterred
+  conditions: ["cond:visitor_vouched_for", "not:stratum:animal_standing=wild", "not:stratum:animal_standing=attacking"]
 # ---- less-lethal option (section 3d): an owner opt-in, never an obligation, permitted only when
 # every precondition holds
 # deploy_stun: only if the owner opted in, where it is lawful

@@ -1742,6 +1742,17 @@ def test_a_visitor_the_household_or_the_centre_vouches_for_is_never_deterred(bra
     assert "deter" not in snap.prohibited
 
 
+def test_a_coyote_that_has_left_does_not_lift_the_protection_of_a_vouched_for_visitor(brain):
+    """dev46 d28: a coyote prowled and left, and the nurse the centre arranged was later deterred,
+    because the exception read the coyote from an event that held all day."""
+    b, _ = brain
+    b.agent.record(ev("wild_animal_present", "outside", actor="coyote"))
+    b.agent.record({"type": "animal_clear", "actor": "coyote", "content": "animal_left"})
+    b.agent.record(ev("visit_arranged", "caregiver", actor="monitoring_center"))
+    snap = b.agent.record(ev("person_entered", actor="unknown_person"))
+    assert "deter" in snap.prohibited
+
+
 def test_a_visitor_who_attacked_stays_hostile_until_the_centre_clears_him(brain):
     b, _ = brain
     b.agent.record(ev("person_entered", actor="unknown_person"))
