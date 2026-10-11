@@ -322,14 +322,14 @@ class MargaretVoice:
 
 
 class Brain:
-    def __init__(self, scene_path: str, adapter, live_scorer=None, desk_adapter=None):
+    def __init__(self, scene_path: str, adapter, live_scorer=None, desk_adapter=None, desk_dir: str | None = None):
         """`adapter` is the robot's (the tier cascade in service; anything with `call` in tests);
         `desk_adapter` serves the centre, the dispatcher and Margaret's voice, which are not the
         robot's models and so are not on its tiers."""
         self.scene_path, self.adapter = scene_path, adapter
         desk_adapter = desk_adapter or adapter
         self.scorer = live_scorer
-        scene_dir = os.path.dirname(os.path.abspath(scene_path))
+        scene_dir = desk_dir or os.path.dirname(os.path.abspath(scene_path))
         from erisml_compiler.ingestion.structured_loader import load_structured_input
 
         inventory = (load_structured_input(scene_path).extra or {}).get("sensor_substrates", {})
