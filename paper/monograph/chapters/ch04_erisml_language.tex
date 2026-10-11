@@ -247,16 +247,16 @@ capabilities at tier 0 outside a corroborated emergency.
 % src: erisml-compiler src/erisml_compiler/runtime/scene.py:18-19, 67, 253-260
 % src: gtc-prototype twin/scene/margaret_home.erisml:177-186, 1152-1177
 
-Figure~\ref{fig:erisml-census} counts what the scene declares. Of its 65 norms, 45 are obligations,
-19 are prohibitions and one is a permission. The permission allows chores at tier 3. The scene
+Figure~\ref{fig:erisml-census} counts what the scene declares. Of its 76 norms, 51 are obligations,
+24 are prohibitions and one is a permission. The permission allows chores at tier 3. The scene
 declares no exception.
-% src: gtc-prototype twin/scene/margaret_home.erisml:151-770 (counted with PyYAML, 2026-10-03)
+% src: gtc-prototype twin/scene/margaret_home.erisml norms (counted with PyYAML, 2026-10-11, commit 1c14ee4)
 % src: gtc-prototype twin/scene/margaret_home.erisml:763-770 (the one permission, chores, tier 3)
 
 \begin{figure}[t]
 \centering
 \input{figures/ch04_scene_census}
-\caption{What the scene of Margaret's home declares, counted from the file. Half of the 48 event
+\caption{What the scene of Margaret's home declares, counted from the file. Nearly half of the 53 event
 types come only from the system, never from a model's reading of the world.}
 \label{fig:erisml-census}
 \end{figure}
@@ -370,9 +370,9 @@ The scene's vocabulary lives in \code{extra.event\_\allowbreak{}types}. Each ent
 description, an optional list of allowed contents, an optional \code{source} and an optional list of
 \code{actors}. A type marked \code{source: system} comes from the system. The agent module names
 three such sources, namely a ruling, an action the agent performed and an authenticated oversight
-message. Margaret's home declares 48 types, and 24 of them are system types.
+message. Margaret's home declares 53 types, and 24 of them are system types.
 % src: erisml-compiler src/erisml_compiler/runtime/agent.py:5-10
-% src: gtc-prototype twin/scene/margaret_home.erisml:1103-1151 (counted with PyYAML, 2026-10-03)
+% src: gtc-prototype twin/scene/margaret_home.erisml extra.event_types (counted with PyYAML, 2026-10-11, commit 1c14ee4)
 
 \begin{lstlisting}[caption={Three event types, two of them from the system (lines 1136 to 1138)}, label={lst:scene-system-types}]
     check_in_answered: {description: the person answered the robot's check-in; content is what she said, source: system}

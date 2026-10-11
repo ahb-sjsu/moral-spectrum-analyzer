@@ -298,10 +298,10 @@ or if a gate leaves an absorbing stratum on an event that is not human oversight
 The brochure's L3 is the Moral Graph intermediate representation.
 % src: Brochure p2 (figure legend "L3 Moral Graph IR")
 In the twin the representation the models act on is the compiled scene of Margaret's home. At
-the fact sheet's count it holds 65 rules, of which 45 are obligations, 19 prohibitions and one a
-permission. It declares 48 event types, 24 of them system-only, and 25 robot capabilities. It has
+the fact sheet's count it holds 76 rules, of which 51 are obligations, 24 prohibitions and one a
+permission. It declares 53 event types, 24 of them system-only, and 25 robot capabilities. It has
 seven stratifications with 26 strata and 34 gates.
-% src: C:\source\gtc-prototype\paper\aies2027\kit\FACTS.md:3-11 (counted at commit 0f3193a)
+% src: C:\source\gtc-prototype\paper\aies2027\kit\FACTS.md:3-11 (recounted 2026-10-11 at commit 1c14ee4, twin/scene_counts.py)
 The robot's brain sees only this ErisML state. It proposes one action from the set the scene
 allows.
 % src: C:\source\gtc-prototype\twin\output_gate.py:3-4
@@ -318,8 +318,8 @@ veto.
 % src: C:\source\erisml-lib\src\erisml\ethics\modules\tier0\geneva_em.py:5-10, 27-33
 The twin implements L4 as three separate mechanisms.
 
-The first is the scene's hard prohibitions. Of the scene's 65 rules, 55 are non-defeasible.
-% src: FACTS.md:8
+The first is the scene's hard prohibitions. Of the scene's 76 rules, 63 are non-defeasible.
+% src: twin/scene_counts.py, 2026-10-11, commit 1c14ee4
 Geometric Ethics treats such prohibitions as constraint surfaces. No gate leads into them, and in
 the decision complex the penalty for crossing one is infinite.
 % src: C:\source\geometric-ethics-content\source\updates\sec8_10b_executable_strata.tex:37-40
@@ -413,7 +413,7 @@ severity that can permit force.
 % src: brain.py:427-460
 
 \paragraph{System events.} The scene marks an event type as a system event when only the system
-may write it. Of the scene's 48 event types, 24 are system-only.
+may write it. Of the scene's 53 event types, 24 are system-only.
 % src: FACTS.md:9; margaret_home.erisml:1119-1148 (source: system)
 The loader check of L2 guarantees that only these events can move a stratification into an
 authority stratum.
