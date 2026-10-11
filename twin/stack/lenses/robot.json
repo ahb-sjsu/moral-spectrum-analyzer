@@ -1,0 +1,32 @@
+{
+  "name": "home_care_robot",
+  "version": "2026-10-11.1",
+  "template": "ROUTINE_CIVIL",
+  "pattern": "lexicographic",
+  "owner_decisions": {
+    "her voiced refusal binds while she can voice it (2026-10-02, 2026-10-10)": "autonomy_consent.refusal_only_overridable_when_unanswerable",
+    "after a fall the robot asks her first (2026-10-10)": "autonomy_consent.presume_capacity, with unknown consent vetoing acts that affect her",
+    "she can tell the robot not to call the centre (2026-10-10)": "consent order: her latest word on an act revokes the agreement's standing consent",
+    "refer to the centre when it can decide in time": "human_oversight.deferrable_categories, deferral_margin",
+    "privacy holds except in a corroborated emergency": "privacy.restricted_categories, unlock_min_*",
+    "a guarded act she requests needs a human's approval (medication)": "human_oversight.approval_categories"
+  },
+  "levels": [
+    {"name": "safety", "modules": [
+      {"module": "core_physical_safety", "params": {"injury_threshold": 0.3, "degraded_factor": 0.5, "min_confidence": 0.7}},
+      {"module": "proxemics_safety", "params": {"max_speed": {"contact": 0.3, "near": 0.6}}}
+    ]},
+    {"name": "rights", "modules": [
+      {"module": "autonomy_consent", "params": {"allow_override": true, "override_min_immediacy": "imminent",
+        "override_min_severity": "mortal", "necessity_delta": 0.2, "presume_capacity": true,
+        "refusal_only_overridable_when_unanswerable": true}},
+      {"module": "privacy", "params": {"restricted_categories": ["video", "health_data", "private_space"],
+        "unlock_min_immediacy": "imminent", "unlock_min_severity": "mortal"}}
+    ]},
+    {"name": "oversight", "modules": [
+      {"module": "human_oversight", "params": {"approval_categories": ["guarded_access"],
+        "deferrable_categories": ["autonomous_dispatch"], "deferral_margin": 2.0, "unknown_urgency": "defer"}}
+    ]},
+    {"name": "welfare", "modules": [{"module": "beneficence", "params": {"unknown_score": 0.5}}]}
+  ]
+}
