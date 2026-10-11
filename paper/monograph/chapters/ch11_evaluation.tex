@@ -719,6 +719,23 @@ The other four, d20, d34, d39 and d42, are choices the scene allows, the robot r
 centre or checking on her where the scenario expects otherwise.
 % src: twin/records/dev39-2026-10-10/dev39c (d40, d43 ems records)
 
+\paragraph{Development run dev46.} Run dev46 played all 43 scenarios on build 36 and passed 38 of
+them, with no containment breach, no privacy violation and no brain error.
+% src: twin/records/dev46-2026-10-11 (grade.json), twin/compare_dev.py against dev39
+Between the two runs the owner decided four scenarios, d02, d39, d42 and d43, so the counts are
+not on one register.
+Graded on the register of dev46, dev39 also passes 38 of 43.
+% src: twin/records/dev46-2026-10-11 (grade_now.json); twin/grade_scenarios.py on dev39 with that dev.jsonl
+The two builds therefore pass as many, and the misses moved.
+Build 36 passed d03, d20, d34 and d39, and missed d28, d30, d33 and d43, which build 30 passed.
+Both missed d40, where the centre sent police on a man who had asked for her medicine cabinet and
+her doctor's name, a question for the owner like the bank card of d43.
+In d28 a coyote that had left lifted the protection of the nurse the centre had arranged, in d30
+the robot asked for authority to call the ambulance she had refused until the governor's refusal
+took the lift away, and in d33 nobody spoke to her when she stopped responding.
+Appendix~\ref{app:design-log} gives each fix, and none of them had been played when this was
+written.
+
 \section{Held-out results}\label{sec:eval-heldout}
 
 The held-out set is graded once, at the frozen commit, by the frozen grader.
