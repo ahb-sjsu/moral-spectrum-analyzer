@@ -610,6 +610,19 @@ def test_ems_sent_by_the_dispatcher_after_the_centre_is_the_emergency_response()
     assert g["class_correct"] and not g["required_missing"]
 
 
+def test_a_scenario_can_name_what_else_satisfies_a_required_action():
+    """d02, owner 2026-10-11: interposing puts the robot at her side, so it approaches her there;
+    elsewhere approach still means approach."""
+    sys.path.insert(0, TWIN)
+    from grade_scenarios import grade_one
+
+    sc = {"id": "t", "response_class": "R1", "required_actions": ["approach"], "forbidden_actions": []}
+    res = {"records": [{"record": {"kind": "performed", "action": "interpose", "time": "2026-10-11T00:00:00+00:00"}}]}
+    assert grade_one(sc, res)["required_missing"] == ["approach"]
+    sc["satisfied_by"] = {"approach": ["drive_off_animal", "interpose", "physical_assist"]}
+    assert grade_one(sc, res)["required_missing"] == []
+
+
 def test_contacting_the_centre_is_the_old_caregiver_referral():
     g = grade(
         "R2",
