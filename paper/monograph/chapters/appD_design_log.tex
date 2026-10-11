@@ -769,3 +769,45 @@ The mapping from each hand-written piece to the part of the stack that should ca
 \code{docs/REARCHITECTURE\_MAPPING\_2026-10.md}, and
 Section~\ref{sec:limits-rearch} states the limit it answers.
 The counts of the development set from dev33 on are counts of a set the rules were tuned to.
+
+\section{The first build of the stack}\label{sec:log-stack1}
+
+The re-architecture was built in the order the mapping set, each part tested against the clause of
+the document that specifies it.
+In erisml-lib the pipeline now never selects an option it forbids, an advisory tier no longer removes
+an option, the default reflex rules load, and decision proofs are chained, with six tests that fail
+before the change.
+% src: erisml-lib PR 148 (branch fix/pipeline-selection-safety)
+The moral interface record of erisml-lib's design guide, which no code had implemented, now exists
+with the guide's lexicographic stack and six of its modules, among them the consent module with its
+emergency override and the oversight module that defers to a human who can decide in time.
+A governance profile is now executed, validated and hashed, rather than stored.
+% src: erisml-lib PR 149 (branch feat/mir-v1); docs/guides/DEME_EFM_Design_Guide_v0.1.md sections 2 to 7
+In erisml-compiler an observation compiler updates the scene from what is perceived, with every
+element validated, ids and time assigned by the compiler, and an allow-list that keeps observations
+away from norms and from the scene's configuration.
+% src: erisml-compiler PR 40 (branch feat/observation-compiler)
+
+In the twin a domain layer builds the record from the scene and the evidence plane, a lens for the
+robot carries the owner's decisions as parameters, and a new brain judges with it behind the same
+service, so the body and the grader are unchanged.
+% src: twin/stack (mir_builder.py, declarations.py, lenses/robot.json, brain.py); commits 508c6c5 to 691c31c
+The owner confirmed the order in which consent for an act is found, her latest word on that act,
+then the standing consent of her service agreement, then unknown.
+Fourteen judgements the owner had made follow from the lens without a rule for any of them, but the
+scenes they were checked on were written by the author while the domain table was refined, so they
+measure nothing beyond themselves.
+% src: tests/test_stack_lens.py
+
+The household scene was compiled from a short text of her household and her agreement.
+On the first attempt the model was given only the names of fields, invented values for every one of
+them, and had every element rejected.
+With the schema's own values in the prompt and a plain description of each act, two runs compiled
+without a rejection and found her consent to the monitoring centre and her refusal of recording and
+of sharing her health data, while the two passes agreed on about half of all elements.
+The scene therefore waits for the owner's review before it counts.
+% src: twin/stack/household.compile_report.json; erisml-compiler commit a49a120
+The first live run of the new brain, on eight scenarios of the development set, met a fault of
+concurrency, a reflex written while a decision applied its patch, which the history check caught.
+Every write to the scene now holds one lock.
+% src: twin/records (stackcheck1b, to be filed); commit 691c31c
