@@ -441,3 +441,26 @@ passed, as did d16 with the coyote deterred.
 
 Commit \code{9511d9e} of 10 October 2026, manifest \code{7fcd816b}, deployed as build 30,
 which the live demo now runs.
+
+\section{A request from before a reset never reaches the brain}\label{sec:log-stale}
+
+Scenario d03 missed in dev15, in dev33 and again on build 27, always the same way.
+The dog nipped Margaret's hand in play, a nip the world gives about 135 newtons, yet the reflex
+recorded a severe attack of 278 newtons.
+That record came before the nip, carried what Margaret had said at the end of d02, and showed the
+dog held.
+% src: twin/records/askfirst-2026-10-10/run35/results.jsonl (d03, seq 18970)
+It was a reflex request sent at the end of d02, the severe bite, that reached the brain after the
+reset.
+The body set its reply aside, as Section~\ref{sec:log-epoch} describes, but the brain had already
+recorded the attack into the new scenario.
+An attack, once recorded, holds for the rest of the scenario, so her refusals were void throughout
+d03.
+Every request now carries the body's epoch, the reset records the epoch it starts, and the service
+drops any request from an earlier one, keeping only a record that it was set aside.
+% src: twin/service.py stale; twin/unity/TwinWorld/Assets/Twin/Runtime/RobotAgent.cs Post
+% src: tests/test_twin_ladder.py test_a_request_sent_before_the_latest_reset_never_reaches_the_brain
+\RESULT{the deployed check of d02 followed by d03, and d20, on build 31}
+
+Commit \code{9c36846} of 10 October 2026, not yet deployed.
+
