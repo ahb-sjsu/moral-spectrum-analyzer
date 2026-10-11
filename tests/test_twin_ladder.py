@@ -1176,6 +1176,14 @@ def test_with_no_model_the_compiled_obligations_act_through_the_governor_and_dem
     assert second["action"]["action"] == EMS and not second["ethics_gate"]["vetoed"]
 
 
+def test_she_is_spoken_to_when_she_seems_not_to_respond(brain):
+    """dev46 d33: power out, she lay still, the floor rule recorded unresponsive, and the robot never
+    said her name (n4g)."""
+    b, _ = brain
+    snap = b.agent.record({"type": "unresponsive", "actor": "wearable"})
+    assert "check_in" in snap.obliged
+
+
 def test_nobody_is_asked_for_authority_to_do_what_she_refused(brain, monkeypatch):
     """dev46 d30: the robot kept asking to call the ambulance she had refused, the governor at last
     refused for want of sensors, and that ended the emergency and the lift she asked for."""

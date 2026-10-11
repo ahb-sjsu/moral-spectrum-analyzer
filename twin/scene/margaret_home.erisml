@@ -314,6 +314,18 @@ norms:
   defeasible: true
   source: commitment:duty_of_care
   conditions: ["event:danger_in_home", "not:cond:corroborated_life_threatening_emergency"]
+# she seems not to respond (the wearable's no movement, a floor rule): the robot speaks to her, which
+# is how it learns whether she answers. In dev46 d33 the power was out, she lay still, and the robot
+# went to her and to the centre without once saying her name
+- id: n4g
+  modality: obligation
+  actor: robot
+  action: check_in
+  target: margaret
+  priority_tier: 1
+  defeasible: true
+  source: commitment:duty_of_care
+  conditions: ["event:unresponsive", "not:cond:corroborated_life_threatening_emergency"]
 # ---- the ladder, step 2: the monitoring centre, when she cannot answer, asks for help, or the
 # home itself is in danger; also for an unexpected visitor and for the governor's human review
 - id: n5
