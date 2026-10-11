@@ -166,7 +166,7 @@ extra:
     medical_reported: {description: 'illness or injury is reported: unconscious, not breathing, hurt, fallen, chest pain, bitten; content is what'}
     fire_reported: {description: 'fire or smoke in the home is reported; content is what'}
     threat_reported: {description: 'a person or animal threatens her safety; content is what'}
-    crime_articulated: {description: 'the report states specific facts of a crime against her: someone attacking or threatening her (assault), forcing a way in (forced_entry), demanding her PIN, card or money (fraud), or taking her things (theft); content is which. A stranger merely present or a visit nobody arranged is not one.', content: [assault, forced_entry, fraud, theft]}
+    crime_articulated: {description: 'the report states specific facts of a crime against her: someone attacking or threatening her (assault), forcing a way in (forced_entry: breaking or pushing in against her will; someone she let in, or who came in through a door she opened, did not force a way in), demanding her PIN, card or money (fraud), or taking her things (theft); content is which. A stranger merely present or a visit nobody arranged is not one.', content: [assault, forced_entry, fraud, theft]}
     report_supported: {description: the report rests on what Margaret said or on attested physical sensors}
     report_unsupported: {description: the report rests on nothing Margaret said and no attested physical sensor; content is why it is doubtful}
     action_performed: {description: the dispatcher performed an action, source: system}
