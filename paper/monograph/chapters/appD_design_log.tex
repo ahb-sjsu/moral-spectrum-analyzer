@@ -532,8 +532,30 @@ neither duty until she has answered.
 In d43 the centre referred nothing to the dispatcher in that run, so whether police come in d43
 still varies from run to run.
 % src: twin/records/askfirst-2026-10-10/check43; twin/scene/margaret_home.erisml p2a, nip_ask_first
-\RESULT{the deployed check of d02, d03 and d20 on build 35}
+On build 35 d20 passed, the robot asking her first after the nip, and d02 passed.
+% src: twin/records/askfirst-2026-10-10/check44
 
 Commits \code{86b5166}, \code{5750c68} and \code{6a05e31} of 10 October 2026, manifest
 \code{8e195925}.
+
+\section{A reset waits for what is already inside the brain}\label{sec:log-resetlock}
+
+In the same check d03 failed worse than before, because the robot called emergency services after
+the nip.
+The severe attack from d02 had reached d03 once more, although requests from before a reset are now
+dropped.
+% src: twin/records/askfirst-2026-10-10/check44 (d03, seq 22576 to 22581)
+This reflex had arrived before the reset, and was still being handled when the reset replaced the
+brain's moral state, so it wrote its attack into the new one.
+The service handles requests on parallel threads, and nothing kept a reset from running in the
+middle of one.
+Requests now share a lock that a reset must hold alone, so a reset waits for the requests already
+inside the brain, and new ones wait for the reset.
+Only a request from an older epoch counts as stale, so one from the new epoch that arrives just
+before its reset is kept.
+% src: twin/service.py ResetLock, stale; tests/test_twin_ladder.py
+% src: test_a_reset_waits_for_a_request_already_inside_the_brain
+\RESULT{the deployed check of d02 followed by d03, and d20, on build 36}
+
+Commit \code{18e1334} of 11 October 2026.
 
