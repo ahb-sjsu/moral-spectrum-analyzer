@@ -50,3 +50,4 @@ commit and its counts; the paper's numbers above are from 2026-10-04.
 | Build 28 check (check36) | d06, d23, d30, p03 all pass | `twin/records/askfirst-2026-10-10/check36/` |
 | Build 29 check (check37) | no deter on the booked plumber (d39) or the grandson (d42), the coyote still deterred (d16); all three miss on class | `twin/records/askfirst-2026-10-10/check37/` |
 | Build 30 check (check38) | d16 and d32 pass | `twin/records/askfirst-2026-10-10/check38/` |
+| Full dev set, build 30 (dev39) | 35 of 43 pass; 0 containment breaches; 0 privacy violations; 0 harness failures | `twin/records/dev39-2026-10-10/`, `twin/compare_dev.py` |
