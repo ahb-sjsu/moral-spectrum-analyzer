@@ -635,3 +635,25 @@ Graded again under it, d02 of dev39 passes, and dev39 reads 36 of 43 where it re
 % src: twin/grade_scenarios.py on twin/records/dev39-2026-10-10/dev39a/results.jsonl, d02
 
 Commit \code{b060911} of 11 October 2026.
+
+\section{A coyote that has left no longer lifts a visitor's protection}\label{sec:log-coyote}
+
+In d28 of dev46 a coyote prowled outside the door and left, and later a nurse the centre had
+arranged came in.
+The centre had announced her visit over its own channel, yet the robot stood between her and
+Margaret and then sounded its alarm at her.
+% src: twin/records/dev46-2026-10-11/dev46b (d28)
+The rule that a vouched-for visitor is never deterred lifts while an animal is to be deterred, and
+it read the animal from events, which hold for the whole scenario.
+The coyote of the morning therefore lifted it for the rest of the day.
+The rule now reads the animal as it is now, through the animal's standing, which returns to none
+when the animal leaves.
+% src: twin/scene/margaret_home.erisml p10v
+% src: tests/test_twin_ladder.py test_a_coyote_that_has_left_does_not_lift_the_protection_of_a_vouched_for_visitor
+The test fails on the old rule and passes on the new.
+The run shows a second fault that is still open.
+The robot heard its own alarm, and the classifier read it as an unconfirmed alarm and as danger in
+the home, which took the robot to the governor and then to the centre.
+The manifest was signed again as \code{19ff307a}.
+
+Commit \code{79e95ed} of 11 October 2026.
