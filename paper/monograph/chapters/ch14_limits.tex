@@ -80,6 +80,30 @@ it also refuses a real emergency that only they observe.
 
 \section{Open problems}
 
+\paragraph{The scene is written by hand.}\label{sec:limits-rearch}
+The twin does not use the stack as Chapter~\ref{ch:pe} draws it.
+Its scene is a file written by hand, not the output of the compiler's extraction, and the twin
+imports neither the compiler's projections nor its extractors (Chapter~\ref{ch:compiler}).
+Its rules grew case by case, 77 of them by 11 October, many written against a single missed
+scenario, together with hand-set harms for each capability and an event vocabulary whose
+descriptions carried lists of cases.
+DEME sees only the one action a model proposed, judged on facts derived from those rules.
+In the terms of the Bond Invariance Principle the bond extractor is written by hand, the lens
+exists only as scattered rules, and the evaluator is applied after the choice.
+The owner directed on 11 October 2026 that this be rebuilt.
+The compiler is to produce the scene and its updates from what the robot hears and sees, DEME is
+to judge every candidate action on facts built for it under a versioned profile for each agent,
+and authority is to come, as now, only from the evidence plane.
+The work this needs, and what the code lacks for it, is set out in the mapping document
+\code{docs/REARCHITECTURE\_MAPPING\_2026-10.md}.
+Among the gaps are an extractor for events and acts, an update mode for the scene, a builder of
+facts for each option, governance profiles that are executed rather than stored, the consent
+module that erisml-lib's own design guide specifies with refusal, capacity and an emergency
+override, and a module for physical safety, since tiers 1, 3 and 4 of erisml-lib are empty.
+% src: docs/REARCHITECTURE_MAPPING_2026-10.md; erisml-lib docs/guides/DEME_EFM_Design_Guide_v0.1.md:461-484
+% src: erisml-lib src/erisml/ethics/modules/tier1/__init__.py:19-24 (placeholder); profile_v03.py:341-342
+
+
 The world can change between a decision and the act, as when an animal leaves or responders enter.
 Every graded run in Chapter~\ref{ch:evaluation} judged an action at the record that chose it, so
 those runs show permission at the decision, not at the act. The robot now checks again at the act

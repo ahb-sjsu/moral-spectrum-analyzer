@@ -635,6 +635,9 @@ Graded again under it, d02 of dev39 passes, and dev39 reads 36 of 43 where it re
 % src: twin/grade_scenarios.py on twin/records/dev39-2026-10-10/dev39a/results.jsonl, d02
 
 Commit \code{b060911} of 11 October 2026.
+The owner's direction of the same day, that no scenario be made to pass by a rule written for
+it, applies to this exception as well, and the re-architecture removes it
+(Section~\ref{sec:log-rearch}).
 
 \section{A coyote that has left no longer lifts a visitor's protection}\label{sec:log-coyote}
 
@@ -735,3 +738,34 @@ Speaking to her is how the robot learns whether she answers.
 % src: tests/test_twin_ladder.py test_she_is_spoken_to_when_she_seems_not_to_respond
 The manifest was signed again as \code{cb759a99}.
 Commit \code{67ffeb3} of 11 October 2026.
+
+\section{What the fixes of 10 and 11 October were}\label{sec:log-rearch}
+
+Most of the scene's changes recorded in the sections above were written against one missed
+scenario each.
+The robot's rules for a mild nip, for advice before a warned hazard, for a request for her
+medication, for a check-in when she seems not to respond, for a call to the centre about a
+vouched-for visitor, for her saying she is alright and for her latest word at the centre each
+name the run that prompted them, and so does the grading exception for d02.
+Several event descriptions carried lists of cases, among them a demand for her PIN, card or
+money and a clause that someone she let in did not force entry, which held the police away from
+d40.
+% src: twin/scene/margaret_home.erisml comments at lines 203, 230, 317, 543-566, 618, 727, 731, 743, 756, 776
+On 11 October 2026 the owner judged this a fault of method.
+The stack exists so that behaviour follows from extracted facts and a stated lens, and a rule
+written for a case encodes neither.
+The owner's words were that d40 meets the threshold of articulable suspicion, which is what each
+situation must be judged by, and that the scenarios are not to be hand crafted.
+The owner then directed a complete re-architecture in which the compiler produces the scene and
+its updates from text or video and erisml-lib judges every option, and asked that it be done
+with elegance and rigour.
+Build 38, which would have deployed two more such rules, was cancelled.
+The changes that were structural rather than written for a case stand on their own merits and
+carry into the new design.
+They are the report of how she came to the floor, the robot not hearing its own alarm, an
+animal's exception read from its present standing, and not asking for authority to do what she
+refused.
+The mapping from each hand-written piece to the part of the stack that should carry it is
+\code{docs/REARCHITECTURE\_MAPPING\_2026-10.md}, and
+Section~\ref{sec:limits-rearch} states the limit it answers.
+The counts of the development set from dev33 on are counts of a set the rules were tuned to.
