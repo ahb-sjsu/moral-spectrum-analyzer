@@ -460,9 +460,15 @@ Every request now carries the body's epoch, the reset records the epoch it start
 drops any request from an earlier one, keeping only a record that it was set aside.
 % src: twin/service.py stale; twin/unity/TwinWorld/Assets/Twin/Runtime/RobotAgent.cs Post
 % src: tests/test_twin_ladder.py test_a_request_sent_before_the_latest_reset_never_reaches_the_brain
-\RESULT{the deployed check of d02 followed by d03, and d20, on build 31}
+On build 31, with d02 played just before d03, no attack from d02 reached d03.
+% src: twin/records/askfirst-2026-10-10/check40 (d03 has no reflex record)
+Scenario d03 still missed, now for the reason d20 misses.
+The classifier read the nip and her cry as a mild attack by the dog, any attack obliges the robot
+to interpose and ask for authority, and the governor's request for a human review took it to the
+centre.
+Whether a nip she shrugs off should oblige anything is a question for the owner.
 
-Commit \code{9c36846} of 10 October 2026, not yet deployed.
+Commit \code{9c36846} of 10 October 2026, deployed as build 31.
 
 \section{Letting a man in is not a forced entry}\label{sec:log-forced}
 
