@@ -1,0 +1,58 @@
+[
+ {
+  "case": "d03 play, no field",
+  "scene": "cur",
+  "reps": 6,
+  "fall": 5,
+  "attack_by_animal": 4
+ },
+ {
+  "case": "d03 play, no field",
+  "scene": "desc",
+  "reps": 6,
+  "fall": 0,
+  "attack_by_animal": 3
+ },
+ {
+  "case": "d03 play, under_her_own_control",
+  "scene": "cur",
+  "reps": 6,
+  "fall": 0,
+  "attack_by_animal": 5
+ },
+ {
+  "case": "d03 play, under_her_own_control",
+  "scene": "desc",
+  "reps": 6,
+  "fall": 0,
+  "attack_by_animal": 5
+ },
+ {
+  "case": "d06 collapse, no field",
+  "scene": "cur",
+  "reps": 6,
+  "fall": 4,
+  "attack_by_animal": 0
+ },
+ {
+  "case": "d06 collapse, no field",
+  "scene": "desc",
+  "reps": 6,
+  "fall": 4,
+  "attack_by_animal": 0
+ },
+ {
+  "case": "d06 collapse, fell",
+  "scene": "cur",
+  "reps": 6,
+  "fall": 3,
+  "attack_by_animal": 0
+ },
+ {
+  "case": "d06 collapse, fell",
+  "scene": "desc",
+  "reps": 6,
+  "fall": 6,
+  "attack_by_animal": 0
+ }
+]
