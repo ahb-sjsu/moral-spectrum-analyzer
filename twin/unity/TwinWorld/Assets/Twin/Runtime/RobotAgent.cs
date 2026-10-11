@@ -192,6 +192,9 @@ public class RobotAgent : MonoBehaviour
 
     public IEnumerator Post(string path, string json, Action<Dictionary<string, object>> done)
     {
+        // every request carries the body's epoch when it was made, so the brain can refuse one sent
+        // before the latest reset (d03: a reflex from d02's end put a severe attack into d03)
+        if (json.StartsWith("{")) json = "{\"epoch\":" + epoch + (json.Trim() == "{}" ? "}" : "," + json.Substring(1));
         using (var r = new UnityWebRequest(service + path, "POST"))
         {
             r.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));

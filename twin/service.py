@@ -212,7 +212,16 @@ def rule(req: dict, chain: Chain, camera: CameraWitness, backend: str) -> dict:
     return chain.append(body)
 
 
+def stale(req: dict, current) -> bool:
+    """A request the body sent before the latest reset (its epoch is older than the one the reset
+    started). Its reply is set aside by the body, but the brain must not record it either: in d03
+    a reflex from the end of d02 reached the brain after the reset and put a severe dog attack into
+    the new scenario, which voided her refusals for all of it (dev15, dev33, run35)."""
+    return current is not None and req.get("epoch") is not None and req.get("epoch") != current
+
+
 def make_handler(chain, camera, backend, brain=None):
+    epoch = {"now": None}   # the body's epoch at the latest reset (None until a reset names one)
     class H(BaseHTTPRequestHandler):
         def _send(self, code, obj):
             data = json.dumps(obj, ensure_ascii=False).encode("utf-8")
@@ -290,8 +299,11 @@ def make_handler(chain, camera, backend, brain=None):
             if self.path == "/reset":
                 if brain is None:
                     return self._send(503, {"error": "the autonomous brain is not running"})
+                n = int(self.headers.get("Content-Length", "0"))
+                req = json.loads(self.rfile.read(n)) if 0 < n <= MAX_BODY else {}
                 brain.reset()
-                return self._send(200, chain.append({"kind": "reset", "moral_state": brain.agent.rt.machine_states()}))
+                epoch["now"] = req.get("epoch")   # the body's epoch this reset starts
+                return self._send(200, chain.append({"kind": "reset", "epoch": epoch["now"], "moral_state": brain.agent.rt.machine_states()}))
             if self.path in ("/decide", "/reflex", "/performed", "/authorize", "/event", "/center", "/ems", "/margaret"):
                 if brain is None:
                     return self._send(503, {"error": "the autonomous brain is not running (start with --scene)"})
@@ -300,6 +312,10 @@ def make_handler(chain, camera, backend, brain=None):
                     return self._send(413, {"error": "body missing or too large"})
                 try:
                     req = json.loads(self.rfile.read(n))
+                    if stale(req, epoch["now"]):
+                        # recorded, never acted on and never let into the brain's moral state
+                        return self._send(200, chain.append({"kind": "stale", "path": self.path, "epoch": req.get("epoch"),
+                                                             "current_epoch": epoch["now"], "verdict": "refused"}))
                     if self.path == "/decide":
                         cam, info = None, None
                         if req.get("camera_frames"):

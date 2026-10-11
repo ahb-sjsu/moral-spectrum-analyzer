@@ -2306,3 +2306,18 @@ def test_her_stance_reaches_her_voice_and_only_when_given():
     v.reply(req)
     assert "You refuse an ambulance." in seen[0][1] and "stance" in seen[0][0]
     assert "stance" not in seen[1][1]
+
+
+# ---------------------------------------------------------------- a request from before the reset (d03)
+
+
+def test_a_request_sent_before_the_latest_reset_never_reaches_the_brain():
+    """dev15, dev33, run35 d03: a reflex from the end of d02 reached the brain after the reset and
+    put a severe dog attack into d03. The service drops a request whose epoch is not the reset's."""
+    sys.path.insert(0, TWIN)
+    from service import stale
+
+    assert stale({"epoch": 4}, 5)
+    assert not stale({"epoch": 5}, 5)
+    assert not stale({}, 5)              # an untagged request (a tool, an old body) is not judged
+    assert not stale({"epoch": 4}, None)  # before any reset names an epoch, nothing is stale
