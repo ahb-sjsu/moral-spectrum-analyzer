@@ -14,6 +14,13 @@ signed manifest) and replaces what decided by hand:
 Every event lives in the scene IR. The evidence plane's own events (rulings, measurements, performed
 actions) are appended through `_record`, so a runtime rebuilt on the patched IR replays exactly.
 
+Concurrency: the service answers on parallel threads, and a reflex can arrive while a decision waits
+for the model. Every write to the scene happens under one lock; decisions run one at a time; the
+observation compiler runs outside the lock on a snapshot, and its patch (adds only, under ids no
+system event uses) is applied to the scene as it stands, so a reflex is never held up behind the
+model and never lost. (stackcheck1b d03: a reflex's measurement was appended while a decision
+compiled, the decision then applied its patch to the old snapshot, and the history guard refused.)
+
 The decision: the lens's top action; if the constitution forbids it now and it is elevated or
 governed, the governor rules on it; refused, it is set aside and the lens judges again without it.
 The manifest is the actuation boundary, as before.
@@ -23,6 +30,7 @@ from __future__ import annotations
 
 import json
 import os
+import threading
 from datetime import datetime, timezone
 
 from brain import EMS, Brain, validate_facts, without_own_sounds
@@ -70,6 +78,8 @@ class StackBrain(Brain):
     def __init__(self, scene_path: str = CONSTITUTION, adapter=None, live_scorer=None, desk_adapter=None,
                  household_path: str = HOUSEHOLD, lens_path: str = LENS):
         self.household_path, self.lens_path = household_path, lens_path
+        self._lock = threading.RLock()  # every write to the scene IR and the runtime
+        self._deciding = threading.Lock()  # one decision at a time
         super().__init__(scene_path, adapter, live_scorer=live_scorer, desk_adapter=desk_adapter,
                          desk_dir=os.path.join(HERE, "..", "scene"))
 
@@ -96,8 +106,21 @@ class StackBrain(Brain):
         self.gate.rt = rt
 
     def _record(self, event: dict):
-        self.ir = append_event(self.ir, event)
-        return self.agent.rt.step(self.ir.events[-1])
+        with self._lock:
+            self.ir = append_event(self.ir, event)
+            return self.agent.rt.step(self.ir.events[-1])
+
+    def reflex(self, req: dict, camera_sensor=None):
+        with self._lock:
+            return super().reflex(req, camera_sensor)
+
+    def performed(self, action: str) -> dict:
+        with self._lock:
+            return super().performed(action)
+
+    def event(self, ev: dict) -> dict:
+        with self._lock:
+            return super().event(ev)
 
     # ------------------------------------------------------------------ perception to the scene
     def _observations(self, facts: dict) -> list:
@@ -134,6 +157,10 @@ class StackBrain(Brain):
 
     # ------------------------------------------------------------------ the decision
     def decide(self, req: dict, camera_sensor=None) -> dict:
+        with self._deciding:
+            return self._decide(req, camera_sensor)
+
+    def _decide(self, req: dict, camera_sensor=None) -> dict:
         facts, dropped = validate_facts(req.get("facts", {}))
         facts, own = without_own_sounds(facts)
         verified = self.readings.for_governor(req.get("sensors", []), channel="decide")
@@ -141,15 +168,24 @@ class StackBrain(Brain):
         self._credentials(req.get("credentials") or [])
         lapsed = self._lapse(verified, camera_sensor)
         self._sync_world(facts)
-        floor = self._floor_events(facts)
-        for e in floor:
-            self._record(e)
+        with self._lock:
+            floor = self._floor_events(facts)
+            for e in floor:
+                self._record(e)
+            snapshot = self.ir
 
         obs = self._observations(facts)
-        patch = self.observer.compile(self.ir, obs, self.acts) if obs else None
-        if patch and patch.ops:
-            self.ir = apply_observation_patch(self.ir, patch)
-            self._rebuild()
+        patch = self.observer.compile(snapshot, obs, self.acts) if obs else None  # outside the lock
+        self._lock.acquire()
+        try:
+            if patch and patch.ops:
+                self.ir = apply_observation_patch(self.ir, patch)  # onto the scene as it stands now
+                self._rebuild()
+            return self._judge(req, facts, dropped, own, lapsed, floor, patch, verified, camera_sensor)
+        finally:
+            self._lock.release()
+
+    def _judge(self, req, facts, dropped, own, lapsed, floor, patch, verified, camera_sensor) -> dict:
 
         now = datetime.now(timezone.utc).isoformat()
         excluded: list = []

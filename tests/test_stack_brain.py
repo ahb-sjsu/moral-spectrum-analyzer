@@ -113,3 +113,30 @@ def test_an_ordinary_moment_asks_nothing(household):
     cycle = b.decide({"facts": {"margaret": {"pose": "seated", "room": "living area"}}})
     assert cycle["action"]["action"] in ("chores", "wait_and_observe")
     assert brain_mod.EMS not in cycle["ranked"]
+
+
+def test_a_reflex_on_another_thread_during_the_patch_is_never_lost(household, monkeypatch):
+    """stackcheck1b d03: the service answers on parallel threads; a reflex wrote to the scene while a
+    decision applied its observation patch, the decision's write dropped it, and the history guard
+    refused. With every scene write under one lock the reflex waits and is kept. Deterministic: the
+    reflex thread is started inside the apply and given half a second to write."""
+    import threading
+
+    import stack.brain as sb
+
+    b = make(household, FELL)
+    real_apply = sb.apply_observation_patch
+    reflex_done = threading.Event()
+
+    def apply_while_a_reflex_writes(ir, patch):
+        t = threading.Thread(target=lambda: (b._record({"type": "attack_measured", "actor": "reflex",
+                                                          "content": "mild"}), reflex_done.set()))
+        t.start()
+        t.join(0.5)  # unlocked, the reflex writes now, mid-apply; locked, it waits for the decision
+        return real_apply(ir, patch)
+
+    monkeypatch.setattr(sb, "apply_observation_patch", apply_while_a_reflex_writes)
+    cycle = b.decide({"facts": FALL_FACTS})
+    assert reflex_done.wait(5)
+    assert "attack_measured" in [e.type for e in b.ir.events] and cycle["action"]["action"]
+    assert [e.id for e in b.agent.rt.events] == [e.id for e in sorted(b.ir.events, key=lambda e: e.time_index)]
