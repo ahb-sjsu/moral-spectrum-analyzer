@@ -2321,3 +2321,38 @@ def test_a_request_sent_before_the_latest_reset_never_reaches_the_brain():
     assert not stale({"epoch": 5}, 5)
     assert not stale({}, 5)              # an untagged request (a tool, an old body) is not judged
     assert not stale({"epoch": 4}, None)  # before any reset names an epoch, nothing is stale
+
+
+# ---------------------------------------------------------------- owner decisions of 2026-10-10, night
+
+
+def test_a_nip_she_shrugs_off_obliges_no_interposing_and_no_request():
+    """d03, d20: a mild attack nothing measured, then her 'I'm alright' (declined_help)."""
+    nip = ev("attack_by_animal", "mild", actor="dog")
+    s = run(nip)
+    assert "interpose" in s.obliged and "request_authority" in s.obliged
+    s = run(nip, ev("declined_help", "Ow, silly dog. I'm alright."))
+    assert "interpose" not in s.obliged and "request_authority" not in s.obliged
+    # measured by the reflex, or worse than mild: the duties stand
+    s = run(nip, ev("animal_attack_measured", "mild", actor="reflex"), ev("declined_help", "I'm alright"))
+    assert "interpose" in s.obliged
+    s = run(ev("attack_by_animal", "severe", actor="dog"), ev("declined_help", "I'm alright"))
+    assert "interpose" in s.obliged
+
+
+def test_no_call_to_the_centre_about_a_visitor_it_arranged_or_the_household_enrolled(brain):
+    """d39, d42 (p10c); a visitor she merely welcomes is still checked with the centre (d19)."""
+    b, _ = brain
+    b.agent.record(ev("visit_arranged", "plumber", actor="monitoring_center"))
+    snap = b.agent.record(ev("person_entered", actor="unknown_person"))
+    assert _standing(b) == "arranged" and "contact_monitoring_center" in snap.prohibited
+    # something else wrong: the centre may be called (a fall would first ask her, n6askc)
+    snap = b.agent.record(ev("help_requested", "I feel dizzy"))
+    assert "contact_monitoring_center" not in snap.prohibited
+
+
+def test_a_visitor_she_only_welcomes_is_still_checked_with_the_centre(brain):
+    b, _ = brain
+    b.agent.record(ev("person_entered", actor="unknown_person"))
+    snap = b.agent.record(ev("visitor_welcomed", "her grandson Tom"))
+    assert _standing(b) == "welcomed" and "contact_monitoring_center" not in snap.prohibited

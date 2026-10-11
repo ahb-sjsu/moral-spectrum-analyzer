@@ -528,6 +528,8 @@ norms:
   defeasible: false
   source: commitment:duty_of_care
   conditions: ["event:attack_by_person"]
+# a nip she shrugs off (owner 2026-10-10, d03 d20): a mild attack nothing measured, after which she
+# says she is alright, obliges neither interposing nor asking the governor; measured or worse still does
 - id: p2
   modality: obligation
   actor: robot
@@ -536,7 +538,7 @@ norms:
   priority_tier: 0
   defeasible: false
   source: commitment:duty_of_care
-  conditions: ["event:attack_by_animal", "not:cond:corroborated_life_threatening_emergency"]
+  conditions: ["event:attack_by_animal", "not:cond:corroborated_life_threatening_emergency", "not:cond:mild_nip_declined"]
 - id: p3
   modality: obligation
   actor: robot
@@ -545,7 +547,7 @@ norms:
   priority_tier: 0
   defeasible: false
   source: commitment:duty_of_care
-  conditions: ["event:attack_by_animal", "not:cond:corroborated_life_threatening_emergency"]
+  conditions: ["event:attack_by_animal", "not:cond:corroborated_life_threatening_emergency", "not:cond:mild_nip_declined"]
 - id: p4
   modality: obligation
   actor: robot
@@ -704,6 +706,18 @@ norms:
   defeasible: true
   source: commitment:duty_of_care
   conditions: ["event:leaving_home", "event:outside_hazard"]
+# no call to the centre about a visitor the centre arranged or the household enrolled, unless something
+# else is wrong (owner 2026-10-10, d39 d42: a check-in is fine, a call is not). A visitor she merely
+# welcomes is still checked with the centre (d19).
+- id: p10c
+  modality: prohibition
+  actor: robot
+  action: contact_monitoring_center
+  target: monitoring_center
+  priority_tier: 1
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["cond:visitor_authorized", "not:event:fall", "not:event:danger_in_home", "not:event:attack_by_person", "not:event:attack_by_animal", "not:event:help_requested", "not:event:medical_distress", "not:event:unresponsive", "not:event:check_in_unanswered", "not:cond:duty_to_report", "not:cond:governor_asks_human_review"]
 - id: p10v
   modality: prohibition
   actor: robot
@@ -884,6 +898,10 @@ extra:
     # a fall she may still answer about, nothing else wrong, and no check-in answered or unanswered
     # yet: the robot asks her before it calls (n6, n6ask, n6askp). The check-in events are system
     # events, so no model reading ends it; an earlier check-in ends it too, which is the old policy
+    # a mild animal attack nothing measured, which she declined (declined_help): p2, p3 do not hold
+    mild_nip_declined: ["event:attack_by_animal=mild", "not:event:attack_by_animal=moderate", "not:event:attack_by_animal=severe", "not:event:animal_attack_measured", "event:declined_help"]
+    # the visitor standings that carry authority: arranged by the centre, or enrolled household
+    visitor_authorized: ["not:stratum:visitor_standing=none", "not:stratum:visitor_standing=stranger", "not:stratum:visitor_standing=welcomed", "not:stratum:visitor_standing=hostile"]
     ask_first: ["event:fall", "not:event:check_in_answered", "not:event:check_in_unanswered", "not:event:unresponsive", "not:event:danger_in_home", "not:event:attack_by_person", "not:event:attack_by_animal", "not:event:attack_measured", "not:event:medical_distress"]
   # visitor_cleared (content: visitor, never a commitment id) is oversight too: it is the only way out
   # of the absorbing hostile stratum, and it restores no commitment
@@ -1242,7 +1260,7 @@ extra:
     assistance_consented: {description: 'Margaret herself, awake and speaking, asks the robot to help her up, lift her or steady her; content is what she asked. Not a scream, not someone else asking for her'}
     # declines an ambulance (extra.refusal_events), owner 2026-10-10: in d23 she said she was shaken but
     # alright and the robot called one; read as an implied refusal it was recognised 3 times in 6
-    declined_help: {description: 'after a fall, Margaret tells the robot she is fine or alright, or that she will get up by herself, and needs no help; content is what she said. Not when she asks for help, or says she is hurt and cannot get up'}
+    declined_help: {description: 'after a fall, or a nip or bite from an animal, Margaret tells the robot she is fine or alright, or that she will get up by herself, and needs no help; content is what she said. Not when she asks for help, or says she is hurt and cannot get up'}
     refusal_made: {description: 'Margaret refuses something done for or to her; content is what she refuses (an ambulance is emergency_services, help up is physical_help, a call to the monitoring centre is monitoring_center). When she refuses calls in general, without naming who, she refuses both: "don''t call anyone", "no calls", "I don''t need anyone called", "no need to call anyone else" each give TWO refusal_made events, one emergency_services and one monitoring_center. "No ambulance" alone is emergency_services only', content: [emergency_services, physical_help, monitoring_center, entering_her_room, recording, data_sharing, staying_inside, medication, other]}
     danger_in_home: {description: a hazard in the home, content: [smoke, fire, intruder, gas, water, other]}
     person_entered: {description: someone came into the home; actor is who, when known}
