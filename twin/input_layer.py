@@ -28,6 +28,8 @@ SPEC: dict[str, Any] = {
         "moving": "bool",
         "apparent_activity": "str",
         "distance_to_robot_m": ("num", 0, 1000),
+        # on the floor only: how she got there, as Perception.cs reads the movement
+        "came_down": ("enum", ["fell", "under_her_own_control"]),
     },
     "dog": {"room": ("enum", ["living area", "sleeping area"]), "behaviour": "str", "distance_to_margaret_m": ("num", 0, 1000)},
     "contacts": ("list", {"a": "str", "b": "str", "kind": ("enum", ["animal", "person"]), "force_newtons": ("num", 0, 100000)}),

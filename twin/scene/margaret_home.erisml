@@ -1268,7 +1268,9 @@ extra:
   event_types:
     activity_started: {description: a person begins an ordinary activity, content: [reading, sitting, lying_down, exercising, playing_with_pet, sleeping, gardening, cooking, walking, other]}
     inactivity_exceeded: {description: 'judged only from margaret.minutes_in_pose: seated over 90, in bed over 120 in the daytime, or on the floor over 10', content: [seated, in_bed, on_floor]}
-    fall: {description: a person went from upright to the floor quickly}
+    # how she came down is perceived (margaret.came_down): floor play after a nip was read as a fall 5
+    # times in 6 without it, 0 in 6 with it and this description, and a collapse 6 in 6 (descentcheck)
+    fall: {description: 'a person went from upright to the floor quickly, falling rather than lowering herself (margaret.came_down says which)'}
     harm_inflicted: {description: a person, animal or object caused bodily harm to someone, content: [mild, moderate, severe]}
     medical_distress: {description: signs such as chest pain, breathing difficulty, seizure or fainting; content names the sign}
     unresponsive: {description: a person does not respond to speech or touch}

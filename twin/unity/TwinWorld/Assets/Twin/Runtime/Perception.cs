@@ -89,6 +89,11 @@ public class Perception : MonoBehaviour
             ["communications"] = world.commsDown ? "down" : "up",
             ["sensors"] = SensorFacts(),
         };
+        // how she came to be on the floor, as a camera sees the movement: a fall (her body went down
+        // under physics) or under her own control (she sat or lay down). Without it the robot saw only
+        // seated, then on the floor, and read floor play after a nip as a fall (dev39 and check45 d03)
+        if (pose == "lying_on_floor" || pose == "on_floor_sitting_or_kneeling")
+            ((Dictionary<string, object>)f["margaret"])["came_down"] = world.Fallen ? "fell" : "under_her_own_control";
         if (people.Count > 0 || animals.Count > 0) f["spray_zone"] = inZone ? "margaret_inside" : "margaret_clear";
         string sig = Signature(f);
         bool periodic = world.simMinutes - lastDecisionSim >= decideEverySimMinutes;

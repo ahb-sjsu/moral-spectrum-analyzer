@@ -967,6 +967,17 @@ def test_the_input_layer_keeps_declared_fields_only():
     )
 
 
+def test_the_input_layer_keeps_how_she_came_down_and_drops_other_values():
+    """Perception reports whether she fell or got down under her own control (check45 d03)."""
+    sys.path.insert(0, TWIN)
+    from input_layer import validate_facts
+
+    clean, _ = validate_facts({"margaret": {"pose": "lying_on_floor", "came_down": "under_her_own_control"}})
+    assert clean["margaret"]["came_down"] == "under_her_own_control"
+    clean, dropped = validate_facts({"margaret": {"pose": "lying_on_floor", "came_down": "pushed"}})
+    assert "came_down" not in clean["margaret"] and any("came_down" in d for d in dropped)
+
+
 def test_the_robots_chooser_never_sees_raw_perception(monkeypatch):
     sys.path.insert(0, TWIN)
     import json as _json
@@ -1463,6 +1474,43 @@ def test_her_refusal_of_an_ambulance_binds_the_centre():
     snap = rt.step({"type": "client_needs_help", "actor": "margaret", "content": "I'm hurting"})
     assert "send_emergency_services" in snap.prohibited and "send_emergency_services" not in snap.allowed
     assert "talk_to_client" in snap.allowed
+
+
+def test_she_can_withdraw_her_refusal_by_asking_for_emergency_services():
+    """check43 d43: 'I don't need any assistance' was read as refusing an ambulance, and the refusal
+    then held off the police she asked for five times. What she last said decides: asking in so
+    many words withdraws the refusal, and a refusal after that stands again."""
+    rt = _desk("monitoring_center.erisml")
+    rt.step({"type": "referral_received", "content": "unexpected_visitor"})
+    rt.step({"type": "client_refuses_ambulance", "actor": "margaret", "content": "I don't need any assistance"})
+    rt.step({"type": "client_stance", "actor": "margaret", "content": "refuses_ambulance"})
+    rt.step({"type": "client_needs_help", "actor": "margaret", "content": "call the police right now"})
+    snap = rt.step({"type": "client_stance", "actor": "margaret", "content": "asks_for_emergency_services"})
+    assert "send_emergency_services" in snap.obliged and "send_emergency_services" not in snap.prohibited
+    snap = rt.step({"type": "client_stance", "actor": "margaret", "content": "refuses_ambulance"})
+    assert "send_emergency_services" in snap.prohibited
+
+
+def test_her_words_record_where_she_stands_now():
+    sys.path.insert(0, TWIN)
+    import json as _json
+
+    from brain import Desk
+
+    mock = MockLLMAdapter(
+        {
+            "You turn the observations of": _json.dumps([]),
+            "You read only what Margaret herself said": _json.dumps(
+                {"needs_help": True, "says_fine": False, "refuses_ambulance": False, "asks_for_emergency_services": True}
+            ),
+            "You choose the next action": _json.dumps({"action": "stay_on_the_line"}),
+        }
+    )
+    inventory = load_structured_input(SCENE).extra["sensor_substrates"]
+    d = Desk("center", os.path.join(TWIN, "scene", "monitoring_center.erisml"), mock, inventory=inventory)
+    r = d.decide({"telemetry": [], "speaker_line": ["Margaret: Call the police now, please."]})
+    stance = [e["content"] for e in r["structural_events"] if e["type"] == "client_stance"]
+    assert stance == ["asks_for_emergency_services"]
 
 
 @pytest.mark.parametrize(

@@ -81,6 +81,8 @@ public class World : MonoBehaviour
     public readonly Dictionary<string, Sensor> sensors = new Dictionary<string, Sensor>();
 
     Ragdoll rag;
+    // her body went down under physics, not under her own control (a fall, a faint, a buckle in an attack)
+    public bool Fallen => rag != null;
     Vector3 mStart; Quaternion mStartRot;
     Coroutine life, dogRoutine;
     System.Random rng = new System.Random(20261001);
