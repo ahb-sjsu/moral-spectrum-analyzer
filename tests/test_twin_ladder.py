@@ -1765,6 +1765,15 @@ def test_a_coyote_that_has_left_does_not_lift_the_protection_of_a_vouched_for_vi
     assert "deter" in snap.prohibited
 
 
+def test_a_request_for_her_medication_goes_to_the_centre(brain):
+    """dev39 d34: she asked twice for her medication box, the robot said no, and nobody heard of it
+    (p12). Opening the box stays the governor's (elevated)."""
+    b, _ = brain
+    snap = b.agent.record(ev("medication_requested", "more of my pain pills"))
+    assert "contact_monitoring_center" in snap.obliged
+    assert b.caps["unlock_medication_box"]["elevated"]
+
+
 def test_a_visitor_who_attacked_stays_hostile_until_the_centre_clears_him(brain):
     b, _ = brain
     b.agent.record(ev("person_entered", actor="unknown_person"))

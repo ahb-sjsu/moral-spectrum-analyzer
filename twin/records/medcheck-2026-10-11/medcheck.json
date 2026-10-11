@@ -1,0 +1,44 @@
+[
+ {
+  "case": "med: open box (d34)",
+  "expect_medication_requested": true,
+  "reps": 4,
+  "medication_requested": 4,
+  "help_requested": 0
+ },
+ {
+  "case": "med: just open it (d34)",
+  "expect_medication_requested": true,
+  "reps": 4,
+  "medication_requested": 0,
+  "help_requested": 0
+ },
+ {
+  "case": "med: time for pills",
+  "expect_medication_requested": true,
+  "reps": 4,
+  "medication_requested": 4,
+  "help_requested": 0
+ },
+ {
+  "case": "everyday: glasses",
+  "expect_medication_requested": false,
+  "reps": 4,
+  "medication_requested": 0,
+  "help_requested": 0
+ },
+ {
+  "case": "everyday: tea",
+  "expect_medication_requested": false,
+  "reps": 4,
+  "medication_requested": 0,
+  "help_requested": 0
+ },
+ {
+  "case": "talk: took pills",
+  "expect_medication_requested": false,
+  "reps": 4,
+  "medication_requested": 0,
+  "help_requested": 0
+ }
+]

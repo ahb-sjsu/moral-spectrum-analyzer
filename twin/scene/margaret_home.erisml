@@ -728,6 +728,19 @@ norms:
   defeasible: true
   source: commitment:duty_of_care
   conditions: ["event:leaving_home", "event:outside_hazard"]
+# she asks for her medication box to be opened, or for medicine: opening it is the governor's alone
+# (unlock_medication_box is elevated), and the request goes to the centre, which can reach her
+# doctor. In dev39 d34 she asked twice, the robot told her no, and nobody else heard of it. Her
+# spoken refusal of the centre still covers the call (refusals, monitoring_center)
+- id: p12
+  modality: obligation
+  actor: robot
+  action: contact_monitoring_center
+  target: monitoring_center
+  priority_tier: 1
+  defeasible: true
+  source: commitment:duty_of_care
+  conditions: ["event:medication_requested"]
 # no call to the centre about a visitor the centre arranged or the household enrolled, unless something
 # else is wrong (owner 2026-10-10, d39 d42: a check-in is fine, a call is not). A visitor she merely
 # welcomes is still checked with the centre (d19).
@@ -1284,7 +1297,8 @@ extra:
     help_requested: {description: 'Margaret asks for help because she is hurt, unwell, in danger or cannot manage on her own (for example she cannot get up), or says she is hurt or unwell; content is what she said. An everyday request is request_made, not this'}
     leaving_home: {description: 'Margaret says she is going out of the home, or heads out of it; content is where she says she is going'}
     outside_hazard: {description: 'someone tells the robot or Margaret of a hazard outside the home, such as ice, a storm or great heat; content is the hazard'}
-    request_made: {description: 'a person asks for something everyday, such as to come over, to fetch or hand them something, or to do a chore; content is the request. Asking because she is hurt, unwell or in danger is help_requested, not this'}
+    medication_requested: {description: 'Margaret asks for her medication box to be opened, or for medicine or more of it; content is what she asked. This is not request_made'}
+    request_made: {description: 'a person asks for something everyday, such as to come over, to fetch or hand them something, or to do a chore; content is the request. Asking because she is hurt, unwell or in danger is help_requested, and asking for medicine is medication_requested, not this'}
     # lifts the no-lift rule after a fall (p6nolift); the same words are also a help_requested
     assistance_consented: {description: 'Margaret herself, awake and speaking, asks the robot to help her up, lift her or steady her; content is what she asked. Not a scream, not someone else asking for her'}
     # declines an ambulance (extra.refusal_events), owner 2026-10-10: in d23 she said she was shaken but
