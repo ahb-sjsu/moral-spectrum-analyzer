@@ -991,6 +991,18 @@ def test_the_input_layer_keeps_how_she_came_down_and_drops_other_values():
     assert "came_down" not in clean["margaret"] and any("came_down" in d for d in dropped)
 
 
+def test_the_robot_does_not_hear_its_own_alarm_as_news():
+    """dev46 d28: its own deterrent alarm was classified as an unconfirmed alarm and danger."""
+    sys.path.insert(0, TWIN)
+    from brain import without_own_sounds
+
+    heard = [{"source": "robot", "kind": "alarm", "words": "lights on, alarm sounding"},
+             {"source": "margaret", "kind": "speech", "words": "Oh good, the nurse is here."}]
+    facts, own = without_own_sounds({"heard": heard, "smoke": False})
+    assert facts["heard"] == [heard[1]] and own == [heard[0]] and facts["smoke"] is False
+    assert without_own_sounds({"heard": [heard[1]]}) == ({"heard": [heard[1]]}, [])
+
+
 def test_the_robots_chooser_never_sees_raw_perception(monkeypatch):
     sys.path.insert(0, TWIN)
     import json as _json

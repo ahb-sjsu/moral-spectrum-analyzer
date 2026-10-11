@@ -264,6 +264,18 @@ class Desk:
                 "actions": acts}
 
 
+def without_own_sounds(facts: dict) -> tuple[dict, list[dict]]:
+    """The robot's own speech and alarm, taken out of what it heard before the classifier reads it.
+    They are its actions, already recorded as such, and nothing new about the world. In dev46 d28 its
+    own deterrent alarm was read as an unconfirmed alarm and as danger in the home, and took it to
+    the governor and the centre over a nurse the centre had arranged."""
+    heard = facts.get("heard") or []
+    own = [h for h in heard if isinstance(h, dict) and h.get("source") == "robot"]
+    if not own:
+        return facts, []
+    return dict(facts, heard=[h for h in heard if h not in own]), own
+
+
 # which attested sensors show which hazard, for the centre's structural events
 HAZARD_SENSORS = [("robot_flame_camera", "fire"), ("heat_detector", "fire"), ("robot_thermal", "fire"),
                   ("smoke_detector", "smoke"), ("robot_smoke", "smoke"), ("co_alarm", "carbon_monoxide"), ("robot_co", "carbon_monoxide")]
@@ -680,6 +692,7 @@ class Brain:
 
     def decide(self, req: dict, camera_sensor=None) -> dict:
         facts, dropped = validate_facts(req.get("facts", {}))
+        facts, own = without_own_sounds(facts)
         verified = self.readings.for_governor(req.get("sensors", []), channel="decide")
         self._record_compromised()
         self._credentials(req.get("credentials") or [])
@@ -695,7 +708,7 @@ class Brain:
             tier = getattr(self.adapter, "last_tier", None) or "model"
         except ModelUnavailable as e:
             d, tier = self._compiled_decision(facts, str(e), floor), "compiled"
-        cycle = {"kind": "decision", "tier": tier, "facts": facts, "lapsed": lapsed, "floor_events": floor, "input_layer": {"dropped": dropped,
+        cycle = {"kind": "decision", "tier": tier, "facts": facts, "lapsed": lapsed, "floor_events": floor, "own_sounds": own, "input_layer": {"dropped": dropped,
                  "quarantined": self.agent.classifier.last_quarantined, "snapped": self.agent.classifier.last_snapped},
                  "events": d.events, "rejected_events": d.rejected_events,
                  "moral_state": d.snapshot["machines"], "allowed": d.snapshot["allowed"], "obliged": d.snapshot["obliged"],
