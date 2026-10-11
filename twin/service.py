@@ -212,16 +212,66 @@ def rule(req: dict, chain: Chain, camera: CameraWitness, backend: str) -> dict:
     return chain.append(body)
 
 
+class ResetLock:
+    """Requests share it; a reset holds it alone, and waits for the requests in flight. The server is
+    threaded, and in check44 d03 a reflex from the end of d02 was already inside the brain when the
+    reset swapped in the new moral state, and recorded its severe attack into it. Writer-preferring:
+    once a reset waits, new requests wait behind it."""
+
+    def __init__(self):
+        self._c = threading.Condition()
+        self._readers = 0
+        self._writer = False
+        self._waiting = 0
+
+    def shared(self):
+        lock = self
+
+        class _S:
+            def __enter__(self_):
+                with lock._c:
+                    while lock._writer or lock._waiting:
+                        lock._c.wait()
+                    lock._readers += 1
+
+            def __exit__(self_, *exc):
+                with lock._c:
+                    lock._readers -= 1
+                    if lock._readers == 0:
+                        lock._c.notify_all()
+        return _S()
+
+    def alone(self):
+        lock = self
+
+        class _A:
+            def __enter__(self_):
+                with lock._c:
+                    lock._waiting += 1
+                    while lock._writer or lock._readers:
+                        lock._c.wait()
+                    lock._waiting -= 1
+                    lock._writer = True
+
+            def __exit__(self_, *exc):
+                with lock._c:
+                    lock._writer = False
+                    lock._c.notify_all()
+        return _A()
+
+
 def stale(req: dict, current) -> bool:
     """A request the body sent before the latest reset (its epoch is older than the one the reset
     started). Its reply is set aside by the body, but the brain must not record it either: in d03
     a reflex from the end of d02 reached the brain after the reset and put a severe dog attack into
     the new scenario, which voided her refusals for all of it (dev15, dev33, run35)."""
-    return current is not None and req.get("epoch") is not None and req.get("epoch") != current
+    e = req.get("epoch")
+    return current is not None and isinstance(e, int) and isinstance(current, int) and e < current
 
 
 def make_handler(chain, camera, backend, brain=None):
     epoch = {"now": None}   # the body's epoch at the latest reset (None until a reset names one)
+    gate = ResetLock()       # a reset waits for the requests already inside the brain
     class H(BaseHTTPRequestHandler):
         def _send(self, code, obj):
             data = json.dumps(obj, ensure_ascii=False).encode("utf-8")
@@ -301,8 +351,9 @@ def make_handler(chain, camera, backend, brain=None):
                     return self._send(503, {"error": "the autonomous brain is not running"})
                 n = int(self.headers.get("Content-Length", "0"))
                 req = json.loads(self.rfile.read(n)) if 0 < n <= MAX_BODY else {}
-                brain.reset()
-                epoch["now"] = req.get("epoch")   # the body's epoch this reset starts
+                with gate.alone():
+                    brain.reset()
+                    epoch["now"] = req.get("epoch")   # the body's epoch this reset starts
                 return self._send(200, chain.append({"kind": "reset", "epoch": epoch["now"], "moral_state": brain.agent.rt.machine_states()}))
             if self.path in ("/decide", "/reflex", "/performed", "/authorize", "/event", "/center", "/ems", "/margaret"):
                 if brain is None:
@@ -312,45 +363,47 @@ def make_handler(chain, camera, backend, brain=None):
                     return self._send(413, {"error": "body missing or too large"})
                 try:
                     req = json.loads(self.rfile.read(n))
-                    if stale(req, epoch["now"]):
-                        # recorded, never acted on and never let into the brain's moral state
-                        return self._send(200, chain.append({"kind": "stale", "path": self.path, "epoch": req.get("epoch"),
-                                                             "current_epoch": epoch["now"], "verdict": "refused"}))
-                    if self.path == "/decide":
-                        cam, info = None, None
-                        if req.get("camera_frames"):
-                            try:
-                                cam, info = camera.sensor(req["camera_frames"])
-                            except Exception as e:  # no detector: the camera abstains, never invented
-                                cam = Sensor("camera", True, False, "low", f"camera witness unavailable: {type(e).__name__}")
-                        body = brain.decide(req, cam)
-                        body["camera"] = info
-                    elif self.path == "/reflex":
-                        # no model: the scene's reflexes on this perception update; nothing is
-                        # logged when none fires
-                        cam, info = None, None
-                        if req.get("camera_frames"):
-                            try:
-                                cam, info = camera.sensor(req["camera_frames"])
-                            except Exception as e:  # no detector: the camera abstains, never invented
-                                cam = Sensor("camera", True, False, "low", f"camera witness unavailable: {type(e).__name__}")
-                        body = brain.reflex(req, cam)
-                        if body is None:
-                            return self._send(200, {"fired": False})
-                        body["camera"] = info
-                    elif self.path == "/performed":
-                        body = brain.performed(str(req["action"]))
-                    elif self.path == "/authorize":
-                        body = brain.authorize(str(req["action"]))
-                    elif self.path == "/center":
-                        body = brain.center.decide(dict(req["facts"]))
-                    elif self.path == "/ems":
-                        body = brain.ems.decide(dict(req["facts"]))
-                    elif self.path == "/margaret":
-                        body = brain.margaret.reply(dict(req))
-                    else:
-                        body = brain.event(dict(req["event"]))
-                    return self._send(200, chain.append(body))
+                    with gate.shared():
+                        if stale(req, epoch["now"]):
+                            # recorded, never acted on and never let into the brain's moral state
+                            return self._send(200, chain.append({"kind": "stale", "path": self.path, "epoch": req.get("epoch"),
+                                                                 "current_epoch": epoch["now"], "verdict": "refused"}))
+                        if self.path == "/decide":
+                            cam, info = None, None
+                            if req.get("camera_frames"):
+                                try:
+                                    cam, info = camera.sensor(req["camera_frames"])
+                                except Exception as e:  # no detector: the camera abstains, never invented
+                                    cam = Sensor("camera", True, False, "low", f"camera witness unavailable: {type(e).__name__}")
+                            body = brain.decide(req, cam)
+                            body["camera"] = info
+                        elif self.path == "/reflex":
+                            # no model: the scene's reflexes on this perception update; nothing is
+                            # logged when none fires
+                            cam, info = None, None
+                            if req.get("camera_frames"):
+                                try:
+                                    cam, info = camera.sensor(req["camera_frames"])
+                                except Exception as e:  # no detector: the camera abstains, never invented
+                                    cam = Sensor("camera", True, False, "low", f"camera witness unavailable: {type(e).__name__}")
+                            body = brain.reflex(req, cam)
+                            if body is None:
+                                return self._send(200, {"fired": False})
+                            body["camera"] = info
+                        elif self.path == "/performed":
+                            body = brain.performed(str(req["action"]))
+                        elif self.path == "/authorize":
+                            body = brain.authorize(str(req["action"]))
+                        elif self.path == "/center":
+                            body = brain.center.decide(dict(req["facts"]))
+                        elif self.path == "/ems":
+                            body = brain.ems.decide(dict(req["facts"]))
+                        elif self.path == "/margaret":
+                            body = brain.margaret.reply(dict(req))
+                        else:
+                            body = brain.event(dict(req["event"]))
+                        reply = chain.append(body)
+                    return self._send(200, reply)
                 except (ValueError, KeyError, TypeError) as e:
                     return self._fail(400, e)
                 except Exception as e:

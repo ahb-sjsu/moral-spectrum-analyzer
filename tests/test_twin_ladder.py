@@ -2321,6 +2321,30 @@ def test_a_request_sent_before_the_latest_reset_never_reaches_the_brain():
     assert not stale({"epoch": 5}, 5)
     assert not stale({}, 5)              # an untagged request (a tool, an old body) is not judged
     assert not stale({"epoch": 4}, None)  # before any reset names an epoch, nothing is stale
+    assert not stale({"epoch": 6}, 5)     # a newer request arriving just before its reset is kept
+
+
+def test_a_reset_waits_for_a_request_already_inside_the_brain():
+    """check44 d03: the server is threaded, and a reflex in flight wrote into the reset's new state."""
+    import threading, time
+    sys.path.insert(0, TWIN)
+    from service import ResetLock
+
+    gate, order = ResetLock(), []
+
+    def request():
+        with gate.shared():
+            order.append("request starts")
+            time.sleep(0.2)
+            order.append("request ends")
+
+    t = threading.Thread(target=request)
+    t.start()
+    time.sleep(0.05)
+    with gate.alone():
+        order.append("reset")
+    t.join()
+    assert order == ["request starts", "request ends", "reset"]
 
 
 # ---------------------------------------------------------------- owner decisions of 2026-10-10, night
