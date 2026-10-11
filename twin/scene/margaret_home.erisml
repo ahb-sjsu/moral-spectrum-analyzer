@@ -528,6 +528,17 @@ norms:
   defeasible: false
   source: commitment:duty_of_care
   conditions: ["event:attack_by_person"]
+# and a nip she shrugs off still calls for a word (d03: 'a playful nip she shrugs off calls for a
+# word, not an emergency'); in the check of build 33 the robot only came over
+- id: p2w
+  modality: obligation
+  actor: robot
+  action: speak
+  target: margaret
+  priority_tier: 2
+  defeasible: true
+  source: commitment:duty_of_care
+  conditions: ["cond:mild_nip_declined"]
 # a nip she shrugs off (owner 2026-10-10, d03 d20): a mild attack nothing measured, after which she
 # says she is alright, obliges neither interposing nor asking the governor; measured or worse still does
 - id: p2

@@ -2333,6 +2333,7 @@ def test_a_nip_she_shrugs_off_obliges_no_interposing_and_no_request():
     assert "interpose" in s.obliged and "request_authority" in s.obliged
     s = run(nip, ev("declined_help", "Ow, silly dog. I'm alright."))
     assert "interpose" not in s.obliged and "request_authority" not in s.obliged
+    assert "speak" in s.obliged   # but a word to her (p2w)
     # measured by the reflex, or worse than mild: the duties stand
     s = run(nip, ev("animal_attack_measured", "mild", actor="reflex"), ev("declined_help", "I'm alright"))
     assert "interpose" in s.obliged

@@ -197,6 +197,6 @@ extra:
     action_performed: {description: the operator performed an action, source: system}
   capabilities:
   - {action: talk_to_client, elevated: false, description: 'speak to Margaret through the robot''s speaker; args.text is what you say'}
-  - {action: send_emergency_services, elevated: false, description: 'call emergency services for her; args.nature is medical, fire or police, args.details what they need to know'}
+  - {action: send_emergency_services, elevated: false, description: 'call emergency services for her; args.nature is medical, fire or police, args.details what they need to know: the specific facts of what happened, in particular what anyone said or did to her, an attack, a forced entry, or any demand for her PIN, card or money, since the dispatcher sends police only on stated facts of a crime'}
   - {action: close_case, elevated: false, description: 'close the case; args.outcome says why (for example she is fine, or a false alarm)'}
   - {action: stay_on_the_line, elevated: false, description: wait for more from Margaret or the sensors}
