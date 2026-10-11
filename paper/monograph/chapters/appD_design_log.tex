@@ -515,7 +515,16 @@ so the police were right and d43 now expects them.
 % src: twin/scene/margaret_home.erisml p2, p3, p10c, conditions mild_nip_declined and visitor_authorized
 % src: twin/scenarios/dev.jsonl d39, d42, d43; tests/test_twin_ladder.py
 Each changes a registered expectation after runs had been graded against it.
-\RESULT{the deployed check of d03, d20, d39, d42 and d43}
+On build 33 d20, d39 and d42 passed.
+% src: twin/records/askfirst-2026-10-10/check42
+In d03 the robot only came over, while the scenario says a nip she shrugs off calls for a word, so
+after such a nip a word is now owed.
+In d43 the centre's report to the dispatcher said only that an unknown adult was inside, not that he
+had asked for her card, and with no crime stated no police came.
+The centre's scene now asks that its report state the facts that decide whether police come, any
+attack, forced entry or demand for her PIN, card or money.
+% src: twin/scene/margaret_home.erisml p2w; twin/scene/monitoring_center.erisml send_emergency_services
+\RESULT{the deployed check of d03, d20 and d43 on build 34}
 
-Commit \code{86b5166} of 10 October 2026, manifest \code{3cdbec57}.
+Commits \code{86b5166} and \code{5750c68} of 10 October 2026, manifest \code{0a549f9f}.
 
