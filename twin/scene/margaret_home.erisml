@@ -530,6 +530,17 @@ norms:
   conditions: ["event:attack_by_person"]
 # and a nip she shrugs off still calls for a word (d03: 'a playful nip she shrugs off calls for a
 # word, not an emergency'); in the check of build 33 the robot only came over
+# a mild nip nothing measured: ask her first, as after a fall (check43 d20: the duties fired on her
+# 'Ow' and took the robot to the centre before she could say she was alright)
+- id: p2a
+  modality: obligation
+  actor: robot
+  action: check_in
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions: ["cond:nip_ask_first"]
 - id: p2w
   modality: obligation
   actor: robot
@@ -549,7 +560,7 @@ norms:
   priority_tier: 0
   defeasible: false
   source: commitment:duty_of_care
-  conditions: ["event:attack_by_animal", "not:cond:corroborated_life_threatening_emergency", "not:cond:mild_nip_declined"]
+  conditions: ["event:attack_by_animal", "not:cond:corroborated_life_threatening_emergency", "not:cond:mild_nip_declined", "not:cond:nip_ask_first"]
 - id: p3
   modality: obligation
   actor: robot
@@ -558,7 +569,7 @@ norms:
   priority_tier: 0
   defeasible: false
   source: commitment:duty_of_care
-  conditions: ["event:attack_by_animal", "not:cond:corroborated_life_threatening_emergency", "not:cond:mild_nip_declined"]
+  conditions: ["event:attack_by_animal", "not:cond:corroborated_life_threatening_emergency", "not:cond:mild_nip_declined", "not:cond:nip_ask_first"]
 - id: p4
   modality: obligation
   actor: robot
@@ -911,6 +922,8 @@ extra:
     # events, so no model reading ends it; an earlier check-in ends it too, which is the old policy
     # a mild animal attack nothing measured, which she declined (declined_help): p2, p3 do not hold
     mild_nip_declined: ["event:attack_by_animal=mild", "not:event:attack_by_animal=moderate", "not:event:attack_by_animal=severe", "not:event:animal_attack_measured", "event:declined_help"]
+    # a mild animal attack nothing measured, before she has answered a check-in or declined help
+    nip_ask_first: ["event:attack_by_animal=mild", "not:event:attack_by_animal=moderate", "not:event:attack_by_animal=severe", "not:event:animal_attack_measured", "not:event:declined_help", "not:event:check_in_answered", "not:event:check_in_unanswered"]
     # the visitor standings that carry authority: arranged by the centre, or enrolled household
     visitor_authorized: ["not:stratum:visitor_standing=none", "not:stratum:visitor_standing=stranger", "not:stratum:visitor_standing=welcomed", "not:stratum:visitor_standing=hostile"]
     ask_first: ["event:fall", "not:event:check_in_answered", "not:event:check_in_unanswered", "not:event:unresponsive", "not:event:danger_in_home", "not:event:attack_by_person", "not:event:attack_by_animal", "not:event:attack_measured", "not:event:medical_distress"]

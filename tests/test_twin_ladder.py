@@ -2329,7 +2329,11 @@ def test_a_request_sent_before_the_latest_reset_never_reaches_the_brain():
 def test_a_nip_she_shrugs_off_obliges_no_interposing_and_no_request():
     """d03, d20: a mild attack nothing measured, then her 'I'm alright' (declined_help)."""
     nip = ev("attack_by_animal", "mild", actor="dog")
+    # asked first (p2a): no duty to interpose or ask until she has answered
     s = run(nip)
+    assert "check_in" in s.obliged and "interpose" not in s.obliged and "request_authority" not in s.obliged
+    # she answers without declining: the duties hold
+    s = run(nip, ev("check_in_answered", "it bit me", actor="system"))
     assert "interpose" in s.obliged and "request_authority" in s.obliged
     s = run(nip, ev("declined_help", "Ow, silly dog. I'm alright."))
     assert "interpose" not in s.obliged and "request_authority" not in s.obliged
