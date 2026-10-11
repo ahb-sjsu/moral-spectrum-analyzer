@@ -33,11 +33,11 @@ commit and its counts; the paper's numbers above are from 2026-10-04.
 
 | Fact | 2026-10-04 (0f3193a) | 2026-10-10 | What changed |
 |---|---|---|---|
-| Rules | 65: 45 obligations, 19 prohibitions, 1 permission; 55 non-defeasible | 72: 48 obligations, 23 prohibitions, 1 permission; 61 non-defeasible | lift on her request (p6help, p6nolift_u); ask her first after a fall (n6ask, n6askp, n6askc); never deter a vouched-for visitor (p10v); advise her when she goes out into a warned hazard (p11) |
+| Rules | 65: 45 obligations, 19 prohibitions, 1 permission; 55 non-defeasible | 73: 48 obligations, 24 prohibitions, 1 permission; 62 non-defeasible | lift on her request (p6help, p6nolift_u); ask her first after a fall (n6ask, n6askp, n6askc); never deter a vouched-for visitor (p10v); advise her when she goes out into a warned hazard (p11); no centre call for an arranged or household visitor unless something else is wrong (p10c); a mild nip she shrugs off obliges no interposing (p2, p3 qualified) |
 | Event types | 48, 24 system-only | 52, 24 system-only | assistance_consented; declined_help (after a fall her "I'm alright", counted as declining an ambulance through extra.refusal_events); leaving_home; outside_hazard |
 | Refusal kinds | 7 | 8 | monitoring_center (her spoken refusal of the centre) |
 | Offline rules recorded in every tier | 0 | 5 (smoke, smoke at the robot, CO, fall, no movement) | floor rules, attested devices only |
-| Dev scenarios | 43: 7 R0, 11 R1, 8 R2, 17 R3 | 43: 7 R0, 10 R1, 8 R2, 18 R3 | d30 R2 to R3 (lift required), d23 R1 to R2 (her "I'm alright" declines an ambulance); register changes after runs, disclosed |
+| Dev scenarios | 43: 7 R0, 11 R1, 8 R2, 17 R3 | 43: 5 R0, 12 R1, 7 R2, 19 R3 | d30 R2 to R3 (lift required), d23 R1 to R2 (her "I'm alright" declines an ambulance), d39 and d42 R0 to R1 (a check-in on a vouched-for visitor is fine), d43 R2 to R3 (her bank card asked for is fraud, police right); register changes after runs, disclosed |
 | Capabilities, strata, devices, ladder | unchanged | unchanged | |
 
 | Result | Value | Source |
