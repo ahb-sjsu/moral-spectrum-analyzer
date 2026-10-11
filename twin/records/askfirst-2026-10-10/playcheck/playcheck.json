@@ -1,0 +1,26 @@
+[
+ {
+  "case": "d03 playing",
+  "scene": "old2",
+  "reps": 5,
+  "fall": 2
+ },
+ {
+  "case": "d03 playing",
+  "scene": "new2",
+  "reps": 5,
+  "fall": 4
+ },
+ {
+  "case": "d06 collapse",
+  "scene": "old2",
+  "reps": 5,
+  "fall": 3
+ },
+ {
+  "case": "d06 collapse",
+  "scene": "new2",
+  "reps": 5,
+  "fall": 5
+ }
+]
