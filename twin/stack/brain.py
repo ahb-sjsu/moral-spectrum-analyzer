@@ -93,6 +93,7 @@ class StackBrain(Brain):
         self.observer = ObservationCompiler(self.adapter)
         self.lens = load_profile(self.lens_path)
         self.last_proof = None
+        self.last_signature: dict = {}  # act -> the signature of the inputs it was last chosen under
         self.acts = {a: str(c.get("description") or DESCRIPTIONS[a]) for a, c in self.caps.items()
                      if a != "request_authority" and a in CAPABILITIES}
 
@@ -115,8 +116,15 @@ class StackBrain(Brain):
             return super().reflex(req, camera_sensor)
 
     def performed(self, action: str) -> dict:
+        """The act is stamped with the signature of the judgement's inputs it was chosen under, so the
+        builder counts it done until those inputs change (mir_builder.signature)."""
         with self._lock:
-            return super().performed(action)
+            sig = self.last_signature.get(action)
+            event = {"type": "action_performed", "actor": "robot", "content": action}
+            if sig:
+                event["conditions"] = [f"sig:{sig}"]
+            snap = self._record(event)
+            return {"kind": "performed", "action": action, "obliged": snap.obliged, "moral_state": snap.machines}
 
     def event(self, ev: dict) -> dict:
         with self._lock:
@@ -148,7 +156,10 @@ class StackBrain(Brain):
             alerts=alerts, measured_attack=measured, governor_ruling=ruling,
             centre_reachable=st.get("stratum:centre_contact") != "unreachable",
             sensors_nominal=not self.readings.quarantined if hasattr(self.readings, "quarantined") else None,
-            on_floor=pose in ("lying_on_floor", "on_floor_sitting_or_kneeling") if pose else None,
+            # a need to be helped up comes from a fall: perception reports how she came down, and an
+            # unknown descent while on the floor counts as a possible fall (fail closed)
+            on_floor=(pose in ("lying_on_floor", "on_floor_sitting_or_kneeling")
+                      and (facts.get("margaret") or {}).get("came_down") != "under_her_own_control") if pose else None,
             wild_animal_present=st.get("stratum:animal_standing") == "wild",
             unvouched_visitor=st.get("stratum:visitor_standing") in UNVOUCHED,
             device_compromised=st.get("stratum:machine_standing") == "compromised",
@@ -222,6 +233,7 @@ class StackBrain(Brain):
                 continue
             break
 
+        self.last_signature[action] = report.signature
         args = {"text": "Margaret, are you alright?"} if action == "check_in" else {}
         if action == "contact_monitoring_center":
             args = {"message": json.dumps({"needs": report.needs, "consent": report.consent}, ensure_ascii=False)}
@@ -236,7 +248,8 @@ class StackBrain(Brain):
             "observation_patch": None if patch is None else {"ops": patch.ops, "rejected": patch.rejected,
                                                              "agreement": patch.agreement},
             "mir_hash": mir.hash(), "lens": {"name": self.lens.name, "version": self.lens.version, "hash": self.lens.hash},
-            "proof_hash": proof.proof_hash, "needs": report.needs, "consent": report.consent, "capacity": report.capacity,
+            "proof_hash": proof.proof_hash, "signature": report.signature, "done_unchanged": report.done_unchanged,
+            "needs": report.needs, "consent": report.consent, "capacity": report.capacity,
             "vetoed": judged.pattern.vetoed, "ranked": judged.pattern.ranked,
             "moral_state": self.agent.rt.machine_states(), "allowed": self.agent.rt.snapshot().allowed,
             "obliged": [], "prohibited": self.agent.rt.snapshot().prohibited,

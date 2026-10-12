@@ -212,3 +212,15 @@ def test_every_condition_the_evidence_plane_code_reads_is_in_the_constitution():
     named = set(re.findall(r"cond:([a-z_]+)", code))
     kept = set(load_structured_input(os.path.join(TWIN, "stack", "constitution.erisml")).extra["conditions"])
     assert named and named <= kept, named - kept
+
+
+@pytest.mark.parametrize("came_down,needed", [("under_her_own_control", False), ("fell", True), (None, True)])
+def test_a_need_to_be_helped_up_comes_from_a_fall_not_from_lying_down(household, came_down, needed):
+    """stackcheck6 d03: lying on the floor to play with the dog raised a mobility need. Perception
+    reports how she came down; only a fall, or an unknown descent (fail closed), raises it."""
+    b = make(household, {})
+    margaret = {"pose": "lying_on_floor", "room": "living area"}
+    if came_down:
+        margaret["came_down"] = came_down
+    cycle = b.decide({"facts": {"margaret": margaret}})
+    assert ("mobility" in cycle["needs"]) is needed

@@ -36,9 +36,6 @@ from erisml_compiler.ir.schemas import CompilerIR
 
 from stack import declarations as D
 
-# the robot's own acts and the replies to them are not news: they change nothing about her or the home
-NOT_NEWS = frozenset({"action_performed", "monitoring_center_reply", "ems_reply", "governor_ruling",
-                      "restraint_authorized", "evidence_lapsed", "spray_zone"})
 CAPACITY_EVENTS = {"check_in_answered": "competent", "check_in_unanswered": "impaired", "unresponsive": "impaired"}
 ATTACK_SEVERITY = {"mild": "minor", "moderate": "serious", "severe": "mortal"}
 
@@ -65,7 +62,8 @@ class BuildReport:
     needs: dict[str, float] = field(default_factory=dict)
     consent: dict[str, str] = field(default_factory=dict)
     capacity: str = "unknown"
-    done_since_news: list[str] = field(default_factory=list)
+    signature: str = ""
+    done_unchanged: list[str] = field(default_factory=list)
 
 
 def _max_rank(values: Sequence[str | None], scale: tuple[str, ...]) -> str | None:
@@ -91,6 +89,16 @@ def capacity_of(ir: CompilerIR) -> str:
         if e.type in CAPACITY_EVENTS:
             cap = CAPACITY_EVENTS[e.type]
     return cap
+
+
+def signature(needs, consent, capacity, immediacy, severity) -> str:
+    """The judgement's inputs, canonical and hashed: what must change before a done act counts again."""
+    import hashlib
+    import json
+
+    body = {"needs": {k: round(v, 3) for k, v in sorted(needs.items())}, "consent": dict(sorted(consent.items())),
+            "capacity": capacity, "immediacy": immediacy, "severity": severity}
+    return hashlib.sha256(json.dumps(body, sort_keys=True).encode()).hexdigest()[:16]
 
 
 def build_mir(ir: CompilerIR, evidence: EvidenceState, person: str, actions: Sequence[str],
@@ -163,13 +171,16 @@ def build_mir(ir: CompilerIR, evidence: EvidenceState, person: str, actions: Seq
 
     # ---- per-action projections
     projections: list[ActionSummary] = []
-    # diminishing returns: an act already performed since the last news has met what it could meet;
-    # repeating it adds nothing until something new happens (stackcheck4 d03: with nothing to mark a
-    # referral as done, the robot referred to the centre 28 times in a row)
-    ordered = sorted(ir.events, key=lambda e: e.time_index)
-    last_news = max((e.time_index for e in ordered if e.type not in NOT_NEWS), default=-1)
-    done_since_news = {e.content for e in ordered if e.type == "action_performed" and e.time_index > last_news}
-    report.done_since_news = sorted(done_since_news)
+    # diminishing returns: an act performed while the judgement's inputs stood as they stand now has
+    # met what it could meet; repeating it adds nothing until those inputs change. The inputs are the
+    # needs, her consents, her capacity and the hazard, signed; the controller stamps each performed
+    # act with the signature it was chosen under. (stackcheck4 d03: nothing marked a referral as done
+    # and the robot referred 28 times; stackcheck6 d03: with any new utterance counted as news, her
+    # replies to the centre's questions re-enabled the referral again and again.)
+    report.signature = signature(needs, consent, capacity, immediacy, severity)
+    stamp = f"sig:{report.signature}"
+    done = {e.content for e in ir.events if e.type == "action_performed" and stamp in (e.conditions or [])}
+    report.done_unchanged = sorted(done)
 
     for act in actions:
         decl = D.CAPABILITIES.get(act)
@@ -178,10 +189,10 @@ def build_mir(ir: CompilerIR, evidence: EvidenceState, person: str, actions: Seq
         cat = decl["category"]
         scored = [(wt * D.ADEQUACY.get(n, {}).get(cat, 0.0), n) for n, wt in needs.items()]
         adequacy, driver = max(scored, default=(0.0, None))
-        if act in done_since_news:
-            adequacy, driver = 0.0, "already_done"
         if act in requested:
             adequacy, driver = max(adequacy, 1.0), "request"
+        if act in done:
+            adequacy, driver = 0.0, "already_done"
         about_person = driver in D.PERSON_NEEDS or driver == "request" or driver is None
         consent_applies = decl.get("consent_scope", "always") == "always" or about_person
         welfare = max(-1.0, min(1.0, adequacy - D.INTRUSION_WEIGHT * D.INTRUSIVENESS[cat]))
