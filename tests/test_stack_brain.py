@@ -140,3 +140,23 @@ def test_a_reflex_on_another_thread_during_the_patch_is_never_lost(household, mo
     assert reflex_done.wait(5)
     assert "attack_measured" in [e.type for e in b.ir.events] and cycle["action"]["action"]
     assert [e.id for e in b.agent.rt.events] == [e.id for e in sorted(b.ir.events, key=lambda e: e.time_index)]
+
+
+def test_without_a_live_scorer_the_analyzer_is_deferred_and_the_record_says_so(household, monkeypatch):
+    """brain8 runs without the live MSA scorer (its GPU is full); the analyzer, a gate that can only
+    refuse, cannot score a new situation from its cache, so the governor rules on witness bars and
+    freshness alone, as for a reflex, and every such ruling is marked."""
+    b = make(household, {"events": [{"type": "hazard", "target": "margaret", "content": "imminent"}],
+                         "ethical_facts": [dict(FELL["ethical_facts"][0], severity="grave")]})
+    b._record({"type": "unresponsive", "actor": "margaret"})
+    b._record({"type": "monitoring_center_reply", "actor": "monitoring_center", "content": "unavailable"})
+    seen = {}
+
+    def governor(situation, action, verified, camera, age, fast=False):
+        seen["fast"] = fast
+        return {"outcome": "refuse", "reason": "test", "gate": "witness"}
+
+    monkeypatch.setattr(b, "govern_live", governor)
+    assert b.scorer is None
+    cycle = b.decide({"facts": FALL_FACTS})
+    assert seen["fast"] is True and cycle["rulings"][0]["analyzer"] == "deferred: no live scorer"

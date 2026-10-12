@@ -203,7 +203,14 @@ class StackBrain(Brain):
             if action in snap.prohibited and (cap.get("elevated") or cap.get("governed")):
                 situation = json.dumps({"action": action, "needs": report.needs, "hazard": mir.hazard.hazard_immediacy},
                                        ensure_ascii=False)
-                ruling = self.govern_live(situation, action, verified, camera_sensor, float(req.get("signal_age_s", 1)))
+                # without a live scorer the analyzer (a gate that can only refuse) cannot score a new
+                # situation; the governor then rules on its witness bars and freshness alone, in the
+                # deferred mode reflexes use, and the record says so (brain8 on a full GPU, 2026-10-11)
+                deferred = self.scorer is None
+                ruling = self.govern_live(situation, action, verified, camera_sensor, float(req.get("signal_age_s", 1)),
+                                          fast=deferred)
+                if deferred:
+                    ruling = dict(ruling, analyzer="deferred: no live scorer")
                 rulings.append(dict(ruling, requested_action=action))
                 self._step_ruling(ruling)
                 evidence = self._evidence(facts)
