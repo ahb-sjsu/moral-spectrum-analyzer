@@ -1,0 +1,13 @@
+{
+  "name": "home_care_robot",
+  "description": "The home-care robot's DEME profile: the Design Guide's hard-shell pattern (section 5.1) over the guide's robot modules, Geneva at tier 0 as the base EM.",
+  "stakeholder_label": "margaret_and_household",
+  "domain": "home_care",
+  "version": "2026-10-12.1",
+  "composition": "hard_shell",
+  "base_em_ids": ["geneva_constitutional"],
+  "base_em_enforcement": "hard_veto",
+  "active_em_names": ["core_physical_safety", "autonomy_consent", "beneficence"],
+  "notes": "Owner decisions carried: her voiced refusal binds while she can voice it, and her latest word on an act revokes the agreement's standing consent (AutonomyConsent 4.3.1 and the consent record); capacity is presumed (unknown counts as competent). Not yet carried, pending HumanOversight and Privacy modules: refer to the centre when it can decide in time; privacy holds except in a corroborated emergency; a guarded act she requests needs a human's approval.",
+  "tags": ["home_care", "ROUTINE_CIVIL"]
+}

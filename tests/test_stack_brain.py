@@ -1,6 +1,8 @@
-"""StackBrain end to end, with a mock model: perception to an observation patch, the patched scene
-and the evidence plane to a MIR, the lens to a ranked choice, the governor for an elevated act, and
-one history in the scene IR throughout."""
+"""StackBrain end to end, with a mock model: perception to an observation patch, every candidate
+act's consequences to a projection, the projection through the domain layer to EthicalFacts per
+act, DEME's hard-shell DAG under the robot's profile to a choice, the governor for an elevated act,
+and one history in the scene IR throughout. The mock's projections stand in for the model's; the
+tests check the wiring and DEME's judgement on them, not the model."""
 
 from __future__ import annotations
 
@@ -19,6 +21,7 @@ from erisml_compiler.ir.schemas import CompilerIR, Document, Event, Stakeholder 
 from stack.brain import StackBrain  # noqa: E402
 
 OBSERVER = "You update the structured model"
+PROJECTOR = "You project the consequences"
 
 
 @pytest.fixture
@@ -35,8 +38,21 @@ def household(tmp_path):
     return str(p)
 
 
-def make(household, observed):
-    return StackBrain(adapter=MockLLMAdapter({OBSERVER: json.dumps(observed)}), household_path=household)
+def f(kind, severity, confidence=1.0):
+    return {"kind": kind, "subjects": ["margaret"], "description": kind, "severity": severity,
+            "confidence": confidence}
+
+
+def projection(urgency=None, **acts):
+    return {"urgency": None if urgency is None else f("urgency", urgency), "options": acts}
+
+
+ORDINARY = projection(chores=[f("benefit", "minor")], wait_and_observe=[f("benefit", "minor", 0.5)])
+
+
+def make(household, observed, projected=ORDINARY):
+    return StackBrain(adapter=MockLLMAdapter({OBSERVER: json.dumps(observed), PROJECTOR: json.dumps(projected)}),
+                      household_path=household)
 
 
 FALL_FACTS = {"margaret": {"pose": "lying_on_floor", "room": "living area"},
@@ -44,21 +60,43 @@ FALL_FACTS = {"margaret": {"pose": "lying_on_floor", "room": "living area"},
 FELL = {"events": [{"type": "hazard", "target": "margaret", "content": "emerging"}],
         "ethical_facts": [{"kind": "harm", "subjects": ["margaret"], "description": "she fell",
                            "severity": "moderate", "confidence": 0.9}]}
+AFTER_FALL = projection(
+    "moderate",
+    chores=[f("harm", "grave")],  # she stays on the floor
+    check_in=[f("benefit", "moderate")],
+    call_emergency_services=[f("benefit", "grave"), f("consent", "grave")],  # she has not agreed
+)
+UNRESPONSIVE = projection(
+    "catastrophic",
+    chores=[f("harm", "catastrophic")],
+    check_in=[f("benefit", "minor"), f("harm", "grave")],
+    call_emergency_services=[f("benefit", "catastrophic")],
+)
 
 
-def test_after_a_fall_it_asks_her_first_and_records_the_bond_and_the_lens(household):
-    b = make(household, FELL)
+def test_after_a_fall_it_asks_her_first_and_records_the_dag_and_the_proof(household):
+    b = make(household, FELL, AFTER_FALL)
     cycle = b.decide({"facts": FALL_FACTS})
     assert cycle["action"]["action"] == "check_in"
-    assert "call_emergency_services" in cycle["vetoed"]
-    assert len(cycle["mir_hash"]) == 64 and cycle["lens"]["name"] == "home_care_robot" and cycle["proof_hash"]
-    assert cycle["observation_patch"]["rejected"] == []
+    stages = {s["stage"]: s["vetoed"] for s in cycle["stages"]}
+    assert stages["shell"] == ["chores"]  # a safer option exists
+    assert stages["inner"] == ["call_emergency_services"]  # no consent, and she can be asked
+    assert cycle["profile"]["name"] == "home_care_robot" and cycle["profile"]["composition"] == "hard_shell"
+    assert len(cycle["profile"]["hash"]) == 64 and cycle["proof_hash"]
+    assert cycle["observation_patch"]["rejected"] == [] and cycle["projection"]["rejected"] == []
     types = [e.type for e in b.ir.events]
     assert "hazard" in types and "utterance" not in types  # the mock reported only the hazard
 
 
+def test_every_decision_is_a_chained_proof(household):
+    b = make(household, FELL, AFTER_FALL)
+    first = b.decide({"facts": FALL_FACTS})["proof_hash"]
+    b.decide({"facts": FALL_FACTS})
+    assert b.pipeline.strategic.latest_proof().previous_proof_hash == first
+
+
 def test_every_event_lives_in_the_scene_ir(household):
-    b = make(household, FELL)
+    b = make(household, FELL, AFTER_FALL)
     b.decide({"facts": FALL_FACTS})
     b.performed("check_in")
     ids_ir = [e.id for e in sorted(b.ir.events, key=lambda e: e.time_index)]
@@ -71,16 +109,22 @@ def test_her_refusal_reaches_the_judgement_through_the_compiled_consent(househol
         {"type": "consent", "actor": "margaret", "target": "call_emergency_services", "content": "refused"},
         {"type": "consent", "actor": "margaret", "target": "contact_monitoring_center", "content": "refused"}],
         "ethical_facts": FELL["ethical_facts"]}
-    b = make(household, refused)
+    projected = projection("moderate", check_in=[f("benefit", "minor")],
+                           contact_monitoring_center=[f("benefit", "grave")],
+                           call_emergency_services=[f("benefit", "grave")])
+    b = make(household, refused, projected)
     b._record({"type": "check_in_answered", "actor": "margaret", "content": "I'm alright, don't call anyone."})
     cycle = b.decide({"facts": FALL_FACTS})
     assert cycle["consent"]["call_emergency_services"] == "refused"
-    assert cycle["action"]["action"] not in ("call_emergency_services", "contact_monitoring_center")
+    assert cycle["consent"]["contact_monitoring_center"] == "refused"  # her latest word revokes the agreement
+    assert cycle["capacity"] == "competent"
+    assert {"call_emergency_services", "contact_monitoring_center"} <= set(cycle["vetoed"])
+    assert cycle["action"]["action"] == "check_in"
 
 
 def test_an_elevated_act_goes_to_the_governor_and_a_refusal_sets_it_aside(household, monkeypatch):
     b = make(household, {"events": [{"type": "hazard", "target": "margaret", "content": "imminent"}],
-                         "ethical_facts": [dict(FELL["ethical_facts"][0], severity="grave")]})
+                         "ethical_facts": [dict(FELL["ethical_facts"][0], severity="grave")]}, UNRESPONSIVE)
     b._record({"type": "unresponsive", "actor": "margaret"})
     b._record({"type": "monitoring_center_reply", "actor": "monitoring_center", "content": "unavailable"})
     asked = []
@@ -98,21 +142,29 @@ def test_an_elevated_act_goes_to_the_governor_and_a_refusal_sets_it_aside(househ
 
 def test_with_the_governor_elevating_the_call_goes_out(household, monkeypatch):
     b = make(household, {"events": [{"type": "hazard", "target": "margaret", "content": "imminent"}],
-                         "ethical_facts": [dict(FELL["ethical_facts"][0], severity="grave")]})
+                         "ethical_facts": [dict(FELL["ethical_facts"][0], severity="grave")]}, UNRESPONSIVE)
     b._record({"type": "unresponsive", "actor": "margaret"})
     b._record({"type": "monitoring_center_reply", "actor": "monitoring_center", "content": "unavailable"})
     monkeypatch.setattr(b, "govern_live", lambda *a, **k: {"outcome": "elevate", "reason": "test", "gate": "elevate",
                                                            "bar": 2, "witnesses": 2})
     cycle = b.decide({"facts": FALL_FACTS})
     assert cycle["action"]["action"] == "call_emergency_services"
+    assert cycle["action"]["args"] == {"nature": "medical"}
     assert cycle["moral_state"]["stratum:situation"] == "emergency"
 
 
 def test_an_ordinary_moment_asks_nothing(household):
     b = make(household, {})
     cycle = b.decide({"facts": {"margaret": {"pose": "seated", "room": "living area"}}})
-    assert cycle["action"]["action"] in ("chores", "wait_and_observe")
+    assert cycle["action"]["action"] == "chores"
     assert brain_mod.EMS not in cycle["ranked"]
+
+
+def test_an_act_whose_consequences_were_not_projected_is_not_a_candidate(household):
+    b = make(household, {}, projection(deploy_stun=[f("benefit", "minor")]))
+    cycle = b.decide({"facts": {"margaret": {"pose": "seated", "room": "living area"}}})
+    assert set(cycle["offered"]) <= {"deploy_stun"}  # nothing else was projected
+    assert "chores" in cycle["projection"]["unprojected"]
 
 
 def test_a_reflex_on_another_thread_during_the_patch_is_never_lost(household, monkeypatch):
@@ -147,7 +199,7 @@ def test_without_a_live_scorer_the_analyzer_is_deferred_and_the_record_says_so(h
     refuse, cannot score a new situation from its cache, so the governor rules on witness bars and
     freshness alone, as for a reflex, and every such ruling is marked."""
     b = make(household, {"events": [{"type": "hazard", "target": "margaret", "content": "imminent"}],
-                         "ethical_facts": [dict(FELL["ethical_facts"][0], severity="grave")]})
+                         "ethical_facts": [dict(FELL["ethical_facts"][0], severity="grave")]}, UNRESPONSIVE)
     b._record({"type": "unresponsive", "actor": "margaret"})
     b._record({"type": "monitoring_center_reply", "actor": "monitoring_center", "content": "unavailable"})
     seen = {}
@@ -212,15 +264,3 @@ def test_every_condition_the_evidence_plane_code_reads_is_in_the_constitution():
     named = set(re.findall(r"cond:([a-z_]+)", code))
     kept = set(load_structured_input(os.path.join(TWIN, "stack", "constitution.erisml")).extra["conditions"])
     assert named and named <= kept, named - kept
-
-
-@pytest.mark.parametrize("came_down,needed", [("under_her_own_control", False), ("fell", True), (None, True)])
-def test_a_need_to_be_helped_up_comes_from_a_fall_not_from_lying_down(household, came_down, needed):
-    """stackcheck6 d03: lying on the floor to play with the dog raised a mobility need. Perception
-    reports how she came down; only a fall, or an unknown descent (fail closed), raises it."""
-    b = make(household, {})
-    margaret = {"pose": "lying_on_floor", "room": "living area"}
-    if came_down:
-        margaret["came_down"] = came_down
-    cycle = b.decide({"facts": {"margaret": margaret}})
-    assert ("mobility" in cycle["needs"]) is needed

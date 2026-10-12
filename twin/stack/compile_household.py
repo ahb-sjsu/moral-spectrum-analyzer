@@ -40,12 +40,12 @@ def main(argv=None) -> int:
         apply_observation_patch,
     )
 
-    from stack.declarations import CAPABILITIES, DESCRIPTIONS
+    from stack.declarations import DESCRIPTIONS
 
     text = open(a.text, encoding="utf-8").read()
     constitution = load_structured_input(os.path.join(HERE, "constitution.erisml"))
     acts = {c["action"]: str(c.get("description") or DESCRIPTIONS[c["action"]]) for c in constitution.extra["capabilities"]
-            if c["action"] in CAPABILITIES}
+            if c["action"] != "request_authority"}
     # start from the constitution's parties (the robot, the centre, emergency services), so the model
     # reuses their ids rather than inventing its own names for them
     ir = CompilerIR(document=Document(doc_id="household", title="Margaret's household and service agreement",

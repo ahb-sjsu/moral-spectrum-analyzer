@@ -1,29 +1,37 @@
-"""The re-architected brain: the scene compiled by erisml-compiler, judged by erisml-lib under a lens.
+"""The re-architected brain: the scene compiled by erisml-compiler, judged by erisml-lib's DEME.
 
-docs/REARCHITECTURE_DESIGN_2026-10.md. StackBrain keeps the old brain's evidence plane as it is
-(attested readings, the governor and its witness bars, rights lapse, reflexes, credentials, the
-signed manifest) and replaces what decided by hand:
+StackBrain keeps the old brain's evidence plane as it is (attested readings, the governor and its
+witness bars, rights lapse, reflexes, credentials, the signed manifest) and follows erisml-lib's
+documented architecture for everything that decides:
 
-- the hand-written scene: the constitution (twin/stack/constitution.erisml, what people own) merged
-  with the household scene compiled from text (twin/stack/household.ir.json);
-- the classifier into a hand-named event vocabulary: the observation compiler, which patches the
-  scene IR with typed, validated elements;
-- the chooser LLM and DEME as a late veto: the MIR built from the scene and the evidence plane,
-  judged by the robot's executed lens, which ranks every candidate action.
+- the scene: the constitution (twin/stack/constitution.erisml, what people own) merged with the
+  household scene compiled from text (twin/stack/household.ir.json);
+- perception to the scene: erisml-compiler's observation compiler, which patches the scene IR with
+  typed, validated elements;
+- the candidate options: erisml-compiler's option projector, once per decision, compiles every act's
+  consequences into its own IR, and the twin's domain layer (stack/facts_builder.py, erisml-lib's
+  BatchEthicalFactsBuilder) maps each through the compiler's bridge to EthicalFacts;
+- ErisML as the constraint gate: an act the constitution prohibits now and no ruling can permit is
+  not a candidate;
+- DEME as the evaluator: DEMEPipeline built from the robot's DEME profile
+  (stack/profiles/home_care_robot.json): the Design Guide's hard-shell DAG, Geneva at tier 0 and
+  CorePhysicalSafety at tier 1 in the shell, AutonomyConsent and Beneficence inside it, every
+  decision a hash-chained DecisionProof.
 
 Every event lives in the scene IR. The evidence plane's own events (rulings, measurements, performed
 actions) are appended through `_record`, so a runtime rebuilt on the patched IR replays exactly.
 
 Concurrency: the service answers on parallel threads, and a reflex can arrive while a decision waits
-for the model. Every write to the scene happens under one lock; decisions run one at a time; the
-observation compiler runs outside the lock on a snapshot, and its patch (adds only, under ids no
-system event uses) is applied to the scene as it stands, so a reflex is never held up behind the
-model and never lost. (stackcheck1b d03: a reflex's measurement was appended while a decision
-compiled, the decision then applied its patch to the old snapshot, and the history guard refused.)
+for the model. Every write to the scene happens under one lock; decisions run one at a time; both
+model calls (the observation patch and the option projection) run outside the lock on a snapshot,
+and the patch (adds only, under ids no system event uses) is applied to the scene as it stands, so a
+reflex is never held up behind the model and never lost. (stackcheck1b d03: a reflex's measurement
+was appended while a decision compiled, the decision then applied its patch to the old snapshot, and
+the history guard refused.)
 
-The decision: the lens's top action; if the constitution forbids it now and it is elevated or
-governed, the governor rules on it; refused, it is set aside and the lens judges again without it.
-The manifest is the actuation boundary, as before.
+The decision: DEME's selection; if the constitution forbids it now and it is elevated or governed,
+the governor rules on it; refused, it is set aside and DEME decides again without it. The manifest
+is the actuation boundary, as before.
 """
 
 from __future__ import annotations
@@ -31,31 +39,31 @@ from __future__ import annotations
 import json
 import os
 import threading
-from datetime import datetime, timezone
 
 from brain import EMS, Brain, validate_facts, without_own_sounds
-from erisml.ethics.mir.profile import load_profile
+from erisml.ethics.domain.interfaces import CandidateOption, DomainAssessmentContext
+from erisml.ethics.interop.profile_adapters import pipeline_from_profile
+from erisml.ethics.profile_v04 import deme_profile_v04_from_dict
 from erisml_compiler.ir.schemas import CompilerIR
 from erisml_compiler.observation import (
     Observation,
     ObservationCompiler,
+    OptionProjector,
     append_event,
     apply_observation_patch,
+    consents_on_record,
     rebuild_runtime,
 )
 
-from stack.declarations import CAPABILITIES, DESCRIPTIONS
-from stack.mir_builder import EvidenceState, build_mir
+from stack.declarations import DESCRIPTIONS
+from stack.facts_builder import HomeFactsBuilder, capacity_of
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CONSTITUTION = os.path.join(HERE, "constitution.erisml")
 HOUSEHOLD = os.path.join(HERE, "household.ir.json")
-LENS = os.path.join(HERE, "lenses", "robot.json")
+PROFILE = os.path.join(HERE, "profiles", "home_care_robot.json")
 PERSON = "margaret"
-HAZARD_OF = {"smoke_detector": "smoke", "robot_smoke": "smoke", "co_alarm": "gas", "robot_co": "gas",
-             "heat_detector": "fire", "robot_thermal": "fire", "robot_flame_camera": "fire"}
-UNVOUCHED = ("stranger", "welcomed", "hostile")
-MEASURED = {"attack_measured": "person", "animal_attack_measured": "animal"}
+GOVERNOR_CHANNEL = "request_authority"  # how the robot asks the governor; not an act DEME chooses
 
 
 def merge(constitution: CompilerIR, household: CompilerIR) -> CompilerIR:
@@ -74,10 +82,19 @@ def merge(constitution: CompilerIR, household: CompilerIR) -> CompilerIR:
     return ir
 
 
+def _fact(f) -> dict | None:
+    return None if f is None else {"kind": f.kind, "subjects": f.subjects, "severity": f.severity,
+                                   "description": f.description}
+
+
+def _facts_of(projection, act: str) -> list:
+    return [_fact(f) for f in projection.facts.get(act, [])]
+
+
 class StackBrain(Brain):
     def __init__(self, scene_path: str = CONSTITUTION, adapter=None, live_scorer=None, desk_adapter=None,
-                 household_path: str = HOUSEHOLD, lens_path: str = LENS):
-        self.household_path, self.lens_path = household_path, lens_path
+                 household_path: str = HOUSEHOLD, profile_path: str = PROFILE):
+        self.household_path, self.profile_path = household_path, profile_path
         self._lock = threading.RLock()  # every write to the scene IR and the runtime
         self._deciding = threading.Lock()  # one decision at a time
         super().__init__(scene_path, adapter, live_scorer=live_scorer, desk_adapter=desk_adapter,
@@ -91,11 +108,12 @@ class StackBrain(Brain):
         self._rebuild()
         self.agent.record = self._record  # every evidence-plane event goes into the IR first
         self.observer = ObservationCompiler(self.adapter)
-        self.lens = load_profile(self.lens_path)
-        self.last_proof = None
-        self.last_signature: dict = {}  # act -> the signature of the inputs it was last chosen under
+        self.projector = OptionProjector(self.adapter)
+        self.builder = HomeFactsBuilder()
+        self.profile = deme_profile_v04_from_dict(json.load(open(self.profile_path, encoding="utf-8")))
+        self.pipeline = pipeline_from_profile(self.profile)
         self.acts = {a: str(c.get("description") or DESCRIPTIONS[a]) for a, c in self.caps.items()
-                     if a != "request_authority" and a in CAPABILITIES}
+                     if a != GOVERNOR_CHANNEL}
 
     def _rebuild(self):
         from erisml_compiler.runtime import SceneRuntime
@@ -116,14 +134,8 @@ class StackBrain(Brain):
             return super().reflex(req, camera_sensor)
 
     def performed(self, action: str) -> dict:
-        """The act is stamped with the signature of the judgement's inputs it was chosen under, so the
-        builder counts it done until those inputs change (mir_builder.signature)."""
         with self._lock:
-            sig = self.last_signature.get(action)
-            event = {"type": "action_performed", "actor": "robot", "content": action}
-            if sig:
-                event["conditions"] = [f"sig:{sig}"]
-            snap = self._record(event)
+            snap = self._record({"type": "action_performed", "actor": "robot", "content": action})
             return {"kind": "performed", "action": action, "obliged": snap.obliged, "moral_state": snap.machines}
 
     def event(self, ev: dict) -> dict:
@@ -139,32 +151,6 @@ class StackBrain(Brain):
         if seen:
             obs.append(Observation("perception", "robot", seen))
         return obs
-
-    def _evidence(self, facts: dict) -> EvidenceState:
-        st = self.agent.rt.machine_states()
-        alerts = frozenset(h for a in self.readings.trusted_alerts(facts.get("sensors", []))
-                           for name, h in HAZARD_OF.items() if a.startswith(name))
-        measured = None
-        for e in sorted(self.ir.events, key=lambda e: e.time_index):
-            if e.type in MEASURED and e.content in ("mild", "moderate", "severe"):
-                measured = (MEASURED[e.type], e.content)
-            if e.type == "animal_clear":
-                measured = None
-        ruling = next((e.content for e in reversed(self.agent.rt.events) if e.type == "governor_ruling"), None)
-        pose = (facts.get("margaret") or {}).get("pose")
-        return EvidenceState(
-            alerts=alerts, measured_attack=measured, governor_ruling=ruling,
-            centre_reachable=st.get("stratum:centre_contact") != "unreachable",
-            sensors_nominal=not self.readings.quarantined if hasattr(self.readings, "quarantined") else None,
-            # a need to be helped up comes from a fall: perception reports how she came down, and an
-            # unknown descent while on the floor counts as a possible fall (fail closed)
-            on_floor=(pose in ("lying_on_floor", "on_floor_sitting_or_kneeling")
-                      and (facts.get("margaret") or {}).get("came_down") != "under_her_own_control") if pose else None,
-            wild_animal_present=st.get("stratum:animal_standing") == "wild",
-            unvouched_visitor=st.get("stratum:visitor_standing") in UNVOUCHED,
-            device_compromised=st.get("stratum:machine_standing") == "compromised",
-            in_spray_zone=facts.get("spray_zone") == "margaret_inside",
-        )
 
     # ------------------------------------------------------------------ the decision
     def decide(self, req: dict, camera_sensor=None) -> dict:
@@ -187,33 +173,39 @@ class StackBrain(Brain):
 
         obs = self._observations(facts)
         patch = self.observer.compile(snapshot, obs, self.acts) if obs else None  # outside the lock
-        self._lock.acquire()
-        try:
+        with self._lock:
             if patch and patch.ops:
                 self.ir = apply_observation_patch(self.ir, patch)  # onto the scene as it stands now
                 self._rebuild()
-            return self._judge(req, facts, dropped, own, lapsed, floor, patch, verified, camera_sensor)
-        finally:
-            self._lock.release()
+            snapshot = self.ir
+        projection = self.projector.project(snapshot, self.acts)  # outside the lock
+        with self._lock:
+            return self._judge(req, facts, dropped, own, lapsed, floor, patch, projection, verified, camera_sensor)
 
-    def _judge(self, req, facts, dropped, own, lapsed, floor, patch, verified, camera_sensor) -> dict:
+    def _governable(self, action: str) -> bool:
+        cap = self.caps.get(action, {})
+        return bool(cap.get("elevated") or cap.get("governed"))
 
-        now = datetime.now(timezone.utc).isoformat()
+    def _judge(self, req, facts, dropped, own, lapsed, floor, patch, projection, verified, camera_sensor) -> dict:
+        default = self.ir.extra.get("default_action", "chores")
+        prohibited = set(self.agent.rt.snapshot().prohibited)
+        # ErisML, the constraint gate: an act prohibited now that no ruling can permit is not a candidate;
+        # nor is an act the projector gave no consequences for, which DEME cannot judge (fail closed)
+        offered = [a for a in self.acts if (a not in prohibited or self._governable(a))
+                   and a not in projection.unprojected]
+        built = self.builder.build_facts_batch(
+            [CandidateOption(a, self.acts[a]) for a in offered],
+            DomainAssessmentContext(state=self.ir, extra={"projection": projection, "person": PERSON}))
         excluded: list = []
         rulings: list = []
-        evidence = self._evidence(facts)
         while True:
-            offered = [a for a in self.acts if a not in excluded]
-            mir, report = build_mir(self.ir, evidence, PERSON, offered, now)
-            judged = self.lens.apply(mir)
-            proof = judged.proof(previous=self.last_proof)
-            self.last_proof = proof
-            action = judged.selected or self.ir.extra.get("default_action", "chores")
-            snap = self.agent.rt.snapshot()
-            cap = self.caps.get(action, {})
-            if action in snap.prohibited and (cap.get("elevated") or cap.get("governed")):
-                situation = json.dumps({"action": action, "needs": report.needs, "hazard": mir.hazard.hazard_immediacy},
-                                       ensure_ascii=False)
+            candidates = [a for a in offered if a not in excluded]
+            result = self.pipeline.decide([built[a] for a in candidates],
+                                          baseline_option_id=default if default in candidates else None)
+            action = result.selected_option_id or default
+            if action in self.agent.rt.snapshot().prohibited and self._governable(action):
+                situation = json.dumps({"action": action, "consequences": _facts_of(projection, action),
+                                        "urgency": _fact(projection.urgency)}, ensure_ascii=False)
                 # without a live scorer the analyzer (a gate that can only refuse) cannot score a new
                 # situation; the governor then rules on its witness bars and freshness alone, in the
                 # deferred mode reflexes use, and the record says so (brain8 on a full GPU, 2026-10-11)
@@ -224,36 +216,48 @@ class StackBrain(Brain):
                     ruling = dict(ruling, analyzer="deferred: no live scorer")
                 rulings.append(dict(ruling, requested_action=action))
                 self._step_ruling(ruling)
-                evidence = self._evidence(facts)
                 if action in self.agent.rt.snapshot().prohibited:
                     excluded.append(action)
                     continue
-            elif action in snap.prohibited:
-                excluded.append(action)
-                continue
             break
 
-        self.last_signature[action] = report.signature
         args = {"text": "Margaret, are you alright?"} if action == "check_in" else {}
         if action == "contact_monitoring_center":
-            args = {"message": json.dumps({"needs": report.needs, "consent": report.consent}, ensure_ascii=False)}
+            args = {"message": json.dumps({"consequences": _facts_of(projection, action),
+                                           "urgency": _fact(projection.urgency)}, ensure_ascii=False)}
         if action == EMS:
-            args = {"nature": "medical" if "medical" in report.needs else "fire" if "fire" in report.needs else "police"}
+            args = {"nature": self._ems_nature()}
         if not self._in_manifest(action):
             fb = self.manifest["body"]["fallback"]
             action, args = fb, {}
+        snap = self.agent.rt.snapshot()
+        proof = result.proof
         return {
             "kind": "decision", "tier": "stack", "facts": facts, "own_sounds": own, "lapsed": lapsed,
             "floor_events": floor, "input_layer": {"dropped": dropped},
             "observation_patch": None if patch is None else {"ops": patch.ops, "rejected": patch.rejected,
                                                              "agreement": patch.agreement},
-            "mir_hash": mir.hash(), "lens": {"name": self.lens.name, "version": self.lens.version, "hash": self.lens.hash},
-            "proof_hash": proof.proof_hash, "signature": report.signature, "done_unchanged": report.done_unchanged,
-            "needs": report.needs, "consent": report.consent, "capacity": report.capacity,
-            "vetoed": judged.pattern.vetoed, "ranked": judged.pattern.ranked,
-            "moral_state": self.agent.rt.machine_states(), "allowed": self.agent.rt.snapshot().allowed,
-            "obliged": [], "prohibited": self.agent.rt.snapshot().prohibited,
+            "projection": {"urgency": _fact(projection.urgency), "rejected": projection.rejected,
+                           "unprojected": projection.unprojected, "agreement": projection.agreement,
+                           "facts": {a: _facts_of(projection, a) for a in offered}},
+            "profile": {"name": self.profile.name, "version": self.profile.version,
+                        "hash": self.pipeline.config.profile_hash, "composition": result.composition},
+            "stages": result.stages, "proof_hash": proof.proof_hash if proof else None,
+            "consent": {a: who[PERSON] for a, who in consents_on_record(self.ir, self.acts).items() if PERSON in who},
+            "capacity": capacity_of(self.ir, PERSON) or "unknown",
+            "offered": offered, "vetoed": result.forbidden_options, "ranked": result.ranked_options,
+            "moral_state": self.agent.rt.machine_states(), "allowed": snap.allowed,
+            "obliged": [], "prohibited": snap.prohibited,
             "ruling": rulings[-1] if rulings else None, "rulings": rulings,
-            "action": {"action": action, "args": args, "reason": f"lens {self.lens.name}: {judged.pattern.trace[-1].name if judged.pattern.trace else ''}"},
+            "action": {"action": action, "args": args, "reason": f"DEME {self.profile.name}: {result.rationale}"},
             "state_seq": len(self.agent.rt.events), "manifest": self._manifest_sha(),
         }
+
+    def _ems_nature(self) -> str:
+        """The dispatcher's form asks what kind of service; it is read from the attested events."""
+        types = {e.type for e in self.ir.events}
+        if "danger_in_home" in types:
+            return "fire"
+        if "attack_measured" in types or "crime_suspected" in types:
+            return "police"
+        return "medical"
