@@ -476,7 +476,7 @@ def main():
         brain.manifest = load_verified(a.manifest or os.path.join(HERE, "manifest", stem + ".manifest.json"), a.scene)
         print(f"manifest: {len(brain.manifest['actions'])} actions, sha256 {brain.manifest['sha256']}", flush=True)
         if a.stack:
-            print(f"stack: lens {brain.lens.name} {brain.lens.version} sha256 {brain.lens.hash}", flush=True)
+            print(f"stack: DEME profile {brain.profile.name} {brain.profile.version} ({brain.profile.composition}) sha256 {brain.pipeline.config.profile_hash}", flush=True)
         print(f"brain: scene {a.scene}, robot tiers {[e.name for e in robot.all.experts.values()]} + compiled, "
               f"live scoring {'on' if scorer else 'off'}", flush=True)
     srv = ThreadingHTTPServer(("127.0.0.1", a.port), make_handler(chain, cam, a.backend, brain))
