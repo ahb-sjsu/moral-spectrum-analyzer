@@ -31,11 +31,14 @@ for run in sys.argv[1:]:
             k = rec.get("kind")
             for m in re.finditer(r'distance_to_robot_m": ([0-9.]+)', json.dumps(rec)):
                 maxd[name] = max(maxd.get(name, 0.0), float(m.group(1)))
-            ru = rec.get("ruling") if k == "decision" else None
-            if ru and ru.get("outcome") in ("elevate", "authorize_ems", "restraint"):
-                grants.append((name, d["id"], ru["outcome"], ru.get("witnesses"), ru.get("witness_bar")))
-            if ru and str(ru.get("outcome", "")).startswith("refuse"):
-                refusals.append((name, d["id"], ru.get("witnesses"), ru.get("witness_bar")))
+            # the DEME stack's records list every ruling of a decision (a refused act is set aside
+            # and DEME decides again); the earlier brain's record one
+            rulings = (rec.get("rulings") or [rec.get("ruling")]) if k == "decision" else []
+            for ru in rulings:
+                if ru and ru.get("outcome") in ("elevate", "authorize_ems", "restraint"):
+                    grants.append((name, d["id"], ru["outcome"], ru.get("witnesses"), ru.get("witness_bar")))
+                if ru and str(ru.get("outcome", "")).startswith("refuse"):
+                    refusals.append((name, d["id"], ru.get("witnesses"), ru.get("witness_bar")))
             if k == "authorize":
                 last[rec["action"]] = rec["verdict"]
                 if rec["verdict"] != "allowed":
