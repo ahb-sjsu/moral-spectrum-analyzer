@@ -294,3 +294,14 @@ def test_with_no_model_answering_the_compiled_tier_decides_and_nothing_is_lost(h
     assert cycle["tier"] == "compiled" and "no model answered" in cycle["action"]["reason"]
     assert cycle["action"]["action"] in b.acts
     assert [e.id for e in b.agent.rt.events] == [e.id for e in sorted(b.ir.events, key=lambda e: e.time_index)]
+
+
+def test_an_answer_with_no_valid_projection_is_no_answer(household):
+    """stackcheck9 d03: the onboard model returned every fact as a string; all were rejected, no act
+    was offered and the robot did nothing. Now the compiled tier decides, and the record says why."""
+    strings = {"urgency": None, "options": {"check_in": ["benefit: she is asked (moderate)"],
+                                            "chores": ["harm: she stays on the floor (grave)"]}}
+    b = make(household, FELL, strings)
+    cycle = b.decide({"facts": FALL_FACTS})
+    assert cycle["tier"] == "compiled"
+    assert "no act projected (2 facts rejected)" in cycle["action"]["reason"]

@@ -189,6 +189,12 @@ class StackBrain(Brain):
         except ModelUnavailable as e:
             # no model answered: the constitution's compiled tier decides, as in the earlier brain
             return self._compiled(req, facts, dropped, own, lapsed, floor, patch, str(e), verified, camera_sensor)
+        if gated and set(projection.unprojected) >= set(gated):
+            # the model answered but no act's consequences survived validation (stackcheck9 d03: every
+            # fact came back as a string, all 50 were rejected, nothing was offered, and the robot did
+            # nothing). An unusable answer is no answer: the compiled tier decides, and says why.
+            why = f"no act projected ({len(projection.rejected)} facts rejected)"
+            return self._compiled(req, facts, dropped, own, lapsed, floor, patch, why, verified, camera_sensor)
         with self._lock:
             return self._judge(req, facts, dropped, own, lapsed, floor, patch, projection, verified, camera_sensor)
 
