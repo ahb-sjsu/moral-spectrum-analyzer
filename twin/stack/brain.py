@@ -68,6 +68,16 @@ GOVERNOR_CHANNEL = "request_authority"  # how the robot asks the governor; not a
 # the projector's output budget: twenty-odd acts outgrew 8,000 tokens (rehearse-deme2), a reasoning
 # model spending from the same budget before it answers
 PROJECTION_MAX_TOKENS = 16000
+# when DEME leaves no act standing (every candidate vetoed, or a module failed and the tactical layer
+# failed closed) the robot holds and watches; it does not fall back to its chores (monograph audit,
+# 2026-10-12: a vetoed default had been actuated)
+HOLD = "wait_and_observe"
+# the constitution's words for her consent, recorded from the compiled consent when she asks in her
+# own words now (an observation, not her standing agreement): p6nolift lifts on her request to be
+# helped up (owner, 2026-10-10)
+CONSENT_EVENTS = {"physical_assist": "assistance_consented"}
+# the event types a governor's ruling writes besides moving strata (Brain._step_ruling)
+RULING_TYPES = {"restraint_authorized"}
 
 
 def merge(constitution: CompilerIR, household: CompilerIR) -> CompilerIR:
@@ -129,6 +139,8 @@ class StackBrain(Brain):
         self.builder = HomeFactsBuilder()
         self.profile = deme_profile_v04_from_dict(json.load(open(self.profile_path, encoding="utf-8")))
         self.pipeline = pipeline_from_profile(self.profile)
+        # a module that fails vetoes the option it could not judge, as the earlier gate did
+        self.pipeline.tactical.config.fail_closed = True
         self.acts = {a: str(c.get("description") or DESCRIPTIONS[a]) for a, c in self.caps.items()
                      if a != GOVERNOR_CHANNEL}
 
@@ -140,6 +152,60 @@ class StackBrain(Brain):
         self.agent.classifier.rt = rt
         self.agent.chooser.rt = rt
         self.gate.rt = rt
+
+    def self_test(self) -> None:
+        """Raise unless DEME judges under the robot's profile on the installed erisml-lib: the profile
+        pipeline decides one ordinary moment with every module answering and a proof made. (The
+        inherited test checked only the earlier output gate, which this brain does not decide with.)"""
+        from erisml_compiler.observation.options import OptionProjection
+
+        super().self_test()  # the reflexes' output gate; it resets the brain
+        acts = [a for a in ("chores", HOLD) if a in self.acts]
+        quiet = OptionProjection(facts={a: [] for a in acts}, urgency=None)
+        built = self.builder.build_facts_batch([CandidateOption(a, self.acts[a]) for a in acts],
+                                               DomainAssessmentContext(state=self.ir,
+                                                                       extra={"projection": quiet, "person": PERSON}))
+        result = self.pipeline.decide([built[a] for a in acts])
+        if result.em_failures or result.selected_option_id is None or result.proof is None:
+            raise RuntimeError(f"DEME profile self-test failed: failures {result.em_failures}, "
+                               f"selected {result.selected_option_id}, proof {result.proof is not None}")
+        self.reset()
+
+    def _ruling_can_permit(self, action: str, snap) -> bool:
+        """Whether a governor's ruling could permit an act prohibited now: it is elevated or governed,
+        and every norm prohibiting it reads what a ruling writes, a stratum or the restraint
+        authorization (Brain._step_ruling). A prohibition on other events (p6nolift: after a fall,
+        until she asks; the less-lethal opt-in) no ruling can lift."""
+        if not self._governable(action):
+            return False
+        norms = {n.id: n for n in self.ir.norms}
+        conds = self.agent.rt.conditions
+
+        def reads_stratum(tokens, depth=0) -> bool:
+            for t in tokens:
+                t = t[4:] if t.startswith("not:") else t
+                if t.startswith("stratum:") or t.split(":", 1)[-1].split("=")[0] in RULING_TYPES:
+                    return True
+                if t.startswith("cond:") and depth < 16 and reads_stratum(conds.get(t[5:], []), depth + 1):
+                    return True
+            return False
+
+        return all(reads_stratum(norms[nid].conditions) for nid in snap.reasons.get(action, []) if nid in norms)
+
+    def _candidate(self, action: str, snap) -> bool:
+        """ErisML, the constraint gate: permitted now, or one a ruling could permit."""
+        return action not in snap.prohibited or self._ruling_can_permit(action, snap)
+
+    def _consents_in(self, before: set) -> list:
+        """The constitution's consent events for her requests, in her own words, among the events a
+        patch added (CONSENT_EVENTS)."""
+        out = []
+        for e in self.ir.events:
+            if e.id in before or e.actor != PERSON or e.target not in CONSENT_EVENTS:
+                continue
+            if (e.type == "consent" and e.content == "consented") or e.type == "request":
+                out.append({"type": CONSENT_EVENTS[e.target], "actor": PERSON, "content": e.id})
+        return out
 
     def _record(self, event: dict):
         with self._lock:
@@ -194,13 +260,16 @@ class StackBrain(Brain):
             patch = self.observer.compile(snapshot, obs, self.acts) if obs else None  # outside the lock
             with self._lock:
                 if patch and patch.ops:
+                    before = {e.id for e in self.ir.events}
                     self.ir = apply_observation_patch(self.ir, patch)  # onto the scene as it stands now
                     self._rebuild()
+                    for e in self._consents_in(before):
+                        self._record(e)
                 snapshot = self.ir
                 # ErisML, the constraint gate, before the model is asked: only an act the constitution
                 # permits now, or one a ruling could permit, is projected and judged
-                prohibited = set(self.agent.rt.snapshot().prohibited)
-                gated = {a: d for a, d in self.acts.items() if a not in prohibited or self._governable(a)}
+                snap = self.agent.rt.snapshot()
+                gated = {a: d for a, d in self.acts.items() if self._candidate(a, snap)}
                 # the strata are moved only by the evidence plane's system events (verified
                 # credentials, attested readings, rulings): what the robot knows, not what anyone
                 # says, and the scene IR alone does not carry it (rehearse-deme1 d42: a verified
@@ -266,11 +335,10 @@ class StackBrain(Brain):
 
     def _judge(self, req, facts, dropped, own, lapsed, floor, patch, projection, verified, camera_sensor) -> dict:
         default = self.ir.extra.get("default_action", "chores")
-        prohibited = set(self.agent.rt.snapshot().prohibited)
+        snap = self.agent.rt.snapshot()
         # ErisML, the constraint gate: an act prohibited now that no ruling can permit is not a candidate;
         # nor is an act the projector gave no consequences for, which DEME cannot judge (fail closed)
-        offered = [a for a in self.acts if (a not in prohibited or self._governable(a))
-                   and a not in projection.unprojected]
+        offered = [a for a in self.acts if self._candidate(a, snap) and a not in projection.unprojected]
         built = self.builder.build_facts_batch(
             [CandidateOption(a, self.acts[a]) for a in offered],
             DomainAssessmentContext(state=self.ir, extra={"projection": projection, "person": PERSON}))
@@ -280,8 +348,8 @@ class StackBrain(Brain):
             candidates = [a for a in offered if a not in excluded]
             result = self.pipeline.decide([built[a] for a in candidates],
                                           baseline_option_id=default if default in candidates else None)
-            action = result.selected_option_id or default
-            if action in self.agent.rt.snapshot().prohibited and self._governable(action):
+            action = result.selected_option_id or HOLD
+            if action in self.agent.rt.snapshot().prohibited and self._ruling_can_permit(action, self.agent.rt.snapshot()):
                 situation = json.dumps({"action": action, "consequences": _facts_of(projection, action),
                                         "urgency": _fact(projection.urgency)}, ensure_ascii=False)
                 # without a live scorer the analyzer (a gate that can only refuse) cannot score a new
@@ -329,9 +397,11 @@ class StackBrain(Brain):
             "obliged": [], "prohibited": snap.prohibited,
             "ruling": rulings[-1] if rulings else None, "rulings": rulings,
             # the game's caption reads a proposal: here DEME's selection, with what each stage vetoed
-            "proposal": {"action": result.selected_option_id or default, "args": args,
+            "proposal": {"action": result.selected_option_id or HOLD, "args": args,
                          "reason": f"DEME selects, {why}" if why else "DEME selects"},
-            "action": {"action": action, "args": args, "reason": f"DEME {self.profile.name}: {result.rationale}"},
+            "action": {"action": action, "args": args,
+                       "reason": f"DEME {self.profile.name}: {result.rationale}" if result.selected_option_id
+                       else f"DEME left no act standing; the robot holds ({result.rationale})"},
             "state_seq": len(self.agent.rt.events), "manifest": self._manifest_sha(),
         }
 

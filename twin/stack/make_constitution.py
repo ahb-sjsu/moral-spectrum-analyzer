@@ -6,8 +6,12 @@ Kept: the robot's capabilities (the actuation boundary, signed in the manifest);
 plane's strata, oversight, system event types, sensor substrates, reflex force bands, emergency
 measures, evidence lapse and the device floor rules; the enrolled household's credentials; the
 constitutional prohibitions (authority only from evidence; no strike; force on an animal only while
-its attack is measured; restraint only on its authorization; the less-lethal limits); and the
-service's institutional parties (the robot, the monitoring centre, emergency services).
+its attack is measured; restraint only on its authorization; the less-lethal limits); the owner's
+non-defeasible duty-of-care prohibitions (no lifting a fallen person unless she asks, never while
+she is unresponsive: owner, 2026-10-04, revised 2026-10-10); and the service's institutional
+parties (the robot, the monitoring centre, emergency services). The event types the kept norms read
+stay declared; the brain records her request to be helped up from the compiled consent (stack/brain.py
+CONSENT_EVENTS).
 
 Dropped: every obligation, the case rules, the classifier's event vocabulary, the refusal tables,
 the capability harms. The person in care, her consents and everything that happens enter through
@@ -24,7 +28,10 @@ import yaml
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CONSTITUTIONAL = {"n3", "n6p", "n6r", "p0", "p4p", "p7", "ll1stun", "ll2stun", "ll3stun", "ll4stun",
-                  "ll1pray", "ll2pray", "ll3pray", "ll4pray", "ll5spray"}
+                  "ll1pray", "ll2pray", "ll3pray", "ll4pray", "ll5spray",
+                  # the owner's duty-of-care prohibitions: a ruling cannot lift them (monograph audit,
+                  # 2026-10-12: they had been dropped with the obligations)
+                  "p6nolift", "p6nolift_u"}
 PARTIES = {"robot", "monitoring_center", "emergency_services"}
 PERCEPTION_FLOOR = {"visitor", "wild_animal"}
 # named conditions the evidence plane's own code reads (twin/brain.py govern_live: an emergency call is
@@ -55,7 +62,7 @@ def main(argv=None) -> int:
     if missing:
         raise SystemExit(f"constitutional norms not found in the scene: {sorted(missing)}")
     # the named conditions the kept norms and the strata read, and those they in turn read
-    conditions, todo = {}, [t.split(":", 1)[1] for t in tokens_of(norms) if t.startswith("cond:")]
+    conditions, todo = {}, sorted(t.split(":", 1)[1] for t in tokens_of(norms) if t.startswith("cond:"))
     todo += sorted(EVIDENCE_PLANE_CONDITIONS)
     while todo:
         c = todo.pop()
@@ -70,6 +77,9 @@ def main(argv=None) -> int:
     # a model's reading
     gate_types = {str(g.get("trigger", "")).split("=")[0] for st in extra["strata"].values() for g in st.get("gates", [])}
     gate_only = {k: v for k, v in extra["event_types"].items() if k in gate_types and k not in system_types}
+    # the event types the kept norms read (event:fall, event:assistance_consented ...)
+    norm_types = {t.split(":", 1)[1].split("=")[0] for t in tokens_of(norms) if t.startswith("event:")}
+    gate_only.update({k: v for k, v in extra["event_types"].items() if k in norm_types and k not in system_types})
     # perception floor rules: the device rules, and what the camera measures (a person present, a wild
     # animal present), recorded in every tier from the perception facts (perfect perception assumed)
     rules = extra.get("offline", {}).get("events", [])

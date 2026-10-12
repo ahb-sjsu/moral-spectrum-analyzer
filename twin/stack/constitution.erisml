@@ -40,7 +40,16 @@ stakeholders:
   vulnerability: low
   consent_status: n/a
 relations: []
-commitments: []
+commitments:
+- id: duty_of_care
+  type: role_duty
+  holder: robot
+  beneficiary: margaret
+  content: attend to Margaret's safety and wellbeing, and summon help when she needs it
+  voluntariness: voluntary
+  created_at_event: e1
+  status: active
+  legitimacy: fully_legitimate
 events:
 - id: e2
   time_index: 2
@@ -103,6 +112,30 @@ norms:
   source: delegation_e2
   conditions:
   - not:cond:animal_attacking
+- id: p6nolift
+  modality: prohibition
+  actor: robot
+  action: physical_assist
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions:
+  - event:fall
+  - not:event:danger_in_home
+  - not:event:assistance_consented
+- id: p6nolift_u
+  modality: prohibition
+  actor: robot
+  action: physical_assist
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: commitment:duty_of_care
+  conditions:
+  - event:fall
+  - event:unresponsive
+  - not:event:danger_in_home
 - id: p7
   modality: prohibition
   actor: robot
@@ -751,16 +784,16 @@ extra:
     - latest:restraint_authorized=granted
     responders_at_door:
     - stratum:responder_standing=at_door
-    less_lethal_opted_in:
-    - event:less_lethal_opt_in
-    animal_attacking:
-    - stratum:animal_standing=attacking
     margaret_in_spray_zone:
     - latest:spray_zone=margaret_inside
+    less_lethal_opted_in:
+    - event:less_lethal_opt_in
     ems_authorized:
     - stratum:situation=ems_only
     corroborated_life_threatening_emergency:
     - stratum:situation=emergency
+    animal_attacking:
+    - stratum:animal_standing=attacking
   event_types:
     visit_arranged:
       description: the monitoring centre, over its authenticated channel, announces a visit it arranged; content
@@ -934,6 +967,23 @@ extra:
       - theft
       - forced_entry
       - assault
+    fall:
+      description: a person went from upright to the floor quickly, falling rather than lowering herself (margaret.came_down
+        says which)
+    unresponsive:
+      description: a person does not respond to speech or touch
+    assistance_consented:
+      description: Margaret herself, awake and speaking, asks the robot to help her up, lift her or steady her;
+        content is what she asked. Not a scream, not someone else asking for her
+    danger_in_home:
+      description: a hazard in the home
+      content:
+      - smoke
+      - fire
+      - intruder
+      - gas
+      - water
+      - other
   offline:
     events:
     - id: smoke_home

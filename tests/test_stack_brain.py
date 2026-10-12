@@ -165,10 +165,87 @@ def test_an_ordinary_moment_asks_nothing(household):
 
 
 def test_an_act_whose_consequences_were_not_projected_is_not_a_candidate(household):
-    b = make(household, {}, projection(deploy_stun=[f("benefit", "minor")]))
+    b = make(household, {}, projection(check_in=[f("benefit", "minor")]))
     cycle = b.decide({"facts": {"margaret": {"pose": "seated", "room": "living area"}}})
-    assert set(cycle["offered"]) <= {"deploy_stun"}  # nothing else was projected
+    assert set(cycle["offered"]) <= {"check_in"}  # nothing else was projected
     assert "chores" in cycle["projection"]["unprojected"]
+
+
+def test_an_act_no_ruling_can_permit_is_never_projected(household):
+    """The less-lethal opt-in is the household's, not the governor's: until it is recorded the stun
+    is not a candidate, and the model is not asked about it."""
+    b = make(household, {})
+    snap = b.agent.rt.snapshot()
+    assert not b._candidate("deploy_stun", snap)
+    assert b._candidate("restrain_person", snap)  # a ruling writes its authorization
+    assert b._candidate("physical_assist", snap)  # n3 reads the strata
+
+
+def test_after_a_fall_no_ruling_can_make_it_lift_her_until_she_asks(household, monkeypatch):
+    """p6nolift (owner, 2026-10-04, revised 2026-10-10): after a fall the robot does not lift her on
+    its own judgement, and a ruling cannot change that; her own request to be helped up lifts the
+    rule (the governor's ruling is still needed, n3)."""
+    b = make(household, FELL)
+    b._record({"type": "fall", "actor": "margaret"})
+    snap = b.agent.rt.snapshot()
+    assert "p6nolift" in snap.reasons["physical_assist"] and not b._candidate("physical_assist", snap)
+    asked = {"events": [{"type": "request", "actor": "margaret", "target": "physical_assist",
+                         "content": "Help me up, please."}]}
+    b.observer.adapter = type(b.observer.adapter)({OBSERVER: json.dumps(asked), PROJECTOR: json.dumps(AFTER_FALL)})
+    b.projector.adapter = b.observer.adapter
+    b.decide({"facts": FALL_FACTS})
+    assert "assistance_consented" in [e.type for e in b.ir.events]
+    snap = b.agent.rt.snapshot()
+    assert "p6nolift" not in snap.reasons.get("physical_assist", []) and b._candidate("physical_assist", snap)
+
+
+def test_while_she_is_unresponsive_no_request_lifts_the_rule(household):
+    b = make(household, FELL)
+    b._record({"type": "fall", "actor": "margaret"})
+    b._record({"type": "unresponsive", "actor": "margaret"})
+    b._record({"type": "assistance_consented", "actor": "margaret"})
+    snap = b.agent.rt.snapshot()
+    assert "p6nolift_u" in snap.reasons["physical_assist"] and not b._candidate("physical_assist", snap)
+
+
+def test_when_deme_leaves_nothing_standing_the_robot_holds(household, monkeypatch):
+    """A vetoed default was actuated before (monograph audit, 2026-10-12): now the robot holds."""
+    b = make(household, {})
+    real = b.pipeline.decide
+
+    def nothing_standing(options, **kw):
+        r = real(options, **kw)
+        r.selected_option_id = None
+        return r
+
+    monkeypatch.setattr(b.pipeline, "decide", nothing_standing)
+    cycle = b.decide({"facts": {"margaret": {"pose": "seated", "room": "living area"}}})
+    assert cycle["action"]["action"] == "wait_and_observe"
+    assert "holds" in cycle["action"]["reason"]
+
+
+def test_a_module_that_fails_vetoes(household, monkeypatch):
+    """fail_closed: a module that raises vetoes the options it could not judge."""
+    b = make(household, {})
+    assert b.pipeline.tactical.config.fail_closed
+    em = next(em for em in b.pipeline.tactical.ems if "beneficence" in em.em_name.lower())
+
+    def broken(*a, **k):
+        raise RuntimeError("broken module")
+
+    monkeypatch.setattr(em, "judge", broken)
+    cycle = b.decide({"facts": {"margaret": {"pose": "seated", "room": "living area"}}})
+    assert cycle["action"]["action"] == "wait_and_observe"
+
+
+def test_the_self_test_runs_the_profile_pipeline(household, monkeypatch):
+    b = make(household, {})
+    b.self_test()
+    em = next(em for em in b.pipeline.tactical.ems if "beneficence" in em.em_name.lower())
+    # the self-test resets the brain, which builds the modules again: break the class
+    monkeypatch.setattr(type(em), "judge", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("broken")))
+    with pytest.raises(RuntimeError, match="DEME profile self-test failed"):
+        b.self_test()
 
 
 def test_a_reflex_on_another_thread_during_the_patch_is_never_lost(household, monkeypatch):
