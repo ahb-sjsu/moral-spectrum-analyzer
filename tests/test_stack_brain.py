@@ -272,7 +272,7 @@ def test_only_acts_the_constitution_could_permit_are_projected(household):
     b = make(household, FELL, AFTER_FALL)
     asked = {}
     real = b.projector.project
-    b.projector.project = lambda ir, acts: (asked.update(acts=set(acts)), real(ir, acts))[1]
+    b.projector.project = lambda ir, acts, **kw: (asked.update(acts=set(acts)), real(ir, acts, **kw))[1]
     b.decide({"facts": FALL_FACTS})
     prohibited = set(b.agent.rt.snapshot().prohibited)
     assert asked["acts"] and asked["acts"] < set(b.acts)
@@ -286,7 +286,7 @@ def test_with_no_model_answering_the_compiled_tier_decides_and_nothing_is_lost(h
 
     b = make(household, FELL, AFTER_FALL)
 
-    def down(ir, acts):
+    def down(ir, acts, **kw):
         raise ModelUnavailable("onboard: timeout after 90.0s")
 
     b.projector.project = down
@@ -305,3 +305,18 @@ def test_an_answer_with_no_valid_projection_is_no_answer(household):
     cycle = b.decide({"facts": FALL_FACTS})
     assert cycle["tier"] == "compiled"
     assert "no act projected (2 facts rejected)" in cycle["action"]["reason"]
+
+
+def test_the_projector_sees_what_the_evidence_plane_has_attested(household):
+    """rehearse-deme1 d42: the evidence plane had verified the grandson's credential (visitor_standing
+    household), but the projector saw only the scene IR and projected him as a stranger. The strata,
+    moved only by system events, now reach it as attested states."""
+    b = make(household, FELL, AFTER_FALL)
+    seen = {}
+    real = b.projector.project
+    b.projector.project = lambda ir, acts, **kw: (seen.update(kw), real(ir, acts, **kw))[1]
+    b.decide({"facts": FALL_FACTS})
+    attested = seen["attested"]
+    assert attested and all(k.startswith("stratum:") for k in attested)
+    assert "stratum:visitor_standing" in attested
+

@@ -185,7 +185,12 @@ class StackBrain(Brain):
                 # permits now, or one a ruling could permit, is projected and judged
                 prohibited = set(self.agent.rt.snapshot().prohibited)
                 gated = {a: d for a, d in self.acts.items() if a not in prohibited or self._governable(a)}
-            projection = self.projector.project(snapshot, gated)  # outside the lock
+                # the strata are moved only by the evidence plane's system events (verified
+                # credentials, attested readings, rulings): what the robot knows, not what anyone
+                # says, and the scene IR alone does not carry it (rehearse-deme1 d42: a verified
+                # grandson was projected as a stranger)
+                attested = {k: v for k, v in self.agent.rt.machine_states().items() if k.startswith("stratum:")}
+            projection = self.projector.project(snapshot, gated, attested=attested)  # outside the lock
         except ModelUnavailable as e:
             # no model answered: the constitution's compiled tier decides, as in the earlier brain
             return self._compiled(req, facts, dropped, own, lapsed, floor, patch, str(e), verified, camera_sensor)
