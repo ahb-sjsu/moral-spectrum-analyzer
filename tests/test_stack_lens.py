@@ -144,3 +144,18 @@ def test_the_judgement_depends_on_the_extracted_bond_not_the_words():
         return r.selected, sorted(r.vetoed)
 
     assert judged("I'm alright, don't call an ambulance.") == judged("No ambulance, thank you. I'm fine.")
+
+
+def test_an_act_already_done_since_the_last_news_is_not_repeated():
+    """stackcheck4 d03: nothing marked a referral as done, and the robot referred 28 times running.
+    Once performed, an act adds nothing until something new happens; news makes it available again."""
+    base = [HAZARD, dict(type="unresponsive", actor="margaret")]
+    referred = scene(*base, dict(type="action_performed", actor="robot", content="contact_monitoring_center"),
+                     dict(type="monitoring_center_reply", actor="monitoring_center", content="on_the_line"),
+                     facts=[FELL])
+    r, report = judge(referred, centre_reachable=True, on_floor=True)
+    assert report.done_since_news == ["contact_monitoring_center"] and r.selected != "contact_monitoring_center"
+    news = scene(*base, dict(type="action_performed", actor="robot", content="contact_monitoring_center"),
+                 dict(type="hazard", target="margaret", content="imminent"), facts=[FELL])
+    r2, report2 = judge(news, centre_reachable=True, on_floor=True)
+    assert report2.done_since_news == []
