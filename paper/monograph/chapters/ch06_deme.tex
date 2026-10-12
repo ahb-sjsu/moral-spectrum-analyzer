@@ -217,14 +217,16 @@ The tier sets both the module's weight in aggregation and whether its veto count
 Figure~\ref{fig:deme-tiers} gives the defaults of the tactical layer and the modules that exist
 at each tier. The tier packages state their intent. Tier 0 modules encode constraints that
 governance profiles cannot disable. Tier 1 is for physical safety, tier 2 for rights and
-fairness, tier 3 for soft values and tier 4 for checks on the governance system itself. The
-packages for tiers 1, 3 and 4 contain no modules. Each holds a comment that names planned modules
-(\code{CorePhysicalSafetyEM}, \code{ProxemicsSafetyEM}, \code{BeneficenceEM},
+fairness, tier 3 for soft values and tier 4 for checks on the governance system itself. On the
+main branch the packages for tiers 1, 3 and 4 contain no modules. Each holds a comment that names
+planned modules (\code{CorePhysicalSafetyEM}, \code{ProxemicsSafetyEM}, \code{BeneficenceEM},
 \code{EnvironmentalImpactEM}, \code{PatternGuardEM}, \code{ProfileIntegrityEM}) and an empty
-export list.
+export list. The branch of pull request 151 adds the first module of tier 1 and of tier 3
+(Section~\ref{sec:deme-composition}). Tier 4 is still empty.
 % src: lib:src/erisml/ethics/layers/tactical.py:46-66 (tier_weights, tier_veto_enabled)
 % src: lib:src/erisml/ethics/modules/tier0/__init__.py:5-17
-% src: lib:src/erisml/ethics/modules/tier1/__init__.py:5-24, tier3/__init__.py:5-24, tier4/__init__.py:5-24
+% src: lib:src/erisml/ethics/modules/tier1/__init__.py:5-24, tier3/__init__.py:5-24, tier4/__init__.py:5-24 (main)
+% src: erisml-lib PR 151 (branch feat/hard-shell-dag) modules/tier1/core_physical_safety_em.py, modules/tier3/beneficence_em.py
 
 \begin{figure}[t]
 \centering
@@ -390,6 +392,10 @@ effect, but in the tactical layer, through \code{GenevaEMV2}.
 % src: lib:src/erisml/ethics/layers/reflex.py:114-148 (defaults only when config is None)
 % src: lib:src/erisml/ethics/layers/pipeline.py:44-50 (PipelineConfig default_factory)
 % src: checked 2026-10-03 with python, len(DEMEPipeline().reflex.config.veto_rules) == 0
+On the branch of pull request 148 the default reflex configuration is none, so a default pipeline
+holds the three rules, and on the branch of pull request 150 a pipeline built from a profile carries
+them too.
+% src: erisml-lib PR 148 layers/pipeline.py (reflex_config: Optional = None); PR 150 interop/profile_adapters.py
 
 In the same phase the pipeline applies the deontic maxim gate to each option. An option whose
 maxim fails the gate joins the reflex-vetoed set, and the reason is recorded.
@@ -483,6 +489,72 @@ set. So the pipeline's \code{selected\_option\_id} can name an option that is al
 twin does, rather than trust the selected option alone.
 % src: lib:src/erisml/ethics/layers/pipeline.py:245-256 (selected_id = ranked[0][0], no forbidden check)
 % src: gtc:twin/output_gate.py:240-247 (the twin filters ranked against forbidden and allowed)
+On the branch of pull request 148 the ranking runs over the options outside the forbidden set, so
+a forbidden option is never ranked or selected, and an advisory tier's flag no longer removes an
+option that tier may not veto.
+% src: erisml-lib PR 148, tests/test_pipeline_selection_safety.py
+
+\section{Composition patterns wire the modules as a graph}\label{sec:deme-composition}
+
+The pipeline described above runs every module in one stage and takes the weighted mean of
+Equation~\eqref{eq:deme-aggregate}.
+That is not the design of the library's own guide, which wires the modules in one of a few
+patterns, each a directed graph with no cycles, and allows no more than two or three in a system.
+Three things followed from the flat stage.
+No shell kept the inner modules off an option the constitutional and safety modules had vetoed.
+Tiers 1 and 3 held no modules.
+And no shipped module read the expected benefit of an option onto any dimension, so benefit never
+reached the ranking, and every option looked equally worth doing.
+The pipeline was therefore biased toward doing nothing.
+% src: erisml-lib docs/guides/DEME_EFM_Design_Guide_v0.1.md sections 3.2 and 5
+% src: lib:src/erisml/ethics/moral_vector.py from_ethical_facts (no benefit term); modules/tier0/geneva_em.py, tier2/autonomy_consent_em.py (main)
+
+The branch of pull request 151 builds the guide's patterns.
+A pattern is an ordered sequence of stages.
+Each stage runs the modules it admits, by tier and by registry tag, on the options still standing.
+A stage may veto, under the tier's veto rights and the governance profile, it may narrow the options
+to those within a tolerance of its best, and it may rank them.
+No stage restores an option an earlier stage removed.
+The hard shell of section 5.1 of the guide makes tiers 0 and 1 a veto shell and lets tiers 2 to 4
+judge and rank only what the shell passes.
+The fairness wrapper of section 5.2 adds a last stage in which the fairness modules re-rank the
+options the welfare modules left, and may not veto.
+The lexicographic stack of section 5.3 has one level for each tier, each passing on only its
+best-satisfying options.
+The earlier single stage remains as the pattern \code{flat}, the default, and every earlier test of
+the library passes under it.
+The profile names its pattern, and the result and the proof record what each stage evaluated,
+vetoed and filtered.
+% src: erisml-lib PR 151 layers/composition.py, layers/pipeline.py, profile_v04.py (composition)
+% src: erisml-lib PR 151 tests/test_composition_patterns.py (18 tests)
+
+The same branch adds the guide's modules that the robot's profile needs.
+\code{CorePhysicalSafetyEMV2} at tier 1 vetoes an option whose predicted harm exceeds its threshold
+when a safer option exists, and the threshold tightens as uncertainty grows.
+Whether a safer option exists depends on the other candidates, so the module judges the set of
+options at once.
+\code{BeneficenceEMV2} at tier 3 is advisory and reads the welfare of an option, its benefit net of
+its harm, onto dimension 0, which the library's architecture names physical harm and welfare.
+This is the path by which benefit now reaches the ranking.
+\code{AutonomyConsentEMV2} now follows section 4.3.1 of the guide.
+A refusal, or a missing consent, of a person with capacity vetoes the option, and an unknown capacity
+counts as capacity.
+A person without capacity does not bind by refusal.
+The emergency override applies only when the hazard is imminent and mortal, the option is necessary
+to prevent severe harm and governance allows it, and each override is recorded with its reason and
+with whether a human must confirm it.
+Each of these modules reads the whole vector of its facts and judges its own dimensions, where the
+consent module before filled six dimensions with a constant.
+% src: erisml-lib PR 151 modules/tier1/core_physical_safety_em.py, modules/tier3/beneficence_em.py, modules/tier2/autonomy_consent_em.py
+% src: erisml-lib docs/moralvector_v2_architecture.md section 3 (dimension 0 physical_harm/welfare)
+
+On the branch of pull request 150 the pipeline also executes the governance profile.
+Its dimension weights, its module and stakeholder weights, its explicit veto modules, its disabled
+tiers, its score threshold and its tie breaker decide the outcome, and the worst-off aggregation
+across stakeholders is executed.
+Before, the pipeline read none of them, and always preferred a baseline within five percent of the
+best option, which also favoured doing nothing.
+% src: erisml-lib PR 150 layers/pipeline.py (PipelineConfig.governance), governance/aggregation_v2.py, interop/profile_adapters.py
 
 \section{Each decision leaves a hashed proof}\label{sec:deme-proof}
 
@@ -774,6 +846,40 @@ The self-test exists because of an incident. Its docstring records that developm
 2026-10-02 ran a whole development set on a gate that raised on every call, against a stale
 copy of the library, and nothing reported it.
 % src: gtc:twin/brain.py:579-582
+
+\subsection{In the re-architected brain DEME is the evaluator}\label{sec:deme-stack}
+
+Everything above describes the brain of the graded runs, in which DEME is a gate on one proposal.
+The re-architected brain, which runs as brain8 beside it, follows the library's documented
+architecture instead, and DEME judges every candidate act.
+Once in each decision erisml-compiler's option projector asks the model for the consequences of
+every act the robot can take, as ethical facts of the scene's kinds, and for the urgency of the
+situation once.
+The compiler validates each fact, assigns its id and builds one scene for each act, in which the
+act's projected harm and benefit replace the present ones, the standing facts stay, consent comes
+from the recorded consents and refusals rather than from the model, and the act's description is
+the text from which its maxim is read.
+The twin's domain layer, an implementation of the library's builder of facts for a batch of
+options, maps each such scene through the compiler's bridge to the act's \code{EthicalFacts}, and
+adds the one fact a scene does not carry, the person's capacity to decide, from the attested
+check-in events.
+% src: erisml-compiler PR 42 observation/options.py (OptionProjector, option_ir); PR 41 erisml_backend/v3_bridge.py (benefit, urgency, option_id)
+% src: gtc:twin/stack/facts_builder.py (HomeFactsBuilder); erisml-lib domain/interfaces.py (BatchEthicalFactsBuilder)
+
+The constitution then acts as the constraint gate of the library's design.
+An act it prohibits that no ruling can permit is not a candidate, and nor is an act for which the
+model gave no consequences, which DEME could not judge.
+The pipeline is built from the robot's profile, which names the hard-shell pattern, Geneva as the
+base module, and the safety, consent and beneficence modules of Section~\ref{sec:deme-composition}.
+If the selected act is one the constitution permits only on a ruling, the governor rules as before,
+and a refused act is set aside while DEME decides again among the rest.
+Every decision leaves a chained proof with the profile's hash.
+No table in the twin says what an act is worth or when it is adequate.
+Three decisions of the owner that the earlier lens carried wait for modules of tier 4 and of privacy
+that are not yet built, to refer to the centre when it can decide in time, to keep her privacy
+except in a corroborated emergency, and to ask a human before a guarded act she requests.
+% src: gtc:twin/stack/brain.py (_judge), twin/stack/profiles/home_care_robot.json (notes)
+% src: gtc:tests/test_stack_brain.py (13 tests, commit 25550dc)
 
 \section{Which parts are deterministic}\label{sec:deme-deterministic}
 

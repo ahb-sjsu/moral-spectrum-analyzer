@@ -1,5 +1,7 @@
 # Re-architecture design: interfaces and build order
 
+> **Superseded in part, 2026-10-12.** The evaluator this document describes (a MoralInterfaceRecord, a lens, a lexicographic stack and a declared table of adequacy beside DEME) was set aside at the owner's direction to follow erisml-lib's own architecture. The twin now judges through DEMEPipeline on EthicalFacts built per option by erisml-compiler's option projector and bridge, under a DEME profile with the Design Guide's hard-shell pattern (erisml-lib PRs 150 and 151, erisml-compiler PRs 41 and 42, gtc commit 25550dc). The scene, observation compiler, vector clocks and evidence plane described here stand. See the monograph, Chapter 6 ("Composition patterns wire the modules as a graph" and "In the re-architected brain DEME is the evaluator") and Appendix D ("The stack follows the library's architecture").
+
 Status: working design, 2026-10-11. It follows `REARCHITECTURE_MAPPING_2026-10.md`, which the owner approved, and erisml-lib's own `docs/guides/DEME_EFM_Design_Guide_v0.1.md` (cited below as *the Guide*). The rule of this design is that nothing new is invented where the Guide or the monograph already specifies it.
 
 ## 1. The shape in one paragraph

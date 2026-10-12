@@ -436,6 +436,22 @@ can load a different graph.
 % src: src/erisml_compiler/em_dag/__init__.py:1-13
 % src: docs/architecture.md:228-254
 
+This graph is not the design of DEME, and the two should not be confused.
+In DEME a module is the perspective of one stakeholder or interest on the whole moral vector, so a
+safety module reads all nine dimensions with its weight on physical harm, and no module owns a
+dimension.
+The graph is rooted in human dignity, its constitutional module, Geneva, sits at tier 0 with a veto,
+and the modules are wired by one of the composition patterns of erisml-lib's design guide, such as a
+hard shell of constitutional and safety modules around the modules of rights and welfare
+(Section~\ref{sec:deme-composition}).
+The compiler's graph gives each module one dimension, has no Geneva module and no tiers, and adds
+its outputs into one vector.
+It serves the consequentialist projection only.
+The re-architected twin does not use it, and judges through DEME's pipeline on facts the compiler
+extracts for each option (Section~\ref{sec:deme-stack}).
+% src: erisml-lib docs/moralvector_v2_architecture.md section 6; docs/guides/DEME_EFM_Design_Guide_v0.1.md section 5
+% src: src/erisml_compiler/em_dag/profiles/default.yaml:11-24 (one dimension per module)
+
 \subsection{The module contract}
 
 A module subclasses \code{EthicalModule}. It declares three class attributes, a \code{name}, the
