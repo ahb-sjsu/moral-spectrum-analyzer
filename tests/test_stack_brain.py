@@ -160,3 +160,22 @@ def test_without_a_live_scorer_the_analyzer_is_deferred_and_the_record_says_so(h
     assert b.scorer is None
     cycle = b.decide({"facts": FALL_FACTS})
     assert seen["fast"] is True and cycle["rulings"][0]["analyzer"] == "deferred: no live scorer"
+
+
+def test_system_events_appended_while_the_model_thinks_keep_their_order(household):
+    """stackcheck2 d19: two system events were appended while a decision compiled outside the lock;
+    the patch's events sorted between them and the history guard refused. The compiler now stamps a
+    patch against the scene it is applied to (erisml-compiler 4769d24)."""
+    b = make(household, FELL)
+    real = b.observer.compile
+
+    def compile_while_two_events_land(ir, obs, acts):
+        patch = real(ir, obs, acts)
+        b._record({"type": "governor_ruling", "actor": "robot", "content": "refuse"})
+        b._record({"type": "attack_measured", "actor": "reflex", "content": "mild"})
+        return patch
+
+    b.observer.compile = compile_while_two_events_land
+    cycle = b.decide({"facts": FALL_FACTS})
+    assert cycle["action"]["action"]
+    assert [e.id for e in b.agent.rt.events] == [e.id for e in sorted(b.ir.events, key=lambda e: e.time_index)]
