@@ -92,6 +92,19 @@ def _facts_of(projection, act: str) -> list:
     return [_fact(f) for f in projection.facts.get(act, [])]
 
 
+STAGE_WORDS = {"shell": "the shell (Geneva, safety) vetoed", "inner": "consent and welfare vetoed"}
+
+
+def _stage_summary(stages: list) -> str:
+    """One line for the caption: what each stage of the hard shell vetoed."""
+    parts = []
+    for s in stages:
+        if s.get("vetoed"):
+            words = STAGE_WORDS.get(s["stage"], f"{s['stage']} vetoed")
+            parts.append(f"{words} {', '.join(s['vetoed'][:4])}" + (" and more" if len(s["vetoed"]) > 4 else ""))
+    return "; ".join(parts)
+
+
 class StackBrain(Brain):
     def __init__(self, scene_path: str = CONSTITUTION, adapter=None, live_scorer=None, desk_adapter=None,
                  household_path: str = HOUSEHOLD, profile_path: str = PROFILE):
@@ -294,6 +307,7 @@ class StackBrain(Brain):
             action, args = fb, {}
         snap = self.agent.rt.snapshot()
         proof = result.proof
+        why = _stage_summary(result.stages)
         return {
             "kind": "decision", "tier": "stack", "facts": facts, "own_sounds": own, "lapsed": lapsed,
             "floor_events": floor, "input_layer": {"dropped": dropped},
@@ -311,6 +325,9 @@ class StackBrain(Brain):
             "moral_state": self.agent.rt.machine_states(), "allowed": snap.allowed,
             "obliged": [], "prohibited": snap.prohibited,
             "ruling": rulings[-1] if rulings else None, "rulings": rulings,
+            # the game's caption reads a proposal: here DEME's selection, with what each stage vetoed
+            "proposal": {"action": result.selected_option_id or default, "args": args,
+                         "reason": f"DEME selects, {why}" if why else "DEME selects"},
             "action": {"action": action, "args": args, "reason": f"DEME {self.profile.name}: {result.rationale}"},
             "state_seq": len(self.agent.rt.events), "manifest": self._manifest_sha(),
         }

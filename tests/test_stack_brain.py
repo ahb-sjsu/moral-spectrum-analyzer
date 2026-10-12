@@ -78,6 +78,10 @@ def test_after_a_fall_it_asks_her_first_and_records_the_dag_and_the_proof(househ
     b = make(household, FELL, AFTER_FALL)
     cycle = b.decide({"facts": FALL_FACTS})
     assert cycle["action"]["action"] == "check_in"
+    # the game's caption reads a proposal: DEME's selection and what each stage vetoed
+    assert cycle["proposal"]["action"] == "check_in"
+    assert "the shell (Geneva, safety) vetoed chores" in cycle["proposal"]["reason"]
+    assert "consent and welfare vetoed call_emergency_services" in cycle["proposal"]["reason"]
     stages = {s["stage"]: s["vetoed"] for s in cycle["stages"]}
     assert stages["shell"] == ["chores"]  # a safer option exists
     assert stages["inner"] == ["call_emergency_services"]  # no consent, and she can be asked
