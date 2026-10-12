@@ -65,7 +65,7 @@ class BuildReport:
     needs: dict[str, float] = field(default_factory=dict)
     consent: dict[str, str] = field(default_factory=dict)
     capacity: str = "unknown"
-    done_since_news: List[str] = field(default_factory=list)
+    done_since_news: list[str] = field(default_factory=list)
 
 
 def _max_rank(values: Sequence[str | None], scale: tuple[str, ...]) -> str | None:

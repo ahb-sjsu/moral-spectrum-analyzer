@@ -111,7 +111,7 @@ I sorted the rules by what they encode. There are 77, all with actor `robot`. Fu
 | EMS through the governor | n6b, n6c | 2 |
 | Approach | n8a–n8f | 6 |
 | Ask the governor | n9a–n9f | 6 |
-| Protection | p0–p12, p2a, p2w, p4p, p5r, p6help, p6nolift, p6nolift_u, p9m, p9v, p10c, p10v | 25 |
+| Protection | p0–p12, p2a, p2w, p4p, p5r, p6help, p6nolift, p6nolift_u, p9m, p9v, p10c, p10v | 24 |
 | Less-lethal devices | ll1–ll7 | 13 |
 | Chores (the one permission) | n7 | 1 |
 
