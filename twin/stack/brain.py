@@ -65,6 +65,9 @@ HOUSEHOLD = os.path.join(HERE, "household.ir.json")
 PROFILE = os.path.join(HERE, "profiles", "home_care_robot.json")
 PERSON = "margaret"
 GOVERNOR_CHANNEL = "request_authority"  # how the robot asks the governor; not an act DEME chooses
+# the projector's output budget: twenty-odd acts outgrew 8,000 tokens (rehearse-deme2), a reasoning
+# model spending from the same budget before it answers
+PROJECTION_MAX_TOKENS = 16000
 
 
 def merge(constitution: CompilerIR, household: CompilerIR) -> CompilerIR:
@@ -122,7 +125,7 @@ class StackBrain(Brain):
         self._rebuild()
         self.agent.record = self._record  # every evidence-plane event goes into the IR first
         self.observer = ObservationCompiler(self.adapter)
-        self.projector = OptionProjector(self.adapter)
+        self.projector = OptionProjector(self.adapter, max_tokens=PROJECTION_MAX_TOKENS)
         self.builder = HomeFactsBuilder()
         self.profile = deme_profile_v04_from_dict(json.load(open(self.profile_path, encoding="utf-8")))
         self.pipeline = pipeline_from_profile(self.profile)
