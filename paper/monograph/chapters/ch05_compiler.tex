@@ -451,6 +451,14 @@ The re-architected twin does not use it, and judges through DEME's pipeline on f
 extracts for each option (Section~\ref{sec:deme-stack}).
 % src: erisml-lib docs/moralvector_v2_architecture.md section 6; docs/guides/DEME_EFM_Design_Guide_v0.1.md section 5
 % src: src/erisml_compiler/em_dag/profiles/default.yaml:11-24 (one dimension per module)
+On a branch awaiting review the compiler retires this graph and imports erisml-lib instead.
+Its verdict, its moral vector and its timeline then come from DEME's pipeline, its fitted ethos
+profiles become DEME's dimension weights, and its ten-channel vector remains only as the space of
+the activation probes, whose calibration was preregistered there.
+The section that follows describes the graph as it stands on the main branch.
+The Phase-5 results that used it as the text lens can be reproduced at the tag
+\code{phase5-results}.
+% src: erisml-compiler PRs 43 and 44 (branches feat/import-erisml-lib, feat/retire-em-dag); tag phase5-results (9b58fe7)
 
 \subsection{The module contract}
 
