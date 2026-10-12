@@ -22,6 +22,23 @@ Each theorem therefore holds whatever those models say.
 % src: formal/twin-containment/TwinContainment.lean:5-8
 % src: formal/twin-containment/TwinContainment.lean:351-356
 
+\paragraph{Which brain the proofs are about.}
+The model is of the earlier brain, brain7, the brain of every graded development run.
+There a model chooses one allowed action and DEME judges that one proposal as an output gate.
+The model's shape and the static tests that tie it to the code are taken from that brain's
+governor, its output gate and its hand-written scene, \code{margaret\_home.erisml}.
+% src: twin/brain.py; twin/output_gate.py; twin/scene/margaret_home.erisml; tests/test_twin_ladder.py
+Since 12 October 2026 the demonstration runs the re-architected brain, brain8
+(Section~\ref{sec:deme-stack}).
+It decides by a different loop, over candidate acts that include acts forbidden now that a ruling
+could permit.
+It decides on a different scene, a constitution derived from the earlier scene and merged with a
+household scene the compiler wrote.
+Neither the Lean model nor the static tests cover that loop or that scene.
+Brain8 keeps the governor, the witness bars, the strata that move only on rulings and system
+events, and the check at the act, but no theorem here is a theorem about brain8.
+% src: twin/stack/brain.py (_decide, _judge, merge); twin/stack/constitution.erisml; twin/stack/household.ir.json
+
 The model instantiates part (iv) of the No Escape theorem of the \erisml{} foundations paper,
 which states that reasoning cannot help an agent escape a structural containment
 \cite{bond2026noescape}.
@@ -226,6 +243,9 @@ them.
 \subsection{The DEME output gate}
 
 The output gate of Section~\ref{sec:cont-gate} sits between the brain's proposal and the body.
+It gates brain7's decisions.
+Brain8 keeps it only for its reflexes and decides by the loop of Section~\ref{sec:deme-stack}.
+% src: twin/output_gate.py; twin/stack/brain.py (_decide; self_test, the reflexes' output gate)
 In the model the gate takes the history $h$, the proposal $p$, DEME's veto function $V$,
 DEME's ranked list $L$ and an optional redirect $d$.
 The redirect is the monitoring centre, chosen when the tragic-conflict module flags a deliberate
@@ -671,8 +691,13 @@ A misreading of her words as a request for help could therefore send emergency s
 % src: formal/twin-containment/README.md:31-32
 The robot's message cannot reach this path, as \code{dispatch\_ignores\_the\_robot} shows.
 A false reading of her own speech can.
-This is the one remaining path by which a model output reaches authority in the twin.
+This is one of two remaining paths by which a model output reaches authority in the twin.
 The consequence is a dispatch to someone who may not need it, not force against her.
+The other is the camera's person detector, a learned vision model whose output counts as one
+witness.
+The model takes each reading's attested flag as given, so a detector that sees a fall that did not
+happen adds a false witness the proofs cannot exclude (Chapter~\ref{ch:limits}).
+% src: formal/twin-containment/README.md; paper/monograph/chapters/ch14_limits.tex (camera witness)
 
 \paragraph{The model is not the code.}
 The structural tests check the scene's shape.

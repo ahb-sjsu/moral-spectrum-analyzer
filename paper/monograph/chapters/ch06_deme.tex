@@ -10,11 +10,14 @@
 DEME is the part of the \erisml{} library that judges a set of candidate actions and says which
 of them may be taken. It reads a structured description of each candidate, runs a set of ethics
 modules over it, removes the candidates that any entitled module forbids, ranks the rest and
-writes a hashed record of the whole decision. In the home-care twin of Part~III it is the last
-check before the robot's body moves. This chapter describes the engine as the code defines it,
-gives the arithmetic of each step, lists every module that exists, and then shows how the twin
-wires the engine into its output gate. The chapter ends with a plain account of which parts are
-deterministic and which parts rest on a model.
+writes a hashed record of the whole decision. The home-care twin of Part~III has used it in two
+ways. The earlier brain, the brain of the graded runs, uses it as an output gate on one action a
+model proposed. The re-architected brain, the brain of the GTC demonstration since 12 October
+2026, uses it to select among the candidate acts. This chapter describes the engine as the main
+branch of the library defines it, gives the arithmetic of each step, lists every module that
+exists, and says where an open pull request changes it. It then shows both ways the twin wires
+the engine in. The chapter ends with a plain account of which parts are deterministic and which
+parts rest on a model.
 % src: lib:src/erisml/ethics/deme.py:1-3 (name "Democratic Ethics Module Engine")
 % src: lib:src/erisml/ethics/layers/pipeline.py:132-322 (DEMEPipeline.decide)
 % src: gtc:twin/output_gate.py:1-23
@@ -87,7 +90,7 @@ Block & Fields read by the modules in this chapter \\
 \code{virtue\_and\_care} & \code{expresses\_compassion}, \code{respects\_person\_as\_end}, \code{betrays\_trust} \\
 \code{procedural\_and\_legitimacy} & \code{followed\_approved\_procedure}, \code{stakeholders\_consulted}, \code{decision\_explainable\_to\_public} \\
 \code{epistemic\_status} & \code{uncertainty\_level}, \code{evidence\_quality}, \code{novel\_situation\_flag} \\
-\code{maxim} & \code{action\_kind}, \code{polarity} \\
+\code{maxim} & \code{action\_kind}, \code{polarity}, \code{description} \\
 \bottomrule
 \end{tabularx}
 \caption{The blocks of an \code{EthicalFacts} record and the fields the modules and the vector
@@ -99,9 +102,12 @@ dictionaries that no module in this chapter reads.}
 % src: lib:src/erisml/ethics/moral_vector.py:399-532 (fields read by from_ethical_facts)
 
 The last block, \code{Maxim}, mirrors a structure that the \erisml{} compiler extracts from text.
-It holds an action kind and a polarity, affirmed or negated. A negated maxim such as ``did not
-promise'' is the maxim of not performing the action.
-% src: lib:src/erisml/ethics/facts.py:151-163
+It holds an action kind, a polarity, affirmed or negated, and the description it was read from. A
+negated maxim such as ``did not promise'' is the maxim of not performing the action.
+On the branch of pull request 152 the maxim also names the agent, the purpose, the kind of
+purpose and how the act treats persons, so that the deontic gate can tell a prohibition done for
+an imperfect duty from one done for nothing.
+% src: lib:src/erisml/ethics/facts.py:151-163 (main); feat/universalizability-kb facts.py Maxim (agent_id, purpose, purpose_kind, treats_persons_as)
 
 The file \code{facts\_v3.py} extends the record to many parties. \code{EthicalFactsV3} keeps one
 entry per party in each block (\code{PartyConsequences}, \code{PartyRights} and six more) and
@@ -187,8 +193,10 @@ flag \code{RIGHTS\_VIOLATION}. Discrimination on a protected attribute sets fair
 adds \code{DISCRIMINATION}. Missing consent without a violation sets rights respect to $0.5$.
 Coercion sets autonomy to $0.2$. Privacy is $1 - \code{privacy\_invasion\_level}$, halved for
 secondary use without consent. Epistemic quality is $1 - \code{uncertainty\_level}$, capped at
-$0.3$ for low evidence and $0.6$ for medium evidence. The tactical layer uses this mapping only
-when it is disabled.
+$0.3$ for low evidence and $0.6$ for medium evidence. On the main branch the tactical layer uses
+this mapping only when it is disabled. On the branch of pull request 151 every new module starts
+its vector from this mapping and then sets the dimensions it judges.
+% src: feat/universalizability-kb modules/base.py (BaseEthicsModuleV2.baseline_vector)
 % src: lib:src/erisml/ethics/moral_vector.py:398-532
 % src: lib:src/erisml/ethics/layers/tactical.py:142-160 (disabled layer returns from_ethical_facts)
 
@@ -232,8 +240,9 @@ export list. The branch of pull request 151 adds the first module of tier 1 and 
 \centering
 \input{figures/ch06_tiers}
 \caption{The five module tiers with their default aggregation weights, whether their vetoes
-count, and the modules that exist at each tier. Tiers 1, 3 and 4 hold no modules of their own,
-and the twin places the advisory tragic-conflict module at tier 3.}
+count, and the modules that exist at each tier on the main branch. There tiers 1, 3 and 4 hold no
+modules of their own, and the earlier brain of the twin places the advisory tragic-conflict module
+at tier 3. Pull request 151 adds a module to tier 1 and to tier 3.}
 \label{fig:deme-tiers}
 \end{figure}
 
@@ -362,8 +371,9 @@ Module & Tier & What it does \\
 \code{TragicConflictEM} & V1 & tragic-conflict index, never vetoes (above) \\
 \bottomrule
 \end{tabularx}
-\caption{Every ethics module in the library's \code{modules} package. V1 marks a version 1
-module, which has no tier until an adapter gives it one.}
+\caption{Every ethics module in the library's \code{modules} package on the main branch. V1 marks
+a version 1 module, which has no tier until an adapter gives it one. The safety and beneficence
+modules of pull request 151 are described in Section~\ref{sec:deme-composition}.}
 \label{tab:deme-modules}
 \end{table}
 % src: lib:src/erisml/ethics/modules/tier0/geneva_em_v3.py:1-16, 39-69
@@ -410,6 +420,12 @@ base has the three sets of Table~\ref{tab:deme-deontic}. The gate vetoes an affi
 (a contradiction in conception) and a negated imperfect duty (a contradiction in will). It passes
 every other known case. An absent maxim or an unknown action kind never vetoes.
 % src: lib:src/erisml/ethics/deontic_gate.py:1-136
+On the branch of pull request 152 the knowledge base lives in the library, in
+\code{universalizability.py}, and the compiler imports it, so the copy is gone. The sets are
+unchanged. One case changes. An affirmed prohibition whose purpose is an imperfect duty, such as
+deceiving to protect, is a tragic conflict between duties. The gate then reports a conflict and
+does not veto, and the pipeline lists the option among its escalations for a human to decide.
+% src: feat/universalizability-kb deontic_gate.py (DeonticVerdict.conflict, imperfect-duty purpose); universalizability.py; layers/pipeline.py (DecisionResult.escalations)
 
 \begin{table}[t]
 \centering
@@ -431,10 +447,12 @@ negated case.}
 % src: lib:src/erisml/ethics/deontic_gate.py:29-55, 101-136
 
 The kind \code{refuse} is a prohibition, so an affirmed maxim of refusing is vetoed. This is the
-robot's maxim, not the person's. The twin's facts carry no maxim, so in the twin the gate never
-fires.
+robot's maxim, not the person's. The earlier brain's facts carry no maxim, so in that brain the
+gate never fires. In the re-architected brain the compiler's bridge reads each act's maxim from
+the act's description, so the gate can fire there.
 % src: lib:src/erisml/ethics/deontic_gate.py:40
-% src: gtc:twin/output_gate.py:135-168 (EthicalFacts built with no maxim)
+% src: gtc:twin/output_gate.py OutputGate.facts (EthicalFacts built with no maxim)
+% src: erisml-compiler erisml_backend/v3_bridge.py (facts.maxim from _derive_maxim); observation/options.py (raw_text is the act description)
 
 \subsection{The tactical layer}
 
@@ -503,7 +521,7 @@ patterns, each a directed graph with no cycles, and allows no more than two or t
 Three things followed from the flat stage.
 No shell kept the inner modules off an option the constitutional and safety modules had vetoed.
 Tiers 1 and 3 held no modules.
-And no shipped module read the expected benefit of an option onto any dimension, so benefit never
+And no shipped version 2 module read the expected benefit of an option onto any dimension, so benefit never
 reached the ranking, and every option looked equally worth doing.
 The pipeline was therefore biased toward doing nothing.
 % src: erisml-lib docs/guides/DEME_EFM_Design_Guide_v0.1.md sections 3.2 and 5
@@ -552,7 +570,7 @@ On the branch of pull request 150 the pipeline also executes the governance prof
 Its dimension weights, its module and stakeholder weights, its explicit veto modules, its disabled
 tiers, its score threshold and its tie breaker decide the outcome, and the worst-off aggregation
 across stakeholders is executed.
-Before, the pipeline read none of them, and always preferred a baseline within five percent of the
+Before, the pipeline read only the profile's tier settings, and always preferred a baseline within five percent of the
 best option, which also favoured doing nothing.
 % src: erisml-lib PR 150 layers/pipeline.py (PipelineConfig.governance), governance/aggregation_v2.py, interop/profile_adapters.py
 
@@ -591,8 +609,11 @@ sets each new proof's \code{previous\_proof\_hash} to the last proof's hash befo
 and \code{verify\_chain} checks every hash and every link.
 % src: lib:src/erisml/ethics/decision_proof.py:203-271, 386-453
 
-Two properties of the hash matter to an auditor. The pipeline finalizes each proof by itself,
-not through a chain, so a pipeline proof has no previous hash unless the caller chains it.
+Two properties of the hash matter to an auditor. On the main branch the pipeline finalizes each
+proof by itself, not through a chain, so a pipeline proof has no previous hash unless the caller
+chains it. On the branch of pull request 148 the pipeline chains them, setting each proof's
+previous hash to that of the last proof the strategic layer holds.
+% src: feat/universalizability-kb layers/pipeline.py decide (previous_proof_hash from strategic.latest_proof)
 Each proof also gets a random UUID and a wall-clock timestamp, both inside the hashed fields,
 and the layer outputs carry measured durations. The same facts therefore give a different
 \code{proof\_hash} on every run. The hash shows that a stored record is intact. It does not let
@@ -684,7 +705,7 @@ action through a \code{DEMEPipeline}. The pipeline holds three modules,
 Figure~\ref{fig:deme-twin-gate} shows where the gate's facts come from and the four outcomes it
 can produce.
 % src: gtc:twin/output_gate.py:1-23 (docstring), 49-63 (_deme)
-% src: gtc:twin/brain.py:319-321 (the brain builds the gate), 623 (every decision passes it)
+% src: gtc:twin/brain.py Brain.__init__ (the brain builds the gate), Brain.decide (every decision passes it)
 
 \begin{figure}[t]
 \centering
@@ -701,7 +722,7 @@ set.}
 For each allowed action the gate builds one \code{EthicalFacts} record in code, from the
 canonical moral state and from the scene's \code{capability\_ethics} block. No model writes
 them. Table~\ref{tab:deme-twin-facts} gives every field the gate sets and its source.
-% src: gtc:twin/output_gate.py:98-168
+% src: gtc:twin/output_gate.py OutputGate.facts
 
 \begin{table}[t]
 \centering
@@ -765,12 +786,13 @@ The method \code{refused} replays the event history and keeps a flag for whether
 voice a refusal (Figure~\ref{fig:deme-refusal}). A lapse event, \code{unresponsive} or
 \code{check\_in\_unanswered} in the scene, clears every refusal and sets the flag false. The
 event \code{check\_in\_answered} sets it true. A \code{refusal\_made} event by Margaret counts
-only while the flag is true. A refusal also covers nothing while a hazard named in its
+only while the flag is true, and so does an event the scene lists among its refusal events, such
+as declining help after a fall. A refusal also covers nothing while a hazard named in its
 \code{not\_during} list holds. The scene uses this for emergency services, whose refusal does not
 cover a call during danger in the home or an attack. The scene's comment records that refusing an
 ambulance does not refuse the fire service in a fire, and that lifting a refusal grants nothing,
 since emergency services still need the governor's ruling.
-% src: gtc:twin/output_gate.py:65-87
+% src: gtc:twin/output_gate.py OutputGate.refused
 % src: gtc:twin/scene/margaret_home.erisml:1003-1013, 1020
 
 The re-arming rule came from a failure. In development run dev12b, case d27, the classifier
@@ -779,7 +801,7 @@ refusal while she lay unresponsive, and DEME vetoed the authorized emergency cal
 current rule a refusal recorded after a lapse has no effect until she answers a check-in. Three
 tests fix the behaviour. A refusal she can no longer voice does not bind. Her old words re-read
 after a lapse do not refuse again. A refusal made after an answered check-in binds.
-% src: gtc:twin/output_gate.py:66-71 (docstring citing dev12b d27)
+% src: gtc:twin/output_gate.py OutputGate.refused (docstring citing dev12b d27)
 % src: gtc:tests/test_twin_ladder.py:1135-1158
 
 \subsection{Tragic choices go to the monitoring centre}
@@ -789,7 +811,7 @@ decision is deliberate, $\tau \ge 0.55$, the proposal is not itself the call to 
 centre, and that call is allowed and not forbidden, the gate replaces the proposal with
 \code{contact\_monitoring\_center}. The message names the proposal and its triggers. This
 happens whether or not DEME vetoed the proposal.
-% src: gtc:twin/output_gate.py:170-177 (tragic), 199-225 (routing)
+% src: gtc:twin/output_gate.py OutputGate.tragic, OutputGate.check (routing)
 
 The emergency call against a standing refusal is the case the tests use. The scene's obligations
 to call emergency services carry priority tier 0, so the gate sets benefit and urgency to $1.0$.
@@ -811,7 +833,7 @@ each reflex action through the same gate with \code{deliberate} false. DEME may 
 reflex action and replace it, but the gate never routes a reflex to the monitoring centre,
 because a reflex must stay fast. A test checks that a reflex emergency call against a standing
 refusal is vetoed, replaced by an allowed action and not routed.
-% src: gtc:twin/brain.py:472-473
+% src: gtc:twin/brain.py Brain.reflex
 % src: gtc:twin/output_gate.py:21, 179-206
 % src: gtc:tests/test_twin_ladder.py:1161-1172
 
@@ -838,27 +860,42 @@ option recorded as vetoed and the error text kept in \code{gate\_error}. Before 
 brain runs a self-test that puts the default action through the gate on the scene's reset state
 and refuses to start if the record shows a gate error or any module failure. Tests cover each
 level.
-% src: gtc:twin/output_gate.py:58-62 (fail_closed=True), 189-198 (exception path)
-% src: gtc:twin/brain.py:579-588 (self_test); gtc:twin/service.py:385
+% src: gtc:twin/output_gate.py OutputGate._deme (fail_closed=True), OutputGate.check (exception path)
+% src: gtc:twin/brain.py Brain.self_test; gtc:twin/service.py main (brain.self_test before serving)
 % src: gtc:tests/test_twin_ladder.py:1181-1185, 1205-1230
 
 The self-test exists because of an incident. Its docstring records that development run dev8 on
 2026-10-02 ran a whole development set on a gate that raised on every call, against a stale
 copy of the library, and nothing reported it.
-% src: gtc:twin/brain.py:579-582
+% src: gtc:twin/brain.py Brain.self_test (docstring)
 
 \subsection{In the re-architected brain DEME is the evaluator}\label{sec:deme-stack}
 
-Everything above describes the brain of the graded runs, in which DEME is a gate on one proposal.
-The re-architected brain, which runs as brain8 beside it, follows the library's documented
-architecture instead, and DEME judges every candidate act.
-Once in each decision erisml-compiler's option projector asks the model for the consequences of
-every act the robot can take, as ethical facts of the scene's kinds, and for the urgency of the
-situation once.
-The compiler validates each fact, assigns its id and builds one scene for each act, in which the
-act's projected harm and benefit replace the present ones, the standing facts stay, consent comes
-from the recorded consents and refusals rather than from the model, and the act's description is
-the text from which its maxim is read.
+Everything above describes the output-gate brain of the graded runs, in which DEME is a gate on
+one proposal.
+The re-architected brain follows the library's documented architecture instead, and DEME selects
+among the candidate acts.
+On 12 October 2026 the owner made it the brain of the GTC demonstration.
+% src: gtc:paper/aies2027/kit/FACTS.md (DEME stack); gtc:twin/records/rehearse-deme1-2026-10-12/README.md
+Before any model is asked, the constitution sets aside every act it prohibits that no ruling could
+permit.
+An act is kept if every norm prohibiting it reads what a ruling writes, a stratum or the restraint
+authorization.
+The act of asking for authority is never a candidate.
+Once in each decision erisml-compiler's option projector then asks the model for the consequences
+of each remaining act, as ethical facts of the scene's kinds, and for the urgency of the situation
+once.
+The compiler validates each fact, assigns its id and builds one scene for each act.
+In that scene the act's projected harm and benefit replace the present ones, except that a present
+harm persists for any person the projection is silent about.
+The standing facts stay.
+Consent for a person on the record comes from the recorded consents, refusals and requests, and
+the model's consent facts stand only for persons the record does not name.
+The act's description is the text from which its maxim is read.
+The model's projection therefore decides what DEME sees, and Section~\ref{sec:deme-deterministic}
+counts it among the parts that rest on a model.
+% src: erisml-compiler PR 42 observation/options.py (option_ir: persisting harm, consents_on_record)
+% src: gtc:twin/stack/brain.py (_candidate, _ruling_can_permit, GOVERNOR_CHANNEL)
 The twin's domain layer, an implementation of the library's builder of facts for a batch of
 options, maps each such scene through the compiler's bridge to the act's \code{EthicalFacts}, and
 adds the one fact a scene does not carry, the person's capacity to decide, from the attested
@@ -866,26 +903,55 @@ check-in events.
 % src: erisml-compiler PR 42 observation/options.py (OptionProjector, option_ir); PR 41 erisml_backend/v3_bridge.py (benefit, urgency, option_id)
 % src: gtc:twin/stack/facts_builder.py (HomeFactsBuilder); erisml-lib domain/interfaces.py (BatchEthicalFactsBuilder)
 
-The constitution then acts as the constraint gate of the library's design.
-An act it prohibits that no ruling can permit is not a candidate, and nor is an act for which the
-model gave no consequences, which DEME could not judge.
+The constitution thus acts as the constraint gate of the library's design.
+An act for which the model gave no consequences is not a candidate either, since DEME could not
+judge it.
 The pipeline is built from the robot's profile, which names the hard-shell pattern, Geneva as the
 base module, and the safety, consent and beneficence modules of Section~\ref{sec:deme-composition}.
+A module that fails vetoes the option it could not judge, and the brain refuses to serve unless
+the profile's pipeline decides one ordinary moment at start.
 If the selected act is one the constitution permits only on a ruling, the governor rules as before,
 and a refused act is set aside while DEME decides again among the rest.
+When DEME leaves no act standing the robot holds and watches.
 Every decision leaves a chained proof with the profile's hash.
 No table in the twin says what an act is worth or when it is adequate.
-Three decisions of the owner that the earlier lens carried wait for modules of tier 4 and of privacy
-that are not yet built, to refer to the centre when it can decide in time, to keep her privacy
-except in a corroborated emergency, and to ask a human before a guarded act she requests.
-% src: gtc:twin/stack/brain.py (_judge), twin/stack/profiles/home_care_robot.json (notes)
-% src: gtc:tests/test_stack_brain.py (13 tests, commit 25550dc)
+% src: gtc:twin/stack/brain.py (_judge, HOLD, reset: tactical fail_closed, self_test), twin/stack/profiles/home_care_robot.json
+% src: gtc:tests/test_stack_brain.py (23 tests, commit 87cc6c4)
+
+Some of this was built after the audit of this monograph against the code on 12 October 2026.
+Before it, a vetoed default was carried out when nothing was left standing, the modules failed
+open, the start-up test checked only the earlier gate, and the owner's rules against lifting a
+fallen person had been dropped from the constitution with its obligations.
+The no-lift rules are back.
+Her own request to be helped up, which the observation compiler records as a consent or a request
+for the act, is written into the scene in the constitution's words, and lifts the first rule but
+not the rule for when she is unresponsive.
+% src: gtc 87cc6c4 (twin/stack/make_constitution.py CONSTITUTIONAL; stack/brain.py CONSENT_EVENTS)
+
+Two fallbacks bypass DEME.
+When no model answers, or no act's facts survive validation, the earlier brain's compiled tier
+decides on the constitution.
+The constitution holds no obligation, so that tier always does the default chores.
+In the rehearsal of 12 October it decided 5 of 46 times, three of them during the dog attack, each
+after every fact the model projected had been rejected.
+% src: gtc:twin/stack/brain.py (_compiled); twin/records/rehearse-deme4-2026-10-12/README.md
+The re-architected brain also does not yet carry several of the owner's decisions that the earlier
+scene held as obligations or tables.
+These are the duty to report a suspected crime, to ask her first, to escalate by the ladder, to
+check in on schedule and to help her up once she asks, together with her refusal tables and the
+tragic routing to the centre.
+Three more wait for modules of tier 4 and of privacy that are not yet built, to refer to the
+centre when it can decide in time, to keep her privacy except in a corroborated emergency, and to
+ask a human before a guarded act she requests.
+% src: gtc:twin/stack/make_constitution.py (dropped: every obligation, refusal tables); twin/stack/profiles/home_care_robot.json (notes)
 
 \section{Which parts are deterministic}\label{sec:deme-deterministic}
 
 The prior-art review for this work asks that the report state which DEME modules are
 deterministic, because a veto gate whose modules are models falls in the same class as model
-guardrails~\cite{rebedea2023nemo,inan2023llamaguard}. In the twin the answer is all of them.
+guardrails~\cite{rebedea2023nemo,inan2023llamaguard}. In both brains every module is
+deterministic. The brains differ in where the facts come from. In the earlier brain code computes
+them. In the re-architected brain a model projects them.
 % src: gtc:paper/aies2027/prior_art.md:103
 
 \begin{itemize}
@@ -894,10 +960,19 @@ arithmetic on the facts, as the equations of Section~\ref{sec:deme-modules} show
 model.
 \item The reflex layer, the deontic gate, the tactical aggregation, the ranking and the
 baseline rule are fixed code over the facts and the module outputs.
-\item The twin's facts are computed by \code{OutputGate.facts} from the runtime state and the
-scene file. No model writes them.
-\item The refusal replay, the tragic routing and the replacement rule are fixed code.
+\item \code{CorePhysicalSafetyEMV2} and \code{BeneficenceEMV2}, which the re-architected brain
+runs, are fixed arithmetic on the facts as well.
+\item In the earlier brain the facts are computed by \code{OutputGate.facts} from the runtime
+state and the scene file. No model writes them.
+\item In the re-architected brain a model writes each act's harm, benefit, consent and urgency
+facts through the option projector. Code validates them, keeps a present harm the model is silent
+about, takes consent for persons on record from the record, and adds the person's capacity from
+system events. The model's answer still decides what DEME sees.
+\item The refusal replay, the tragic routing and the replacement rule of the earlier brain are
+fixed code.
 \end{itemize}
+% src: feat/universalizability-kb modules/tier1/core_physical_safety_em.py, modules/tier3/beneficence_em.py
+% src: erisml-compiler observation/options.py (OptionProjector, option_ir); gtc:twin/stack/facts_builder.py
 % src: lib:src/erisml/ethics/modules/tier0/geneva_em.py:73-186
 % src: lib:src/erisml/ethics/modules/tier2/autonomy_consent_em.py:56-133
 % src: lib:src/erisml/ethics/modules/greek_tragedy_tragic_conflict_em.py:63-142

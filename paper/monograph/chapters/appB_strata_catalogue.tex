@@ -7,7 +7,7 @@ from \code{extra.strata} in \code{twin/scene/margaret\_home.erisml}. A trigger w
 \code{event=content} fires only on an event of that type with that content. A gate with no source
 states fires from any state of its stratification. Chapter~\ref{ch:containment} explains what each
 stratification changes.
-% src: twin/scene/margaret_home.erisml:815-922
+% src: twin/scene/margaret_home.erisml:971-1078 (block strata, re-anchored 2026-10-12)
 % src: C:/source/erisml-compiler-monitor/src/erisml_compiler/runtime/strata.py:21 (any stratum when `from` is omitted)
 
 The scene runtime checks two rules when the scene loads. Only a system event may enter an authority
@@ -16,20 +16,24 @@ are \code{monitoring\_center\_confirmed\_privacy\_restore}, \code{visitor\_clear
 \code{evidence\_lapsed} and \code{device\_cleared}. Across the seven stratifications there are 26
 states and 34 gates.
 % src: docs/STRATA_TAXONOMY.md:23-31
-% src: twin/scene/margaret_home.erisml:804 (oversight)
+% src: twin/scene/margaret_home.erisml:960 (oversight)
 % src: paper/aies2027/kit/FACTS.md:12
+This scene is the earlier brain's, brain7.
+The constitution of the re-architected brain, brain8, is derived from it and keeps the same seven
+stratifications, 26 states and 34 gates.
+% src: twin/stack/constitution.erisml (strata counted 2026-10-12, 7 / 26 / 34); twin/stack/make_constitution.py
 
 \section{visitor\_standing}\label{app:strata-visitor}
 
 States none, stranger, welcomed, arranged, household and hostile. Initial none. Authority arranged
 and household. Absorbing hostile.
-% src: twin/scene/margaret_home.erisml:816-831
+% src: twin/scene/margaret_home.erisml:972-987 (strata.visitor_standing)
 
 \begin{table}[h]
 \centering\footnotesize
 \caption{Gates of \code{visitor\_standing}.}
 \label{tab:app-visitor}
-% src: twin/scene/margaret_home.erisml:821-831
+% src: twin/scene/margaret_home.erisml:978-987 (visitor_standing gates)
 \begin{tabular}{@{}lllll@{}}
 \toprule
 Gate & Trigger & From & To & Boundary \\
@@ -52,13 +56,13 @@ Gate & Trigger & From & To & Boundary \\
 
 States none, expected, at\_door and present. Initial none. Authority expected, at\_door and present.
 No absorbing state.
-% src: twin/scene/margaret_home.erisml:837-846
+% src: twin/scene/margaret_home.erisml:988-1002 (strata.responder_standing)
 
 \begin{table}[h]
 \centering\footnotesize
 \caption{Gates of \code{responder\_standing}.}
 \label{tab:app-responder}
-% src: twin/scene/margaret_home.erisml:841-846
+% src: twin/scene/margaret_home.erisml:998-1002 (responder_standing gates)
 \begin{tabular}{@{}lllll@{}}
 \toprule
 Gate & Trigger & From & To & Boundary \\
@@ -77,13 +81,13 @@ Gate & Trigger & From & To & Boundary \\
 States none, visiting, pest, wild, venomous and attacking. Initial none. Authority attacking. No
 absorbing state. Margaret's dog has no state here, because the scene fixes its standing as a
 declared actor.
-% src: twin/scene/margaret_home.erisml:847-865, 996
+% src: twin/scene/margaret_home.erisml:1003-1021 (strata.animal_standing; 1003 the dog fixed as an actor)
 
 \begin{table}[h]
 \centering\footnotesize
 \caption{Gates of \code{animal\_standing}.}
 \label{tab:app-animal}
-% src: twin/scene/margaret_home.erisml:859-865
+% src: twin/scene/margaret_home.erisml:1016-1021 (animal_standing gates)
 \begin{tabular}{@{}lllll@{}}
 \toprule
 Gate & Trigger & From & To & Boundary \\
@@ -102,13 +106,13 @@ Gate & Trigger & From & To & Boundary \\
 
 States ordinary, ems\_only and emergency. Initial ordinary. Authority ems\_only and emergency. No
 absorbing state. Only governor rulings move this stratification, and a refusal moves nothing.
-% src: twin/scene/margaret_home.erisml:866-880
+% src: twin/scene/margaret_home.erisml:1022-1036 (strata.situation)
 
 \begin{table}[h]
 \centering\footnotesize
 \caption{Gates of \code{situation}.}
 \label{tab:app-situation}
-% src: twin/scene/margaret_home.erisml:877-880
+% src: twin/scene/margaret_home.erisml:1034-1036 (situation gates)
 \begin{tabular}{@{}lllll@{}}
 \toprule
 Gate & Trigger & From & To & Boundary \\
@@ -124,13 +128,13 @@ Gate & Trigger & From & To & Boundary \\
 
 States reachable and unreachable. Initial reachable. Authority unreachable. No absorbing state. Only
 the centre's replies move this stratification.
-% src: twin/scene/margaret_home.erisml:881-892
+% src: twin/scene/margaret_home.erisml:1037-1048 (strata.centre_contact)
 
 \begin{table}[h]
 \centering\footnotesize
 \caption{Gates of \code{centre\_contact}.}
 \label{tab:app-centre}
-% src: twin/scene/margaret_home.erisml:888-892
+% src: twin/scene/margaret_home.erisml:1045-1048 (centre_contact gates)
 \begin{tabular}{@{}lllll@{}}
 \toprule
 Gate & Trigger & From & To & Boundary \\
@@ -147,13 +151,13 @@ Gate & Trigger & From & To & Boundary \\
 
 States none, suspicion and reported. Initial none. No authority state and no absorbing state, since
 adding a duty grants nothing. The classifier's \code{crime\_suspected} may therefore enter it.
-% src: twin/scene/margaret_home.erisml:893-907
+% src: twin/scene/margaret_home.erisml:1049-1063 (strata.reporting_duty)
 
 \begin{table}[h]
 \centering\footnotesize
 \caption{Gates of \code{reporting\_duty}.}
 \label{tab:app-reporting}
-% src: twin/scene/margaret_home.erisml:903-907
+% src: twin/scene/margaret_home.erisml:1060-1063 (reporting_duty gates)
 \begin{tabular}{@{}lllll@{}}
 \toprule
 Gate & Trigger & From & To & Boundary \\
@@ -171,14 +175,14 @@ Gate & Trigger & From & To & Boundary \\
 States trusted and compromised. Initial trusted. No authority state. Absorbing compromised. The brain
 records \code{device\_compromised} when a device in the inventory fails the integrity of its
 attestation, and only the centre's \code{device\_cleared} leaves the absorbing state.
-% src: twin/scene/margaret_home.erisml:908-922
+% src: twin/scene/margaret_home.erisml:1064-1078 (strata.machine_standing)
 % src: twin/brain.py:494-498, 634-635
 
 \begin{table}[h]
 \centering\footnotesize
 \caption{Gates of \code{machine\_standing}.}
 \label{tab:app-machine}
-% src: twin/scene/margaret_home.erisml:920-922
+% src: twin/scene/margaret_home.erisml:1077-1078 (machine_standing gates)
 \begin{tabular}{@{}lllll@{}}
 \toprule
 Gate & Trigger & From & To & Boundary \\
@@ -198,7 +202,7 @@ conditions defined on strata.
 \centering\footnotesize
 \caption{Scene conditions defined on strata.}
 \label{tab:app-conditions}
-% src: twin/scene/margaret_home.erisml:775-801
+% src: twin/scene/margaret_home.erisml:921-947 (conditions, those defined on strata)
 \begin{tabular}{@{}ll@{}}
 \toprule
 Condition & Definition \\

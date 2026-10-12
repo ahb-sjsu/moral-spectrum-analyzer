@@ -3,8 +3,8 @@
 % GE book = C:\source\geometric-ethics-content\source\Geometric-Ethics-v1.24.tex (chapter 8 at 10740-12230)
 % GE updates = C:\source\geometric-ethics-content\source\updates\ (sec8_10b_executable_strata.tex, sec8_4_hohfeld_v4.tex)
 % GE paper = C:\source\erisml-lib\docs\papers\foundations\Geometric_Ethics_Foundational_Paper.tex
-% hohfeld.py (V4) = erisml-lib origin/main at commit df00fc5 (3 Oct 2026), read with git show; the
-%   local working copy of erisml-lib still holds the earlier D4 file.
+% hohfeld.py (V4) = erisml-lib src/erisml/ethics/hohfeld.py as of commit df00fc5 (3 Oct 2026); the
+%   local working copy (branch feat/universalizability-kb, 2026-10-12) contains df00fc5 and holds the V4 file.
 % MV reference = C:\source\erisml-lib\docs\moralvector_reference.md
 % moral_vector.py = C:\source\erisml-lib\src\erisml\ethics\moral_vector.py
 
@@ -285,7 +285,7 @@ with $\sigma\in S_g$ whose trigger matches $e$. Otherwise it stays. A move is re
 crossing data.
 % src: sec8_10b_executable_strata.tex:30-32
 The ErisML runtime implements exactly the two boundary types the tuple admits.
-% src: C:\source\erisml-compiler-monitor\src\erisml_compiler\runtime\strata.py:43 (BOUNDARIES = ("threshold", "phase"))
+% src: C:\source\erisml-compiler\src\erisml_compiler\runtime\strata.py:43 (BOUNDARIES = ("threshold", "phase"))
 
 Three features carry the theory into the running system.
 % src: sec8_10b_executable_strata.tex:34-47
@@ -315,7 +315,7 @@ event moves the stratification out of an absorbing stratum.
 % src: C:\source\gtc-prototype\formal\twin-containment\TwinContainment.lean:449, 469; sec8_10b_executable_strata.tex:61-66
 Their hypotheses are not left to the author of a scene. The runtime checks both when a scene
 loads and refuses to run a scene that violates either, so every scene that runs satisfies them.
-% src: C:\source\erisml-compiler-monitor\src\erisml_compiler\runtime\strata.py:105-122
+% src: C:\source\erisml-compiler\src\erisml_compiler\runtime\strata.py Stratification._check
 Chapter~10 gives the Lean model.
 
 A right granted on evidence should not outlast the evidence. Geometric Ethics states this as an
@@ -331,14 +331,14 @@ measured in time. Evidence that comes and goes during a real emergency does not 
 off and on, while evidence that has gone takes them with it.
 % src: sec8_10b_executable_strata.tex:74-78
 The twin's scene sets the interval at 60 seconds.
-% src: C:\source\gtc-prototype\twin\scene\margaret_home.erisml:805-809
+% src: C:\source\gtc-prototype\twin\scene\margaret_home.erisml:961-965 (evidence_lapse_s; kept in twin/stack/constitution.erisml)
 
 Figure~\ref{fig:ge-visitor} draws the manuscript's worked example, the stratification of who a
 visitor is. A stranger is checked with the monitoring centre. A visitor Margaret welcomes is no
 longer treated as an intruder but gains nothing. Only the centre's authenticated announcement makes
 a visit arranged. A measured attack makes a visitor hostile, and he stays hostile, whatever anyone
 says, until a human at the centre clears him.
-% src: sec8_10b_executable_strata.tex:80-98; margaret_home.erisml:816-831 (gates), 1115-1148 (event sources)
+% src: sec8_10b_executable_strata.tex:80-98; margaret_home.erisml:972-987 (visitor_standing gates), 1296-1357 (event sources)
 The same pattern covers responders, animals, machines and the situation as a whole. In each case
 a claim an entity makes about itself is free text and never a gate.
 % src: sec8_10b_executable_strata.tex:100-113
@@ -451,10 +451,10 @@ parameter $\tau>0$,
 \label{eq:ge-bondindex}
 \end{equation}
 A value of zero means perfect correlative symmetry.
-% src: C:\source\erisml-lib\src\erisml\ethics\hohfeld.py:401-442 (compute_bond_index; unchanged in df00fc5)
+% src: C:\source\erisml-lib\src\erisml\ethics\hohfeld.py compute_bond_index (line 256 at df00fc5 and after)
 Its Wilson observable multiplies the operations along a path, applies the product to the starting
 position, and checks the prediction against the position observed.
-% src: hohfeld.py:445-480 (compute_wilson_observable)
+% src: hohfeld.py compute_wilson_observable (line 300)
 
 The twin of Part~III does not call the Hohfeld module. Its scene and Python sources contain no
 reference to it.
@@ -528,12 +528,17 @@ rather than a break.
 
 The embodied twin uses three of the chapter's constructs directly. All seven of its
 stratifications are executable stratifications in the sense of Definition~8.14, with 26 strata
-and 34 gates.
-% src: C:\source\gtc-prototype\paper\aies2027\kit\FACTS.md:11
-Its output gate judges every action with DEME's moral vector, on facts derived from the moral
-state.
-% src: C:\source\gtc-prototype\twin\output_gate.py:1-15
-Its governor applies the reversion axiom, recounting attested witnesses on every cycle and
-recording a lapse when they stay below the bar for the declared interval.
-% src: C:\source\gtc-prototype\twin\brain.py:388-425
+and 34 gates, and the current brain's constitution keeps all of them.
+% src: C:\source\gtc-prototype\paper\aies2027\kit\FACTS.md:11; twin/stack/constitution.erisml extra.strata (7, 26 states, 34 gates; counted with PyYAML 2026-10-12)
+In the earlier brain, which ran every graded run, an output gate judges every action with DEME's
+moral vector, on facts derived from the moral state. No model writes those facts.
+% src: C:\source\gtc-prototype\twin\output_gate.py module docstring, OutputGate.facts
+In the brain the robot has run since 12 October 2026, DEME selects among the permitted acts with
+the same moral vector. Its facts come from a model's projection of each act's consequences,
+validated by the compiler and mapped through its bridge. Those facts decide what DEME sees, but
+they never move a stratum, so they grant no authority.
+% src: C:\source\gtc-prototype\twin\stack\brain.py StackBrain._judge; stack/facts_builder.py HomeFactsBuilder; erisml-compiler observation/options.py option_ir
+Its governor applies the reversion axiom in both brains, recounting attested witnesses on every
+cycle and recording a lapse when they stay below the bar for the declared interval.
+% src: C:\source\gtc-prototype\twin\brain.py Brain._lapse (StackBrain._decide calls it)
 Chapter~9 shows these mechanisms at work, and Chapter~10 states what is proved about them.

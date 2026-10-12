@@ -26,8 +26,12 @@ decisions belong to whoever controls the words.
 This report describes a robot that keeps two jobs apart. Language models read and choose. They
 never grant. Figure~\ref{fig:thesis} shows the separation.
 
-The claim has an exact scope. The models it covers are the robot's language models, the one that
-turns perception into events and the one that picks an action. The inputs it covers are everything
+The claim has an exact scope. The models it covers are the robot's language models. In the earlier
+brain of the graded runs these are the one that turns perception into events and the one that
+picks an action. In the brain the robot now runs they are the one that turns heard words and
+perception into observations and the one that projects the consequences of each act.
+% src: twin/brain.py module docstring (brain7); twin/stack/brain.py StackBrain._decide (ObservationCompiler, OptionProjector)
+The inputs it covers are everything
 those models read, which is speech, television sound, network messages, alerts from wearables and
 whatever a visitor says. The actions it covers are the governed ones. These are calling emergency
 services, opening the door to responders, unlocking the medication box, recording, sharing her data,
@@ -40,12 +44,14 @@ Two learned models are outside the claim, and both can move an emergency call. T
 centre reads Margaret's own words with a language model and can send emergency services on what it
 reads. The robot's messages cannot reach that decision, but her words can, and a misreading of them
 can send an ambulance. The room camera's witness comes from a learned person detector, a Faster
-R-CNN that runs on the robot's last 24 frames. Its output counts as one physical witness of the two
+R-CNN that runs on the attested room camera's last 24 frames, two seconds at 12 frames a second.
+Its output counts as one physical witness of the two
 that most governed actions need. When the centre cannot be reached, a call to emergency services
 needs only one, and the detector alone can then authorize it. In the twin the decision service signs
 the detector's output itself, and that signature is not checked.
-% src: twin/service.py:85-133 (CameraWitness, fasterrcnn_resnet50_fpn_v2, verify_sig=lambda *a: True); twin/witness_adapter.py:48 (physical=True)
-% src: twin/brain.py:351-366 (bar, center_unavailable -> authorize_ems at one witness)
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/RobotAgent.cs RoomBuffer (roomFrames capped at 24, 1/12 s per frame)
+% src: twin/service.py CameraWitness (fasterrcnn_resnet50_fpn_v2, verify_sig=lambda *a: True); twin/witness_adapter.py:48 (physical=True)
+% src: twin/brain.py Brain.govern_live (bar, center_unavailable -> authorize_ems at one witness)
 Chapter~\ref{ch:containment} gives both paths, and Chapter~\ref{ch:limits} weighs them.
 
 \begin{figure}[t]
@@ -58,11 +64,17 @@ right. Two learned models outside the robot, named below, are not covered.}
 \label{fig:thesis}
 \end{figure}
 
-The robot's rules live in a declared model of the home, written in a language called ErisML and
-compiled into obligations, prohibitions, permissions and state machines. A model may do two
-things with that home model. It may turn perception into events of the home model's vocabulary,
-and it may pick one action from the set the rules currently allow. Actions that carry authority
-stay out of that set until a governor rules on evidence that no model writes. The evidence is of
+The robot's rules live in a declared model of the home, written in a language called ErisML as
+norms, state machines and strata. This report describes two brains that use it. In the earlier
+brain, which ran every graded run, a model may do two things with that home model. It may turn
+perception into events of the home model's vocabulary, and it may pick one action from the set the
+rules currently allow. The brain the robot has run since 12 October 2026 keeps the strata, the hard
+prohibitions and the evidence, and it moves the choice. A model turns what the robot hears and sees into generic
+observations, a model projects the consequences of each act the rules permit, and the DEME ethics
+engine selects among those acts.
+% src: current_system_facts (two brains); twin/stack/brain.py module docstring and StackBrain._judge
+In both brains actions that carry authority stay out of reach until a governor rules on evidence
+that no model writes. The evidence is of
 two kinds. One is signed, fresh readings from physical sensors that do not share power or
 wiring. The other is a message on an authenticated channel from the monitoring centre, the
 emergency dispatcher or the world's own measurements.
@@ -90,27 +102,47 @@ ErisML is a language for declaring the moral situation of a setting. A home mode
 parties, the commitments between them, the norms with their conditions and priorities, the event
 types and which of them only the system may produce, the capabilities of the robot and which of
 them are governed, the strata and their gates, the robot's sensors and the substrates they share,
-and the escalation ladder as a process. Margaret's home model has 77 norms, 53 event types of
-which 24 come only from the system, 25 capabilities of which 11 need the governor, and seven
-stratifications with 26 strata and 34 gates.
+and the escalation ladder as a process. Margaret's hand-written home model, the scene of the
+earlier brain, has 77 norms, 53 event types of which 24 come only from the system, 25 capabilities
+of which 11 need the governor, and seven stratifications with 26 strata and 34 gates. The current
+brain runs on a constitution derived from it, merged with a household scene the compiler builds
+from a text description. The constitution keeps the capabilities, the strata and the system event
+types. Its 17 norms are all non-defeasible prohibitions, and it has no obligations and no
+escalation process.
+% src: twin/stack/make_constitution.py (CONSTITUTIONAL); twin/stack/constitution.erisml (17 prohibitions, 25 capabilities, 24 system event types; counted with PyYAML 2026-10-12); twin/stack/brain.py merge
 
 The ErisML compiler turns text or structured declarations into a canonical intermediate
 representation and runs it. Its pipeline extracts and canonicalizes a moral graph, evaluates it
 under several ethical projections that are allowed to disagree, and records each step in an audit
-chain. Its ethical module graph, the EM-DAG, evaluates a situation by a directed acyclic graph of
-modules. A finite-state tier and a silicon target emit the same machines as hardware.
+chain. Its ethical module graph, the EM-DAG, evaluated a situation by a directed acyclic graph of
+modules. On the branch of pull request 44, open when this was written, the EM-DAG is retired and
+the compiler's evaluation is DEME. A finite-state tier emits the scene's machines as hardware, and
+on that branch the silicon target emits only those machines. In the current brain the compiler
+also does the extracting. It turns observations into checked patches of the home model and
+projects each act's consequences as ethical facts, on the branches of the open pull requests 40
+to 44.
+% src: erisml-compiler commit 783ed33 on feat/retire-em-dag (PR 44, open; em_dag removed, silicon keeps FSM emit); erisml_compiler.observation (ObservationCompiler PR 40, OptionProjector PR 42)
 
-DEME is the ethics engine. It derives ethical facts about a proposed action, scores the action on
-a moral vector, lets tier-zero modules such as the Geneva rights module veto it outright, and
-writes a hashed decision proof. In the robot DEME is the last gate before the body moves.
+DEME is the ethics engine. It scores options on a moral vector from ethical facts, lets
+tier-zero modules such as the Geneva rights module veto them outright, and writes a hashed
+decision proof. In the earlier brain DEME judges the one action a model proposes, on facts derived
+from the moral state, and it is the last gate before the body moves. In the current brain DEME
+selects among the permitted acts, on facts the compiler builds from the projected consequences. It
+runs under a hard-shell profile with the Geneva module at tier zero and a physical safety module
+at tier one, on the branch of erisml-lib pull request 151. After DEME come the governor, when the
+selected act needs a ruling, and the check against the signed manifest.
+% src: twin/output_gate.py module docstring (brain7); twin/stack/brain.py StackBrain._judge; twin/stack/profiles/home_care_robot.json; current_system_facts (erisml-lib PR 151, b4e7669)
 
 The scene runtime steps the home model on every event. It tracks Margaret's consent, the robot's
 commitments, the legitimacy of each party and the seven strata, and it computes what the robot is
 allowed, obliged and forbidden to do. Prohibitions win over obligations. An obligation is
-discharged by doing it and is owed again only when its reason arises again.
+discharged by doing it and is owed again only when its reason arises again. The current brain's
+constitution declares no obligation, so in that brain nothing is obliged.
+% src: twin/stack/constitution.erisml (0 obligations); twin/stack/brain.py StackBrain._judge ("obliged": [])
 
 The embodied twin is a Unity simulation of Margaret's home in which four parties act on language
-models. The robot classifies what it perceives and chooses its actions. The monitoring centre's
+models. The robot's models read what it perceives, and in the earlier brain a model also chooses
+its actions. The monitoring centre's
 operator and the emergency dispatcher each act under their own home model in the same runtime.
 Margaret's voice answers what is said to her from her true condition, which the robot never sees.
 
@@ -121,15 +153,22 @@ base language model at the bottom to a hash-chained audit ledger at the top
 (Chapter~\ref{ch:pe}). The robot is that stack made embodied. Its base models are a cloud model
 and a smaller model on the robot. Its structure-preserving compiler is the ErisML compiler. Its
 moral graph is the compiled home model. Its constitutional veto gate is the set of hard
-prohibitions, the governor and DEME's tier-zero modules. Its moral vector is DEME's. Its ledger
+prohibitions, the governor and DEME's vetoing modules. These are the tier-zero Geneva module in
+both brains and, in the current brain, also the tier-one physical safety module in DEME's shell.
+% src: twin/output_gate.py OutputGate._deme; twin/stack/profiles/home_care_robot.json (hard_shell, core_physical_safety)
+Its moral vector is DEME's. Its ledger
 is the hash chain that records every decision. To these the twin adds what an embodied system
 needs and a text system does not, an evidence plane of attested sensors, witness bars, measured
 reflexes, authenticated channels and rights that lapse with their evidence.
 
 \section{What we found}
 
-We ran the robot against 43 development scenarios written before the robot existed and against a
-sealed set of 30 written by a separate agent from the protocol alone. Each scenario names the
+We ran the earlier brain against 43 development scenarios written before the robot existed and
+against a sealed set of 30 written by a separate agent from the protocol alone. The findings below
+are all of that brain. The current brain has so far run only rehearsals, which are not graded runs
+of the protocol.
+% src: current_system_facts (graded runs dev33, dev39, dev46 and held-out protocol are brain7; brain8 records are stackcheck and rehearse-deme runs)
+Each scenario names the
 strongest response it calls for, from carrying on to treating it as an emergency. The grader
 records false clears, over-restriction, privacy violations and containment breaches, where a
 breach is any governed action without the ruling it needs.
@@ -173,8 +212,8 @@ of prior work was broad but not systematic, and the claim stands only as far as 
 
 Part~I sets out the foundations, the seven-layer stack of Philosophy Engineering
 (Chapter~\ref{ch:pe}) and the geometry of moral strata (Chapter~\ref{ch:ge}). Part~II describes the
-ErisML stack, the language (Chapter~\ref{ch:erisml}), the compiler with its EM-DAG and silicon
-target (Chapter~\ref{ch:compiler}), DEME (Chapter~\ref{ch:deme}) and the scene runtime
+ErisML stack, the language (Chapter~\ref{ch:erisml}), the compiler with its hardware target
+(Chapter~\ref{ch:compiler}), DEME (Chapter~\ref{ch:deme}) and the scene runtime
 (Chapter~\ref{ch:runtime}). Part~III describes the twin, Margaret's home (Chapter~\ref{ch:home}),
 containment in practice with the seven strata of the home (Chapter~\ref{ch:containment}) and the
 Lean proofs (Chapter~\ref{ch:lean}). Part~IV reports the evaluation (Chapter~\ref{ch:evaluation})

@@ -12,6 +12,16 @@ what this chapter declares.
 % src: erisml-compiler src/erisml_compiler/ingestion/structured_loader.py:1-5
 % src: gtc-prototype twin/scene/margaret_home.erisml:1-25
 
+The scene this chapter describes is the hand-written file of the earlier brain, which ran every
+graded run. The brain the robot has run since 12 October 2026 splits it in two. A script derives a
+constitution from the file and keeps the capabilities, the strata, the system event types, the
+evidence plane's declarations and 17 non-defeasible prohibitions. It drops every obligation, the
+refusal tables, the capabilities' ethical profiles, the escalation process and the privacy
+promise. The second part is a household scene that the compiler builds from a text description,
+with the people and Margaret's recorded consents and refusals. The brain merges the two when it
+starts. Where a count or a listing below differs for the current brain, the text says so.
+% src: twin/stack/make_constitution.py module docstring, CONSTITUTIONAL, KEEP_EXTRA; twin/stack/constitution.erisml (17 prohibitions, one commitment duty_of_care); twin/stack/household.md, household.ir.json; twin/stack/brain.py merge
+
 \section{Two textual forms carry the name ErisML}\label{sec:erisml-two-forms}
 
 The first form is a grammar in the erisml-lib repository. It is written for the Lark parser and is
@@ -92,20 +102,26 @@ no pipeline pass in between.
 % src: gtc-prototype twin/brain.py:191-194, 312-320 (SceneRuntime(load_structured_input(...)))
 
 The document's \code{raw\_text} matters beyond bookkeeping. It is the scene's description in plain
-words, and both models of the scene agent receive it with every call
+words, and in the earlier brain both models of the scene agent receive it with every call
 (Section~\ref{sec:runtime-agent}). For Margaret's home it says that she lives alone with her dog,
 that she has refused recording and sharing of her data, that her bedroom is private, and that visits
 are arranged through the monitoring centre.
-% src: erisml-compiler src/erisml_compiler/runtime/agent.py:156-161, 245-248 ("scene": raw_text)
+% src: erisml-compiler src/erisml_compiler/runtime/agent.py ("scene": raw_text in the classifier and chooser prompts)
 % src: gtc-prototype twin/scene/margaret_home.erisml:33-40
+Neither model of the current brain receives it. They see a summary of the stakeholders, the recent
+events and the ethical facts. In the scene built for each candidate act the act's description
+replaces the \code{raw\_text}, and it serves as the act's maxim.
+% src: erisml-compiler src/erisml_compiler/observation/compiler.py _scene_summary; observation/options.py option_ir (raw_text = description)
 
 \section{The intermediate representation is a typed record}\label{sec:erisml-ir}
 
-The intermediate representation is the Pydantic model \code{CompilerIR}. Its schema version is
-\code{erisml\_\allowbreak{}compiler\_\allowbreak{}ir\_\allowbreak{}v0.3}. Assignments to its fields are validated as well as its
-construction. Figure~\ref{fig:erisml-ir-anatomy} groups its fields by who fills them.
-% src: erisml-compiler src/erisml_compiler/ir/schemas.py:394-458
-% src: erisml-compiler src/erisml_compiler/__init__.py:12 (__schema_version__)
+The intermediate representation is the Pydantic model \code{CompilerIR}. On the compiler's main
+branch its schema version is \code{erisml\_\allowbreak{}compiler\_\allowbreak{}ir\_\allowbreak{}v0.3}. On the branch of the
+open pull request 44 it is \code{v0.4}, which removes the module outputs of the retired EM-DAG.
+Assignments to its fields are validated as well as its construction.
+Figure~\ref{fig:erisml-ir-anatomy} groups its fields by who fills them.
+% src: erisml-compiler src/erisml_compiler/ir/schemas.py CompilerIR
+% src: erisml-compiler src/erisml_compiler/__init__.py:12 (__schema_version__; v0.3 on main, v0.4 on feat/retire-em-dag, commit 783ed33)
 
 \begin{figure}[t]
 \centering
@@ -122,7 +138,7 @@ free strings by convention, namely agency, vulnerability and consent status. A r
 link from one stakeholder to another. Margaret's home declares four stakeholders and two relations.
 The robot cares for Margaret, and the monitoring centre oversees the robot.
 Listing~\ref{lst:scene-margaret} shows Margaret's record.
-% src: erisml-compiler src/erisml_compiler/ir/schemas.py:83-123
+% src: erisml-compiler src/erisml_compiler/ir/schemas.py StakeholderType, Stakeholder, Relation
 % src: gtc-prototype twin/scene/margaret_home.erisml:41-80
 
 \begin{lstlisting}[caption={Margaret as a stakeholder (\code{margaret\_home.erisml}, lines 42 to 48)}, label={lst:scene-margaret}]
@@ -149,7 +165,7 @@ file may list standing events. Margaret's home lists four, at time indices 0 to 
 consent to recording, data sharing and entry to her bedroom. The centre assigns the robot its role.
 The centre delegates elevated action to the robot only on a governor ruling of elevate. Margaret
 starts reading.
-% src: erisml-compiler src/erisml_compiler/ir/schemas.py:126-134
+% src: erisml-compiler src/erisml_compiler/ir/schemas.py Event
 % src: gtc-prototype twin/scene/margaret_home.erisml:110-134
 
 \paragraph{Commitments.}
@@ -158,7 +174,7 @@ holder, a beneficiary, a content string, a voluntariness, a status from seven an
 six. Its \code{defeasibility\_\allowbreak{}conditions} name conditions under which it may be overridden. The robot
 holds three commitments to Margaret. The privacy promise is the one with a defeasibility condition
 (Listing~\ref{lst:scene-privacy}).
-% src: erisml-compiler src/erisml_compiler/ir/schemas.py:142-163
+% src: erisml-compiler src/erisml_compiler/ir/schemas.py Commitment
 % src: gtc-prototype twin/scene/margaret_home.erisml:81-109
 
 \begin{lstlisting}[caption={The privacy promise (lines 91 to 100)}, label={lst:scene-privacy}]
@@ -176,12 +192,15 @@ holds three commitments to Margaret. The privacy promise is the one with a defea
 % src: gtc-prototype twin/scene/margaret_home.erisml:91-100
 
 \paragraph{Ethical facts and the remaining fields.}
-An ethical fact has a kind from fourteen, subjects, a description, a severity and a confidence.
+An ethical fact has a kind from fourteen on the main branch, subjects, a description, a severity
+and a confidence. The branch of the open pull request 41 adds two kinds, benefit and urgency, which
+carry what an act secures and how soon, and the current brain's projector uses them.
+% src: erisml-compiler src/erisml_compiler/ir/schemas.py EthicalFactKind (14 values on main, 16 on feat/retire-em-dag; commit 05de053 on feat/bridge-benefit-urgency, PR 41)
 Margaret's home declares three, about her vulnerability, her refusal of consent, and the conflict
 between duty of care and privacy in an emergency. The fields that hold moral vectors, tensors,
 module outputs, verdicts, projections, the decision proof and the audit record are filled by the
 pipeline.
-% src: erisml-compiler src/erisml_compiler/ir/schemas.py:197-222, 405-458
+% src: erisml-compiler src/erisml_compiler/ir/schemas.py EthicalFact, CompilerIR
 % src: gtc-prototype twin/scene/margaret_home.erisml:135-150
 
 \section{A norm binds an actor to an action under conditions}\label{sec:erisml-norms}
@@ -192,7 +211,7 @@ exception. Its \code{actor} names who it binds, its \code{action} names what, an
 A lower tier is more urgent, and tier 0 is the most urgent. Its \code{defeasible} flag defaults to
 true. Its \code{source} is a free string. Its \code{conditions} list the condition tokens that must
 all hold for the norm to be in force, and an empty list means always in force.
-% src: erisml-compiler src/erisml_compiler/ir/schemas.py:166-189
+% src: erisml-compiler src/erisml_compiler/ir/schemas.py Norm
 % src: erisml-compiler src/erisml_compiler/runtime/scene.py:276 (lower tier is higher priority)
 % src: erisml-compiler src/erisml_compiler/runtime/agent.py:44-45 (tier 0 the most urgent)
 
@@ -235,23 +254,29 @@ are at tier 0.
 % src: gtc-prototype twin/scene/margaret_home.erisml:187-208
 
 A norm's condition list is a conjunction. A scene expresses a disjunction by writing several norms
-with the same modality and action. Seven obligations in Margaret's home oblige a check-in, each on a
-different event (inactivity, an unconfirmed alarm, a fall, inflicted harm, medical distress, a danger
-in the home, her seeming not to respond). The action is obliged when any of them is in force.
-% src: gtc-prototype twin/scene/margaret_home.erisml (n4, n4b, n4c, n4d, n4e, n4f, n4g; n4g added 2026-10-11)
+with the same modality and action. Nine obligations in Margaret's home oblige a check-in. Seven
+rest each on a different event (inactivity, an unconfirmed alarm, a fall, inflicted harm, medical
+distress, a danger in the home, her seeming not to respond). Two rest on named conditions that ask
+her first, one after a fall in a corroborated emergency and one after a mild nip from an animal.
+The action is obliged when any of them is in force. The current brain's constitution keeps none of
+them.
+% src: gtc-prototype twin/scene/margaret_home.erisml (n4, n4b, n4c, n4d, n4e, n4f, n4g; n6ask with cond:ask_first; p2a with cond:nip_ask_first; obligations on check_in counted with PyYAML 2026-10-12)
+% src: gtc-prototype twin/stack/constitution.erisml (0 obligations)
 % src: erisml-compiler src/erisml_compiler/runtime/scene.py:283-287 (any obligation in force)
 
 One action name is reserved. A norm whose action is \code{elevated\_\allowbreak{}action} applies to every
 capability the scene marks as elevated. Margaret's norm \code{n3} prohibits all seven elevated
 capabilities at tier 0 outside a corroborated emergency.
 % src: erisml-compiler src/erisml_compiler/runtime/scene.py:18-19, 67, 253-260
-% src: gtc-prototype twin/scene/margaret_home.erisml:177-186, 1152-1177
+% src: gtc-prototype twin/scene/margaret_home.erisml:177-186, 1358-1383
 
 Figure~\ref{fig:erisml-census} counts what the scene declares. Of its 77 norms, 52 are obligations,
 24 are prohibitions and one is a permission. The permission allows chores at tier 3. The scene
-declares no exception.
+declares no exception. The current brain's constitution keeps 17 of the prohibitions and nothing
+else.
+% src: gtc-prototype twin/stack/make_constitution.py CONSTITUTIONAL; twin/stack/constitution.erisml (17 prohibitions)
 % src: gtc-prototype twin/scene/margaret_home.erisml norms (counted with PyYAML, 2026-10-11, commit 67ffeb3)
-% src: gtc-prototype twin/scene/margaret_home.erisml:763-770 (the one permission, chores, tier 3)
+% src: gtc-prototype twin/scene/margaret_home.erisml:909-916 (n7, the one permission, chores, tier 3)
 
 \begin{figure}[t]
 \centering
@@ -334,13 +359,17 @@ a token (Section~\ref{sec:runtime-processes}).
 % src: erisml-compiler src/erisml_compiler/process/model.py:112-115
 
 Named conditions let one definition serve several readers. A commitment's defeasibility condition and
-a norm's \code{cond:} token refer to the same entry. Margaret's home defines twelve.
-Listing~\ref{lst:scene-conditions} shows the first four. Eight of the twelve read a stratum. The
-other four read events of system types, three through \code{latest:} and one through \code{event:}.
+a norm's \code{cond:} token refer to the same entry. Margaret's home defines sixteen.
+Listing~\ref{lst:scene-conditions} shows the first four. Nine of the sixteen read only strata. Four
+read one event of a system type, three through \code{latest:} and one through \code{event:}. The
+other three combine several \code{event:} tokens, among them types a model classifies, such as a
+fall or a mild nip from an animal. The current brain's constitution keeps eight of them.
+% src: margaret_home.erisml extra.conditions (stratum only: corroborated_life_threatening_emergency, center_unavailable, ems_authorized, responders_at_door, animal_attacking, duty_to_report, visitor_unverified, visitor_vouched_for, visitor_authorized; one system event: governor_asks_human_review, restraint_authorized, margaret_in_spray_zone, less_lethal_opted_in; mixed: mild_nip_declined, nip_ask_first, ask_first), classified by hand against extra.event_types 2026-10-12
+% src: twin/stack/constitution.erisml extra.conditions (8)
 % src: erisml-compiler src/erisml_compiler/runtime/scene.py:16-17
-% src: gtc-prototype twin/scene/margaret_home.erisml:775-801
+% src: gtc-prototype twin/scene/margaret_home.erisml:921-957 (extra.conditions; 16 entries counted with PyYAML 2026-10-12)
 
-\begin{lstlisting}[caption={Named conditions in Margaret's home (lines 775 to 785)}, label={lst:scene-conditions}]
+\begin{lstlisting}[caption={Named conditions in Margaret's home (lines 921 to 931)}, label={lst:scene-conditions}]
   conditions:
     # the governor's latest ruling is elevate: at least two attested physical witnesses, a fresh
     # reading, and the analyzer not refusing (twin/service.py); nothing else counts
@@ -353,8 +382,8 @@ other four read events of system types, three through \code{latest:} and one thr
     # unlike elevate it lifts nothing else: privacy and the physical actions stay locked
     ems_authorized: ["stratum:situation=ems_only"]
 \end{lstlisting}
-% src: gtc-prototype twin/scene/margaret_home.erisml:775-785
-% src: gtc-prototype twin/scene/margaret_home.erisml:787, 795, 797 with 1138, 1147, 1149, 1150 (latest:/event: conditions over system types)
+% src: gtc-prototype twin/scene/margaret_home.erisml:921-931
+% src: gtc-prototype twin/scene/margaret_home.erisml extra.conditions with extra.event_types source: system (lines 1342-1356)
 
 The process loader asks a second question of each token. A token is structural when only system
 events can make it true or false. An \code{event:} or \code{latest:} token is structural when its type
@@ -370,36 +399,43 @@ The scene's vocabulary lives in \code{extra.event\_\allowbreak{}types}. Each ent
 description, an optional list of allowed contents, an optional \code{source} and an optional list of
 \code{actors}. A type marked \code{source: system} comes from the system. The agent module names
 three such sources, namely a ruling, an action the agent performed and an authenticated oversight
-message. Margaret's home declares 53 types, and 24 of them are system types.
+message. Margaret's home declares 53 types, and 24 of them are system types. The current brain's
+constitution keeps the 24 system types and 11 others that its gates and norms read, 35 in all.
 % src: erisml-compiler src/erisml_compiler/runtime/agent.py:5-10
 % src: gtc-prototype twin/scene/margaret_home.erisml extra.event_types (counted with PyYAML, 2026-10-11, commit 1c14ee4)
+% src: gtc-prototype twin/stack/constitution.erisml extra.event_types (35, 24 source system; counted with PyYAML 2026-10-12)
 
-\begin{lstlisting}[caption={Three event types, two of them from the system (lines 1136 to 1138)}, label={lst:scene-system-types}]
+\begin{lstlisting}[caption={Three event types from the system (lines 1342 to 1344)}, label={lst:scene-system-types}]
     check_in_answered: {description: the person answered the robot's check-in; content is what she said, source: system}
     check_in_unanswered: {description: the person did not answer the robot's check-in, source: system}
     governor_ruling: {description: 'the authority gate''s ruling; lapsed when the evidence that elevated it no longer meets its bar (evidence_lapse_s)', content: [elevate, authorize_ems, refuse, refuse_human_review, lapsed], source: system}
 \end{lstlisting}
-% src: gtc-prototype twin/scene/margaret_home.erisml:1136-1138
+% src: gtc-prototype twin/scene/margaret_home.erisml:1342-1344
 
 The system marker decides three things, each checked by different code. The observation classifier
-is never offered a system type and rejects one if a model proposes it. The strata loader refuses a
-gate that leads into an authority state on any other kind of event. The process loader requires a
-message event to be triggered by a system type. Chapter~\ref{ch:runtime} describes each check.
+of the earlier brain is never offered a system type and rejects one if a model proposes it. The
+strata loader refuses a gate that leads into an authority state on any other kind of event. The
+process loader requires a message event to be triggered by a system type.
+Chapter~\ref{ch:runtime} describes each check. The current brain does not offer its model the
+scene's event types at all. Its observation compiler writes only six generic types, which are
+utterance, consent, request, claim, presence and hazard, and none of them is a system type or
+triggers a gate.
 % src: erisml-compiler src/erisml_compiler/runtime/agent.py:105-112, 132-133
-% src: erisml-compiler src/erisml_compiler/runtime/strata.py:113-116
+% src: erisml-compiler src/erisml_compiler/runtime/strata.py Stratification._check
+% src: erisml-compiler src/erisml_compiler/observation/compiler.py OBSERVATION_EVENTS (six types), patch validation rejects any other type
 % src: erisml-compiler src/erisml_compiler/process/model.py:170-177
 
 An event type may also name the only actors it can have. Listing~\ref{lst:scene-actor-types} shows
 two such types in Margaret's home. A sensor reading always has the actor \code{device}, and anything
 said on a television or in a network message always has the actor \code{media}. The scene declares
 nine actor identifiers in \code{extra.actors}, each with a description.
-% src: gtc-prototype twin/scene/margaret_home.erisml:1121-1122, 993-1002
+% src: gtc-prototype twin/scene/margaret_home.erisml:1327-1328, 1149-1158
 
-\begin{lstlisting}[caption={Two event types that fix their actor (lines 1121 to 1122)}, label={lst:scene-actor-types}]
+\begin{lstlisting}[caption={Two event types that fix their actor (lines 1327 to 1328)}, label={lst:scene-actor-types}]
     media_content: {description: something said or shown by a television, radio or network message; content is what, actors: [media]}
     sensor_reading: {description: a sensor reports; content is the sensor, conditions say physical or not, attested or not, corroborates or does_not_corroborate, actors: [device]}
 \end{lstlisting}
-% src: gtc-prototype twin/scene/margaret_home.erisml:1121-1122
+% src: gtc-prototype twin/scene/margaret_home.erisml:1327-1328
 
 \section{Stratifications declare regions and the gates between them}\label{sec:erisml-strata}
 
@@ -416,9 +452,9 @@ absorbing states that only human oversight can leave, and the gates. A gate has 
 boundary type, either \code{threshold} or \code{phase}. Listing~\ref{lst:scene-situation} shows the
 stratification that holds the situation the robot acts in.
 % src: erisml-compiler src/erisml_compiler/runtime/strata.py:8-25
-% src: gtc-prototype twin/scene/margaret_home.erisml:866-880
+% src: gtc-prototype twin/scene/margaret_home.erisml:1029-1036
 
-\begin{lstlisting}[caption={The \code{situation} stratification (lines 873 to 880)}, label={lst:scene-situation}]
+\begin{lstlisting}[caption={The \code{situation} stratification (lines 1029 to 1036)}, label={lst:scene-situation}]
     situation:
       states: [ordinary, ems_only, emergency]
       initial: ordinary
@@ -428,13 +464,13 @@ stratification that holds the situation the robot acts in.
         - {id: s_ems, trigger: governor_ruling=authorize_ems, from: [ordinary], to: ems_only, boundary: phase}
         - {id: s_lapsed, trigger: governor_ruling=lapsed, from: [ems_only, emergency], to: ordinary, boundary: phase}
 \end{lstlisting}
-% src: gtc-prototype twin/scene/margaret_home.erisml:873-880
+% src: gtc-prototype twin/scene/margaret_home.erisml:1029-1036
 
 Both authority states are entered only on the governor's ruling, a system event. A refusal is not a
 gate, so a refused request moves nothing. Table~\ref{tab:erisml-strata} lists the seven
 stratifications of Margaret's home. Appendix~B catalogues their states and gates in full, and
 Chapter~\ref{ch:runtime} describes how the runtime steps them and what the loader checks.
-% src: gtc-prototype twin/scene/margaret_home.erisml:866-880, 1138
+% src: gtc-prototype twin/scene/margaret_home.erisml:1029-1036, 1344
 
 \begin{table}[t]
 \centering\small
@@ -454,21 +490,23 @@ Stratification & Gates & States & Authority & Absorbing \\
 \bottomrule
 \end{tabularx}
 \end{table}
-% src: gtc-prototype twin/scene/margaret_home.erisml:816-922
+% src: gtc-prototype twin/scene/margaret_home.erisml:971-1078
 
 \section{Capabilities, oversight and the remaining declarations}\label{sec:erisml-extra}
 
 The capability list names every action the agent can take. Each entry has an \code{action} and an
 \code{elevated} flag, and may add a \code{governed} flag, a description and a witness bar. The
-runtime reads the action and the elevated flag. The process loader reads both flags. The chooser
-receives each allowed capability's entry, description included. Margaret's robot has 25
-capabilities. Seven are elevated, among them recording, sharing data, entering the bedroom and
+runtime reads the action and the elevated flag. The process loader reads both flags. The earlier
+brain's chooser receives each allowed capability's entry, description included. In the current
+brain each candidate act's description goes to the projector and serves as the act's maxim.
+% src: twin/stack/brain.py StackBrain.reset (self.acts from capability descriptions), _decide (projector.project(snapshot, gated, ...))
+Margaret's robot has 25 capabilities in both brains. Seven are elevated, among them recording, sharing data, entering the bedroom and
 physical assistance. Four are governed, namely calling emergency services, restraining a person and
 the two less-lethal devices.
 % src: erisml-compiler src/erisml_compiler/runtime/scene.py:18-19, 112, 253-260
 % src: erisml-compiler src/erisml_compiler/process/model.py:142, 213-219
 % src: erisml-compiler src/erisml_compiler/runtime/agent.py:222, 253
-% src: gtc-prototype twin/scene/margaret_home.erisml:1152-1177
+% src: gtc-prototype twin/scene/margaret_home.erisml:1358-1383
 
 The \code{oversight} list names the event types that count as human oversight. Margaret's home names
 four, namely the centre's confirmation that privacy is restored, the clearing of a visitor, the lapse
@@ -476,15 +514,18 @@ of evidence and the clearing of devices. The \code{agent} key names whose norms 
 \code{role} names who decides in the agent's prompts, and \code{default\_\allowbreak{}action} names what the agent
 does when nothing is obliged. For Margaret's home these are the robot, her home-care robot and
 caregiver, and chores.
-% src: gtc-prototype twin/scene/margaret_home.erisml:773-774, 804, 1101
+% src: gtc-prototype twin/scene/margaret_home.erisml:919-920, 960, 1294
 % src: erisml-compiler src/erisml_compiler/runtime/scene.py:20-21, 116-117
 % src: erisml-compiler src/erisml_compiler/runtime/agent.py:20-22, 269
 
 The scene holds further keys that the scene runtime does not read. They include Margaret's refusals,
 the ethical profile of each capability, the rules of the offline tier, the substrate of each sensor,
 the reflexes, the enrolled household, and two intervals. The twin's own code reads them, and
-Chapters~\ref{ch:home} and~9 describe them.
-% src: gtc-prototype twin/scene/margaret_home.erisml:805-809, 981, 991-992, 1010-1100
+Chapters~\ref{ch:home} and~9 describe them. The current brain's constitution drops the refusals
+and the capabilities' ethical profiles. Of the offline tier's twelve rules it keeps the seven
+floor rules, those for devices and for what the camera measures.
+% src: twin/stack/make_constitution.py module docstring ("Dropped: ... the refusal tables, the capability harms"), main (PERCEPTION_FLOOR, floor rules); constitution.erisml extra.offline.events (7) vs margaret_home.erisml (12), counted with PyYAML 2026-10-12
+% src: gtc-prototype twin/scene/margaret_home.erisml:961-965, 1137, 1147-1148, 1166-1293
 % src: erisml-compiler src/erisml_compiler/runtime/scene.py:109-135 (the keys SceneRuntime reads)
 
 \section{The processes block is a view of the norms}\label{sec:erisml-processes}
@@ -493,11 +534,13 @@ A scene may declare its protocols as processes in \code{extra.processes}. A proc
 per party, and nodes of six kinds, namely start, end, task, exclusive gateway, message and timer.
 Flows connect the nodes, and a flow may carry a \code{when} condition written in condition tokens.
 Margaret's home declares one process, the escalation ladder, with four lanes, 23 nodes and 23 flows.
-Listing~\ref{lst:scene-ladder} shows its opening.
+Listing~\ref{lst:scene-ladder} shows its opening. The current brain's constitution declares no
+process.
+% src: twin/stack/constitution.erisml (no extra.processes); make_constitution.py KEEP_EXTRA
 % src: erisml-compiler src/erisml_compiler/process/model.py:1-42
-% src: gtc-prototype twin/scene/margaret_home.erisml:929-980
+% src: gtc-prototype twin/scene/margaret_home.erisml:1085-1136
 
-\begin{lstlisting}[caption={The opening of the escalation ladder (lines 929 to 943)}, label={lst:scene-ladder}]
+\begin{lstlisting}[caption={The opening of the escalation ladder (lines 1085 to 1099)}, label={lst:scene-ladder}]
   processes:
     escalation_ladder:
       name: The escalation ladder
@@ -514,13 +557,13 @@ Listing~\ref{lst:scene-ladder} shows its opening.
         - {id: e_fine, kind: end, lane: margaret, name: 'She is alright'}
         - {id: t_centre, kind: task, lane: robot, action: contact_monitoring_center, name: 'Refer to the monitoring centre'}
 \end{lstlisting}
-% src: gtc-prototype twin/scene/margaret_home.erisml:929-943
+% src: gtc-prototype twin/scene/margaret_home.erisml:1085-1099
 
 A process is a view of the scene and never a second source of authority. A task in the robot's lane
 still runs only if the norms allow its action. The scene file says so in its own comment, and the
 module that loads processes says so in its docstring. The checks a process must pass when it loads,
 and its export to BPMN, are described in Section~\ref{sec:runtime-processes}.
-% src: gtc-prototype twin/scene/margaret_home.erisml:923-928
+% src: gtc-prototype twin/scene/margaret_home.erisml:1079-1084
 % src: erisml-compiler src/erisml_compiler/process/model.py:20-23
 
 \section{The record becomes a typed graph with a canonical hash}\label{sec:erisml-graph}
@@ -555,7 +598,7 @@ order. The hash is stored in the audit record's \code{graph\_hash} field. The ar
 states that the round trip from graph to flat lists and back reproduces the hash for every bundled
 example.
 % src: erisml-compiler src/erisml_compiler/ir/graph/canonical.py:1-20, 31-82
-% src: erisml-compiler src/erisml_compiler/ir/schemas.py:374-377 (AuditRecord.graph_hash)
+% src: erisml-compiler src/erisml_compiler/ir/schemas.py AuditRecord.graph_hash
 % src: erisml-compiler docs/architecture.md:106-127
 
 Adding the \code{conditions} field to norms could have changed the hash of every older graph. The
@@ -577,15 +620,18 @@ reflexes and the evidence lapse window, sit in \code{extra}, and code outside th
 and turns what it measures into events. Time enters the runtime only as the order of events. A
 process timer names an interval in \code{extra} but is part of a view.
 % src: erisml-compiler src/erisml_compiler/runtime/scene.py:151-189
-% src: gtc-prototype twin/scene/margaret_home.erisml:805-809, 981, 1086-1100
+% src: gtc-prototype twin/scene/margaret_home.erisml:961-965, 1137, 1258-1293
 % src: erisml-compiler src/erisml_compiler/process/model.py:178-188
 
 The schema does not tie an event's type to the scene's vocabulary, and the runtime steps any event it
-is given. The vocabulary is enforced where events enter, by the observation classifier, and where
-gates and processes are loaded. A scene author who writes a token over an undeclared type in a norm
+is given. The vocabulary is enforced where events enter and where gates and processes are loaded.
+In the earlier brain events enter through the observation classifier, which checks the scene's
+vocabulary. In the current brain they enter through the observation compiler, which checks its
+own fixed set of six types and not the scene's.
+% src: erisml-compiler runtime/agent.py SceneAgent classifier (vocab); observation/compiler.py OBSERVATION_EVENTS A scene author who writes a token over an undeclared type in a norm
 gets a norm that is never in force, with no error. No load-time check in the compiler compares a
-norm's tokens with the vocabulary. The twin's test suite adds one for the prohibitions that guard
-governed actions, which must rest only on tokens over system types (Chapter~9).
+norm's tokens with the vocabulary. The twin's test suite adds one, over the earlier brain's scene,
+for the prohibitions that guard governed actions, which must rest only on tokens over system types (Chapter~9).
 % src: erisml-compiler src/erisml_compiler/runtime/scene.py:192-238 (step does not consult event_types)
 % src: erisml-compiler src/erisml_compiler/runtime/agent.py:118-140
 % src: grep for event_types over erisml-compiler src/ finds readers only in process/, runtime/agent.py, runtime/strata.py (2026-10-03)

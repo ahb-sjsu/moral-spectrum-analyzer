@@ -9,7 +9,12 @@ request. Enrolled family members prove who they are with a signed credential. Th
 every action the body takes. The second half of the chapter sets out the seven strata of the home,
 the owner's decisions that shaped them, and the escalation ladder that ties the robot to the
 monitoring centre and emergency services.
-% src: twin/brain.py:1-23, 589-626
+
+The chapter describes the earlier brain, the brain of the graded runs and of the proofs of
+Chapter~\ref{ch:lean}. The re-architected brain, the GTC demonstration brain since 12 October 2026,
+keeps its evidence plane and drops much of the rest. Section~\ref{sec:cont-brain8} says what it
+keeps and what it does not.
+% src: twin/brain.py module docstring, Brain.decide; twin/stack/brain.py StackBrain
 % src: docs/STRATA_TAXONOMY.md
 
 \section{The input layer drops what is not declared}\label{sec:cont-input}
@@ -21,23 +26,29 @@ characters and lists to 64 items. Margaret's room must be the living area or the
 her pose one of the five poses \code{Perception.cs} reports. A contact's kind is animal or person,
 and its force lies between 0 and 100\,000 newtons. Anything else is dropped and reported, never passed
 on. The function never raises on bad input.
-% src: twin/input_layer.py:1-8, 148-177 (SPEC), 180-240
+% src: twin/input_layer.py:1-8, 16-45 (SPEC), 50-110 (_clean, validate_facts)
 
-The layer is stage one of three. Stage two is canonicalization. The isolated scene agent's classifier
+In the earlier brain the layer is stage one of three. Stage two is canonicalization. The isolated scene agent's classifier
 turns facts into events of the scene, and an erisml-compiler canonicalizer snaps the actors it names
 to the scene's declared actors, else to \code{unknown}. Stage three is the brain's isolation. The
 chooser sees only the canonical state. Each decision record lists what stage one dropped and what the
-classifier quarantined and snapped.
+classifier quarantined and snapped. The re-architected brain keeps stage one and has no stage two
+or three. The validated facts and the heard words go to erisml-compiler's observation compiler, a
+model whose output later models read (Section~\ref{sec:home-brain8}).
 % src: twin/input_layer.py:5-8
-% src: twin/scene/margaret_home.erisml:982-1002 (actors)
-% src: twin/brain.py:318-320, 603-604
+% src: twin/scene/margaret_home.erisml extra.actors
+% src: twin/brain.py Brain.reset, Brain.decide (quarantined, snapped)
+% src: twin/stack/brain.py StackBrain._decide (validate_facts, _observations, observer.compile)
 
-The classifier may also write only the event types the scene declares. Twenty-four of the 48 types
-are marked as system events. A system event arrives from the brain's own measurements, the governor,
-or an authenticated channel, and the classifier cannot produce it.
-% src: paper/aies2027/kit/FACTS.md:10
-% src: twin/scene/margaret_home.erisml:1102-1151 (event_types, source: system)
-% src: C:/source/erisml-compiler-monitor/src/erisml_compiler/runtime/agent.py:107-133 (system types rejected from perception)
+The classifier may also write only the event types the scene declares. In the earlier brain's
+scene 24 of the 53 types are marked as system events. A system event arrives from the brain's own
+measurements, the governor, or an authenticated channel, and the classifier cannot produce it. The
+re-architected brain's constitution declares 35 types, and 24 of them are system types. No
+observation of its observation compiler can write one, so its authority stays contained.
+% src: paper/aies2027/kit/FACTS.md:10 (53 types, 24 system)
+% src: twin/scene/margaret_home.erisml extra.event_types (source: system)
+% src: twin/stack/constitution.erisml extra.event_types (35, 24 source: system; counted with yaml.safe_load 2026-10-12)
+% src: erisml-compiler src/erisml_compiler/runtime/agent.py:107-133 (system types rejected from perception)
 
 \section{A reading counts only with a valid signature}\label{sec:cont-attest}
 
@@ -45,7 +56,7 @@ The brain's trust layer for readings is the class \code{Readings}. It is applied
 of a request, on arrival, before any model runs. A decision's model step can take a minute, and
 evidence checked after it would be judged stale or replayed only because the model was slow.
 Scenarios d02 and d21 of development run dev8r showed this effect, and the check moved to arrival.
-% src: twin/brain.py:71-87, 138-144
+% src: twin/brain.py Readings, Readings.for_governor
 
 \paragraph{The check.} Let a reading $r$ come from device $d$ on channel $\chi$. It carries a payload
 $p$, a counter $c$, a signing time $t_s$, a declared payload hash $h_r$ and a signature $g$. Let $H$
@@ -68,20 +79,20 @@ until its stamp, and could be held back and used later. The future bound is in e
 \code{07f9faa} on. The runs reported in Chapter~\ref{ch:evaluation} used \code{9179a2d}, which
 checked only $t - t_s \le \tau$. In the twin the devices and the brain run on one host and read
 one clock.
-% src: erisml-compiler 8766796/07f9faa (max_future_s = 2.0); twin/brain.py:129-130 (min_counter = last - 1)
+% src: erisml-compiler 8766796/07f9faa (max_future_s = 2.0); twin/brain.py Readings.verify (min_counter = last - 1)
 The bar $|$ denotes the
 separator in the signed string. The checks run in that order through erisml-compiler's
 \code{check\_attestation}, and the first that fails gives the reason. After acceptance
 $c^{*}(\chi,d)$ becomes $\max(c^{*}(\chi,d), c)$. The alert is read from the third field of the
 signed payload, never from an unsigned field.
-% src: twin/brain.py:45 (FRESHNESS_BOUND_S = 30), 113-136 (verify)
-% src: C:/source/erisml-compiler-monitor/src/erisml_compiler/ir/evidence.py:71-73, 126-169
+% src: twin/brain.py:45 (FRESHNESS_BOUND_S = 30), Readings.verify
+% src: erisml-compiler src/erisml_compiler/ir/evidence.py:71 (signing_payload), 126-177 (check_attestation)
 
 \paragraph{One replay counter per channel.} The robot sends the same signed readings down two streams
 that are ordered independently. The reflex stream runs four times a second and the deliberate stream
 runs on each decision. The counter $c^{*}$ is therefore kept per channel. One stream's progress must
 not make the other's readings look replayed. Development run dev8r d02 found this fault.
-% src: twin/brain.py:94-97
+% src: twin/brain.py Readings.__init__ (last_counter keyed by channel and device), Readings.verify
 % src: twin/unity/TwinWorld/Assets/Twin/Runtime/RobotAgent.cs:63-70
 
 \paragraph{One witness per substrate.} The scene's inventory assigns each of its 15 devices to a
@@ -91,8 +102,8 @@ substrate. The bedroom heat detector, the CO alarm, the motion sensor and the fa
 home hub. The wearable is its own substrate. The robot's seven onboard sensors share its body. The
 network is listed so that its readings are seen, and it never counts because it is not physical. A
 device outside the inventory never counts.
-% src: twin/scene/margaret_home.erisml:1062-1081 (sensor_substrates)
-% src: twin/brain.py:77-81, 146-167
+% src: twin/scene/margaret_home.erisml extra.sensor_substrates
+% src: twin/brain.py Readings.__init__ (inventory), Readings._for_governor
 
 Let $D$ be the inventory, $\sigma(d)$ the substrate of device $d$, and $Q$ the set of quarantined
 devices. A reading counts when its device is in $D$ and not in $Q$, it is physical, it passes
@@ -106,9 +117,9 @@ the robot's last 24 frames, attaches its own attestation, and passes the result 
 one sensor named \code{camera}. The camera corroborates on a fall event, or when a person and an
 animal are in contact in at least a third of the frames. It is one witness at most, because several
 outputs of one model are not independent.
-% src: twin/brain.py:161-167, 339-347
+% src: twin/brain.py Readings._for_governor, Brain.govern_live (camera_sensor)
 % src: twin/scenarios.py:47-55 (corroboration: physical, corroborates, confidence not low, distinct names)
-% src: twin/service.py:87-122 (CameraWitness)
+% src: twin/service.py CameraWitness
 % src: docs/AV_CANONICALIZER_PLAN.md:48-50
 
 \paragraph{Quarantine.} Some failures show that a device's attestation lost its integrity. These are a
@@ -120,7 +131,7 @@ well its later readings sign, until the centre's \code{device\_cleared}. The rob
 \code{report\_device}, a maintenance report to the centre and not a call about Margaret. A stale or
 replayed reading is not a compromise. It simply does not count. Figure~\ref{fig:attestation} follows
 a reading through these checks.
-% src: twin/brain.py:83-87, 89-90, 108-111, 155-159, 494-498, 634-635
+% src: twin/brain.py Readings (quarantine), Readings.take_compromised, Readings.clear_quarantine, Readings._for_governor, Brain._record_compromised, Brain.event (device_cleared)
 % src: twin/scene/margaret_home.erisml:908-922, 561-569 (p9m)
 % src: docs/STRATA_TAXONOMY.md:131-143
 
@@ -136,7 +147,7 @@ fails to count.}
 
 The same signed form serves the monitoring centre. Its desk verifies each device's signature itself
 before it records \code{hazard\_attested}, so the robot cannot forge the telemetry it relays.
-% src: twin/brain.py:209-214, 169-177
+% src: twin/brain.py Desk.structural, Readings.trusted_alerts
 
 \section{The governor counts witnesses against a bar}\label{sec:cont-governor}
 
@@ -181,7 +192,7 @@ corrected on 2026-09-25.
 
 The analyzer is the Moral Spectrum Analyzer. In the running twin it scores the situation live, and
 DEME appears in the governor only as the analyzer's ten feeder dimensions.
-% src: twin/brain.py:8-10, 350
+% src: twin/brain.py module docstring, Brain.govern_live (scorer.ensure)
 % src: docs/AUTONOMY_PLAN.md:27-32
 
 \paragraph{Three bars.} The bar depends on what is asked. Elevation needs two witnesses. Restraining
@@ -193,7 +204,7 @@ restraint refused at three may still be a corroborated emergency at two. If the 
 emergency services, the ruling is still a refusal, and the scene holds that the centre is
 unreachable, the brain rules once more at one. A grant there is \code{authorize\_ems}, which
 authorizes the call and nothing else. With no attested witness, nothing authorizes the robot to call.
-% src: twin/brain.py:46-47 (EMS, RESTRAINT_BAR = 3), 339-371 (govern_live)
+% src: twin/brain.py:46-47 (EMS, RESTRAINT_BAR = 3), Brain.govern_live
 % src: twin/scene/margaret_home.erisml:1168-1170 (witness_bar: 3)
 % src: docs/AUTONOMY_PLAN.md:87-96
 % src: paper/aies2027/kit/FACTS.md:22
@@ -202,7 +213,7 @@ The outcome is one of \code{elevate}, \code{authorize\_ems}, \code{refuse\_human
 \code{refuse}. The brain steps it into the robot's moral state as a \code{governor\_ruling} event. A
 grant at three also records \code{restraint\_authorized} with content granted. The scene's norm
 \code{n5c} obliges the robot to contact the centre when the ruling asks for human review.
-% src: twin/brain.py:360, 373-376
+% src: twin/brain.py Brain.govern_live (outcome), Brain._step_ruling
 % src: twin/scene/margaret_home.erisml:340-348 (n5c), 780
 
 Figure~\ref{fig:governor-gates} draws the gates and the order of the bars.
@@ -215,7 +226,7 @@ and gate~2 if the attested witnesses $W$ reach the bar $b$, and gate~3 can only 
 from the signed readings is the only way gate~2 passes, so no language model output can grant. The
 camera's person detector is the one learned model on that edge, and it is one witness at most.}
 \label{fig:governor-gates}
-% src: twin/governor.py:84-132, twin/brain.py:339-371
+% src: twin/governor.py:84-132, twin/brain.py Brain.govern_live
 \end{figure}
 
 \section{A grant needs a witness that measures the emergency}\label{sec:cont-measure}
@@ -265,7 +276,7 @@ scene therefore declares reflexes. A reflex is a test on the structured contacts
 records, and the actions it may take, in order. The brain evaluates the reflexes on every perception
 update without a model.
 % src: docs/AUTONOMY_PLAN.md:185-193
-% src: twin/scene/margaret_home.erisml:1082-1100 (reflexes)
+% src: twin/scene/margaret_home.erisml extra.reflexes
 
 The scene declares two. Reflex \code{x\_animal} fires on a contact from an animal on Margaret of at
 least 150\,N. It records \code{attack\_by\_animal} and the measured event
@@ -284,8 +295,8 @@ severity is
 \label{eq:severity}
 \end{equation}
 A reflex that fired for an actor does not fire again for the same actor within 20 seconds.
-% src: twin/scene/margaret_home.erisml:1086-1100
-% src: twin/brain.py:48 (REFLEX_HOLD_S = 20), 427-457
+% src: twin/scene/margaret_home.erisml extra.reflexes (x_animal, x_person)
+% src: twin/brain.py:48 (REFLEX_HOLD_S = 20), Brain.reflex
 One exception is declared in the scene.
 The person attack reflex \code{x\_person} carries \code{reask: on\_new\_witness}.
 If its last ruling was refused for want of witnesses and more witnesses corroborate now, it asks
@@ -303,7 +314,7 @@ which force on an animal may be asked for. The world's bite forces show the bar 
 in the world has force $80 + 220s$ newtons for severity $s$, so a mild bite ($s = 0.25$) gives
 135\,N and does not fire the reflex. A dog jumping on Margaret is reported at 120\,N and does not
 fire it either.
-% src: twin/brain.py:453-457
+% src: twin/brain.py Brain.reflex (measured event)
 % src: twin/scene/margaret_home.erisml:822, 860, 905, 1128, 1148
 % src: twin/unity/TwinWorld/Assets/Twin/Runtime/World.cs:280 (Lerp(80, 300, severity)), 546 (mild 0.25)
 % src: twin/unity/TwinWorld/Assets/Twin/Runtime/Perception.cs:51-52 (jumping, 120 N)
@@ -312,10 +323,11 @@ For each action in its list, a reflex asks the governor's fast gates first when 
 governed or elevated and not yet allowed. It asks once per bar and steps each ruling into the moral
 state. It takes the first action the compiled model allows. With the analyzer deferred, gates~1 and~2
 decide, and both take well under a second. The plan states that the analyzer runs in the next
-deliberate cycle and that the robot stops the elevated action if it refuses. The output gate checks
+deliberate cycle and that the robot stops the elevated action if it refuses. That step is not
+implemented. The code states it only in comments. The output gate checks
 the reflex's action without redirecting it to a human, because a reflex must stay fast.
-% src: twin/brain.py:458-476
-% src: twin/governor.py:110-114
+% src: twin/brain.py Brain.reflex, Brain.govern_live docstring (deferred to the next deliberate cycle; no code runs it)
+% src: twin/governor.py:111-114 (comment and elevate_analyzer_deferred)
 % src: docs/AUTONOMY_PLAN.md:188-193
 % src: twin/output_gate.py:21
 
@@ -335,7 +347,7 @@ In run dev16 scenario d30 she refused an ambulance between the grant and the cal
 went ahead (Appendix~\ref{app:design-log}).
 The body therefore counts her utterances.
 Let $h_d$ be the count when the decision was asked for and $h$ the count at the act.
-A governed act $a$ proceeds only if
+A governed act $a$, or one that a refusal of hers can cover, proceeds only if
 \begin{equation}
 h = h_d \;\vee\; a \in \Omega ,
 \label{eq:herwords}
@@ -343,9 +355,13 @@ h = h_d \;\vee\; a \in \Omega ,
 where $\Omega$ holds the actions already withheld once in the scenario.
 When it does not proceed, the body asks for a fresh decision and adds $a$ to $\Omega$.
 Governed means the tier the signed manifest gives the action.
+A refusal can cover an act when the manifest lists refusals under the act's \code{refused\_by}.
+The earlier brain's manifest lists them for 8 of its 25 acts.
+The re-architected brain's manifest lists none, so there the rule applies to governed acts alone.
 Reflexes carry no decision and are exempt.
-% src: twin/unity/TwinWorld/Assets/Twin/Runtime/RobotAgent.cs (decidedAtHer, withheldOnce, Authorize)
-In the check run of 10 October the body withheld two acts, each an emergency call.
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/RobotAgent.cs (decidedAtHer, withheldOnce, Governed, Refusable, Authorize)
+% src: twin/manifest/margaret_home.manifest.json, twin/manifest/constitution.manifest.json (acts with non-empty refused_by, counted 2026-10-12: 8 and 0)
+In the check run of 10 October, under the earlier brain, the body withheld two acts, each an emergency call.
 In d30 the fresh decision saw her refusal and no call was made, the first pass of d30 since the repair of 8 October.
 In d17 the call followed one decision cycle later.
 % src: /archive/unity/out/check18/results.jsonl (withheld_for_her_words), /archive/unity/out/check18/grade.json
@@ -356,7 +372,7 @@ A right granted on evidence lasts only while the evidence does. The owner made t
 2026-10-03. On every decision and every reflex request the brain counts the fresh attested witnesses,
 as the governor counts them, against the bar of the elevation in force.
 % src: docs/STRATA_TAXONOMY.md:36-41
-% src: twin/brain.py:388-425 (_lapse), 434-435, 594
+% src: twin/brain.py Brain._lapse, Brain.reflex and Brain.decide (each calls _lapse)
 
 Let $W_j$ be the count at check $j$, made at time $t_j$ on the brain's clock, and let $\Lambda$ be the
 scene's \code{evidence\_lapse\_s}, 60 seconds. A right with bar $b$ lapses at check $n$ when
@@ -368,7 +384,7 @@ A check at which $W_j \ge b$ restarts the window. The window is a penumbra in th
 Ethics Definition~8.9. Near the boundary the evidence may flicker, and a real emergency with
 intermittent evidence does not switch the rights off and on.
 % src: twin/scene/margaret_home.erisml:805-809 (evidence_lapse_s: 60)
-% src: twin/brain.py:403-410 (below)
+% src: twin/brain.py Brain._lapse (below)
 
 Each right is watched against its own bar. A corroborated emergency rests on two witnesses and an
 \code{authorize\_ems} on one. Restraint rests on three. When the emergency's bar fails for the window,
@@ -378,7 +394,7 @@ the elevation granted reverts. That covers the emergency itself, the authority t
 restraint, and the privacy override, since \code{evidence\_lapsed} is one of the scene's oversight
 events. When only the strictest bar fails, restraint alone lapses and the emergency stands.
 Figure~\ref{fig:reversion} illustrates both cases.
-% src: twin/brain.py:380-385 (bar per outcome), 412-425
+% src: twin/brain.py Brain._step_ruling (bar per outcome), Brain._lapse
 % src: twin/scene/margaret_home.erisml:804, 880, 1139
 % src: docs/STRATA_TAXONOMY.md:174-175
 
@@ -411,7 +427,7 @@ evidence watch through refusals as well. The scene's conditions read the stratum
 life-threatening emergency is \code{stratum:situation=emergency}, and EMS authorization is
 \code{stratum:situation=ems\_only}.
 % src: twin/scene/margaret_home.erisml:866-880, 778, 785
-% src: twin/brain.py:377-385
+% src: twin/brain.py Brain._step_ruling
 
 The stratum \code{centre\_contact} carries the other half of the ladder. It has the states reachable
 and unreachable, and only the centre's replies move it. Unreachable is a nullifier in the sense that
@@ -445,7 +461,7 @@ signed it and whom the centre has not revoked. A verified credential records the
 \code{household\_verified}, which moves \code{visitor\_standing} to household. A forged, stale,
 replayed, unenrolled or revoked credential records nothing. The centre's \code{credential\_revoked}
 drops the member to stranger, and the brain never accepts that member again in the same world.
-% src: twin/brain.py:479-492 (_credentials), 636-637
+% src: twin/brain.py Brain._credentials, Brain.event (credential_revoked)
 % src: twin/scene/margaret_home.erisml:827-828, 1130-1131
 
 Household standing removes the centre check and the guard. It leaves the privacy promise in force, and
@@ -455,7 +471,7 @@ Margaret's medication still needs the governor's elevation.
 
 \section{The output gate judges every action}\label{sec:cont-gate}
 
-Before the body acts, erisml-lib's DEME pipeline judges the proposal among the allowed alternatives.
+In the earlier brain, before the body acts, erisml-lib's DEME pipeline judges the proposal among the allowed alternatives.
 The pipeline has a reflex veto layer and a tactical layer over three ethics modules.
 \code{GenevaEMV2} runs at tier~0, \code{AutonomyConsentEMV2} at tier~2, and \code{TragicConflictEM},
 wrapped by an adapter, at tier~3. The tactical layer is configured to fail closed, so a module that
@@ -467,7 +483,8 @@ come from the canonical moral state and from each capability's ethical profile i
 moral state says which obligations are in force and at what tier, and what the consent and commitment
 machines hold. The profile gives expected harm, whether the action is coercive and the condition that
 justifies the coercion, and whether it touches privacy or Margaret's body. No model writes these
-facts.
+facts. This holds for the earlier brain only. In the re-architected brain a model projects the
+facts \deme{} judges (Section~\ref{sec:cont-brain8}).
 % src: twin/output_gate.py:11-15, 98-168
 % src: twin/scene/margaret_home.erisml:1021-1034 (capability_ethics)
 
@@ -490,11 +507,12 @@ idle action \code{wait\_and\_observe}. A deliberate proposal that \code{TragicCo
 routed to the monitoring centre instead. The flag is set at an index of at least 0.55, and reflexes
 are never routed. If DEME itself raises, the gate vetoes everything, the idle action stands, and the
 record carries \code{gate\_error}. The brain runs this gate on the scene's reset state at startup and
-will not serve if it fails. Development runs dev8 and dev9 are void because the brain ran against a
-stale erisml-lib whose gate raised on every request.
-% src: twin/output_gate.py:179-250
+will not serve if it fails. The re-architected brain's self-test also runs its profile pipeline
+(Section~\ref{sec:home-service}). Development runs dev8 and dev9 are void because the brain ran
+against a stale erisml-lib whose gate raised on every request.
+% src: twin/output_gate.py OutputGate.check
 % src: docs/AUTONOMY_PLAN.md:228-246
-% src: twin/brain.py:578-587 (self_test)
+% src: twin/brain.py Brain.self_test; twin/stack/brain.py StackBrain.self_test
 
 \section{The escalation ladder}\label{sec:cont-ladder}
 
@@ -505,7 +523,7 @@ in danger, the robot contacts the centre. The centre's operator talks to her thr
 sends EMS, or stands down. If the centre cannot be reached, the robot asks the governor for EMS.
 % src: docs/AUTONOMY_PLAN.md:74-85
 
-The scene states each step as a norm. Obligations \code{n4} to \code{n4f} make the robot check in on
+The earlier brain's scene states each step as a norm. Obligations \code{n4} to \code{n4f} make the robot check in on
 inactivity, an unconfirmed alarm, a fall, harm, medical distress or danger. Obligations \code{n5},
 \code{n5a}, \code{n5h} and \code{n5d} make it contact the centre on an unanswered check-in,
 unresponsiveness, a request for help or danger, outside an emergency. Obligation \code{n6b} makes it
@@ -527,8 +545,11 @@ corroborated emergency, a fall, inactivity and a request for help. Its gateways 
 on the centre's reply, and on the governor's ruling. The process is a view of the norms for people to
 read and for the live trace. It is never a second source of authority. erisml-compiler checks it
 against the scene when the scene loads, and an edit made in a BPMN modeler comes back into the scene
-only if it passes the same checks. Figure~\ref{fig:ladder} draws the process.
-% src: twin/scene/margaret_home.erisml:923-980
+only if it passes the same checks. Figure~\ref{fig:ladder} draws the process. The re-architected
+brain carries none of the ladder's obligations and no process. It keeps \code{n3}, \code{n6p} and
+\code{n6r}, so a call still needs a ruling, and whether to check in or refer is left to \deme{}.
+% src: twin/stack/constitution.erisml norms (n3, n6p, n6r; no obligations; no processes)
+% src: twin/scene/margaret_home.erisml extra.processes.escalation_ladder
 % src: paper/aies2027/kit/FACTS.md:16
 
 \begin{figure}[t]
@@ -549,16 +570,17 @@ type. A threshold boundary is a measured quantity crossing a value. A phase boun
 the kind of situation. The scene runtime enforces two rules when the scene loads. Only a system event
 enters an authority stratum, and only a human-oversight event leaves an absorbing stratum. A scene that
 breaks either never runs. Table~\ref{tab:strata-summary} summarizes the seven stratifications, and
-Appendix~\ref{app:strata} lists every gate.
+Appendix~\ref{app:strata} lists every gate. Both brains' scenes declare the same stratifications,
+but the re-architected brain cannot reach every state (Section~\ref{sec:cont-brain8}).
 % src: docs/STRATA_TAXONOMY.md:3-34
-% src: twin/scene/margaret_home.erisml:815-922
+% src: twin/scene/margaret_home.erisml extra.strata
 
 \begin{table}[t]
 \centering\footnotesize
 \caption{The seven stratifications of the home. Authority strata are entered only by system events,
 and absorbing strata are left only by oversight. The totals are 26 strata and 34 gates.}
 \label{tab:strata-summary}
-% src: twin/scene/margaret_home.erisml:815-922
+% src: twin/scene/margaret_home.erisml extra.strata
 % src: paper/aies2027/kit/FACTS.md:12-14
 \begin{tabular}{@{}lp{0.25\linewidth}lp{0.15\linewidth}lc@{}}
 \toprule
@@ -645,7 +667,7 @@ sends is a network message, free text that is never a command.
 \paragraph{The situation and the centre.} Section~\ref{sec:cont-situation} covers \code{situation}
 and \code{centre\_contact}.
 
-\paragraph{The duty to report.} \code{reporting\_duty} makes the robot a mandatory reporter. It has
+\paragraph{The duty to report.} In the earlier brain \code{reporting\_duty} makes the robot a mandatory reporter. It has
 the states none, suspicion and reported, and no authority or absorbing state. An articulable suspicion
 of a crime against Margaret enters suspicion. The classifier's \code{crime\_suspected} needs specific
 observed facts, which are a demand for her PIN, card, money or medication, a theft, a forced entry, or
@@ -655,8 +677,11 @@ requires the robot to contact the centre at tier~0, non-defeasible. Her refusals
 capabilities they list, and contacting the centre is not among them, so no refusal of hers waives the
 report. Performing the contact moves the stratum to reported, and the centre's \code{stood\_down}
 returns it to none. A model's reading may enter this stratum because adding a duty grants nothing.
-Figure~\ref{fig:strata-duty-machine} draws it beside \code{machine\_standing}.
-% src: twin/scene/margaret_home.erisml:893-907, 539-548 (p5r), 792-793, 1129, 1010-1019
+Figure~\ref{fig:strata-duty-machine} draws it beside \code{machine\_standing}. The re-architected
+brain carries neither \code{p5r} nor anything that produces \code{crime\_suspected}. There the
+stratum is entered only by a measured attack and puts no duty on the robot.
+% src: twin/scene/margaret_home.erisml extra.strata.reporting_duty, p5r, extra.refusals
+% src: twin/stack/constitution.erisml (no p5r; rd_suspected on crime_suspected, not a system type, no floor rule; rd_attack on attack_measured)
 
 \begin{figure}[t]
 \centering
@@ -694,7 +719,16 @@ Her request lifts only this rule of the duty of care.
 Lifting is still an elevated action, so it needs the governor's ruling on measured evidence.
 % src: twin/scene/margaret_home.erisml p6nolift, p6nolift_u; tests/test_twin_ladder.py
 % src: test_she_may_ask_to_be_helped_up_and_lifting_stays_on_the_governors_ruling
+The re-architected brain carries both prohibitions since gtc commit \code{87cc6c4}.
+There her request is a consent or request for \code{physical\_assist} that the observation compiler
+compiled from her words, and the brain records it as \code{assistance\_consented}.
+It lifts \code{p6nolift} and not \code{p6nolift\_u}.
+The earlier scene's duty to help her up once she asks (\code{p6help}) is not carried, so \deme{}
+decides whether to help.
+% src: twin/stack/constitution.erisml p6nolift, p6nolift_u; twin/stack/brain.py CONSENT_EVENTS, StackBrain._consents_in
+% src: twin/scene/margaret_home.erisml p6help
 The same day the owner decided that after a fall the robot asks her first.
+This decision and the next hold in the earlier brain only.
 A corroborated emergency used to oblige a call to emergency services at once.
 After a fall that she may still answer about, with nothing else wrong, the robot now owes a
 check in and may not call until the check in is answered or goes unanswered (\code{ask\_first}).
@@ -713,6 +747,8 @@ It does not reach what is not hers alone, which is a stranger in the home, a haz
 a mandatory report.
 % src: twin/scene/margaret_home.erisml extra.refusals.monitoring_center
 % src: tests/test_twin_ladder.py test_she_can_tell_the_robot_not_to_call_the_centre
+The re-architected brain carries neither \code{ask\_first} nor the routing to the centre.
+% src: twin/stack/constitution.erisml (no n6, n6ask, n6askp; extra.conditions has no ask_first; no refusals); twin/stack/profiles/home_care_robot.json (no TragicConflictEM)
 
 \paragraph{Police only on an articulated crime.} In the dispatcher's scene, obligation \code{d3} sends
 police on \code{crime\_articulated} when the report is supported, and prohibition \code{d4p} forbids
@@ -722,8 +758,9 @@ nobody arranged is not one. Development run dev12a scenario d12 prompted the rul
 % src: twin/scene/ems_dispatch.erisml:280-299, 355
 
 \paragraph{Mandatory reporting.} The \code{reporting\_duty} stratum above puts a duty on the robot to
-report an articulable suspicion of a crime to the centre, which no refusal of hers waives.
-% src: twin/scene/margaret_home.erisml:893-907
+report an articulable suspicion of a crime to the centre, which no refusal of hers waives. This is
+the earlier brain's duty. The re-architected brain does not carry it.
+% src: twin/scene/margaret_home.erisml extra.strata.reporting_duty, p5r; twin/stack/constitution.erisml (no p5r)
 
 \section{Owner decisions of 2026-10-09}\label{sec:cont-owner-1009}
 
@@ -790,12 +827,19 @@ propose, and whatever they propose, the body runs only an action the signed mani
 \paragraph{What it adds.} A language model that chooses the robot's action already chooses only
 from the scene's allowed set.
 The manifest makes that set fixed, typed and attributable.
-A change to the scene changes the manifest's hash, so a scene edit cannot reach the robot without
-a new signature, and every record says which manifest it ran under.
+In the earlier brain a change to the scene changes the manifest's hash, so a scene edit cannot
+reach the robot without a new signature, and every record says which manifest it ran under.
+In the re-architected brain the manifest is compiled from the constitution alone.
+The household scene, the \deme{} profile and the observation patches are not covered by the
+signature, so an edit to them reaches the robot without a new one.
+% src: twin/service.py main (load_verified(manifest/<stem>.manifest.json, a.scene)); twin/manifest.py compile_manifest(scene_path)
+% src: twin/stack/brain.py HOUSEHOLD, PROFILE (loaded in StackBrain.reset, outside the manifest)
 A chooser that answers with a probability for each permitted option, rather than with text, would
 fit this boundary directly.
 
-\paragraph{In the twin.} On deployment the brain verified the manifest of 25 actions, 14 standing
+\paragraph{In the twin.} The runs of this paragraph were made under the earlier brain.
+% src: twin/records/rehearsal-2026-10-10/rehearse21/results.jsonl, rehearse22/results.jsonl ("tier": "cloud"; twin/stack first committed 2026-10-11)
+On deployment the brain verified the manifest of 25 actions, 14 standing
 and 11 governed, and the game verified the same hash.
 The brain's verifier refused a copy of the manifest with one value changed, because the canonical
 text no longer matched its hash.
@@ -820,6 +864,51 @@ restore the robot spoke to Margaret twice and checked in on her, which is the ex
 % src: twin/records/rehearsal-2026-10-10/rehearse22/results.jsonl, actuator.log, grade.json
 These are two runs of one probe.
 The refusal of an action the manifest does not list was not provoked live and rests on its test.
+
+\section{What the re-architected brain keeps}\label{sec:cont-brain8}
+
+The re-architected brain of Section~\ref{sec:home-brain8} subclasses the earlier brain and keeps its
+evidence plane. Authority still enters only through governor rulings and system events. The input
+layer, the signed readings, the quarantine and the credentials work as above. The governor keeps
+its bars of two, three and one witnesses, its 30-second freshness bound and the measure gate. Rights
+lapse after 60 seconds below their bar. The reflexes, the situation stratum, the check at the act
+and the signed manifest of 25 actions are unchanged.
+% src: twin/stack/brain.py StackBrain (inherits Readings, govern_live, _measures, _lapse, reflex, _credentials, authorize, _in_manifest); twin/brain.py FRESHNESS_BOUND_S, RESTRAINT_BAR
+% src: twin/stack/constitution.erisml evidence_lapse_s, extra.strata; twin/manifest/constitution.manifest.json (25 actions)
+
+Other principles of this chapter do not hold for it.
+\begin{itemize}
+\item The facts \deme{} judges come from a model. The option projector writes them, and the bridge
+maps them. No second model checks them.
+\item Heard words reach a model, the observation compiler, cut to length but not canonicalized,
+and the free text of an utterance or a claim reaches the projector.
+\item \deme{} runs the profile pipeline of Section~\ref{sec:deme-stack}, not the output gate. It has
+no tragic routing to the centre. A module that raises vetoes, and when nothing is left standing the
+robot holds. An exception in the pipeline itself fails the request. The earlier output gate still
+checks reflex actions, but under the constitution it has no capability ethics and no refusals.
+\item The constitution has no obligation. The ladder, the check-in duties, \code{ask\_first},
+\code{p6help} and the mandatory report \code{p5r} are gone, as are the refusal tables and the
+privacy promise.
+\item When no act's facts survive, or no model answers, the compiled tier does chores and \deme{}
+does not run.
+\item The cascade is never told that communications are down.
+\item The household scene and the \deme{} profile are not signed, and the household scene still
+awaits the owner's review.
+\item Without a live scorer the governor rules on deliberate acts with the analyzer deferred.
+\item The Lean model and the static tests do not cover it.
+\end{itemize}
+% src: twin/stack/brain.py StackBrain._decide, _judge, _compiled, HOLD, fail_closed; twin/stack/profiles/home_care_robot.json
+% src: twin/output_gate.py OutputGate.__init__ (capability_ethics, refusals from scene extra; absent in constitution)
+% src: twin/service.py make_handler do_POST (exception -> 500); twin/stack/household.ir.json (gtc 4182afb, pending owner review)
+
+The strata it can reach are fewer. Seven of the 34 gates fire on event types that nothing in it
+produces. These are \code{person\_entered}, \code{visitor\_welcomed} and \code{person\_left}, the
+three readings of \code{animal\_seen}, and \code{crime\_suspected}. So a visitor is never welcomed,
+an animal is never visiting, pest or venomous, and the duty to report is entered only by a measured
+attack. A visitor still becomes a stranger through a floor rule, and a wild animal becomes wild the
+same way. Every authority state is reached as before, through system events alone. Norms
+\code{p9v} and \code{n6s} are not carried.
+% src: twin/stack/constitution.erisml extra.strata gates whose trigger is not source: system and not produced by extra.offline (counted 2026-10-12: v_enter, v_welcome, v_left, a_visiting, a_pest, a_venomous, rd_suspected); twin/stack/brain.py _consents_in (only assistance_consented)
 
 \section{What this chapter does not show}\label{sec:cont-limits}
 

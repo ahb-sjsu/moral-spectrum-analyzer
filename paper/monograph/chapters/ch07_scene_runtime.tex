@@ -7,9 +7,13 @@ allowed. This chapter follows one step through the runtime, then describes the m
 by which prohibitions win, the discharge of obligations, the loading of strata, the scene agent whose
 two models read and write the runtime, and the processes that present a scene's protocols as BPMN
 diagrams. All of it is in the erisml-compiler package, under \code{runtime/}, \code{fsm/} and
-\code{process/}. The twin of Part~III uses it unchanged.
+\code{process/}. The twin of Part~III uses it unchanged. Both of the twin's brains run on it. The
+earlier brain, the brain of the graded runs, also uses the scene agent and its two models. The
+re-architected brain, the brain of the GTC demonstration since 12 October 2026, runs the runtime on
+a smaller scene and does not call the agent's models (Section~\ref{sec:home-brain8}).
 % src: erisml-compiler src/erisml_compiler/runtime/scene.py:1-37
-% src: gtc-prototype twin/brain.py:191-194, 312-320
+% src: gtc-prototype twin/brain.py Desk.reset, Brain.reset (SceneAgent, SceneRuntime)
+% src: gtc-prototype twin/stack/brain.py StackBrain._rebuild, StackBrain._decide (no agent.decide call)
 
 \section{A runtime is built from one record}\label{sec:runtime-build}
 
@@ -23,12 +27,15 @@ authority or protector role. It loads and checks the stratifications
 index.
 % src: erisml-compiler src/erisml_compiler/runtime/scene.py:48, 106-135
 
-For Margaret's home this gives three commitment machines, one consent machine for Margaret, three
+For Margaret's home, in the earlier brain's scene, this gives three commitment machines, one consent machine for Margaret, three
 legitimacy machines for the robot, the monitoring centre and emergency services, and seven
 stratifications, fourteen state entries in all. None of the four standing events moves any of them.
 The runtime therefore starts with every commitment active, Margaret's consent not obtained, every
-authority fully legitimate and every stratification in its initial state.
-% src: gtc-prototype twin/scene/margaret_home.erisml:41-69 (stakeholders), 81-109 (commitments), 110-134 (events), 815-922 (strata)
+authority fully legitimate and every stratification in its initial state. The re-architected
+brain's constitution declares one commitment, the duty of care, and the same seven
+stratifications.
+% src: gtc-prototype twin/stack/constitution.erisml (commitments: duty_of_care; extra.strata, 7 stratifications)
+% src: gtc-prototype twin/scene/margaret_home.erisml stakeholders, commitments, events, extra.strata
 % src: erisml-compiler src/erisml_compiler/runtime/scene.py:48-66 (event types that drive machines; none is a standing event type)
 % src: erisml-compiler src/erisml_compiler/runtime/strata.py:124-144 (no gate fires on consent_refused, role_assigned, authority_delegated or activity_started in this scene)
 
@@ -121,14 +128,16 @@ event's index, and only later events can override the commitment again.
 % src: erisml-compiler src/erisml_compiler/runtime/scene.py:214-230
 % src: erisml-compiler tests/test_scene_runtime.py:98-114
 
-In Margaret's home the privacy promise is overridden when the situation stratification enters
+In the earlier brain's scene of Margaret's home the privacy promise is overridden when the situation stratification enters
 emergency, and its three prohibitions are lifted while it is overridden. Two of the four oversight
 types can restore it. The centre's confirmation that privacy is restored and the lapse of evidence
 declare no content, so an event of either type that names nothing restores any overridden
 commitment. The clearing of a visitor is declared with the single content \code{visitor}, and the
 clearing of devices with \code{devices}. Neither names a commitment, so neither restores one. The
-scene's comment says the same of the first.
-% src: gtc-prototype twin/scene/margaret_home.erisml:100, 778, 802-804, 1120, 1133, 1139, 1151
+scene's comment says the same of the first. The re-architected brain's constitution has no privacy
+promise, so there no commitment is overridden on privacy and none is restored.
+% src: gtc-prototype twin/stack/constitution.erisml (commitments: duty_of_care only)
+% src: gtc-prototype twin/scene/margaret_home.erisml privacy_promise, extra.oversight, extra.event_types
 % src: erisml-compiler src/erisml_compiler/runtime/scene.py:224-230
 
 The freshness rule of the next section applies here too. After a restoration, the emergency
@@ -380,10 +389,14 @@ action. The decision records the rejected proposal and marks the fallback.
 The method \code{decide} classifies the facts, steps each accepted event in turn and asks the chooser
 for an action on the last snapshot. Events that do not come from perception, such as a ruling or an
 action performed, are stepped through \code{record} and never pass through the classifier. In the
-twin the robot's agent is isolated and uses the compiler's registry canonicalizer. The monitoring
-centre and the dispatcher are agents of their own scenes and run without isolation.
+earlier brain the robot's agent is isolated and uses the compiler's registry canonicalizer. The
+monitoring centre and the dispatcher are agents of their own scenes and run without isolation.
+The re-architected brain never calls \code{decide}. Its heard words and perception go to
+erisml-compiler's observation compiler, and that model reads the raw words
+(Section~\ref{sec:home-brain8}).
 % src: erisml-compiler src/erisml_compiler/runtime/agent.py:278-309
-% src: gtc-prototype twin/brain.py:185-194 (Desk builds SceneAgent without isolation), 304-305 (centre and EMS desks), 312-320 (robot, isolated=True, RegistryCanonicalizer)
+% src: gtc-prototype twin/brain.py Desk.reset (SceneAgent without isolation), Brain.__init__ (centre and EMS desks), Brain.reset (robot, isolated=True, RegistryCanonicalizer)
+% src: gtc-prototype twin/stack/brain.py StackBrain._observations, StackBrain._decide
 
 These patterns have names in prior work. A model that reads untrusted text and returns only
 constrained output is the quarantined model of the dual-model pattern \cite{willison2023dualllm}.
@@ -419,10 +432,13 @@ scene only through the checks a declared process passes.}
 The containment check applies to tasks whose capability is elevated or governed. A flow into such a
 task must rest only on structural condition tokens, those that only system events can make true.
 A flow with no condition that leaves a start or message event triggered by a system event is also
-structural, because the authenticated trigger is the evidence. Margaret's escalation ladder uses both
+structural, because the authenticated trigger is the evidence. The escalation ladder of the
+earlier brain's scene uses both
 forms. Its start event for a corroborated emergency is triggered by the governor's ruling of elevate
 and flows straight into the call to emergency services. Its gateway after a ruling reaches the same
-call on \code{latest:governor\_\allowbreak{}ruling=authorize\_\allowbreak{}ems}.
+call on \code{latest:governor\_\allowbreak{}ruling=authorize\_\allowbreak{}ems}. The re-architected
+brain's constitution declares no process.
+% src: gtc-prototype twin/stack/constitution.erisml (extra has no processes key)
 % src: erisml-compiler src/erisml_compiler/process/model.py:30-33, 210-219
 % src: erisml-compiler tests/test_process_bpmn.py:196 (a governed task may follow a system-triggered event directly)
 % src: gtc-prototype twin/scene/margaret_home.erisml:934, 952, 958, 977, 1162
@@ -477,7 +493,10 @@ event's type is declared. Checks happen where events enter and where gates and p
 does not check that an obliged action is one of the agent's capabilities. It does not resolve a
 conflict between an obligation and a prohibition. It reports both, and the chooser resolves it toward
 the prohibition. It does not decide whether an allowed action is wise or safe for Margaret. In the
-twin that judgement belongs to the governor and the \deme{} output gate of Chapters~6 and~9.
+earlier brain that judgement belongs to the governor and the \deme{} output gate of Chapters~6
+and~9. In the re-architected brain it belongs to the governor and to \deme{}'s profile pipeline,
+which selects among the candidate acts (Section~\ref{sec:deme-stack}).
 % src: erisml-compiler src/erisml_compiler/runtime/scene.py:192-238, 282-298
 % src: erisml-compiler src/erisml_compiler/runtime/agent.py:16-18 (authority for elevated actions stays with the caller's gate)
 % src: gtc-prototype twin/output_gate.py:1-5
+% src: gtc-prototype twin/stack/brain.py StackBrain._judge (pipeline.decide, govern_live)

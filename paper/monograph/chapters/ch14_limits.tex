@@ -56,6 +56,20 @@ not check that signature, so the camera witness is as trustworthy as the service
 code by requiring the real home model to have the model's shape. They do not prove that the Python
 implements the model.
 
+The model and its tie to the code are of the earlier brain, brain7.
+They cover its governor, its output gate and its hand-written scene.
+The re-architected brain, brain8, is the demonstration brain since 12 October 2026, and neither
+the proofs nor the static tests cover it.
+Its selection loop, which may offer an act the constitution forbids now when a ruling could permit
+it, has no Lean counterpart, and its constitution is not the scene the tests check.
+% src: formal/twin-containment/README.md; tests/test_twin_ladder.py; twin/stack/brain.py (_decide, _judge);
+% src: twin/stack/constitution.erisml
+What brain8 keeps of the containment argument is its plumbing.
+Authority strata move only on governor rulings and system events, the witness bars, freshness,
+lapse and measure gate are the same, and every act is checked again when it is done against a
+signed manifest of 25 actions.
+% src: twin/stack/brain.py (StackBrain subclasses Brain); twin/stack/constitution.erisml (extra.strata)
+
 \section{Choices that belong to people}
 
 Several rules in the home model are policy, and the owner set them on 2026-10-04 after the
@@ -69,6 +83,19 @@ anything else, and no refusal of hers waives the report. Each choice trades her 
 her safety or against a third party's interest, and people who deploy such a robot should make
 them deliberately.
 
+These rules are written in the earlier brain's scene, and brain8 carries only some of them.
+Its constitution keeps no obligation.
+Since gtc 87cc6c4 it keeps the two no-lift prohibitions, and her request to be helped up lifts
+the first of them, never the one for a person who does not respond.
+It does not carry the duty to help her up once she asks or the mandatory report.
+% src: twin/stack/constitution.erisml (p6nolift, p6nolift_u; 0 obligations); twin/scene/margaret_home.erisml (p6help, p5r);
+% src: gtc 87cc6c4
+The police rule belongs to the dispatcher's scene, not to the robot's.
+% src: twin/scene/ems_dispatch.erisml (d4p)
+The robot's profile states that referral to the centre when it can decide in time, and privacy
+outside a corroborated emergency, are not yet carried.
+% src: twin/stack/profiles/home_care_robot.json (notes)
+
 Two thresholds are of the same kind. Two attested witnesses elevate an emergency and three are
 needed to restrain a person. A minute below the bar ends a right. These numbers came from design
 judgement and from the development runs, not from a study of the harms each prevents or causes.
@@ -81,15 +108,16 @@ it also refuses a real emergency that only they observe.
 \section{Open problems}
 
 \paragraph{The scene is written by hand.}\label{sec:limits-rearch}
-The twin does not use the stack as Chapter~\ref{ch:pe} draws it.
-Its scene is a file written by hand, not the output of the compiler's extraction, and the twin
+The earlier brain, brain7, did not use the stack as Chapter~\ref{ch:pe} draws it.
+Its scene is a file written by hand, not the output of the compiler's extraction, and it
 imports neither the compiler's projections nor its extractors (Chapter~\ref{ch:compiler}).
 Its rules grew case by case, 77 of them by 11 October, many written against a single missed
 scenario, together with hand-set harms for each capability and an event vocabulary whose
 descriptions carried lists of cases.
-DEME sees only the one action a model proposed, judged on facts derived from those rules.
+In brain7 DEME sees only the one action a model proposed, judged on facts derived from those rules.
 In the terms of the Bond Invariance Principle the bond extractor is written by hand, the lens
 exists only as scattered rules, and the evaluator is applied after the choice.
+% src: twin/brain.py, twin/output_gate.py; twin/scene/margaret_home.erisml (77 norms, twin/scene_counts.py)
 The owner directed on 11 October 2026 that this be rebuilt.
 The compiler is to produce the scene and its updates from what the robot hears and sees, DEME is
 to judge every candidate action on facts built for it under a versioned profile for each agent,
@@ -99,28 +127,83 @@ The work this needs, and what the code lacks for it, is set out in the mapping d
 Among the gaps are an extractor for events and acts, an update mode for the scene, a builder of
 facts for each option, governance profiles that are executed rather than stored, the consent
 module that erisml-lib's own design guide specifies with refusal, capacity and an emergency
-override, and a module for physical safety, since tiers 1, 3 and 4 of erisml-lib are empty.
+override, and a module for physical safety, since tiers 1, 3 and 4 of erisml-lib were empty.
 % src: docs/REARCHITECTURE_MAPPING_2026-10.md; erisml-lib docs/guides/DEME_EFM_Design_Guide_v0.1.md:461-484
 By 12 October each of these had been built on a branch awaiting review, together with the guide's
-composition patterns, and the re-architected brain judges through them
+composition patterns, and the re-architected brain, brain8, judges through them
 (Section~\ref{sec:deme-stack}).
-None is merged, and no graded run has used them.
+Tier 1 now holds a module of core physical safety and tier 3 one of beneficence, on those branches.
+Tier 4 is still empty.
+% src: erisml-lib feat/universalizability-kb src/erisml/ethics/modules/tier1/core_physical_safety_em.py,
+% src: tier3/beneficence_em.py, tier4/__init__.py (placeholder, __all__ empty)
+The compiler's own graph of modules, which is not DEME's design, is retired on a branch, and the
+compiler there imports the library's deontic table, its maxim and DEME's verdict in place of its
+own.
+% src: erisml-compiler PRs 43, 44 (feat/import-erisml-lib, feat/retire-em-dag; tag phase5-results); erisml-lib PR 152
+None of this is merged.
+The smoke checks and rehearsals of Section~\ref{sec:eval-stack} ran on these branches, and no
+held-out run has.
+% src: twin/records/stackcheck8-2026-10-12/README.md (erisml-lib b4e7669, PRs 148, 150, 151); rehearse-deme4-2026-10-12/README.md
 What remains open is the rest of the guide's catalogue, among them the modules for oversight,
-privacy, proxemics and coercion and every module of tier 4, the guide's context templates, and the
-compiler's own graph of modules, which is not DEME's design and which the compiler should replace by
-importing the library, as it should its moral vector, its maxim and its deontic knowledge base
+privacy, proxemics and coercion and every module of tier 4, and the guide's context templates
 (Section~\ref{sec:compiler-emdag}).
-The facts for each option now come from a model's projection of each act's consequences, so their
-quality is the model's, and the agreement of a second model is measured but not yet acted on.
-% src: erisml-lib PRs 148, 150, 151; erisml-compiler PRs 40, 41, 42; gtc:twin/stack (commit 25550dc)
-% src: erisml-lib src/erisml/ethics/modules/tier1/__init__.py:19-24 (placeholder); profile_v03.py:341-342
+The facts for each option come from one model's projection of each act's consequences, so their
+quality is the model's.
+The compiler can measure the agreement of a second model, but the brain passes none, and the
+agreement is null in every decision of the stack.
+Only the one compile of the household scene measured it, at about one half.
+% src: erisml-lib PRs 148, 150, 151, 152; erisml-compiler PRs 40 to 44; gtc twin/stack/brain.py (agreement);
+% src: twin/records/rehearse-deme4-2026-10-12/results.jsonl ("agreement":null in all 87); twin/stack/household.compile_report.json
+
+\paragraph{What brain8 does not carry.}
+The demonstration brain is not the brain of the graded runs, and it lacks much of what that brain
+had.
+It carries no obligation of the earlier scene.
+Among those are the mandatory report, asking her first after a fall, the escalation ladder, the
+check-in duties and the duty to help her up once she asks.
+It has no refusal tables and no ethics of each capability.
+It has no privacy commitment.
+Its privacy is a prohibition over recording, sharing her data and entering her bedroom, lifted
+only on a ruling, together with her recorded refusals.
+Once a ruling has lifted it, it returns only when the evidence lapses.
+It runs no escalation process, so the service's process endpoints answer 404, and it has no
+tragic routing to the centre, no oversight module and no module of tier 4 or of privacy.
+It does not skip the cloud model when communications are down.
+Its log records whether the stack or the compiled tier decided, not which model tier answered.
+Its manifest is compiled from the constitution alone, so the household scene and the DEME profile
+are outside the signature.
+% src: twin/stack/constitution.erisml; twin/stack/brain.py; twin/stack/profiles/home_care_robot.json (notes);
+% src: twin/brain.py (Brain.decide sets adapter.comms_down)
+When no model answers, or no projected fact survives validation, its compiled tier decides.
+That tier finds no obligation in the constitution and always returns chores, so DEME does not run.
+In rehearse-deme4 this happened in 5 decisions, 3 of them during the dog attack of d02.
+This is not fixed.
+% src: twin/records/rehearse-deme4-2026-10-12 (README.md; "tier":"compiled" records, each action chores)
+The household scene it loads was compiled from text and committed pending the owner's review, and
+no review is recorded.
+% src: git log -- twin/stack/household.ir.json (4182afb)
+Commit 87cc6c4 fixed four faults the monograph's audit found on 12 October.
+It restored the owner's no-lift prohibitions, the robot now holds when DEME leaves nothing
+standing, the tactical layer fails closed, and the self-test runs the profile pipeline.
+Its constraint gate also offers a forbidden act only when a ruling could permit it.
+No graded run has used that commit yet.
+% src: gtc 87cc6c4 (commit message; tests/test_stack_brain.py)
 
 
 The world can change between a decision and the act, as when an animal leaves or responders enter.
-Every graded run in Chapter~\ref{ch:evaluation} judged an action at the record that chose it, so
-those runs show permission at the decision, not at the act. The robot now checks again at the act
-(Section~\ref{sec:home-act}). That check is built and tested but was not in any graded run, and the
-held-out run will be the first to measure it. It closes the gap inside the robot, where one ledger
+The runs before storyboard 8 of 8 October judged an action at the record that chose it, so they
+show permission at the decision, not at the act. The robot now checks again at the act
+(Section~\ref{sec:home-act}).
+The check is in the records of storyboards 8 and 9, of the full development runs dev33, dev39 and
+dev46, and of every run of the stack.
+In storyboards 8 and 9 all 49 acts had a prior allowed check, in the three parts of dev46 all 302,
+in stackcheck10 all 53, and in the three rehearsals of brain8 all 42, 44 and 44.
+The grader counts a governed act as a breach unless its latest check at the act was allowed.
+% src: count of "kind":"authorize" records in twin/records/*/results.jsonl (none in storyboard7, present from storyboard8 on);
+% src: twin/c10_numbers.py on rehearsal-2026-10-08/storyboard8+9 (49), dev46-2026-10-11/dev46a,b,c (106+98+98),
+% src: stackcheck10-2026-10-12 (53), rehearse-deme1/2/4-2026-10-12 (42, 44, 44); twin/grade_scenarios.py:50-51
+These are development scenarios, and the held-out run will be the first to measure the check on
+cases no one tuned on. It closes the gap inside the robot, where one ledger
 orders every event. When the monitoring centre and the dispatcher keep ledgers of their own,
 ordering their events against the robot's will need vector clocks or a similar causal order.
 In the re-architected brain the history of the scene now carries them.
@@ -137,5 +220,9 @@ several robots needs strata of its own for them.
 Finally, the preregistered study of an internal monitor for the robot's classifier
 (Chapter~\ref{ch:ieip}) asks whether a failure of representation equivariance in the classifier's
 hidden states predicts its classification errors. If it does, the robot could check in rather than
-act on a reading its own classifier is unsure of. The preregistration states its prior that the
+act on a reading its own classifier is unsure of.
+The classifier studied is brain7's, which sorts perception into the scene's events.
+The stack, brain8, has no such classifier, since its observation compiler writes generic observations instead,
+so a positive result would apply to brain8 only after a study of its own.
+% src: docs/PREREG_IEIP_TWIN.md; twin/brain.py (classifier); twin/stack/brain.py (ObservationCompiler) The preregistration states its prior that the
 monitor will fail, as its consumer-relative variant did, and the outcome is reported either way.

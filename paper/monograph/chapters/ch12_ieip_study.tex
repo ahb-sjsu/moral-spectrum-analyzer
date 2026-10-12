@@ -20,6 +20,10 @@ Every outcome below is a slot to be filled from the graded record.
 \section{The question is whether internal inconsistency predicts error}
 
 The robot's classifier turns perception facts into scene events.
+It is the classifier of the earlier brain, brain7.
+The re-architected brain, brain8, has none, since its observation compiler writes generic
+observations instead of scene events, so the study does not bear on brain8.
+% src: twin/brain.py (classifier); twin/stack/brain.py (ObservationCompiler); docs/PREREG_IEIP_TWIN.md
 Its weakness is a plausible output produced for the wrong internal reason.
 % src: docs/PREREG_IEIP_TWIN.md:10-11
 The Internal Epistemic Invariance Principle (I-EIP) gives a criterion for such failures

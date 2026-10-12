@@ -13,7 +13,7 @@ rehearse-deme2. Development scenarios, tuned on: a rehearsal, not a measure.
   contact the monitoring centre).
 - C10 numbers (`twin/c10_numbers.py`): 2 grants at 3 and 5 witnesses against a bar of 2; 8 evidence
   refusals at 0 of 2; 44 acts performed, every one with a prior allowed act-time check.
-- Tiers: 44 decisions by DEME, 5 by the compiled tier (d02 three times during the dog attack, d19
+- Tiers: 41 decisions by DEME, 5 by the compiled tier (d02 three times during the dog attack, d19
   once, d41 once). In each of the five the model answered but every projected fact was rejected
   (23 to 72), and the compiled tier, whose constitution holds no obligation, did chores.
 - Found after the run, by the monograph audit of the same day: the stack had dropped the owner's

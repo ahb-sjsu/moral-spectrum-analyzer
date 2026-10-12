@@ -9,8 +9,18 @@ The ErisML compiler turns a description of a moral situation into a typed graph,
 through several ethical theories, and records every step in a hash chain. Its input is either
 structured ErisML source or natural-language text. Its output is an intermediate representation
 that downstream consumers can audit, replay and contest. This chapter describes the compiler as
-the code implements it in release 0.9.0. Where the design documents and the code differ, the
-chapter reports what the code does and names the difference.
+the code implements it in release 0.9.0, the main branch. Where the design documents and the code
+differ, the chapter reports what the code does and names the difference.
+
+Five open pull requests change the compiler, and none is merged. Pull request 42 adds the option
+projector that the twin's re-architected brain uses. Pull request 43 makes the compiler import
+erisml-lib for its deontic table, its maxim and its verdicts. Pull request 44 retires the
+ethical-module graph and the hardware emitter for it, so that only the finite-state layer is
+emitted to hardware. On that branch the consequentialist projection judges through DEME's pipeline
+instead of the threshold cascade of Section~\ref{sec:compiler-projections}, a failed tensor
+leaves no tensor rather than a fallback, and the schema is \code{erisml\_compiler\_ir\_v0.4}.
+The sections below say where these changes apply.
+% src: erisml-compiler feat/retire-em-dag (0.10.0): erisml_backend/deme_bridge.py, orchestrator.py _produce_v3_tensor, silicon/hls_emit.py, __init__.py; PRs 42, 43, 44
 
 The chapter follows the data. Section~\ref{sec:compiler-split} gives the two-layer split between a
 descriptive substrate and the theory-bound projections. Section~\ref{sec:compiler-pipeline} walks
@@ -169,7 +179,7 @@ commitments, norms, ethical facts and an open \code{extra} block. The loader rec
 of the raw file in the document record. The home-care twin of Part~III uses this loader to read its
 scene files.
 % src: src/erisml_compiler/ingestion/structured_loader.py:1-23, 48-76
-% src: C:\source\gtc-prototype\twin\brain.py:301-319 (load_structured_input on the scene)
+% src: gtc:twin/brain.py Brain.__init__ (load_structured_input on the scene)
 
 \subsection{Extractors share one result type}
 
@@ -257,7 +267,7 @@ orchestrator stores all of these under \code{ir.extra["canonicalization"]}.
 
 The home-care twin uses the registry canonicalizer, not the embedding one. Its classifier
 canonicalizes, and its chooser sees only the canonical state.
-% src: C:\source\gtc-prototype\twin\brain.py:315-319
+% src: gtc:twin/brain.py Brain.__init__
 
 \subsection{Human corrections are patches with hashes on both sides}
 
@@ -440,10 +450,13 @@ This graph is not the design of DEME, and the two should not be confused.
 In DEME a module is the perspective of one stakeholder or interest on the whole moral vector, so a
 safety module reads all nine dimensions with its weight on physical harm, and no module owns a
 dimension.
-The graph is rooted in human dignity, its constitutional module, Geneva, sits at tier 0 with a veto,
-and the modules are wired by one of the composition patterns of erisml-lib's design guide, such as a
+In the design guide the graph is rooted in human dignity, its constitutional module, Geneva, sits at
+tier 0 with a veto, and the modules are wired by one of the guide's composition patterns, such as a
 hard shell of constitutional and safety modules around the modules of rights and welfare
 (Section~\ref{sec:deme-composition}).
+On the library's main branch the pipeline runs one flat stage. The patterns are built on the branch
+of pull request 151.
+% src: erisml-lib main layers/pipeline.py (one stage); feat/hard-shell-dag layers/composition.py
 The compiler's graph gives each module one dimension, has no Geneva module and no tiers, and adds
 its outputs into one vector.
 It serves the consequentialist projection only.
@@ -992,8 +1005,11 @@ and timings, so only its two hashes are reproducible bit for bit.
 % src: src/erisml_compiler/audit/hash_chain.py:69
 
 The parts of the compiler that the home-care twin relies on are narrower than this chapter. The
-twin loads its scene through the Tier~1 loader, canonicalizes with the registry canonicalizer, and
-runs the scene runtime that Chapter~7 describes. The twin's code under \code{twin/} imports
-neither the projections package nor the silicon package.
-% src: C:\source\gtc-prototype\twin\brain.py:301-319
+earlier brain loads its scene through the Tier~1 loader, canonicalizes with the registry
+canonicalizer, and runs the scene runtime that Chapter~7 describes. It imports neither the
+projections package nor the silicon package. The re-architected brain also uses the compiler as
+its extractor. It imports the observation compiler, the option projector and the bridge to DEME's
+facts, and through the bridge the substrate's reading of a maxim.
+% src: gtc:twin/brain.py Brain.__init__ (load_structured_input on the scene)
+% src: gtc:twin/stack/brain.py (imports erisml_compiler.observation); twin/stack/facts_builder.py (erisml_backend.v3_bridge); v3_bridge imports projections.substrate._derive_maxim
 % src: grep -rn "projections|silicon|em_dag" C:\source\gtc-prototype\twin --include=*.py | grep import (no hits, 2026-10-03)
