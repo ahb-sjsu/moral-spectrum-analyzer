@@ -111,6 +111,12 @@ those runs show permission at the decision, not at the act. The robot now checks
 held-out run will be the first to measure it. It closes the gap inside the robot, where one ledger
 orders every event. When the monitoring centre and the dispatcher keep ledgers of their own,
 ordering their events against the robot's will need vector clocks or a similar causal order.
+In the re-architected brain the history of the scene now carries them.
+Every event holds one counter for each producer, the observation compiler and the robot's evidence
+plane so far, a growing history is accepted only when it keeps every happened-before pair of the
+old, and another party's ledger can be merged under the same check.
+% src: erisml-compiler observation/clock.py, observation/rebuild.py (commit 3b70acf); twin/stack/brain.py
+The centre and the dispatcher do not yet keep such ledgers, so that part of the problem stays open.
 
 The other kinds of machine that can enter a home, a peer robot, a delivery drone or an unknown
 robot, currently pass through the visitor rules and the network-message rules. A household with

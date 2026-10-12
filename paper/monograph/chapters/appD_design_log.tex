@@ -811,3 +811,29 @@ The first live run of the new brain, on eight scenarios of the development set, 
 concurrency, a reflex written while a decision applied its patch, which the history check caught.
 Every write to the scene now holds one lock.
 % src: twin/records (stackcheck1b, to be filed); commit 691c31c
+
+\section{The history of the scene carries vector clocks}\label{sec:log-clocks}
+
+The second live run of the new brain still refused its history in five of eight scenarios.
+A decision compiled its observation patch on a snapshot, two events of the robot were appended while
+the model answered, and the patch's events, stamped with the snapshot's next time, sorted between
+them and so rewrote an order the scene had already stepped.
+% src: brain8 log (stackcheck2, d19 to d30); erisml-compiler commit 4769d24
+Stamping a patch against the scene it is applied to cured the symptom.
+The owner pointed to the order that Section~\ref{sec:limits-rearch} had named, vector clocks.
+Every event of the scene now carries one counter for each producer.
+An observation patch records the clock of the snapshot it was compiled against, so its events come
+after what the observer saw and are concurrent with what was appended meanwhile, and a patch from a
+history the scene has not seen is refused.
+A rebuilt scene is accepted when it keeps every happened-before pair of the old history, which is
+weaker than the exact prefix demanded before and is the property that matters.
+Another party's ledger merges under the same check.
+% src: erisml-compiler observation/clock.py, observation/rebuild.py (commit 3b70acf), tests/test_observation_clock.py
+Events written before clocks carry an empty clock, which is left out of their serialised form, so
+no earlier scene changes its hash.
+The owner also asked whether the stack would be better written in Go.
+The fault lay in the design, two writers on one history without an owner, and the remedy, a single
+writer and a causal order, is the same in either language, so the stack stays in Python, where its
+libraries are.
+A separate ledger service shared by the robot, the centre and the dispatcher would be a natural
+place for Go later.
