@@ -107,7 +107,7 @@ class StackBrain(Brain):
 
     def _record(self, event: dict):
         with self._lock:
-            self.ir = append_event(self.ir, event)
+            self.ir = append_event(self.ir, event, producer="robot")  # the robot's own evidence plane
             return self.agent.rt.step(self.ir.events[-1])
 
     def reflex(self, req: dict, camera_sensor=None):

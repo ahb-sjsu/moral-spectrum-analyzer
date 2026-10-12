@@ -179,3 +179,24 @@ def test_system_events_appended_while_the_model_thinks_keep_their_order(househol
     cycle = b.decide({"facts": FALL_FACTS})
     assert cycle["action"]["action"]
     assert [e.id for e in b.agent.rt.events] == [e.id for e in sorted(b.ir.events, key=lambda e: e.time_index)]
+
+
+def test_every_event_carries_its_producer_s_vector_clock(household):
+    """The robot's evidence-plane events are stamped by 'robot', the compiled observations by
+    'observer'; an observation compiled while the robot recorded is concurrent with those records."""
+    from erisml_compiler.observation import clock as vc
+
+    b = make(household, FELL)
+    real = b.observer.compile
+
+    def compile_while_the_robot_records(ir, obs, acts):
+        patch = real(ir, obs, acts)
+        b._record({"type": "attack_measured", "actor": "reflex", "content": "mild"})
+        return patch
+
+    b.observer.compile = compile_while_the_robot_records
+    b.decide({"facts": FALL_FACTS})
+    measured = next(e for e in b.ir.events if e.type == "attack_measured")
+    hazard = next(e for e in b.ir.events if e.type == "hazard")
+    assert "robot" in measured.clock and "observer" in hazard.clock
+    assert vc.concurrent(measured.clock, hazard.clock)
