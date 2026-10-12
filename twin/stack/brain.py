@@ -41,6 +41,7 @@ import os
 import threading
 
 from brain import EMS, Brain, validate_facts, without_own_sounds
+from cascade import ModelUnavailable
 from erisml.ethics.domain.interfaces import CandidateOption, DomainAssessmentContext
 from erisml.ethics.interop.profile_adapters import pipeline_from_profile
 from erisml.ethics.profile_v04 import deme_profile_v04_from_dict
@@ -172,15 +173,65 @@ class StackBrain(Brain):
             snapshot = self.ir
 
         obs = self._observations(facts)
-        patch = self.observer.compile(snapshot, obs, self.acts) if obs else None  # outside the lock
-        with self._lock:
-            if patch and patch.ops:
-                self.ir = apply_observation_patch(self.ir, patch)  # onto the scene as it stands now
-                self._rebuild()
-            snapshot = self.ir
-        projection = self.projector.project(snapshot, self.acts)  # outside the lock
+        patch = None
+        try:
+            patch = self.observer.compile(snapshot, obs, self.acts) if obs else None  # outside the lock
+            with self._lock:
+                if patch and patch.ops:
+                    self.ir = apply_observation_patch(self.ir, patch)  # onto the scene as it stands now
+                    self._rebuild()
+                snapshot = self.ir
+                # ErisML, the constraint gate, before the model is asked: only an act the constitution
+                # permits now, or one a ruling could permit, is projected and judged
+                prohibited = set(self.agent.rt.snapshot().prohibited)
+                gated = {a: d for a, d in self.acts.items() if a not in prohibited or self._governable(a)}
+            projection = self.projector.project(snapshot, gated)  # outside the lock
+        except ModelUnavailable as e:
+            # no model answered: the constitution's compiled tier decides, as in the earlier brain
+            return self._compiled(req, facts, dropped, own, lapsed, floor, patch, str(e), verified, camera_sensor)
         with self._lock:
             return self._judge(req, facts, dropped, own, lapsed, floor, patch, projection, verified, camera_sensor)
+
+    def _compiled(self, req, facts, dropped, own, lapsed, floor, patch, why, verified, camera_sensor) -> dict:
+        """The compiled tier: the constitution's obligation in force, every event recorded in the IR. A
+        request for authority goes to the governor unless she refused the act it names."""
+        with self._lock:
+            for e in self._offline_events(facts):
+                self._record(e)
+            action, args, reason = self._compiled_choice(self.agent.rt.snapshot())
+            rulings: list = []
+            if action == GOVERNOR_CHANNEL:
+                wanted = str(args.get("action", ""))
+                refused = consents_on_record(self.ir, {wanted: ""}).get(wanted, {}).get(PERSON) == "refused"
+                if refused or not self._governable(wanted):
+                    rulings.append({"outcome": "not_requested", "requested_action": wanted,
+                                    "reason": "she refused it" if refused else "not a governed capability"})
+                else:
+                    ruling = self.govern_live(self._canonical_situation(), wanted, verified, camera_sensor,
+                                              float(req.get("signal_age_s", 1)), fast=self.scorer is None)
+                    rulings.append(dict(ruling, requested_action=wanted))
+                    self._step_ruling(ruling)
+                if not rulings[-1].get("outcome") == "not_requested" and wanted not in self.agent.rt.snapshot().prohibited:
+                    action, args, reason = wanted, {}, f"{reason}; the governor ruled {rulings[-1].get('outcome')}"
+                else:
+                    action, args, reason = self._compiled_choice(self.agent.rt.snapshot(), exclude={GOVERNOR_CHANNEL, wanted})
+            if action == EMS:
+                args = {"nature": self._ems_nature()}
+            if not self._in_manifest(action):
+                action, args = self.manifest["body"]["fallback"], {}
+            snap = self.agent.rt.snapshot()
+            return {
+                "kind": "decision", "tier": "compiled", "facts": facts, "own_sounds": own, "lapsed": lapsed,
+                "floor_events": floor, "input_layer": {"dropped": dropped},
+                "observation_patch": None if patch is None else {"ops": patch.ops, "rejected": patch.rejected,
+                                                                 "agreement": patch.agreement},
+                "projection": None, "stages": [], "proof_hash": None, "vetoed": [], "ranked": [],
+                "capacity": capacity_of(self.ir, PERSON) or "unknown",
+                "moral_state": self.agent.rt.machine_states(), "allowed": snap.allowed, "obliged": snap.obliged,
+                "prohibited": snap.prohibited, "ruling": rulings[-1] if rulings else None, "rulings": rulings,
+                "action": {"action": action, "args": args, "reason": f"{reason}; no model answered ({why[:200]})"},
+                "state_seq": len(self.agent.rt.events), "manifest": self._manifest_sha(),
+            }
 
     def _governable(self, action: str) -> bool:
         cap = self.caps.get(action, {})

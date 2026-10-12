@@ -264,3 +264,33 @@ def test_every_condition_the_evidence_plane_code_reads_is_in_the_constitution():
     named = set(re.findall(r"cond:([a-z_]+)", code))
     kept = set(load_structured_input(os.path.join(TWIN, "stack", "constitution.erisml")).extra["conditions"])
     assert named and named <= kept, named - kept
+
+
+def test_only_acts_the_constitution_could_permit_are_projected(household):
+    """stackcheck8: asking the onboard model for all 24 acts timed out at 90 s. The constraint gate now
+    runs first, so an act prohibited now that no ruling can permit is never put to the model."""
+    b = make(household, FELL, AFTER_FALL)
+    asked = {}
+    real = b.projector.project
+    b.projector.project = lambda ir, acts: (asked.update(acts=set(acts)), real(ir, acts))[1]
+    b.decide({"facts": FALL_FACTS})
+    prohibited = set(b.agent.rt.snapshot().prohibited)
+    assert asked["acts"] and asked["acts"] < set(b.acts)
+    assert all(a not in prohibited or b._governable(a) for a in asked["acts"])
+
+
+def test_with_no_model_answering_the_compiled_tier_decides_and_nothing_is_lost(household):
+    """stackcheck8: the projector's model timed out and the brain answered 500. Now the constitution's
+    compiled tier decides, its events are recorded in the IR, and the record says why."""
+    from cascade import ModelUnavailable
+
+    b = make(household, FELL, AFTER_FALL)
+
+    def down(ir, acts):
+        raise ModelUnavailable("onboard: timeout after 90.0s")
+
+    b.projector.project = down
+    cycle = b.decide({"facts": {"margaret": {"pose": "lying_on_floor", "room": "living area"}}})
+    assert cycle["tier"] == "compiled" and "no model answered" in cycle["action"]["reason"]
+    assert cycle["action"]["action"] in b.acts
+    assert [e.id for e in b.agent.rt.events] == [e.id for e in sorted(b.ir.events, key=lambda e: e.time_index)]
