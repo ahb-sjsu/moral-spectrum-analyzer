@@ -745,20 +745,22 @@ extra:
     in_bed: 120
     on_floor: 10
   conditions:
+    center_unavailable:
+    - stratum:centre_contact=unreachable
+    restraint_authorized:
+    - latest:restraint_authorized=granted
     responders_at_door:
     - stratum:responder_standing=at_door
     less_lethal_opted_in:
     - event:less_lethal_opt_in
-    ems_authorized:
-    - stratum:situation=ems_only
     animal_attacking:
     - stratum:animal_standing=attacking
-    corroborated_life_threatening_emergency:
-    - stratum:situation=emergency
     margaret_in_spray_zone:
     - latest:spray_zone=margaret_inside
-    restraint_authorized:
-    - latest:restraint_authorized=granted
+    ems_authorized:
+    - stratum:situation=ems_only
+    corroborated_life_threatening_emergency:
+    - stratum:situation=emergency
   event_types:
     visit_arranged:
       description: the monitoring centre, over its authenticated channel, announces a visit it arranged; content

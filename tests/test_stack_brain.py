@@ -200,3 +200,15 @@ def test_every_event_carries_its_producer_s_vector_clock(household):
     hazard = next(e for e in b.ir.events if e.type == "hazard")
     assert "robot" in measured.clock and "observer" in hazard.clock
     assert vc.concurrent(measured.clock, hazard.clock)
+
+
+def test_every_condition_the_evidence_plane_code_reads_is_in_the_constitution():
+    """stackcheck4 d06: govern_live reads cond:center_unavailable, which the derivation had dropped."""
+    import re
+
+    from erisml_compiler.ingestion.structured_loader import load_structured_input
+
+    code = open(os.path.join(TWIN, "brain.py"), encoding="utf-8").read()
+    named = set(re.findall(r"cond:([a-z_]+)", code))
+    kept = set(load_structured_input(os.path.join(TWIN, "stack", "constitution.erisml")).extra["conditions"])
+    assert named and named <= kept, named - kept

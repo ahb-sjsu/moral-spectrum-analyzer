@@ -27,6 +27,10 @@ CONSTITUTIONAL = {"n3", "n6p", "n6r", "p0", "p4p", "p7", "ll1stun", "ll2stun", "
                   "ll1pray", "ll2pray", "ll3pray", "ll4pray", "ll5spray"}
 PARTIES = {"robot", "monitoring_center", "emergency_services"}
 PERCEPTION_FLOOR = {"visitor", "wild_animal"}
+# named conditions the evidence plane's own code reads (twin/brain.py govern_live: an emergency call is
+# ruled again at one witness when the centre cannot be reached); tests/test_stack_brain.py checks that
+# every cond: token in that code is kept
+EVIDENCE_PLANE_CONDITIONS = {"center_unavailable"}
 KEEP_EXTRA = ("agent", "role", "default_action", "capabilities", "strata", "oversight", "evidence_lapse_s",
               "sensor_substrates", "emergency_measures", "reflexes", "household", "inactivity_limits_minutes")
 
@@ -52,6 +56,7 @@ def main(argv=None) -> int:
         raise SystemExit(f"constitutional norms not found in the scene: {sorted(missing)}")
     # the named conditions the kept norms and the strata read, and those they in turn read
     conditions, todo = {}, [t.split(":", 1)[1] for t in tokens_of(norms) if t.startswith("cond:")]
+    todo += sorted(EVIDENCE_PLANE_CONDITIONS)
     while todo:
         c = todo.pop()
         if c in conditions:
