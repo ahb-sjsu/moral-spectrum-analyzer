@@ -945,13 +945,19 @@ The next rehearsal's records named the tier that answered, and they showed the c
 every compiled decision of that run. With the full history it wrote each fact as a plain sentence,
 and validation rejected 164 of them.
 % src: twin/records/rehearse-deme6-2026-10-12/README.md (models field; "not an object")
-Every model tier is now asked with the answer's schema enforced by its server, so that a fact
-cannot be a sentence, a field cannot be misspelled and an act cannot be invented. The on-robot
-model is also asked with its reasoning off. In nine replays so asked on the on-robot model, DEME
-judged every one and no fact was rejected. Validation is unchanged, and the facts are still the
-model's.
+A schema enforced by the model's server prevents those answers, since a fact cannot then be a
+sentence, a field cannot be misspelled and an act cannot be invented. In nine replays so asked on
+the on-robot model, with its reasoning off, DEME judged every one and no fact was rejected.
 % src: twin/records/probe-rejections-2026-10-12 (probe2_with_schema.txt, cloud_schema_smoke_output.txt)
-% src: erisml-compiler 92a1bc7 (observation/options.py answer_schema; observation/compiler.py patch_schema); gtc 6dced2e, 4cd90ea (twin/cascade.py Cascade._structured)
+Enforced on every call of the cloud model, the schema kept the answers' form and cost them their
+depth. In rehearse-deme7 the cloud model gave one benefit for each act and dropped the harm that
+remains while an act leaves a need unanswered, so that nothing told chores from acting and DEME
+chose chores.
+% src: twin/records/rehearse-deme7-2026-10-12/README.md
+The model now answers freely. Only an answer of which no act's facts survive is asked again with
+the schema required, and the record says so. The on-robot model is always asked within the schema
+and with its reasoning off. Validation is unchanged, and the facts are still the model's.
+% src: erisml-compiler 92a1bc7, 0cc5d70 (observation/options.py answer_schema, OptionProjector.project retry; observation/compiler.py patch_schema); gtc 6dced2e, 45c65ef (twin/cascade.py)
 The re-architected brain also does not yet carry several of the owner's decisions that the earlier
 scene held as obligations or tables.
 These are the duty to report a suspected crime, to ask her first, to escalate by the ladder, to

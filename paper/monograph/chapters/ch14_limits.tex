@@ -187,8 +187,10 @@ rehearse-deme5 in 5 more.
 The tier still does only chores, and that is not fixed.
 A probe found that the on-robot model gives answers of which every fact is rejected, and
 rehearse-deme6's records found that the cloud model did so in that run, writing its facts as plain
-sentences. Every model tier is now asked with its answer's schema enforced (Section~\ref{sec:eval-stack}).
-% src: twin/records/probe-rejections-2026-10-12; twin/records/rehearse-deme6-2026-10-12/README.md; gtc 4cd90ea
+sentences. Enforcing the answer's schema on every call removed those answers and thinned the rest
+(rehearse-deme7), so the model now answers freely and is asked again with the schema required only
+when nothing survives (Section~\ref{sec:eval-stack}).
+% src: twin/records/probe-rejections-2026-10-12; twin/records/rehearse-deme6-2026-10-12/README.md; twin/records/rehearse-deme7-2026-10-12/README.md; gtc 45c65ef
 % src: twin/records/rehearse-deme4-2026-10-12 (README.md; "tier":"compiled" records, each action chores)
 The household scene it loads was compiled from text and committed pending the owner's review, and
 no review is recorded.
