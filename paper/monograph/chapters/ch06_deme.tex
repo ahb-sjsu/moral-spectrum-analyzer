@@ -935,17 +935,23 @@ The constitution holds no obligation, so that tier always does the default chore
 In the rehearsal of 12 October it decided 5 of 46 times, three of them during the dog attack, each
 after every fact the model projected had been rejected.
 % src: gtc:twin/stack/brain.py (_compiled); twin/records/rehearse-deme4-2026-10-12/README.md
-A probe replayed the inputs of three such decisions through each model tier alone.
-The cloud model's answers were judged by DEME in all six trials.
-The on-robot model's fell to the compiled tier in five of six.
-It invented act names, nested its facts under the wrong key, or misspelled a required field in every
-fact, so that validation rejected them all.
-The facts are now asked of the on-robot model with the answer's schema enforced by its server and
-its reasoning turned off, so that a misspelled field or an invented act cannot be written.
-In nine trials so asked, DEME judged every one and no fact was rejected.
-Validation is unchanged, and the facts are still the model's.
-% src: twin/records/probe-rejections-2026-10-12 (README.md, probe1_without_schema.txt, probe2_with_schema.txt)
-% src: erisml-compiler 92a1bc7 (observation/options.py answer_schema; observation/compiler.py patch_schema); gtc 6dced2e (twin/cascade.py Cascade._structured)
+A probe replayed the inputs of three such decisions through each model tier alone, without the
+scenario's earlier history.
+The on-robot model's answers fell to the compiled tier in five of six trials. It invented act
+names, nested its facts under the wrong key, or misspelled a required field in every fact.
+The cloud model's were judged by DEME in all six.
+% src: twin/records/probe-rejections-2026-10-12 (README.md, probe1_without_schema.txt)
+The next rehearsal's records named the tier that answered, and they showed the cloud model behind
+every compiled decision of that run. With the full history it wrote each fact as a plain sentence,
+and validation rejected 164 of them.
+% src: twin/records/rehearse-deme6-2026-10-12/README.md (models field; "not an object")
+Every model tier is now asked with the answer's schema enforced by its server, so that a fact
+cannot be a sentence, a field cannot be misspelled and an act cannot be invented. The on-robot
+model is also asked with its reasoning off. In nine replays so asked on the on-robot model, DEME
+judged every one and no fact was rejected. Validation is unchanged, and the facts are still the
+model's.
+% src: twin/records/probe-rejections-2026-10-12 (probe2_with_schema.txt, cloud_schema_smoke_output.txt)
+% src: erisml-compiler 92a1bc7 (observation/options.py answer_schema; observation/compiler.py patch_schema); gtc 6dced2e, 4cd90ea (twin/cascade.py Cascade._structured)
 The re-architected brain also does not yet carry several of the owner's decisions that the earlier
 scene held as obligations or tables.
 These are the duty to report a suspected crime, to ask her first, to escalate by the ladder, to
@@ -955,6 +961,41 @@ Three more wait for modules of tier 4 and of privacy that are not yet built, to 
 centre when it can decide in time, to keep her privacy except in a corroborated emergency, and to
 ask a human before a guarded act she requests.
 % src: gtc:twin/stack/make_constitution.py (dropped: every obligation, refusal tables); twin/stack/profiles/home_care_robot.json (notes)
+
+\subsection{DEME judges each act per party}\label{sec:deme-rank2}
+
+In DEME's design a module's judgement is a moral tensor of rank one to six. Its first axis holds
+the nine dimensions of Section~\ref{sec:deme-vector}, and the further axes are the affected
+parties, time, the actions, the coalitions and Monte-Carlo samples. The rank-two tensor gives each
+party its own nine values.
+% src: lib:docs/moralvector_v2_architecture.md section 5; lib:src/erisml/ethics/moral_tensor.py DEFAULT_AXIS_NAMES
+Until 12 October no part of the twin used more than the first axis. The pipeline ran each module on
+one aggregate record per option and took a vector of nine values. The library's records per party
+and its judgements over a tensor existed, but the pipeline never called them, and its adapter from
+a version 2 module to version 3 copied one vector to every party. The compiler's module graph gives
+each module a single dimension, a narrower view still (Section~\ref{sec:compiler-emdag}).
+% src: lib main layers/tactical.py (judge only); modules/base_v3.py V2ToV3EMAdapter (broadcast); erisml-compiler em_dag/modules/*.py
+On the branch \code{feat/deme-rank2} of erisml-lib, not yet opened as a pull request, options given
+as per-party records are judged per party.
+Each module's own rule is applied to every party's view of each option, through its judgement of
+the whole set where it has one, so that the safety module still compares the alternatives.
+The parties' columns form a tensor of nine values by parties for each module.
+The tensor is collapsed to the vector the stages rank by its worst case, the most pessimistic
+value of each dimension across the parties, and a veto for any party vetoes the option.
+% src: erisml-lib feat/deme-rank2 054ed18 (facts_v3.py for_party; layers/tactical.py _evaluate_options_by_party; tests/test_deme_rank2.py)
+The compiler builds each party's view from the facts that name that party, by the same mapping as
+the aggregate record, and the re-architected brain judges every act over the eight parties of its
+scene, the robot, the centre, emergency services, an unknown person, a wild animal, Margaret, her
+dog and her grandson. Margaret's capacity to decide is her own record's.
+Each decision's record keeps every party's verdict under every module.
+% src: erisml-compiler 2262ff8 (erisml_backend/v3_bridge.py ir_to_party_facts); gtc 259d780 (twin/stack/facts_builder.py, brain.py party_verdicts)
+Grave harm to one person and moderate harm to two show the difference. A mean over the parties
+prefers the first, and the worst case prefers the second.
+% src: erisml-lib tests/test_deme_rank2.py test_harm_concentrated_on_one_party_counts_at_its_worst
+The other axes are not built. No module is judged over time, over the actions of others, over
+coalitions or over samples, and the library's modules written for the tensor are not used. Each
+module applies its rule for one record to each party in turn, and the fairness measures over
+parties do not enter the ranking.
 
 \section{Which parts are deterministic}\label{sec:deme-deterministic}
 

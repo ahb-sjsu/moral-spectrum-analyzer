@@ -459,6 +459,11 @@ of pull request 151.
 % src: erisml-lib main layers/pipeline.py (one stage); feat/hard-shell-dag layers/composition.py
 The compiler's graph gives each module one dimension, has no Geneva module and no tiers, and adds
 its outputs into one vector.
+In DEME's design a module's judgement is a moral tensor over all nine dimensions and, at higher
+rank, over the parties, time, actions, coalitions and samples. A module of this graph writes one
+number on one dimension, which the design document calls a rank-one legacy view
+(Section~\ref{sec:deme-rank2}).
+% src: erisml-lib docs/moralvector_v2_architecture.md sections 4 and 5 ("rank-1 legacy view"); em_dag/modules/*.py (one DimensionScore each)
 It serves the consequentialist projection only.
 The re-architected twin does not use it, and judges through DEME's pipeline on facts the compiler
 extracts for each option (Section~\ref{sec:deme-stack}).

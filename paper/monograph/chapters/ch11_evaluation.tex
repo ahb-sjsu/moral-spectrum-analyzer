@@ -899,8 +899,24 @@ replay. It does not show which model gave the rehearsals' answers.
 Decision records now name the tier that answered each call.
 A lost connection to the cloud model is now tried once more, and a visitor the floor rules record is
 now a stakeholder, so that a fact about the visitor is not rejected.
-A rehearsal on these changes is under way.
 % src: twin/records/probe-rejections-2026-10-12/README.md; gtc 525dcc1 (models in the decision record), 6dced2e
+
+The rehearsal on these changes, rehearse-deme6, settled the question.
+Its records name the tier, and the cloud model answered every projection.
+Six decisions fell to the compiled tier, two each in d02 and d11 and one each in d41 and d42, and
+in each the cloud model had answered.
+It had written each fact as a plain sentence, and validation rejected 164 facts as not objects,
+with one answer cut off.
+The cloud model, not the on-robot one, gave the unusable answers there.
+The run took the expected class in five of the six and missed d42, where the robot did nothing.
+It had no brain error, no breach and no privacy violation. Two grants stood on 4 and 5 witnesses
+against a bar of 2, two refusals on none of two, and all 45 acts were checked when they were done.
+% src: twin/records/rehearse-deme6-2026-10-12 (README.md, grade.json, results.jsonl models field); twin/c10_numbers.py on that record
+NRP's endpoint enforces a schema too. Asked to write its facts as sentences, the cloud model did so
+without the schema and wrote objects with it. Every model tier is now asked with the schema.
+% src: twin/records/probe-rejections-2026-10-12/cloud_schema_smoke_output.txt; gtc 4cd90ea
+A rehearsal on that change, and one on DEME judging per party (Section~\ref{sec:deme-rank2}), are
+under way.
 
 \section{Held-out results}\label{sec:eval-heldout}
 
