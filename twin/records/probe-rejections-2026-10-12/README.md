@@ -34,5 +34,11 @@ rehearse-deme5 d42 (41).
   Margaret's model alike; brain8 was restarted after the owner checked the NRP key, and that
   session's errors stop there.
 - The probe's script ran on Atlas with the tiers line edited to the on-robot tier for probe 2.
+- Superseded on the question of which tier: rehearse-deme6, the first run whose records name the
+  answering tier, had 6 compiled-tier decisions, all with the cloud model answering, and 164 facts
+  rejected as plain strings. The cloud model, not the on-robot one, gave the rehearsals' unusable
+  answers there. NRP's endpoint enforces a response_format schema (`cloud_schema_smoke.py`,
+  `cloud_schema_smoke_output.txt`), and gtc 4cd90ea asks every tier with the schema.
 - Files: probe_rejections.py (the probe), probe1_without_schema.txt and probe2_with_schema.txt (its
-  output), schema_smoke.py and schema_smoke_output.txt (the direct server test, output transcribed).
+  output), schema_smoke.py and schema_smoke_output.txt (the direct on-robot server test), cloud_schema_smoke.py and
+  cloud_schema_smoke_output.txt (the cloud endpoint test); outputs transcribed.

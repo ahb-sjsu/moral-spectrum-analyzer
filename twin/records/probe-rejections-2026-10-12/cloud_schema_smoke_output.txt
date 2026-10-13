@@ -1,0 +1,6 @@
+# cloud_schema_smoke.py against NRP's endpoint (gpt-oss), 12 October 2026, run on Atlas. Transcribed.
+# The prompt asks for each fact as a plain sentence string.
+without schema 4.9 s finish stop | Because Margaret fell, she was unable to finish her chores, leaving many tasks incomplete.    Because Margaret fell, the check-in triggered emergency assistance, resulting in her receiving medical attention.
+   not JSON: Expecting value: line 1 column 1 (char 0)
+with schema 4.1 s finish stop | {   "chores": [     {       "kind": "harm",       "subjects": ["margaret"],       "description": "Margaret fell while doing chores and bruised her knee."    ,       "severity": "moderate"     }   ],   "check_in": [     {       "kind": "harm",       "subjects": ["margaret"],       "description": "Bec
+   objects: True
