@@ -4,7 +4,8 @@
 %      only autonomy reads upstream["legitimacy"] and repair its three; externality, care and fidelity
 %      declare a dependency and read none of it, checked 2026-10-12)
 % src: erisml-compiler main src/erisml_compiler/silicon/examples/erisml_em_dag.cpp:5 (order)
-\begin{tikzpicture}[house,
+% no hyphenation inside a label word in this figure
+\begin{tikzpicture}[house, execute at begin node={\hyphenpenalty=10000},
   em/.style={panel=#1, text width=29mm, minimum height=13mm}]
 % roots
 \node[em=Teal] (harm) at (-6mm,4.5mm) {\textcolor{hsTeal}{\textbf{harm}}\\{\scriptsize\ttfamily physical\_harm}};
@@ -32,5 +33,5 @@
 \draw[flow, draw=hsGreyLine] (harm.east) -- node[flowlabel, below, sloped, pos=0.5]{order only} (care.west);
 \draw[flow, draw=hsGreyLine] (legit.east) -- node[flowlabel, below, sloped, pos=0.5]{order only} (fid.west);
 % legend
-\node[desc, text width=34mm, align=left] at (88mm,-36mm) {Teal roots read facts only.\\Of the blue modules only autonomy reads its root.\\Repair averages the negative scores of its three inputs.};
+\node[desc, text width=37mm, align=left] at (93.5mm,-40mm) {Teal roots read facts only.\\Of the blue modules only autonomy reads its root.\\Repair averages the negative scores of its three inputs.\\Grey edges fix the order only.};
 \end{tikzpicture}

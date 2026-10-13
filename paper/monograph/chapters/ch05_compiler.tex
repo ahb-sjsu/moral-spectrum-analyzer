@@ -265,8 +265,8 @@ orchestrator stores all of these under \code{ir.extra["canonicalization"]}.
 % src: src/erisml_compiler/canonicalizer/base.py:8-71
 % src: src/erisml_compiler/pipeline/orchestrator.py:337-343
 
-The home-care twin uses the registry canonicalizer, not the embedding one. Its classifier
-canonicalizes, and its chooser sees only the canonical state.
+The earlier brain of the home-care twin uses the registry canonicalizer, not the embedding one.
+Its classifier canonicalizes, and its chooser sees only the canonical state.
 % src: gtc:twin/brain.py Brain.__init__
 
 \subsection{Human corrections are patches with hashes on both sides}
@@ -319,6 +319,10 @@ commitment is active but defeasible. It returns \code{prohibited} when harm is b
 care is below $0.5$ and legitimacy is below zero. Further branches return
 \code{permitted\_with\_residue} and \code{permitted}. Chapter~6 treats DEME in full.
 % src: src/erisml_compiler/erisml_backend/deme_bridge.py:40-120
+On the branch of pull request 43 this cascade is gone. The bridge judges the facts with
+erisml-lib's \code{DEMEPipeline} under a hard-shell profile and maps DEME's result to the same
+verdict labels.
+% src: erisml-compiler 26837b0 (feat/import-erisml-lib erisml_backend/deme_bridge.py docstring, "the stand-in thresholds are replaced by erisml-lib's DEMEPipeline")
 
 \subsection{The deontic projection runs four gates and a solver}
 
@@ -769,6 +773,10 @@ emulation.
 % src: src/erisml_compiler/silicon/hls_emit.py:209-320 (emit_em_dag_pipeline, placeholder bodies)
 % src: src/erisml_compiler/silicon/hls_emit.py:328-376 (emit_top_module, packed_verdict = 0)
 % src: src/erisml_compiler/silicon/hls_emit.py:379-419 (emit_makefile, PLATFORM xilinx_u55c_gen3x16_xdma_3_202210_1)
+On the branch of pull request 44 only the first file remains. The EM-DAG pipeline,
+\code{erisml\_top.cpp} and its Makefile are retired with the EM-DAG, and \code{silicon-emit}
+writes the machines alone.
+% src: erisml-compiler 783ed33 (feat/retire-em-dag cli.py cmd_silicon_emit writes erisml_fsm.cpp only; silicon/examples holds erisml_fsm.cpp only)
 
 Fixed-point conversion uses a signed Q format with $W$ total bits and $I$ integer bits, so
 $f = W - I$ fractional bits. A value $x$ quantizes to the integer
@@ -800,7 +808,7 @@ equivalence proof is future work.
 \input{figures/ch05_silicon}
 \caption{The silicon emitter turns the Python machine tables and the EM-DAG profile into four
 Vitis HLS files. Only the machine file carries working logic, and the EM-DAG and top-level files
-are skeletons that return zero.}
+are skeletons that return zero. On the branch of pull request 44 only the machine file remains.}
 \label{fig:compiler-silicon}
 \end{figure}
 
@@ -883,8 +891,8 @@ Figure~\ref{fig:compiler-audit} draws the chain.
 \begin{figure}[t]
 \centering
 \input{figures/ch05_audit_chain}
-\caption{The audit chain of one compile. Four inputs are hashed into the audit record, and the
-decision proof points back to the representation hash. The timestamp and the pass durations
+\caption{The audit chain of one compile. Four inputs are hashed into the audit record. The
+decision proof is built after it and points back to the representation hash, drawn dashed. The timestamp and the pass durations
 change between any two compiles, and the hashes do not.}
 \label{fig:compiler-audit}
 \end{figure}
@@ -902,6 +910,9 @@ graph, with its hash, canonical JSON, nodes, edges and counts by kind, every pro
 the disagreement record. A trainer can learn against the typed graph, against one theory's
 verdict or against the timeline.
 % src: src/erisml_compiler/export/rlef.py:1-81
+On the branch of pull request 44 the schema is \code{rlef\_v0.3}. The module outputs leave with the
+EM-DAG, and the timeline holds DEME's vectors.
+% src: erisml-compiler 783ed33 (feat/retire-em-dag export/rlef.py:32-37 "rlef_v0.3"; commit message "em_outputs and EMOutput removed", "RLEF rlef_v0.3")
 % src: docs/architecture.md:335-372
 
 \subsection{The I-EIP monitor interface}
@@ -1001,13 +1012,13 @@ for human review. The projections produce findings meant to support deliberation
 
 Reading the code adds five points to the document's own list. The rights, fairness, legitimacy,
 epistemic and autonomy modules select facts by keyword matches on free-text descriptions, so their
-scores depend on the extractor's wording. Two second-tier modules declare dependencies that their
+scores depend on the extractor's wording. Three second-tier modules declare dependencies that their
 code does not read, so in the default profile those edges fix order and carry no data. The polarity
 map leaves three DEME verdict strings at \code{neutral}, so those verdicts never enter the
 disagreement test. The emitted EM-DAG hardware is a skeleton. The audit record carries a timestamp
 and timings, so only its two hashes are reproducible bit for bit.
 % src: src/erisml_compiler/em_dag/modules/{rights,fairness,legitimacy,epistemic,autonomy}.py
-% src: src/erisml_compiler/em_dag/modules/fidelity.py:21, externality.py:24
+% src: src/erisml_compiler/em_dag/modules/fidelity.py:21, externality.py:24, care.py:23 (upstream never read in any of the three)
 % src: src/erisml_compiler/projections/base.py:67-91
 % src: src/erisml_compiler/silicon/hls_emit.py:221-224
 % src: src/erisml_compiler/audit/hash_chain.py:69

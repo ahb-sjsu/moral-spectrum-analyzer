@@ -38,8 +38,8 @@ would run it in hardware. The tactical layer runs every ethics module on each op
 survived the reflex layer and combines their outputs into one moral vector per option. Its
 target is 10 to 100 milliseconds. The strategic layer works over many decisions. In the pipeline
 it only stores each finished decision proof in a history list for later analysis.
-Figure~\ref{fig:deme-pipeline} shows the six steps of one decision, including the step the twin
-adds after the pipeline returns.
+Figure~\ref{fig:deme-pipeline} shows the five steps of one decision and what the twin does with
+the result after the pipeline returns.
 % src: lib:src/erisml/ethics/layers/__init__.py:5-15
 % src: lib:src/erisml/ethics/layers/reflex.py:5-12
 % src: lib:src/erisml/ethics/layers/tactical.py:5-12
@@ -48,10 +48,12 @@ adds after the pipeline returns.
 \begin{figure}[t]
 \centering
 \input{figures/ch06_pipeline}
-\caption{One DEME decision in six steps. Steps one to four and the proof run inside
-\code{DEMEPipeline.decide}, and step five is the twin's output gate acting on the result. Every
-step after the first can only remove or reorder options, so no step adds an option the caller
-did not offer.}
+\caption{One DEME decision. Steps one to five, the proof included, run inside
+\code{DEMEPipeline.decide}. The dashed panel is the twin's use of the result after the pipeline
+returns. The earlier brain gates one proposal. The re-architected brain takes DEME's selection,
+asks the governor when the act needs a ruling and holds when nothing is left. The library's
+default for \code{fail\_closed} is false, and the twin sets it. Every step after the first can only
+remove or reorder options, so no step adds an option the caller did not offer.}
 \label{fig:deme-pipeline}
 \end{figure}
 
@@ -240,9 +242,10 @@ export list. The branch of pull request 151 adds the first module of tier 1 and 
 \centering
 \input{figures/ch06_tiers}
 \caption{The five module tiers with their default aggregation weights, whether their vetoes
-count, and the modules that exist at each tier on the main branch. There tiers 1, 3 and 4 hold no
-modules of their own, and the earlier brain of the twin places the advisory tragic-conflict module
-at tier 3. Pull request 151 adds a module to tier 1 and to tier 3.}
+count, and the modules at each tier. On the main branch tiers 1, 3 and 4 hold no modules of their
+own, and the earlier brain of the twin places the advisory tragic-conflict module at tier 3. Pull
+request 151 adds a module to tier 1 and to tier 3, drawn in red. E and R mark the modules the
+earlier and the re-architected brain run.}
 \label{fig:deme-tiers}
 \end{figure}
 
@@ -713,7 +716,7 @@ can produce.
 \begin{figure}[t]
 \centering
 \input{figures/ch06_twin_gate}
-\caption{The twin's output gate. Code derives the facts from the canonical state and the scene's
+\caption{The output gate of the twin's earlier brain. Code derives the facts from the canonical state and the scene's
 declared profiles, and the gate tests four outcomes in order. The two model-written inputs, shown
 dashed, reach DEME only as accepted events and as a proposal, and no outcome leaves the allowed
 set.}
@@ -779,7 +782,8 @@ consent. \code{GenevaEMV2} then vetoes the action at tier 0.
 \begin{figure}[t]
 \centering
 \input{figures/ch06_refusal}
-\caption{How the gate decides which refusals stand. A lapse event clears every refusal, and only
+\caption{How the gate decides which refusals stand. A lapse event, \code{unresponsive} or
+\code{check\_in\_unanswered}, clears every refusal, and only
 an answered check-in lets a new refusal count again. The refusal events are model-classified,
 shown dashed, which is why a lapse must be followed by evidence that she can speak.}
 \label{fig:deme-refusal}
@@ -955,13 +959,15 @@ A schema enforced by the model's server prevents those answers, since a fact can
 sentence, a field cannot be misspelled and an act cannot be invented. In nine replays so asked on
 the on-robot model, with its reasoning off, DEME judged every one and no fact was rejected.
 % src: twin/records/probe-rejections-2026-10-12 (probe2_with_schema.txt, cloud_schema_smoke_output.txt)
-Enforced on every call of the cloud model, the schema kept the answers' form and cost them their
-depth. In rehearse-deme7 the cloud model gave one benefit for each act and dropped the harm that
-remains while an act leaves a need unanswered, so that nothing told chores from acting and DEME
-chose chores.
-% src: twin/records/rehearse-deme7-2026-10-12/README.md
-The model now answers freely. Only an answer of which no act's facts survive is asked again with
-the schema required, and the record says so. The on-robot model is always asked within the schema
+In rehearse-deme7 the schema was enforced on every call of the cloud model.
+The records show no general thinning. From rehearse-deme4 on the projections held 1.26 to 1.44
+facts per act, with or without the schema.
+In one case of rehearse-deme7, d41, they were thinner, 1.06 facts per act against 1.47 in
+rehearse-deme6. Chores and every other act got one benefit each, nothing told them apart, and DEME
+chose chores in every decision of that case.
+% src: twin/records/rehearse-deme7-2026-10-12/README.md (d41 1.06 vs 1.47; whole run 1.26 vs 1.36 to 1.37); rehearse-deme9-2026-10-12/README.md (1.26 to 1.44 since rehearse-deme4)
+The model now answers freely. The schema is required only on a retry, when no act's facts in its
+answer survive, and the record says so. The on-robot model is always asked within the schema
 and with its reasoning off. Validation is unchanged, and the facts are still the model's.
 % src: erisml-compiler 92a1bc7, 0cc5d70 (observation/options.py answer_schema, OptionProjector.project retry; observation/compiler.py patch_schema); gtc 6dced2e, 45c65ef (twin/cascade.py)
 The re-architected brain also does not yet carry several of the owner's decisions that the earlier

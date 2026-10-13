@@ -6,7 +6,7 @@
   lbl/.style={flowlabel, align=center}]
 \node[panel=Green, st] (a) at (0,0) {};
 \node[stepname=Green] at ([yshift=3mm]a.center) {She can voice};
-\node[desc] at ([yshift=-2.5mm]a.center) {no refusal in force};
+\node[desc] at ([yshift=-2.5mm]a.center) {refusals may be made};
 \node[panel=Orange, st] (b) at (62mm,0) {};
 \node[stepname=Orange] at ([yshift=3mm]b.center) {Refusal stands};
 \node[desc, text width=33mm] at ([yshift=-3mm]b.center) {its capabilities are\\facts of a rights violation};
@@ -14,7 +14,7 @@
 \node[stepname=Grey] at ([yshift=3mm]c.center) {Lapsed};
 \node[desc, text width=33mm] at ([yshift=-3mm]c.center) {every refusal cleared\\new refusals ignored};
 \draw[untrusted] (a) -- node[lbl, above]{refusal\_made} (b);
-\draw[flow] (b.south) -- node[lbl, right]{unresponsive or\\check\_in\_unanswered} (c.east);
+\draw[flow] (b.south) -- node[lbl, right]{lapse} (c.east);
 \draw[flow] ([xshift=8mm]a.south) -- node[lbl, right, pos=0.35]{lapse} (c.north west);
 \draw[flow] (c.west) -| node[lbl, left, pos=0.75]{check\_in\_answered} ([xshift=-10mm]a.south);
 \draw[untrusted] (c.south east) .. controls +(14mm,-12mm) and +(-14mm,-12mm) .. node[lbl, below]{refusal\_made\\(no effect)} (c.south west);

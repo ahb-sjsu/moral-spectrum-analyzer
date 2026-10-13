@@ -1,7 +1,8 @@
 % Chapter 5. The commitment lifecycle machine (Tier 1), with the five absorbing states.
 % src: C:\source\erisml-compiler-monitor\src\erisml_compiler\fsm\commitment_fsm.py:55-93
 % src: C:\source\erisml-compiler-monitor\src\erisml_compiler\silicon\hls_emit.py:37-50 (ap_uint<3>, ap_uint<4>)
-\begin{tikzpicture}[house]
+% no hyphenation inside a label word in this figure
+\begin{tikzpicture}[house, execute at begin node={\hyphenpenalty=10000}]
 \node[stratum, minimum width=26mm] (act) at (0,13.2mm) {active};
 \node[stratum, minimum width=26mm] (def) at (0,-38mm) {active but defeasible};
 \node[absorbing, minimum width=22mm] (ful) at (76mm,12mm) {fulfilled};
@@ -26,8 +27,8 @@
 }
 \draw[flow] (def.east) -- node[flowlabel, below, sloped]{defeasibility overrides} (dft.west);
 % register note
-\node[panel=Grey, text width=40mm, anchor=north west] at (-14mm,-50mm)
-  {{\scriptsize state in an \texttt{ap\_uint<3>} register,\\event tag in \texttt{ap\_uint<4>}}};
-\node[panel=Red, text width=40mm, anchor=north west] at (52mm,-50mm)
-  {{\scriptsize terminal states absorb every event,\\an unknown tag keeps the state}};
+\node[panel=Grey, text width=46mm, anchor=north west] at (-14mm,-50mm)
+  {{\scriptsize state in an \mbox{\texttt{ap\_uint<3>}} register\\event tag in an \mbox{\texttt{ap\_uint<4>}}}};
+\node[panel=Red, text width=46mm, anchor=north west] at (52mm,-50mm)
+  {{\scriptsize terminal states absorb every event\\an unknown tag keeps the state}};
 \end{tikzpicture}

@@ -1,6 +1,7 @@
 % Chapter 5. The compiler passes as the orchestrator records them (pass index in each circle).
 % src: C:\source\erisml-compiler-monitor\src\erisml_compiler\pipeline\orchestrator.py:269-509
-\begin{tikzpicture}[house,
+% no hyphenation inside a label word in this figure
+\begin{tikzpicture}[house, execute at begin node={\hyphenpenalty=10000},
   pp/.style={panel=#1, text width=32mm, minimum height=19mm}]
 % row 1, left to right
 \node[pp=Blue] (p0) at (0,0) {\textcolor{hsBlue}{\textbf{Ingestion}}\\[1pt]{\scriptsize text loader, or the Tier 1\\structured loader}};

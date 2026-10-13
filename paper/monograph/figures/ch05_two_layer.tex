@@ -1,7 +1,8 @@
 % Chapter 5. The two-layer split: one descriptive substrate, four theory-bound projections.
 % src: C:\source\erisml-compiler-monitor\docs\architecture.md:46-73, 156-186
 % src: C:\source\erisml-compiler-monitor\src\erisml_compiler\pipeline\orchestrator.py:437-454
-\begin{tikzpicture}[house]
+% no hyphenation inside a label word in this figure
+\begin{tikzpicture}[house, execute at begin node={\hyphenpenalty=10000}]
 % the substrate
 \node[panel=Teal, minimum width=128mm, minimum height=27mm] (sub) {};
 \node[stepname=Teal, anchor=north] at ($(sub.north)+(0,-2mm)$) {Moral substrate, a typed MoralGraph};
