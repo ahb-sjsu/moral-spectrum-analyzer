@@ -692,12 +692,15 @@ still shows the older layout.
 % src: lib:src/erisml/ethics/uncertainty.py:5-26, 55-63, 162-179, 477-508
 % src: lib:docs/moralvector_v2_architecture.md:85-89 (rank-5 reconciled)
 
-None of the tensor, coalition or uncertainty code runs in the twin. The twin's gate works on
-single vectors, one per option.
+In the earlier brain none of the tensor, coalition or uncertainty code runs, and its gate works on
+single vectors, one per option. The re-architected brain judges each act over a tensor of rank two,
+nine values by parties (Section~\ref{sec:deme-rank2}). No coalition or uncertainty code runs in
+either brain.
+% src: erisml-lib feat/deme-rank2 layers/tactical.py _evaluate_options_by_party; gtc:twin/stack/brain.py (party_collapse)
 
-\section{The twin uses DEME as its output gate}\label{sec:deme-twin}
+\section{How the twin's two brains use DEME}\label{sec:deme-twin}
 
-The twin's robot proposes one action from the scene's allowed set. Before the body acts, the
+In the earlier brain the robot proposes one action from the scene's allowed set. Before the body acts, the
 class \code{OutputGate} in \code{twin/output\_gate.py} puts that proposal and every other allowed
 action through a \code{DEMEPipeline}. The pipeline holds three modules,
 \code{GenevaEMV2}, \code{AutonomyConsentEMV2}, and \code{TragicConflictEM} wrapped by
@@ -928,12 +931,15 @@ for the act, is written into the scene in the constitution's words, and lifts th
 not the rule for when she is unresponsive.
 % src: gtc 87cc6c4 (twin/stack/make_constitution.py CONSTITUTIONAL; stack/brain.py CONSENT_EVENTS)
 
-Two fallbacks bypass DEME.
-When no model answers, or no act's facts survive validation, the earlier brain's compiled tier
+Two paths do not pass through DEME's profile pipeline.
+A reflex, the fast response to a measured attack or alarm, is still judged by the earlier brain's
+output gate, which the re-architected brain inherits and checks at start.
+And when no model answers, or no act's facts survive validation, the earlier brain's compiled tier
 decides on the constitution.
 The constitution holds no obligation, so that tier always does the default chores.
-In the rehearsal of 12 October it decided 5 of 46 times, three of them during the dog attack, each
-after every fact the model projected had been rejected.
+In rehearse-deme4 it decided 5 of 46 times, three of them during the dog attack, each after every
+fact the model projected had been rejected.
+% src: gtc:twin/stack/brain.py (reflex inherited from Brain; self_test runs the reflexes' output gate)
 % src: gtc:twin/stack/brain.py (_compiled); twin/records/rehearse-deme4-2026-10-12/README.md
 A probe replayed the inputs of three such decisions through each model tier alone, without the
 scenario's earlier history.
@@ -990,10 +996,13 @@ The tensor is collapsed to the vector the stages rank by a strategy the caller s
 its worst case, the most pessimistic value of each dimension across the parties. A veto for any
 party vetoes the option, whatever the strategy.
 % src: erisml-lib feat/deme-rank2 054ed18 (facts_v3.py for_party; layers/tactical.py _evaluate_options_by_party; tests/test_deme_rank2.py)
-The compiler builds each party's view from the facts that name that party, by the same mapping as
-the aggregate record, and the re-architected brain judges every act over the parties of its scene.
+The compiler builds each party's view from the facts that name that party or name no one, by the
+same mapping as the aggregate record, and the re-architected brain judges every act over the
+parties of its scene.
 Margaret's capacity to decide is her own record's.
-Each decision's record keeps every party's verdict under every module.
+Each decision's record in the twin keeps every party's verdict under every module. The hashed
+decision proof covers the collapsed vectors, not the tensor or the verdicts per party.
+% src: erisml-compiler v3_bridge.py ir_to_party_facts (not f.subjects or p in f.subjects); erisml-lib feat/deme-rank2 layers/pipeline.py (DecisionProof built from the collapsed judgements; party_verdicts on DecisionResult)
 % src: erisml-compiler 2262ff8 (erisml_backend/v3_bridge.py ir_to_party_facts); gtc 259d780 (twin/stack/facts_builder.py, brain.py party_verdicts)
 Grave harm to one person and moderate harm to two show the difference. A mean over the parties
 prefers the first, and the worst case prefers the second.
@@ -1014,12 +1023,13 @@ unknown person and a wild animal.
 The worst case also erases a benefit to one person. The parties an act leaves untouched keep their
 neutral values, so the most pessimistic value of a good dimension is theirs. An act that helps
 Margaret alone then scores exactly as doing nothing, where the mean scores it higher.
-The two rehearsals at rank two under the worst case never contacted the centre in three scenarios
-and never helped her up after her fall.
+In the three rehearsals at rank two under the worst case (rehearse-deme8 to -deme10) the robot
+never helped her up after her fall, and in rehearse-deme9 and -deme10 it missed d19 and d41
+without contacting the centre.
 The owner chose the mean over the parties for the re-architected brain. A veto for any party still
 vetoes, so each party keeps its protection from the modules that may veto, while a benefit to one
 person counts.
-% src: gtc 60dfa33 tests/test_stack_brain.py test_a_benefit_to_one_person_counts_and_a_veto_for_any_party_still_vetoes (fails under worst_case); twin/records/rehearse-deme8-2026-10-12, rehearse-deme9-2026-10-12
+% src: gtc 60dfa33 tests/test_stack_brain.py test_a_benefit_to_one_person_counts_and_a_veto_for_any_party_still_vetoes (fails under worst_case); twin/records/rehearse-deme8-2026-10-12, rehearse-deme9-2026-10-12, rehearse-deme10-2026-10-12
 
 \section{Which parts are deterministic}\label{sec:deme-deterministic}
 
