@@ -401,3 +401,26 @@ def test_the_projector_sees_what_the_evidence_plane_has_attested(household):
     assert attested and all(k.startswith("stratum:") for k in attested)
     assert "stratum:visitor_standing" in attested
 
+
+
+def test_a_wholly_rejected_projection_records_why(household):
+    """rehearse-deme4/5: five decisions each fell to the compiled tier with every projected fact
+    rejected, and only the count was recorded. The record now keeps the reasons and which model
+    answered each call."""
+    bad = projection(chores=[{"kind": "harm", "subjects": ["nobody_here"], "description": "x",
+                              "severity": "grave"}],
+                     check_in=[{"kind": "not_a_kind", "subjects": ["margaret"], "description": "x",
+                                "severity": "minor"}])
+    b = make(household, {}, bad)
+    cycle = b.decide({"facts": {"margaret": {"pose": "seated", "room": "living area"}}})
+    assert cycle["tier"] == "compiled"
+    rec = cycle["projection"]
+    assert rec["rejected_count"] >= 2 and all(r["reason"] for r in rec["rejected"])
+    assert "projection" in cycle["models"] and "tier" in cycle["models"]["projection"]
+    json.dumps(cycle)  # the record is written to the hash-chained log
+
+
+def test_a_stack_decision_records_which_model_answered(household):
+    b = make(household, {})
+    cycle = b.decide({"facts": {"margaret": {"pose": "seated", "room": "living area"}}})
+    assert cycle["tier"] == "stack" and "projection" in cycle["models"]

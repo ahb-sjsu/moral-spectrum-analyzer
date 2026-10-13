@@ -256,8 +256,13 @@ class StackBrain(Brain):
 
         obs = self._observations(facts)
         patch = None
+        # which model answered each call, and the cascade's errors: the record says (a reply from the
+        # on-robot model and one from the cloud model are not the same evidence)
+        self._models = {}
         try:
             patch = self.observer.compile(snapshot, obs, self.acts) if obs else None  # outside the lock
+            if obs:
+                self._models["observation"] = self._answered()
             with self._lock:
                 if patch and patch.ops:
                     before = {e.id for e in self.ir.events}
@@ -276,19 +281,28 @@ class StackBrain(Brain):
                 # grandson was projected as a stranger)
                 attested = {k: v for k, v in self.agent.rt.machine_states().items() if k.startswith("stratum:")}
             projection = self.projector.project(snapshot, gated, attested=attested)  # outside the lock
+            self._models["projection"] = self._answered()
         except ModelUnavailable as e:
             # no model answered: the constitution's compiled tier decides, as in the earlier brain
+            self._models["unavailable"] = self._answered()
             return self._compiled(req, facts, dropped, own, lapsed, floor, patch, str(e), verified, camera_sensor)
         if gated and set(projection.unprojected) >= set(gated):
             # the model answered but no act's consequences survived validation (stackcheck9 d03: every
             # fact came back as a string, all 50 were rejected, nothing was offered, and the robot did
             # nothing). An unusable answer is no answer: the compiled tier decides, and says why.
             why = f"no act projected ({len(projection.rejected)} facts rejected)"
-            return self._compiled(req, facts, dropped, own, lapsed, floor, patch, why, verified, camera_sensor)
+            return self._compiled(req, facts, dropped, own, lapsed, floor, patch, why, verified, camera_sensor,
+                                  projection=projection)
         with self._lock:
             return self._judge(req, facts, dropped, own, lapsed, floor, patch, projection, verified, camera_sensor)
 
-    def _compiled(self, req, facts, dropped, own, lapsed, floor, patch, why, verified, camera_sensor) -> dict:
+    def _answered(self) -> dict:
+        """The model tier that gave the last answer, and the errors of the tiers before it."""
+        return {"tier": getattr(self.adapter, "last_tier", None),
+                "errors": [str(e)[:200] for e in getattr(self.adapter, "last_errors", [])]}
+
+    def _compiled(self, req, facts, dropped, own, lapsed, floor, patch, why, verified, camera_sensor,
+                  projection=None) -> dict:
         """The compiled tier: the constitution's obligation in force, every event recorded in the IR. A
         request for authority goes to the governor unless she refused the act it names."""
         with self._lock:
@@ -321,7 +335,13 @@ class StackBrain(Brain):
                 "floor_events": floor, "input_layer": {"dropped": dropped},
                 "observation_patch": None if patch is None else {"ops": patch.ops, "rejected": patch.rejected,
                                                                  "agreement": patch.agreement},
-                "projection": None, "stages": [], "proof_hash": None, "vetoed": [], "ranked": [],
+                # an answer every fact of which was rejected: why, so the extraction can be fixed
+                # (rehearse-deme4/5: 5 decisions each, the reasons were not recorded)
+                "projection": None if projection is None else {
+                    "rejected": projection.rejected[:40], "rejected_count": len(projection.rejected),
+                    "unprojected": projection.unprojected, "urgency": _fact(projection.urgency)},
+                "models": dict(getattr(self, "_models", {})),
+                "stages": [], "proof_hash": None, "vetoed": [], "ranked": [],
                 "capacity": capacity_of(self.ir, PERSON) or "unknown",
                 "moral_state": self.agent.rt.machine_states(), "allowed": snap.allowed, "obliged": snap.obliged,
                 "prohibited": snap.prohibited, "ruling": rulings[-1] if rulings else None, "rulings": rulings,
@@ -387,6 +407,7 @@ class StackBrain(Brain):
             "projection": {"urgency": _fact(projection.urgency), "rejected": projection.rejected,
                            "unprojected": projection.unprojected, "agreement": projection.agreement,
                            "facts": {a: _facts_of(projection, a) for a in offered}},
+            "models": dict(getattr(self, "_models", {})),
             "profile": {"name": self.profile.name, "version": self.profile.version,
                         "hash": self.pipeline.config.profile_hash, "composition": result.composition},
             "stages": result.stages, "proof_hash": proof.proof_hash if proof else None,
