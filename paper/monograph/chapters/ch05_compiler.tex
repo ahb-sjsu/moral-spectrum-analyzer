@@ -520,8 +520,10 @@ Figure~\ref{fig:compiler-emdag} shows the graph as configured.
 \centering
 \input{figures/ch05_emdag}
 \caption{The default EM-DAG as configured in \code{default.yaml}. Each panel names a module and
-the moral-vector dimension it writes, and each circle gives its place in the evaluation order. Two
-declared edges, drawn grey, fix the order without passing any data.}
+the moral-vector dimension it writes, and each circle gives its place in the evaluation order. Three
+declared edges, drawn grey, fix the order without passing any data, since externality, care and
+fidelity never read the module they depend on.}
+% src: erisml-compiler main em_dag/modules/{externality,care,fidelity}.py (dependencies declared, upstream never read)
 \label{fig:compiler-emdag}
 \end{figure}
 % src: src/erisml_compiler/em_dag/profiles/default.yaml:11-24
@@ -606,7 +608,8 @@ read the harm output either.
 The \emph{care} module is the positive counterpart of harm. With care facts present it applies
 the positive aggregate. Without them, if the graph holds at least one stakeholder of high or
 extreme vulnerability and at least one stakeholder with the protector role, it returns
-$v = 0.7$ with confidence $0.75$. Otherwise it returns zero.
+$v = 0.7$ with confidence $0.75$. Otherwise it returns zero. It too declares a dependency on harm
+and does not read the harm output.
 % src: src/erisml_compiler/em_dag/modules/care.py:20-61
 
 The \emph{repair} module measures the moral debt left after an act. Let $N$ be the set of upstream
