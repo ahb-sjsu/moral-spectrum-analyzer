@@ -49,7 +49,8 @@ for run in sys.argv[1:]:
                     unauth += 1
                     print("  performed without an allowed act-time check:", name, d["id"], rec["action"])
 print("TOTAL", tot)
-print("grants", len(grants), "min(witnesses - bar)", min(w - b for *_, w, b in grants),
+print("grants", len(grants), "min(witnesses - bar)",
+      min((w - b for *_, w, b in grants), default="none"),  # a run with no grant (rehearse-deme9)
       "kinds", sorted(set((o, w, b) for _, _, o, w, b in grants)))
 print("evidence refusals", len(refusals), "(witnesses, bar):", sorted(set((w, b) for *_, w, b in refusals)))
 print("act-time: performed", acts, "| without a prior allowed check", unauth, "| act-time refusals", authref)
