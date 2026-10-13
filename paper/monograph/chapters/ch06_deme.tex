@@ -935,6 +935,17 @@ The constitution holds no obligation, so that tier always does the default chore
 In the rehearsal of 12 October it decided 5 of 46 times, three of them during the dog attack, each
 after every fact the model projected had been rejected.
 % src: gtc:twin/stack/brain.py (_compiled); twin/records/rehearse-deme4-2026-10-12/README.md
+A probe replayed the inputs of three such decisions through each model tier alone.
+The cloud model's answers were judged by DEME in all six trials.
+The on-robot model's fell to the compiled tier in five of six.
+It invented act names, nested its facts under the wrong key, or misspelled a required field in every
+fact, so that validation rejected them all.
+The facts are now asked of the on-robot model with the answer's schema enforced by its server and
+its reasoning turned off, so that a misspelled field or an invented act cannot be written.
+In nine trials so asked, DEME judged every one and no fact was rejected.
+Validation is unchanged, and the facts are still the model's.
+% src: twin/records/probe-rejections-2026-10-12 (README.md, probe1_without_schema.txt, probe2_with_schema.txt)
+% src: erisml-compiler 92a1bc7 (observation/options.py answer_schema; observation/compiler.py patch_schema); gtc 6dced2e (twin/cascade.py Cascade._structured)
 The re-architected brain also does not yet carry several of the owner's decisions that the earlier
 scene held as obligations or tables.
 These are the duty to report a suspected crime, to ask her first, to escalate by the ladder, to

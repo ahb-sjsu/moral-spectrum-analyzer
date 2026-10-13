@@ -870,6 +870,38 @@ One run of each rehearsal cannot separate the fixes' effect on the choices from 
 variation between runs.
 % src: twin/records/rehearse-deme5-2026-10-12 (README.md, grade.json); twin/c10_numbers.py on that record
 
+The records of those ten compiled decisions kept only the count of rejected facts.
+A probe on 12 October replayed the perception facts of three of them, the dog attack of
+rehearse-deme4 and the dog attack and the grandson of rehearse-deme5, through a separate brain,
+each model tier alone, two trials each.
+The cloud model's answers were judged by DEME in all six trials, with 22 to 35 facts kept and at
+most two rejected.
+The on-robot model, a quantized 26-billion-parameter gemma with an 8,192-token context, fell to the
+compiled tier in five of six.
+In four it answered with one invented act, such as \code{chore}, and in one it wrote
+\code{descrption} for \code{description} in all 29 facts, so that validation rejected every one.
+Asked with reasoning on, it spent a 3,000-token budget reasoning and answered nothing.
+% src: twin/records/probe-rejections-2026-10-12 (README.md, probe1_without_schema.txt, schema_smoke_output.txt)
+The projector and the observation compiler now offer their answer's schema, the acts as the only
+keys and the listed kinds, severities and stakeholders as the only values.
+The on-robot model is asked with that schema enforced by its server and with its reasoning off.
+In a second probe of the same three decisions, three trials each, DEME judged all nine, no fact was
+rejected, and 19 to 32 facts were kept.
+% src: twin/records/probe-rejections-2026-10-12/probe2_with_schema.txt; erisml-compiler 92a1bc7; gtc 6dced2e
+Which tier answered in the rehearsals is not known.
+In the sessions run with the live scorer the brain's log holds the service's own errors but no
+warning from the model cascade, so either no cloud call failed there or the cascade's warnings were
+not logged.
+The probe also replayed each decision without the scenario's earlier history, which the rehearsal
+had.
+It shows that the on-robot model gives answers of this kind and that the cloud model did not on the
+replay. It does not show which model gave the rehearsals' answers.
+Decision records now name the tier that answered each call.
+A lost connection to the cloud model is now tried once more, and a visitor the floor rules record is
+now a stakeholder, so that a fact about the visitor is not rejected.
+A rehearsal on these changes is under way.
+% src: twin/records/probe-rejections-2026-10-12/README.md; gtc 525dcc1 (models in the decision record), 6dced2e
+
 \section{Held-out results}\label{sec:eval-heldout}
 
 The held-out set is graded once, at the frozen commit, by the frozen grader.

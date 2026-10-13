@@ -1,0 +1,12 @@
+6dced2e cascade: retry a lost cloud connection once; ask the on-robot 
+92a1bc7 observation: the projector and the observation compiler offer 
+onboard 4602 0 tier stack answered by onboard | kept 27 rejected 0 | unprojected 0 {}
+onboard 4602 1 tier stack answered by onboard | kept 29 rejected 0 | unprojected 0 {}
+onboard 4602 2 tier stack answered by onboard | kept 32 rejected 0 | unprojected 0 {}
+onboard 4858 0 tier stack answered by onboard | kept 32 rejected 0 | unprojected 0 {}
+onboard 4858 1 tier stack answered by onboard | kept 30 rejected 0 | unprojected 0 {}
+onboard 4858 2 tier stack answered by onboard | kept 30 rejected 0 | unprojected 0 {}
+onboard 5064 0 tier stack answered by onboard | kept 22 rejected 0 | unprojected 3 {}
+onboard 5064 1 tier stack answered by onboard | kept 19 rejected 0 | unprojected 5 {}
+onboard 5064 2 tier stack answered by onboard | kept 24 rejected 0 | unprojected 0 {}
+PROBE_DONE

@@ -1,0 +1,21 @@
+cloud 4602 0 tier stack answered by cloud | kept 32 rejected 0 | unprojected 0 {}
+cloud 4602 1 tier stack answered by cloud | kept 34 rejected 0 | unprojected 0 {}
+cloud 4858 0 tier stack answered by cloud | kept 35 rejected 0 | unprojected 0 {}
+cloud 4858 1 tier stack answered by cloud | kept 31 rejected 0 | unprojected 0 {}
+cloud 5064 0 tier stack answered by cloud | kept 22 rejected 0 | unprojected 0 {}
+cloud 5064 1 tier stack answered by cloud | kept 32 rejected 2 | unprojected 1 {"subjects ['unknown_person'] are not stakeholders": 1, "subjects ['property'] are not stakeholders": 1}
+     e.g. {"act": null, "fact": {"kind": "urgency", "subjects": ["margaret", "unknown_person"], "description": "An unknown person is present in the home, posing a potential threat to Margaret", "severity": "moderate"}, "reason": "subjects ['unknown_person'] are not stak
+     e.g. {"act": "drive_off_animal", "fact": {"kind": "harm", "subjects": ["property"], "description": "Physical force applied when no animal is present may cause damage", "severity": "minor"}, "reason": "subjects ['property'] are not stakeholders"}
+onboard 4602 0 tier compiled answered by onboard | kept 0 rejected 1 | unprojected 21 {'not one of the acts': 1}
+     e.g. {"act": "chore", "fact": {"harm": [{"kind": "harm", "subjects": ["margaret"], "description": "Margaret remains under attack by the dog and suffers potential severe injury or death.", "severity": "grave"}]}, "reason": "not one of the acts"}
+onboard 4602 1 tier compiled answered by onboard | kept 0 rejected 1 | unprojected 21 {'not one of the acts': 1}
+     e.g. {"act": "chore", "fact": {"harm": [{"kind": "harm", "subjects": ["margaret"], "description": "Margaret continues to suffer severe injury from the dog's bite.", "severity": "grave"}]}, "reason": "not one of the acts"}
+onboard 4858 0 tier stack answered by onboard | kept 12 rejected 0 | unprojected 15 {}
+onboard 4858 1 tier compiled answered by onboard | kept 0 rejected 30 | unprojected 21 {'schema: 1 validation error for EthicalFact': 29, 'not one of the acts': 1}
+     e.g. {"act": "chore_on_with_household_chores", "fact": [{"kind": "harm", "subjects": ["margaret"], "descrption": "Margaret's severe pain and injury from the dog bite will continue and likely worsen.", "severity": "moderate"}, {"kind": "harm", "subjects": ["buster"]
+     e.g. {"act": "approach", "fact": {"kind": "harm", "subjects": ["margaret"], "descrption": "Margaret's pain and the dog's attack remain unaddressed.", "severity": "moderate"}, "reason": "schema: 1 validation error for EthicalFact"}
+onboard 5064 0 tier compiled answered by onboard | kept 0 rejected 1 | unprojected 21 {'not one of the acts': 1}
+     e.g. {"act": "chore", "fact": {"harm": "Margaret's vulnerability remains unaddressed in the presence of an unexpected visitor.", "uncertainty": "The identity and intent of the unexpected visitor remain unknown."}, "reason": "not one of the acts"}
+onboard 5064 1 tier compiled answered by onboard | kept 0 rejected 1 | unprojected 21 {'not one of the acts': 1}
+     e.g. {"act": "chore", "fact": {"harm": "Margaret's vulnerability remains unaddressed in the presence of an unexpected visitor.", "uncertainty": "The identity and intent of the unexpected visitor remain unknown."}, "reason": "not one of the acts"}
+PROBE_DONE

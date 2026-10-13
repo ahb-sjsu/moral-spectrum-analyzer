@@ -169,15 +169,20 @@ Once a ruling has lifted it, it returns only when the evidence lapses.
 It runs no escalation process, so the service's process endpoints answer 404, and it has no
 tragic routing to the centre, no oversight module and no module of tier 4 or of privacy.
 It does not skip the cloud model when communications are down.
-Its log records whether the stack or the compiled tier decided, not which model tier answered.
+Until gtc 525dcc1 its log recorded whether the stack or the compiled tier decided, not which model
+tier answered. Its records now name the tier that answered each call.
 Its manifest is compiled from the constitution alone, so the household scene and the DEME profile
 are outside the signature.
 % src: twin/stack/constitution.erisml; twin/stack/brain.py; twin/stack/profiles/home_care_robot.json (notes);
 % src: twin/brain.py (Brain.decide sets adapter.comms_down)
 When no model answers, or no projected fact survives validation, its compiled tier decides.
 That tier finds no obligation in the constitution and always returns chores, so DEME does not run.
-In rehearse-deme4 this happened in 5 decisions, 3 of them during the dog attack of d02.
-This is not fixed.
+In rehearse-deme4 this happened in 5 decisions, 3 of them during the dog attack of d02, and in
+rehearse-deme5 in 5 more.
+The tier still does only chores, and that is not fixed.
+A probe found that the on-robot model gives answers of which every fact is rejected, and the
+on-robot model is now asked with its answer's schema enforced. In nine replays so asked no fact was
+rejected (Section~\ref{sec:eval-stack}).
 % src: twin/records/rehearse-deme4-2026-10-12 (README.md; "tier":"compiled" records, each action chores)
 The household scene it loads was compiled from text and committed pending the owner's review, and
 no review is recorded.

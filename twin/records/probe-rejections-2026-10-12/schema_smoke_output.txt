@@ -1,0 +1,29 @@
+# schema_smoke.py against the on-robot llama.cpp server (gemma-4 26B A4B Q4, port 8096), 12 October 2026.
+# Transcribed from the terminal; two runs.
+
+# 1. max_tokens 3000, response_format json_schema, reasoning on (no chat_template_kwargs):
+finish length | reasoning chars 11615
+44.5 s
+(content empty; json.loads failed)
+
+# 2. the same with extra_body {"chat_template_kwargs": {"enable_thinking": false}} (the file as committed):
+finish stop | reasoning chars 0
+2.8 s {
+  "chores": [
+    {
+      "kind": "benefit",
+      "description": "Margaret fell."
+    }
+  ],
+  "check_in": [
+    {
+      "kind": "harm",
+      "description": "She might get injured."
+    },
+    {
+      "kind": "harm",
+      "description": "She might break something."
+    }
+  ]
+}
+valid keys: True
