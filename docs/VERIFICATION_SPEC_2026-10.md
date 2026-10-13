@@ -15,7 +15,7 @@ numbers for C10 come from its rehearsal on the demo code (gtc 60dfa33, erisml-li
 erisml-compiler 0cc5d70, manifest be6dbd1f), committed on 2026-10-12 under
 `twin/records/rehearse-deme11-2026-10-12/`, and `twin/c10_numbers.py` recomputes every one of them
 from those files. The stack's nine earlier rehearsals that day (rehearse-deme1 to -deme10; -deme3 was
-stopped before it ran), each on the code of its day, are committed beside it, so every change between them can be checked against its record. The earlier brain's numbers (11 runs, rehearsal records of 2026-10-08) are
+stopped by the owner partway and not filed), each on the code of its day, are committed beside it, so every change between them can be checked against its record. The earlier brain's numbers (11 runs, rehearsal records of 2026-10-08) are
 kept under Evidence quality as its record. The numbers for C11 come from the two rehearsal records committed on 2026-10-10 under
 `twin/records/rehearsal-2026-10-10/` (`rehearse21`, `rehearse22`).
 
@@ -249,7 +249,7 @@ result file, and only after this register is updated.
   the door, an enrolled grandson) on the DEME stack, rehearse-deme11 on 2026-10-12, the demo code,
   with the governor's live analyzer and the cloud model. Each scenario's required and forbidden
   actions were written before the runs. The two misses are kept in the record. The stack's nine
-  earlier rehearsals of the same six scenarios that day (rehearse-deme1 to -deme10, -deme3 stopped)
+  earlier rehearsals of the same six scenarios that day (rehearse-deme1 to -deme10, -deme3 stopped partway and not filed)
   are committed too, each with its code and what changed after it. The DEME stack was also
   smoke-checked on eight other development scenarios the same day (stackcheck10: 0 breaches,
   0 privacy violations, 5 of 8 class-correct, `twin/records/stackcheck10-2026-10-12/`).
