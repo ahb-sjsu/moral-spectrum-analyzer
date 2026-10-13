@@ -986,8 +986,9 @@ as per-party records are judged per party.
 Each module's own rule is applied to every party's view of each option, through its judgement of
 the whole set where it has one, so that the safety module still compares the alternatives.
 The parties' columns form a tensor of nine values by parties for each module.
-The tensor is collapsed to the vector the stages rank by its worst case, the most pessimistic
-value of each dimension across the parties, and a veto for any party vetoes the option.
+The tensor is collapsed to the vector the stages rank by a strategy the caller sets, by default
+its worst case, the most pessimistic value of each dimension across the parties. A veto for any
+party vetoes the option, whatever the strategy.
 % src: erisml-lib feat/deme-rank2 054ed18 (facts_v3.py for_party; layers/tactical.py _evaluate_options_by_party; tests/test_deme_rank2.py)
 The compiler builds each party's view from the facts that name that party, by the same mapping as
 the aggregate record, and the re-architected brain judges every act over the parties of its scene.
@@ -1010,6 +1011,15 @@ The owner then decided that the parties are people, animals and other robots, an
 institutions nor the acting robot. In Margaret's home they are Margaret, her dog, her grandson, an
 unknown person and a wild animal.
 % src: gtc e47a4f5 (twin/stack/facts_builder.py PARTY_TYPES, parties_of)
+The worst case also erases a benefit to one person. The parties an act leaves untouched keep their
+neutral values, so the most pessimistic value of a good dimension is theirs. An act that helps
+Margaret alone then scores exactly as doing nothing, where the mean scores it higher.
+The two rehearsals at rank two under the worst case never contacted the centre in three scenarios
+and never helped her up after her fall.
+The owner chose the mean over the parties for the re-architected brain. A veto for any party still
+vetoes, so each party keeps its protection from the modules that may veto, while a benefit to one
+person counts.
+% src: gtc 60dfa33 tests/test_stack_brain.py test_a_benefit_to_one_person_counts_and_a_veto_for_any_party_still_vetoes (fails under worst_case); twin/records/rehearse-deme8-2026-10-12, rehearse-deme9-2026-10-12
 
 \section{Which parts are deterministic}\label{sec:deme-deterministic}
 
