@@ -339,6 +339,7 @@ class StackBrain(Brain):
                 # (rehearse-deme4/5: 5 decisions each, the reasons were not recorded)
                 "projection": None if projection is None else {
                     "rejected": projection.rejected[:40], "rejected_count": len(projection.rejected),
+                    "retried": getattr(projection, "retried", None),
                     "unprojected": projection.unprojected, "urgency": _fact(projection.urgency)},
                 "models": dict(getattr(self, "_models", {})),
                 "stages": [], "proof_hash": None, "vetoed": [], "ranked": [],
@@ -405,6 +406,7 @@ class StackBrain(Brain):
             "observation_patch": None if patch is None else {"ops": patch.ops, "rejected": patch.rejected,
                                                              "agreement": patch.agreement},
             "projection": {"urgency": _fact(projection.urgency), "rejected": projection.rejected,
+                           "retried": getattr(projection, "retried", None),
                            "unprojected": projection.unprojected, "agreement": projection.agreement,
                            "facts": {a: _facts_of(projection, a) for a in offered}},
             "models": dict(getattr(self, "_models", {})),

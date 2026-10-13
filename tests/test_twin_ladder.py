@@ -1157,9 +1157,9 @@ def test_a_cloud_refusal_is_not_retried(monkeypatch):
     assert c.call("s", "u") == "onboard" and calls == ["cloud", "onboard"]
 
 
-def test_an_offered_schema_goes_to_every_expert(monkeypatch):
-    """rehearse-deme6: the cloud model wrote every projected fact as a plain string; NRP's endpoint and
-    llama.cpp both enforce a response_format schema, so every expert is asked with it."""
+def test_a_required_schema_goes_to_every_expert(monkeypatch):
+    """rehearse-deme6: the cloud model wrote every projected fact as a plain string; the compiler asks
+    again with the schema required, and NRP's endpoint and llama.cpp both enforce it."""
     pytest.importorskip("agi.primer.vmoe")
     mod, c, calls = _cascade(monkeypatch, {"cloud": (True, "unused"), "onboard": (True, "unused")})
     seen = []
@@ -1169,9 +1169,20 @@ def test_an_offered_schema_goes_to_every_expert(monkeypatch):
         return ("", "APIConnectionError: Connection error.") if e.name == "cloud" else ('{"options": {}}', None)
 
     monkeypatch.setattr(c, "_structured", structured)
-    assert c.call("s", "u", json_schema={"type": "object"}, max_tokens=16000) == '{"options": {}}'
-    assert [n for n, _ in seen] == ["cloud", "cloud", "onboard"] and calls == []
+    out = c.call("s", "u", json_schema={"type": "object"}, schema_required=True, max_tokens=16000)
+    assert out == '{"options": {}}' and [n for n, _ in seen] == ["cloud", "cloud", "onboard"] and calls == []
     assert all(sc == {"type": "object"} for _, sc in seen) and c.last_tier == "onboard"
+
+
+def test_an_offered_schema_is_enforced_on_the_robots_own_model_only(monkeypatch):
+    """rehearse-deme7: enforced on every call, the cloud model's answers lost their depth; the cloud
+    model answers freely, the on-robot model always within the schema."""
+    pytest.importorskip("agi.primer.vmoe")
+    mod, c, calls = _cascade(monkeypatch, {"cloud": (False, "", "PermissionDeniedError: 403"), "onboard": (True, "x")})
+    seen = []
+    monkeypatch.setattr(c, "_structured", lambda e, m, t, s: (seen.append(e.name), ('{"o": 1}', None))[1])
+    assert c.call("s", "u", json_schema={"type": "object"}, schema_required=False) == '{"o": 1}'
+    assert calls == ["cloud"] and seen == ["onboard"]
 
 
 def test_the_robots_own_model_is_asked_with_reasoning_off_and_within_its_context(monkeypatch):

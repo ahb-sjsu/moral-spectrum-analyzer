@@ -21,9 +21,12 @@ which name the answering tier, found the cloud model writing every fact as a pla
   timeouts and the on-robot expert's 90 s for each call would exceed it), nor is a refusal (HTTP 403
   and other client errors);
 - when the caller offers its answer's JSON schema (``json_schema``, erisml-compiler's projector and
-  observation compiler), every expert is asked with the schema enforced by its server
-  (``response_format``; NRP's endpoint and llama.cpp both enforce it). The on-robot expert is also
-  asked with its reasoning off: gemma-4 spent a 3,000-token budget reasoning and answered nothing.
+  observation compiler), the on-robot expert is always asked with it enforced by its server (llama.cpp
+  ``response_format``) and with its reasoning off: gemma-4 spent a 3,000-token budget reasoning and
+  answered nothing, and without the schema it misspelled a field in every fact. The cloud expert is
+  asked with it enforced only when the caller requires it (``schema_required``, the compiler's retry
+  after an answer of which nothing survived): enforced on every call, the cloud model's answers kept
+  their form and lost their depth (rehearse-deme7).
 """
 
 from __future__ import annotations
@@ -63,9 +66,10 @@ class Cascade:
         messages = [{"role": "system", "content": system}, {"role": "user", "content": user}]
         max_tokens = kw.get("max_tokens", self.max_tokens)
         schema = kw.get("json_schema")
+        required = bool(kw.get("schema_required"))
         for e in experts:
             for attempt in (1, 2):
-                if schema is not None:
+                if schema is not None and (required or "onboard" in e.role_hints):
                     content, error = self._structured(e, messages, max_tokens, schema)
                 else:
                     r = asyncio.run_coroutine_threadsafe(
