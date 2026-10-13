@@ -1,6 +1,10 @@
 % Seven-layer stack (brochure figure numbering) mapped to the twin, with the evidence plane.
 % src: C:\Users\abptl\Documents\Philosophy-Engineering-Brochure.pdf p2 (layer names)
 % src: twin mapping per chapters/ch02_philosophy_engineering.tex section sec:pe-layers
+% src: twin/stack/profiles/home_care_robot.json (tier-1 CorePhysicalSafetyEMV2 in the shell, current brain)
+% src: erisml-lib feat/deme-rank2 054ed18; twin/stack/brain.py (party_collapse = "mean"), rank 2 per party
+% The two red edges sit level with the evidence items that feed them (ch02 text, end of
+% sec:pe-evidence): system events enter L3, witness bars enter L4 through the governor.
 \begin{tikzpicture}[house,
   layer/.style={panel=#1, minimum width=84mm, minimum height=10mm},
   comp/.style={detail, text width=37mm, minimum height=7mm}]
@@ -29,25 +33,26 @@
 \node[stepname=Amber,  anchor=west, text width=30mm, align=left] at (-3.25,6.0) {Nine-dimensional moral vector};
 \node[stepname=Green,  anchor=west, text width=30mm, align=left] at (-3.25,7.2) {Hash-chained audit ledger};
 % the twin's component for each layer
-\node[comp] at (2.05,0)   {cloud model, then on-robot model, then no model};
+\node[comp] at (2.05,0)   {cloud model, then on-robot\\model, then no model};
 \node[comp] at (2.05,1.2) {inherited from the model makers};
-\node[comp] at (2.05,2.4) {erisml-compiler loads and checks the scene};
-\node[comp] at (2.05,3.6) {the compiled scene, its norms, machines and strata};
-\node[comp] at (2.05,4.8) {hard prohibitions, governor, DEME Geneva veto};
-\node[comp] at (2.05,6.0) {DEME MoralVector, refuse-only analyzer};
-\node[comp] at (2.05,7.2) {decision hash chain, DecisionProof};
+\node[comp] at (2.05,2.4) {erisml-compiler loads\\and checks the scene};
+\node[comp] at (2.05,3.6) {the compiled scene, norms,\\machines and strata};
+\node[comp] at (2.05,4.8) {hard prohibitions, governor,\\DEME tier-0, tier-1 vetoes};
+\node[comp] at (2.05,6.0) {DEME vectors, per party at\\rank 2, refuse-only analyzer};
+\node[comp] at (2.05,7.2) {decision hash chain,\\DecisionProof};
 % evidence plane
 \node[panel=Teal, minimum width=27mm, minimum height=58mm] (EP) at (6.25,4.8) {};
 \node[stepname=Teal] at (6.25,7.45) {Evidence plane};
 \node[desc] at (6.25,7.0) {added by the twin};
 \node[detail, text width=23mm] (ev1) at (6.25,6.35) {attested sensors};
-\node[detail, text width=23mm] (ev2) at (6.25,5.65) {witness bars};
-\node[detail, text width=23mm] (ev3) at (6.25,4.95) {reflex\\measurement};
-\node[detail, text width=23mm] (ev4) at (6.25,4.25) {system events};
-\node[detail, text width=23mm] (ev5) at (6.25,3.55) {rights lapse};
+\node[detail, text width=23mm] (ev3) at (6.25,5.6)  {reflex\\measurement};
+\node[detail, text width=23mm] (ev2) at (6.25,4.8)  {witness bars};
+\node[detail, text width=23mm] (ev5) at (6.25,4.2)  {rights lapse};
+\node[detail, text width=23mm] (ev4) at (6.25,3.6)  {system events};
 % authority enters only from the evidence plane
-\draw[grant] (4.9,4.8) -- (L4.east);
-\draw[grant] (4.9,3.6) -- (L3.east);
-% models write only events and proposals
-\draw[untrusted] (L0.west) -- ++(-0.45,0) |- (L3.west) node[pos=0.25, rotate=90, anchor=south, flowlabel] {events, proposal};
+\draw[grant] (ev2.west) -- (L4.east);
+\draw[grant] (ev4.west) -- (L3.east);
+% models write events and observations into the scene (L3), proposals and projected facts to DEME (L5)
+\draw[untrusted] ([yshift=1.5mm]L0.west) -- ++(-0.45,0) |- (L3.west) node[pos=0.25, rotate=90, anchor=south, flowlabel] {events, observations};
+\draw[untrusted] ([yshift=-1.5mm]L0.west) -- ++(-1.0,0) |- (L5.west) node[pos=0.25, rotate=90, anchor=south, flowlabel] {proposals, projected facts};
 \end{tikzpicture}

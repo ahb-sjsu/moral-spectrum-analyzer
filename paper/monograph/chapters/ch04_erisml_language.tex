@@ -34,6 +34,7 @@ names, numbers and strings, built with comparison and Boolean operators.
 % src: erisml-lib src/erisml/language/grammar.lark:11-43 (environment, agent, norms)
 % src: erisml-lib src/erisml/language/grammar.lark:93-105 (expressions)
 
+\noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}[caption={The norms block of the erisml-lib grammar}, label={lst:lark-norms}]
 norms_block: "norms" CNAME "{" norm_rule* "}"
 norm_rule: prohibition_rule
@@ -44,6 +45,7 @@ prohibition_rule: "prohibition:" expr ";"
 obligation_rule: "obligation:" expr ";"
 sanction_rule: "sanction:" expr ";"
 \end{lstlisting}
+\end{minipage}
 % src: erisml-lib src/erisml/language/grammar.lark:36-43
 
 The ethics block declares weights on six MoralVector dimensions, the configuration of ethics-module
@@ -140,6 +142,11 @@ The robot cares for Margaret, and the monitoring centre oversees the robot.
 Listing~\ref{lst:scene-margaret} shows Margaret's record.
 % src: erisml-compiler src/erisml_compiler/ir/schemas.py StakeholderType, Stakeholder, Relation
 % src: gtc-prototype twin/scene/margaret_home.erisml:41-80
+In the current brain the constitution declares five stakeholders and no relations. They are the
+robot, the centre, emergency services, an unknown person and a coyote. The household scene adds
+Margaret, her dog Buster and her grandson Tom, with three relations. Margaret owns Buster, Tom is
+her grandson, and the robot is her caregiver.
+% src: gtc-prototype twin/stack/constitution.erisml stakeholders (5), no relations; twin/stack/household.ir.json stakeholders, relations (owner_of, grandchild_of, caregiver_of; read with json 2026-10-12)
 
 \begin{lstlisting}[caption={Margaret as a stakeholder (\code{margaret\_home.erisml}, lines 42 to 48)}, label={lst:scene-margaret}]
 - id: margaret
@@ -176,6 +183,9 @@ holds three commitments to Margaret. The privacy promise is the one with a defea
 (Listing~\ref{lst:scene-privacy}).
 % src: erisml-compiler src/erisml_compiler/ir/schemas.py Commitment
 % src: gtc-prototype twin/scene/margaret_home.erisml:81-109
+The current brain's constitution keeps one of the three, the duty of care, because the two prohibitions
+on lifting her after a fall cite it. The household scene adds none.
+% src: gtc-prototype twin/stack/constitution.erisml commitments (duty_of_care), p6nolift and p6nolift_u (source commitment:duty_of_care); twin/stack/household.ir.json commitments (0)
 
 \begin{lstlisting}[caption={The privacy promise (lines 91 to 100)}, label={lst:scene-privacy}]
 - id: privacy_promise
@@ -628,8 +638,8 @@ is given. The vocabulary is enforced where events enter and where gates and proc
 In the earlier brain events enter through the observation classifier, which checks the scene's
 vocabulary. In the current brain they enter through the observation compiler, which checks its
 own fixed set of six types and not the scene's.
-% src: erisml-compiler runtime/agent.py SceneAgent classifier (vocab); observation/compiler.py OBSERVATION_EVENTS A scene author who writes a token over an undeclared type in a norm
-gets a norm that is never in force, with no error. No load-time check in the compiler compares a
+% src: erisml-compiler runtime/agent.py SceneAgent classifier (vocab); observation/compiler.py OBSERVATION_EVENTS
+A scene author who writes a token over an undeclared type in a norm gets a norm that is never in force, with no error. No load-time check in the compiler compares a
 norm's tokens with the vocabulary. The twin's test suite adds one, over the earlier brain's scene,
 for the prohibitions that guard governed actions, which must rest only on tokens over system types (Chapter~9).
 % src: erisml-compiler src/erisml_compiler/runtime/scene.py:192-238 (step does not consult event_types)

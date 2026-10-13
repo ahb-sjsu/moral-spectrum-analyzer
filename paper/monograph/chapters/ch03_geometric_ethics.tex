@@ -474,7 +474,8 @@ what we know. Figure~\ref{fig:ge-vector} shows the matrix and the tensor ranks b
 \centering
 \input{figures/ch03_moral_vector}
 \caption{The nine dimensions of the moral vector by scope and mode, above the six tensor ranks
-that extend it. Every rank keeps the nine-dimension index $k$ as its first axis.}
+that extend it. Every rank keeps the nine-dimension index $k$ as its first axis. The current
+brain judges at rank two, marked in teal.}
 \label{fig:ge-vector}
 \end{figure}
 
@@ -500,6 +501,12 @@ per-party axis $n$. Rank three adds time $\tau$. Rank four adds action $a$ and c
 Rank five combines time with action and coalition. Rank six adds Monte Carlo samples $s$ for
 uncertainty.
 % src: MV reference:103-116
+The brain the robot now runs uses rank two, marked in Figure~\ref{fig:ge-vector}. It judges each
+act per party, the people, animals and other robots of the scene. It then scores the act by the
+mean over the parties, and a veto for any party vetoes the act. That mean is itself a contraction
+in the sense of Section~\ref{sec:ge-scalar}. In the library's test case it prefers grave harm to one person over moderate harm
+to two, where the worst case over the parties prefers the reverse (Section~\ref{sec:deme-rank2}).
+% src: erisml-lib feat/deme-rank2 054ed18 (layers/tactical.py _evaluate_options_by_party; tests/test_deme_rank2.py); gtc twin/stack/brain.py (party_collapse = "mean"); twin/stack/facts_builder.py PARTY_TYPES, parties_of
 Two validated extension channels, purity and loyalty, ride in the tensor's metadata and are bound
 into the decision proof's tensor hash. They do not widen the nine.
 % src: MV reference:73-101
@@ -534,7 +541,10 @@ In the earlier brain, which ran every graded run, an output gate judges every ac
 moral vector, on facts derived from the moral state. No model writes those facts.
 % src: C:\source\gtc-prototype\twin\output_gate.py module docstring, OutputGate.facts
 In the brain the robot has run since 12 October 2026, DEME selects among the permitted acts with
-the same moral vector. Its facts come from a model's projection of each act's consequences,
+the same nine dimensions at rank two. It judges each act per party and scores it by the mean over
+the parties, and a veto for any party vetoes the act.
+% src: erisml-lib feat/deme-rank2 054ed18; gtc twin/stack/brain.py (party_collapse = "mean"), _judge (party_verdicts)
+Its facts come from a model's projection of each act's consequences,
 validated by the compiler and mapped through its bridge. Those facts decide what DEME sees, but
 they never move a stratum, so they grant no authority.
 % src: C:\source\gtc-prototype\twin\stack\brain.py StackBrain._judge; stack/facts_builder.py HomeFactsBuilder; erisml-compiler observation/options.py option_ir

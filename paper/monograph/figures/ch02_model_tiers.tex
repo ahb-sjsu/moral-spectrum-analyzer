@@ -1,26 +1,29 @@
-% The twin's model tiers (layer L0) and the gates every tier's proposal passes.
+% The twin's model tiers (layer L0) and the gates every tier's output passes, per brain.
 % src: C:\source\gtc-prototype\twin\cascade.py:1-13
-% src: C:\source\gtc-prototype\twin\brain.py:3-22, 541-570 (compiled tier)
+% src: C:\source\gtc-prototype\twin\brain.py:3-22, 541-570 (compiled tier); Brain.decide (adapter.comms_down, earlier brain only)
 % src: C:\source\gtc-prototype\twin\output_gate.py:1-9
+% src: C:\source\gtc-prototype\twin\stack\brain.py StackBrain._compiled (constitution has no obligations, default chores, no DEME, governor and manifest kept), _judge (DEME selects)
 \begin{tikzpicture}[house,
-  tier/.style={panel=#1, minimum width=31mm, minimum height=27mm},
-  dd/.style={desc, text width=27mm}]
+  tier/.style={panel=#1, minimum width=31mm, minimum height=42mm},
+  dd/.style={desc, text width=29mm, anchor=north}]
 \node[tier=Blue]  (t1) at (0,0)   {};
 \node[tier=Teal]  (t2) at (4.3,0) {};
 \node[tier=Grey]  (t3) at (8.6,0) {};
-\node[step=Blue] at (0,0.95)   {1};
-\node[step=Teal] at (4.3,0.95) {2};
-\node[step=Grey] at (8.6,0.95) {3};
-\node[stepname=Blue] at (0,0.3)   {Cloud expert};
-\node[stepname=Teal] at (4.3,0.3) {On-robot expert};
-\node[stepname=Grey] at (8.6,0.3) {No model};
-\node[dd] at (0,-0.6)   {hosted on NRP, skipped while the robot's communications are down};
-\node[dd] at (4.3,-0.6) {a local endpoint, when one is configured};
-\node[dd] at (8.6,-0.6) {the highest-priority obligation in force that is allowed};
+\node[step=Blue] at (0,1.6)   {1};
+\node[step=Teal] at (4.3,1.6) {2};
+\node[step=Grey] at (8.6,1.6) {3};
+\node[stepname=Blue] at (0,0.95)   {Cloud model};
+\node[stepname=Teal] at (4.3,0.95) {On-robot model};
+\node[stepname=Grey] at (8.6,0.95) {No model};
+\node[dd] at (0,0.65)   {hosted on NRP\\[2pt]\textbf{earlier brain}\\skips it while the\\robot's link is down\\[2pt]\textbf{current brain}\\always asks it};
+\node[dd] at (4.3,0.65) {a local endpoint,\\when one is\\configured};
+\node[dd] at (8.6,0.65) {\textbf{earlier brain}\\the highest-priority\\allowed obligation\\[2pt]\textbf{current brain}\\always chores};
 \draw[flow] (t1) -- node[above, flowlabel, align=center] {no\\answer} (t2);
 \draw[flow] (t2) -- node[above, flowlabel, align=center] {no\\answer} (t3);
-\node[panel=Red, minimum width=118mm, minimum height=10mm] (gate) at (4.3,-2.5) {};
-\node[stepname=Red, text width=110mm, align=center] at (4.3,-2.5) {every tier proposes from the allowed set, every action passes the DEME output gate, and an elevated request passes the governor};
+\node[panel=Red, minimum width=118mm, minimum height=15mm] (gate) at (4.3,-3.3) {};
+\node[stepname=Red] at (4.3,-2.95) {earlier brain\quad DEME's output gate checks every proposed action};
+\node[stepname=Red] at (4.3,-3.3)  {current brain\quad DEME selects, and the compiled tier skips DEME};
+\node[stepname=Red] at (4.3,-3.65) {both brains\quad the governor rules on elevated requests, then the manifest};
 \draw[untrusted] (t1.south) -- (t1.south |- gate.north);
 \draw[untrusted] (t2.south) -- (t2.south |- gate.north);
 \draw[flow] (t3.south) -- (t3.south |- gate.north);

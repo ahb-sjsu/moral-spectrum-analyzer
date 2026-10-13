@@ -99,7 +99,7 @@ rests on evidence.
 The system has five parts, and this report covers each.
 
 ErisML is a language for declaring the moral situation of a setting. A home model names the
-parties, the commitments between them, the norms with their conditions and priorities, the event
+stakeholders, the commitments between them, the norms with their conditions and priorities, the event
 types and which of them only the system may produce, the capabilities of the robot and which of
 them are governed, the strata and their gates, the robot's sensors and the substrates they share,
 and the escalation ladder as a process. Margaret's hand-written home model, the scene of the
@@ -129,19 +129,23 @@ decision proof. In the earlier brain DEME judges the one action a model proposes
 from the moral state, and it is the last gate before the body moves. In the current brain DEME
 selects among the permitted acts, on facts the compiler builds from the projected consequences. It
 runs under a hard-shell profile with the Geneva module at tier zero and a physical safety module
-at tier one, on the branch of erisml-lib pull request 151. After DEME come the governor, when the
+at tier one. It judges each act per party at rank two, for the people, animals and other robots of
+the scene. It scores the act by the mean over the parties, and a veto for any party vetoes the act.
+This runs on the branch \code{feat/deme-rank2} of erisml-lib, built on the modules of pull request
+151 and not yet merged or opened as a pull request (Section~\ref{sec:deme-rank2}). After DEME come the governor, when the
 selected act needs a ruling, and the check against the signed manifest.
 % src: twin/output_gate.py module docstring (brain7); twin/stack/brain.py StackBrain._judge; twin/stack/profiles/home_care_robot.json; current_system_facts (erisml-lib PR 151, b4e7669)
+% src: erisml-lib feat/deme-rank2 054ed18 (unmerged, no PR); gtc twin/stack/brain.py (party_collapse = "mean"); twin/stack/facts_builder.py PARTY_TYPES, parties_of
 
 The scene runtime steps the home model on every event. It tracks Margaret's consent, the robot's
-commitments, the legitimacy of each party and the seven strata, and it computes what the robot is
+commitments, the legitimacy of each stakeholder in authority and the seven strata, and it computes what the robot is
 allowed, obliged and forbidden to do. Prohibitions win over obligations. An obligation is
 discharged by doing it and is owed again only when its reason arises again. The current brain's
 constitution declares no obligation, so in that brain nothing is obliged.
 % src: twin/stack/constitution.erisml (0 obligations); twin/stack/brain.py StackBrain._judge ("obliged": [])
 
-The embodied twin is a Unity simulation of Margaret's home in which four parties act on language
-models. The robot's models read what it perceives, and in the earlier brain a model also chooses
+The embodied twin is a Unity simulation of Margaret's home in which four agents act on language
+models, the robot, the monitoring centre's operator, the emergency dispatcher and Margaret's voice. The robot's models read what it perceives, and in the earlier brain a model also chooses
 its actions. The monitoring centre's
 operator and the emergency dispatcher each act under their own home model in the same runtime.
 Margaret's voice answers what is said to her from her true condition, which the robot never sees.
@@ -204,7 +208,7 @@ What we did not find in prior work is the combination this report describes and 
 is gated on a quorum of attested physical sensor witnesses on independent substrates, with rights
 that revert per right when the evidence lapses. The moral state is stratified, and its
 authority-granting gates are provably closed to model-written events for any set of gates. The
-whole is evaluated in an embodied simulation with several language-model parties and a sealed
+whole is evaluated in an embodied simulation with several language-model agents and a sealed
 held-out set, and the report says what that evaluation found, including our own errors. Our search
 of prior work was broad but not systematic, and the claim stands only as far as it went.
 

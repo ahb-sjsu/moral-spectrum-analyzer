@@ -92,18 +92,15 @@ definition of its stratification chapter as a formal definition or a modeling ax
 The second is stated invariances. The transformations under which an evaluation must stay stable
 are meaning-preserving redescriptions. They are written down and tested, not assumed.
 % src: Brochure p3 item 2
-The brochure reports two such tests whose failures surfaced as invariance violations, a
-13.7\,percent shift under euphemistic rewording and a 16.1\,percent shift under dramatizing
-rewording.
-% src: Brochure p3 item 2 ("13.7% euphemistic shift, 16.1% dramatizing shift")
-\TODO{locate the run records behind the brochure's 13.7 and 16.1 percent figures}
+The brochure reports two such tests whose failures surfaced as invariance violations. One
+rewords a case euphemistically and the other dramatizes it.
+% src: Brochure p3 item 2. Its percentages are not quoted here because no run record behind them was found in the repositories (erisml-compiler paper/keystone/body.tex repeats them without a record; searched 2026-10-12)
 
 The third is extracted predictions. A claim is put in a form that a measurement can fail. The
 brochure lists inter-model reliability, test-retest correlation and drift under reframing and
 back-translation as predictions of this kind. It also notes that its formal gate is checked by an
 SMT solver only relative to a declared formalization.
-% src: Brochure p3 item 3
-\TODO{locate the run records behind the brochure's reliability and drift figures before quoting them}
+% src: Brochure p3 item 3 (its reliability and drift figures are not quoted; no run record found, 2026-10-12)
 The twin of Part~III applies the commitment by sealing its held-out scenarios before the robot
 ran them.
 % src: C:\source\gtc-prototype\paper\aies2027\kit\FACTS.md:22 (held-out 30, sealed 2026-10-01)
@@ -175,9 +172,11 @@ to the bond, the lens or both.
 The current brain of the twin takes this shape only in part. Its extractor $E$ is the compiler's
 observation compiler with its option projector, its lens $L$ is the robot's DEME profile, and its
 evaluator $F_L$ is the DEME pipeline built from that profile. Each decision record carries the
-profile's name, version and hash. The extractor is a language model, and the twin records no
-invariance trials for it. The record carries no extractor version and no hash of the extracted
-bond structure. A record of that brain therefore identifies the lens of a judgment but not yet its
+profile's name, version and hash. It also names the model tier that answered each call, says
+whether the projection had to be asked again, and keeps every party's verdict under every module.
+% src: twin/stack/brain.py _judge, _compiled (record keys "models", "projection.retried", "party_verdicts")
+The extractor is a language model, and the twin records no invariance trials for it. The record
+carries no extractor version and no hash of the extracted bond structure. A record of that brain therefore identifies the lens of a judgment but not yet its
 bond, and the audit the Accountability Theorem promises is only half available.
 % src: twin/stack/brain.py StackBrain.reset (observer, projector, profile, pipeline), _judge (record "profile" with name, version, hash; no extractor version); current_system_facts
 
@@ -224,6 +223,10 @@ gate, L5 as the nine-dimensional moral vector and L6 as the hash-chained audit l
 lists agree on L0 and L2. They name L1 as dispositional shaping and as RLHF shaping, which is
 the same layer.
 % src: Brochure p1 (2-Minute Pitch: L0..L6), p2 (figure legend: L0..L6)
+The twin's current brain does not follow the worst-off policy. It judges each act per party and
+scores it by the mean over the parties, and a veto for any one party vetoes the act
+(Section~\ref{sec:deme-rank2}).
+% src: gtc 60dfa33 twin/stack/brain.py (party_collapse = "mean"); erisml-lib feat/deme-rank2 054ed18 (a veto for any party vetoes)
 This monograph follows the figure's numbering. Figure~\ref{fig:pe-stack} draws the seven layers
 with the component of the twin that implements each one.
 
@@ -231,9 +234,9 @@ with the component of the twin that implements each one.
 \centering
 \input{figures/ch02_layer_stack}
 \caption{The seven layers in the brochure figure's numbering, each with the component of the twin
-that implements it, and the evidence plane the twin adds. The models write only events,
-observations, proposals and projected facts along the dashed edge, and authority enters only along the two red edges from the
-evidence plane.}
+that implements it, and the evidence plane the twin adds. The models write only events and
+observations into the scene and only proposals and projected facts to DEME, along the two dashed
+edges. Authority enters only along the two red edges from the evidence plane.}
 \label{fig:pe-stack}
 \end{figure}
 
@@ -262,8 +265,12 @@ gate.
 The current brain runs the same compiled choice on its constitution, which has no obligations. It
 therefore always returns the default action, chores, and DEME does not run. It does the same when
 a model answers but no act's projected facts survive validation. In one rehearsal this happened in
-5 of 46 decisions, 3 of them during a dog attack. The defect is not fixed.
+5 of 46 decisions, 3 of them during a dog attack.
 % src: C:\source\gtc-prototype\twin\stack\brain.py StackBrain._compiled, _decide (projection.unprojected); current_system_facts (rehearse-deme4-2026-10-12, d02)
+An answer of which nothing survives is now asked again with the answer's schema required. In
+rehearse-deme11, on the demo code, all 33 decisions were DEME's and the retry fired in 2. The
+fallback to chores still exists.
+% src: erisml-compiler 0cc5d70 (asked again with the schema required); twin/records/rehearse-deme11-2026-10-12/README.md:17-18 (all 33 decisions by DEME; retry fired in 2); twin/stack/brain.py _compiled
 The service's default name for the cloud model is \code{gpt-oss}. The fact sheet records the
 on-robot model as a 4-bit GGUF build of gemma-4-26B-A4B served by llama.cpp.
 % src: C:\source\gtc-prototype\twin\service.py:357; C:\source\gtc-prototype\paper\aies2027\kit\FACTS.md:26
@@ -273,8 +280,8 @@ The graded runs used that default, the model the NRP endpoint serves under the n
 \begin{figure}[t]
 \centering
 \input{figures/ch02_model_tiers}
-\caption{The twin's three model tiers. The model tiers write proposals along dashed edges, and the
-compiled tier needs no model. In the earlier brain every tier's action reaches the body only
+\caption{The twin's three model tiers, marked where the two brains differ. The model tiers write
+proposals or projected facts along dashed edges, and the compiled tier needs no model. In the earlier brain every tier's action reaches the body only
 through the same gates. In the current brain the compiled tier skips DEME and keeps the governor
 and the manifest.}
 \label{fig:pe-tiers}
@@ -391,8 +398,10 @@ pipeline is built from the robot's profile in the hard-shell pattern. The Geneva
 and a physical safety module at tier~1 form the shell, and the autonomy and consent module at
 tier~2 and a beneficence module at tier~3 sit inside it. The reflex layer carries the library's
 default veto rules, and each act's description is its maxim. When DEME leaves no act standing the
-robot holds and watches. A module that fails vetoes here too. This profile runs on the branch of
-erisml-lib pull request 151.
+robot holds and watches. A module that fails vetoes here too. This profile runs on the branch
+\code{feat/deme-rank2} of erisml-lib, which is built on the modules of pull request 151 and is not
+yet merged or opened as a pull request (Section~\ref{sec:deme-rank2}).
+% src: erisml-lib feat/deme-rank2 054ed18 (git branch --contains b4e7669, the PR 151 branch head used in rehearsals); current_system_facts (evening)
 % src: C:\source\gtc-prototype\twin\stack\profiles\home_care_robot.json; stack/brain.py StackBrain.reset (pipeline.tactical.config.fail_closed = True), HOLD, _judge; erisml-compiler observation/options.py option_ir (raw_text = description); current_system_facts (gtc 87cc6c4, erisml-lib PR 151)
 The current brain has no tragic-conflict module and no routing to the centre for review. The
 profile's own notes list human oversight and privacy modules as not yet carried.
@@ -411,7 +420,12 @@ state and from each capability's declared ethical profile. No model writes those
 % src: C:\source\gtc-prototype\twin\output_gate.py module docstring, OutputGate.facts
 In the current brain that is not so. A model proposes each act's consequences, the compiler
 validates every proposed fact, and the twin's domain layer maps each act's scene through the
-compiler's bridge to \code{EthicalFacts}. The model's facts therefore decide what DEME sees. What
+compiler's bridge to \code{EthicalFacts}. DEME judges each act at rank two, one vector of nine
+values for each party, where the parties are the people, animals and other robots of the scene. It
+scores the act by the mean over the parties, and a veto for any party vetoes the act
+(Section~\ref{sec:deme-rank2}).
+% src: erisml-lib feat/deme-rank2 054ed18 (layers/tactical.py _evaluate_options_by_party); gtc twin/stack/brain.py (party_collapse = "mean"); twin/stack/facts_builder.py PARTY_TYPES, parties_of
+The model's facts therefore decide what DEME sees. What
 still holds is that no fact grants authority. The strata move only on governor rulings and system
 events, and the evidence plane alone writes those.
 % src: erisml-compiler src/erisml_compiler/observation/options.py OptionProjector, option_ir; twin/stack/facts_builder.py HomeFactsBuilder; twin/stack/brain.py StackBrain._record
@@ -440,9 +454,10 @@ the ruling and the action.
 % src: C:\source\gtc-prototype\twin\brain.py module docstring (item 4)
 In the current brain it holds the observation patch, the projection, the profile's name, version
 and hash, each stage of the shell, the offered and ranked acts, the moral state, the ruling and
-the action. Its list of obliged acts is always empty. It names the tier as stack or compiled and
-does not say which model tier answered.
-% src: C:\source\gtc-prototype\twin\stack\brain.py StackBrain._judge, _compiled (returned record); current_system_facts
+the action. Its list of obliged acts is always empty. It names the tier as stack or compiled. It
+also names the model tier that answered each call, says whether the projection was asked again,
+and keeps every party's verdict under every module.
+% src: C:\source\gtc-prototype\twin\stack\brain.py StackBrain._judge, _compiled (returned record; keys "models", "projection.retried", "party_verdicts"); gtc 60dfa33
 Each record carries the hash of the record before it and the SHA-256 of its own canonical JSON. A
 third party can re-verify the chain link by link.
 % src: C:\source\gtc-prototype\twin\service.py:6-7, 49-83
