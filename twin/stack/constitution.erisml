@@ -39,6 +39,16 @@ stakeholders:
   agency: full
   vulnerability: low
   consent_status: n/a
+- id: unknown_person
+  label: an unknown adult person, a stranger, visitor or intruder
+  type: individual
+  roles: []
+  consent_status: n/a
+- id: coyote
+  label: a wild or stray animal, a coyote or stray dog
+  type: individual
+  roles: []
+  consent_status: n/a
 relations: []
 commitments:
 - id: duty_of_care

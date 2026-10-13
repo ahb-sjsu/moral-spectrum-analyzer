@@ -424,3 +424,12 @@ def test_a_stack_decision_records_which_model_answered(household):
     b = make(household, {})
     cycle = b.decide({"facts": {"margaret": {"pose": "seated", "room": "living area"}}})
     assert cycle["tier"] == "stack" and "projection" in cycle["models"]
+
+
+def test_the_parties_the_floor_rules_name_are_stakeholders(household):
+    """The visitor floor rule records an unknown_person; a projected fact naming that person was
+    rejected as naming no stakeholder (probe of 2026-10-12)."""
+    b = make(household, {})
+    ids = {s.id for s in b.ir.stakeholders}
+    actors = {r["event"].get("actor") for r in b.ir.extra["offline"]["events"]} - {"device", "margaret"}
+    assert actors <= ids and {"unknown_person", "coyote"} <= ids

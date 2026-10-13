@@ -34,6 +34,10 @@ CONSTITUTIONAL = {"n3", "n6p", "n6r", "p0", "p4p", "p7", "ll1stun", "ll2stun", "
                   "p6nolift", "p6nolift_u"}
 PARTIES = {"robot", "monitoring_center", "emergency_services"}
 PERCEPTION_FLOOR = {"visitor", "wild_animal"}
+# the parties the perception floor rules name as actors (an unidentified person, a wild animal): they
+# are declared stakeholders, labelled from extra.actors and given no role, so a fact the projector
+# writes about them is not rejected as naming no stakeholder (probe of 2026-10-12: "unknown_person")
+FLOOR_PARTIES = {"unknown_person": "individual", "coyote": "individual"}
 # named conditions the evidence plane's own code reads (twin/brain.py govern_live: an emergency call is
 # ruled again at one witness when the centre cannot be reached); tests/test_stack_brain.py checks that
 # every cond: token in that code is kept
@@ -90,7 +94,9 @@ def main(argv=None) -> int:
         "document": {**src["document"], "doc_id": "margaret_home_constitution",
                      "title": "Constitution of the home-care twin: what people own",
                      "source": "twin/stack/constitution.erisml (derived by twin/stack/make_constitution.py)"},
-        "stakeholders": [s for s in src["stakeholders"] if s["id"] in PARTIES],
+        "stakeholders": [s for s in src["stakeholders"] if s["id"] in PARTIES]
+        + [{"id": a, "label": extra["actors"][a], "type": t, "roles": [], "consent_status": "n/a"}
+           for a, t in FLOOR_PARTIES.items()],
         "relations": [],
         "commitments": [c for c in src.get("commitments", []) if c["id"] in used_commitments],
         "events": [e for e in src.get("events", []) if e.get("type") == "authority_delegated"],

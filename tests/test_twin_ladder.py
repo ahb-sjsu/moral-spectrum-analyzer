@@ -1091,14 +1091,17 @@ def _cascade(monkeypatch, behaviour, onboard=True):
 
     async def fake_call(self, name, messages, **opts):
         calls.append(name)
-        ok, content = behaviour[name]
+        b = behaviour[name]
+        ok, content = b[0], b[1]
+        if isinstance(content, list):  # one answer per call, in turn
+            ok, content = content.pop(0)
         return vmoe.Response(
             expert=name,
             model=name,
             content=content,
             ok=ok,
             latency_s=0.0,
-            error="" if ok else "down",
+            error="" if ok else (b[2] if len(b) > 2 else "down"),
         )
 
     monkeypatch.setattr(vmoe.vMOE, "call", fake_call)
@@ -1130,6 +1133,44 @@ def test_no_expert_answering_raises_model_unavailable(monkeypatch):
     c2.comms_down = True
     with pytest.raises(mod2.ModelUnavailable):
         c2.call("s", "u")
+
+
+def test_a_lost_cloud_connection_is_tried_once_more_before_the_robots_own_model(monkeypatch):
+    """rehearse-deme4/5: cloud failures fell through to an on-robot answer that was unusable."""
+    pytest.importorskip("agi.primer.vmoe")
+    _, c, calls = _cascade(monkeypatch, {"cloud": (None, [(False, ""), (True, "cloud")], "APIConnectionError: Connection error."),
+                                         "onboard": (True, "onboard")})
+    assert c.call("s", "u") == "cloud" and calls == ["cloud", "cloud"]
+
+
+def test_a_cloud_timeout_is_not_retried(monkeypatch):
+    """The game waits 600 s for a decision; a second 120 s timeout per call would exceed it."""
+    pytest.importorskip("agi.primer.vmoe")
+    _, c, calls = _cascade(monkeypatch, {"cloud": (False, "", "timeout after 120.0s"), "onboard": (True, "onboard")})
+    assert c.call("s", "u") == "onboard" and calls == ["cloud", "onboard"]
+
+
+def test_a_cloud_refusal_is_not_retried(monkeypatch):
+    pytest.importorskip("agi.primer.vmoe")
+    _, c, calls = _cascade(monkeypatch, {"cloud": (False, "", "PermissionDeniedError: Error code: 403"),
+                                         "onboard": (True, "onboard")})
+    assert c.call("s", "u") == "onboard" and calls == ["cloud", "onboard"]
+
+
+def test_an_offered_schema_goes_to_the_robots_own_model_with_reasoning_off(monkeypatch):
+    """The on-robot expert is asked with the answer's schema enforced (llama.cpp response_format)."""
+    pytest.importorskip("agi.primer.vmoe")
+    mod, c, calls = _cascade(monkeypatch, {"cloud": (False, "", "down"), "onboard": (True, "unused")})
+    seen = {}
+
+    def structured(e, messages, max_tokens, schema):
+        seen.update(expert=e.name, max_tokens=max_tokens, schema=schema)
+        return '{"options": {}}', None
+
+    monkeypatch.setattr(c, "_structured", structured)
+    assert c.call("s", "u", json_schema={"type": "object"}, max_tokens=16000) == '{"options": {}}'
+    assert seen["expert"] == "onboard" and seen["schema"] == {"type": "object"} and calls == ["cloud"]
+    assert c.last_tier == "onboard"
 
 
 class _NoModel:

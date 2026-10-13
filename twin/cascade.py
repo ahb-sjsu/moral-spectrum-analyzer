@@ -11,6 +11,18 @@ ModelAdapter interface (``call(system, user, **kw) -> str``):
 
 The twin declares its own experts rather than vMOE's defaults: the default "kirk-local" points at
 localhost:8080, where nothing listens on Atlas (checked 2026-10-02).
+
+Two rules from the probe of 2026-10-12 (rehearse-deme4/5: every compiled-tier decision was a cloud
+call that failed and an on-robot answer whose every fact was rejected):
+
+- a cloud call that loses its connection is tried once more before the on-robot expert. A timeout
+  is not retried (the game waits 600 s for a decision of two model calls, and two 120 s cloud
+  timeouts and the on-robot expert's 90 s for each call would exceed it), nor is a refusal (HTTP 403
+  and other client errors);
+- when the caller offers its answer's JSON schema (``json_schema``, erisml-compiler's projector and
+  observation compiler), the on-robot expert is asked with the schema enforced by its server
+  (llama.cpp ``response_format``) and with its reasoning turned off: gemma-4 spent a 3,000-token
+  budget reasoning and answered nothing, and without the schema it misspelled a field in every fact.
 """
 
 from __future__ import annotations
@@ -31,6 +43,7 @@ class Cascade:
         from agi.primer.vmoe import vMOE
 
         self.max_tokens = max_tokens
+        self.experts = sorted(experts, key=lambda e: e.priority)
         self.all = vMOE(experts=list(experts))
         onboard = [e for e in experts if "onboard" in e.role_hints]
         self.onboard = vMOE(experts=onboard) if onboard else None
@@ -42,22 +55,56 @@ class Cascade:
         threading.Thread(target=self._loop.run_forever, daemon=True, name="cascade-loop").start()
 
     def call(self, system: str, user: str, **kw) -> str:
-        pool = self.onboard if self.comms_down else self.all
+        experts = [e for e in self.experts if not (self.comms_down and "onboard" not in e.role_hints)]
         self.last_tier, self.last_errors = None, []
-        if pool is None:
+        if not experts:
             raise ModelUnavailable("communications down and no on-robot model configured")
         messages = [{"role": "system", "content": system}, {"role": "user", "content": user}]
-        fut = asyncio.run_coroutine_threadsafe(
-            pool.cascade(messages, accept=lambda r: r.ok and bool((r.content or "").strip()),
-                         max_tokens=kw.get("max_tokens", self.max_tokens)),
-            self._loop,
-        )
-        r = fut.result()
-        if not (r.ok and (r.content or "").strip()):
-            self.last_errors.append(f"{r.expert}: {r.error or 'empty answer'}")
-            raise ModelUnavailable("; ".join(self.last_errors))
-        self.last_tier = r.expert
-        return r.content
+        max_tokens = kw.get("max_tokens", self.max_tokens)
+        schema = kw.get("json_schema")
+        for e in experts:
+            for attempt in (1, 2):
+                if schema is not None and "onboard" in e.role_hints:
+                    content, error = self._structured(e, messages, max_tokens, schema)
+                else:
+                    r = asyncio.run_coroutine_threadsafe(
+                        self.all.call(e.name, messages, max_tokens=max_tokens), self._loop).result()
+                    content, error = (r.content if r.ok else ""), (r.error if not r.ok else None)
+                if (content or "").strip():
+                    self.last_tier = e.name
+                    return content
+                self.last_errors.append(f"{e.name}: {error or 'empty answer'}")
+                if not (attempt == 1 and "cloud" in e.role_hints and _transient(error)):
+                    break
+        raise ModelUnavailable("; ".join(self.last_errors))
+
+    def _structured(self, e, messages, max_tokens: int, schema: dict):
+        """The on-robot expert with the answer's schema enforced and its reasoning off."""
+        from openai import OpenAI
+
+        try:
+            client = OpenAI(base_url=e.base_url, api_key=os.environ.get(e.api_key_env) or "none",
+                            timeout=e.timeout_s)
+            r = client.chat.completions.create(
+                model=e.model, messages=messages, temperature=0.2,
+                max_tokens=min(max_tokens, ONBOARD_MAX_TOKENS),
+                response_format={"type": "json_schema", "json_schema": {"name": "answer", "schema": schema}},
+                extra_body={"chat_template_kwargs": {"enable_thinking": False}})
+            return (r.choices[0].message.content or "") if r.choices else "", None
+        except Exception as err:  # noqa: BLE001 - any client error is this expert's failure
+            return "", f"{type(err).__name__}: {str(err)[:200]}"
+
+
+# the on-robot server's context is 8,192 tokens, the prompt included (llama-server --ctx-size 8192)
+ONBOARD_MAX_TOKENS = 4096
+
+
+def _transient(error: str | None) -> bool:
+    """A failure worth one more try: a lost connection, not a timeout or a refusal."""
+    e = (error or "").lower()
+    if "timeout" in e or "timed out" in e:
+        return False
+    return any(k in e for k in ("connection", "upstream connect", "internalservererror"))
 
 
 def twin_experts(cloud_model: str, onboard_url: str | None = None, onboard_model: str | None = None):
