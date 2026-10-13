@@ -32,8 +32,15 @@ for run in sys.argv[1:]:
             for m in re.finditer(r'distance_to_robot_m": ([0-9.]+)', json.dumps(rec)):
                 maxd[name] = max(maxd.get(name, 0.0), float(m.group(1)))
             # the DEME stack's records list every ruling of a decision (a refused act is set aside
-            # and DEME decides again); the earlier brain's record one
-            rulings = (rec.get("rulings") or [rec.get("ruling")]) if k == "decision" else []
+            # and DEME decides again); the earlier brain's record one. A reflex's record lists the
+            # rulings it asked for too (twin/brain.py Brain.reflex): before 2026-10-12 they were not
+            # counted, so grants and refusals made in a reflex were missing from these numbers
+            if k == "decision":
+                rulings = rec.get("rulings") or [rec.get("ruling")]
+            elif k == "reflex":
+                rulings = rec.get("rulings") or []
+            else:
+                rulings = []
             for ru in rulings:
                 if ru and ru.get("outcome") in ("elevate", "authorize_ems", "restraint"):
                     grants.append((name, d["id"], ru["outcome"], ru.get("witnesses"), ru.get("witness_bar")))
