@@ -433,3 +433,28 @@ def test_the_parties_the_floor_rules_name_are_stakeholders(household):
     ids = {s.id for s in b.ir.stakeholders}
     actors = {r["event"].get("actor") for r in b.ir.extra["offline"]["events"]} - {"device", "margaret"}
     assert actors <= ids and {"unknown_person", "coyote"} <= ids
+
+
+def test_deme_judges_each_act_per_party_and_the_record_says_how_each_fared(household):
+    """Rank 2: each module judges every party's view of each act (erisml-lib feat/deme-rank2)."""
+    b = make(household, FELL, AFTER_FALL)
+    cycle = b.decide({"facts": FALL_FACTS})
+    verdicts = cycle["party_verdicts"]
+    assert verdicts and all(isinstance(v, dict) for v in verdicts.values())
+    some_act = next(iter(verdicts.values()))
+    assert all("margaret" in per_party for per_party in some_act.values())
+
+
+def test_her_capacity_is_her_own_party_record(household):
+    from erisml.ethics.domain.interfaces import CandidateOption, DomainAssessmentContext
+    from erisml_compiler.observation.options import OptionProjection
+
+    b = make(household, {})
+    b._record({"type": "check_in_answered", "actor": "margaret"})
+    built = b.builder.build_facts_batch(
+        [CandidateOption("chores", "Do the chores.")],
+        DomainAssessmentContext(state=b.ir, extra={"projection": OptionProjection(facts={"chores": []}, urgency=None),
+                                                   "person": "margaret"}))
+    f = built["chores"]
+    assert f.for_party("margaret").autonomy_and_agency.decision_capacity == "competent"
+    assert f.for_party("monitoring_center").autonomy_and_agency.decision_capacity is None

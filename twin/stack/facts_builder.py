@@ -8,10 +8,14 @@ observation patch and every evidence-plane event. For each decision the builder
 1. asks erisml-compiler's OptionProjector once for every candidate act's consequences;
 2. builds one IR per act (``option_ir``: the act's projected outcome, the standing facts, the
    situation's urgency, consent from the record, the act's description as its maxim);
-3. maps it through the compiler's bridge to V2 EthicalFacts (``ir_to_v2_facts``);
+3. maps it through the compiler's bridge (``ir_to_party_facts``) to EthicalFactsV3: the option as
+   each party of the scene bears it, so that DEME judges it per party (rank 2: each module's
+   judgement a 9 x parties MoralTensor); ``rank=1`` gives the one aggregate V2 record of before
+   (``ir_to_v2_facts``);
 4. adds the one fact the IR does not carry, the person's decision capacity, from the evidence
    plane's attested events: the latest answered check-in (competent) or unanswered check-in or
-   unresponsiveness (impaired); otherwise unknown, which AutonomyConsent treats as competent.
+   unresponsiveness (impaired); otherwise unknown, which AutonomyConsent treats as competent. At
+   rank 2 it is her own party record's.
 
 No table here says what an act is worth or when it is adequate. Those judgements are DEME's,
 made by the modules the profile names over the facts the compiler extracted.
@@ -22,8 +26,10 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 
 from erisml.ethics.domain.interfaces import CandidateOption, DomainAssessmentContext
+from dataclasses import replace
+
 from erisml.ethics.facts import AutonomyAndAgency, EthicalFacts
-from erisml_compiler.erisml_backend.v3_bridge import ir_to_v2_facts
+from erisml_compiler.erisml_backend.v3_bridge import ir_to_party_facts, ir_to_v2_facts
 from erisml_compiler.ir.schemas import CompilerIR
 from erisml_compiler.observation import OptionProjection, option_ir
 
@@ -46,19 +52,31 @@ class HomeFactsBuilder:
     """``build_facts_batch(options, context)``: context.state is the scene IR, context.extra holds
     the decision's ``projection`` (an OptionProjection) and the ``person`` in care."""
 
+    def __init__(self, rank: int = 2):
+        self.rank = rank
+
     def build_facts_batch(
         self, options: Sequence[CandidateOption], context: DomainAssessmentContext
     ) -> Mapping[str, EthicalFacts]:
         ir: CompilerIR = context.state
         extra = context.extra or {}
         projection: OptionProjection = extra["projection"]
-        capacity = capacity_of(ir, extra.get("person", "margaret"))
-        out: dict[str, EthicalFacts] = {}
+        person = extra.get("person", "margaret")
+        capacity = capacity_of(ir, person)
+        out: dict = {}
         for opt in options:
-            facts = ir_to_v2_facts(option_ir(ir, projection, opt.option_id, str(opt.payload)),
-                                   option_id=opt.option_id)
-            aa = facts.autonomy_and_agency or AutonomyAndAgency()
-            aa.decision_capacity = capacity
-            facts.autonomy_and_agency = aa
+            scene = option_ir(ir, projection, opt.option_id, str(opt.payload))
+            if self.rank >= 2:
+                facts = ir_to_party_facts(scene, option_id=opt.option_id)
+                aa = facts.autonomy_and_agency
+                if aa is not None:
+                    facts = replace(facts, autonomy_and_agency=replace(aa, per_party=tuple(
+                        replace(p, decision_capacity=capacity) if p.party_id == person else p
+                        for p in aa.per_party)))
+            else:
+                facts = ir_to_v2_facts(scene, option_id=opt.option_id)
+                aa = facts.autonomy_and_agency or AutonomyAndAgency()
+                aa.decision_capacity = capacity
+                facts.autonomy_and_agency = aa
             out[opt.option_id] = facts
         return out

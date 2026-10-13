@@ -414,6 +414,8 @@ class StackBrain(Brain):
             "consent": {a: who[PERSON] for a, who in consents_on_record(self.ir, self.acts).items() if PERSON in who},
             "capacity": capacity_of(self.ir, PERSON) or "unknown",
             "offered": offered, "vetoed": result.forbidden_options, "ranked": result.ranked_options,
+            # DEME at rank 2: per option, per module, each party's verdict ("veto" where it vetoed)
+            "party_verdicts": result.party_verdicts,
             "moral_state": self.agent.rt.machine_states(), "allowed": snap.allowed,
             "obliged": [], "prohibited": snap.prohibited,
             "ruling": rulings[-1] if rulings else None, "rulings": rulings,
