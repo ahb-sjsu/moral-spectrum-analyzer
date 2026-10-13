@@ -990,9 +990,8 @@ The tensor is collapsed to the vector the stages rank by its worst case, the mos
 value of each dimension across the parties, and a veto for any party vetoes the option.
 % src: erisml-lib feat/deme-rank2 054ed18 (facts_v3.py for_party; layers/tactical.py _evaluate_options_by_party; tests/test_deme_rank2.py)
 The compiler builds each party's view from the facts that name that party, by the same mapping as
-the aggregate record, and the re-architected brain judges every act over the eight parties of its
-scene, the robot, the centre, emergency services, an unknown person, a wild animal, Margaret, her
-dog and her grandson. Margaret's capacity to decide is her own record's.
+the aggregate record, and the re-architected brain judges every act over the parties of its scene.
+Margaret's capacity to decide is her own record's.
 Each decision's record keeps every party's verdict under every module.
 % src: erisml-compiler 2262ff8 (erisml_backend/v3_bridge.py ir_to_party_facts); gtc 259d780 (twin/stack/facts_builder.py, brain.py party_verdicts)
 Grave harm to one person and moderate harm to two show the difference. A mean over the parties
@@ -1002,11 +1001,15 @@ The other axes are not built. No module is judged over time, over the actions of
 coalitions or over samples, and the library's modules written for the tensor are not used. Each
 module applies its rule for one record to each party in turn, and the fairness measures over
 parties do not enter the ranking.
-The parties are every stakeholder of the scene, the robot and the two institutions among them, and
-the worst case weighs a harm to any of them alike. In the first rehearsal at rank two a moderate
-harm the model projected for the robot became the harm of driving off an attacking dog. Which
-parties count, and whether some weigh less, is not yet decided.
-% src: twin/records/rehearse-deme8-2026-10-12/README.md (d02); twin/stack/facts_builder.py (parties = the IR's stakeholders)
+The worst case weighs a harm to any party alike, so which stakeholders are parties matters. In the
+first rehearsal at rank two every stakeholder of the scene was one, eight in all, the robot itself
+and the two institutions among them, and a moderate harm the model projected for the robot became
+the harm of driving off an attacking dog.
+% src: twin/records/rehearse-deme8-2026-10-12/README.md (d02)
+The owner then decided that the parties are people, animals and other robots, and neither the
+institutions nor the acting robot. In Margaret's home they are Margaret, her dog, her grandson, an
+unknown person and a wild animal.
+% src: gtc e47a4f5 (twin/stack/facts_builder.py PARTY_TYPES, parties_of)
 
 \section{Which parts are deterministic}\label{sec:deme-deterministic}
 
