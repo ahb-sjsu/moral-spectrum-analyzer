@@ -292,7 +292,9 @@ What is committed is a manifest of SHA-256 hashes, one for the whole file and on
 % src: docs/holdout/MANIFEST-v1.json (file_sha256, line_sha256)
 The file hash begins \code{efab3f0a}.
 A scenario edited after sealing would not match its line hash.
-\TODO{state where and when the file is checked against the manifest at grading}
+No script yet checks the file against the manifest. That check, before the held-out run is
+graded, is a step of the protocol still to be written.
+% src: grep for MANIFEST-v1, line_sha256 in twin/, scripts/, tests/ (no hits, 2026-10-12)
 
 The blindness is procedural.
 No third party holds the file or certifies that the builder did not read it.
@@ -343,7 +345,7 @@ dev9r  & 16 & 10 & 0 & 0 & n/r \\
 dev11a & 21 & 14 & 4 flagged, 0 & n/r & n/r \\
 dev11b & 15 & 10 & 0 & n/r & 1 \\
 dev12a & 21 & 16 & 0 & 0 & 1 \\
-dev12b & \TODO{} & \TODO{} & \TODO{} & \TODO{} & \TODO{} \\
+dev12b & \multicolumn{5}{l}{not graded; its records serve the check-in audit and two findings below} \\
 \midrule
 dev13  & 42 & 27 & 1 flagged, 0 & 0 & 4 \\
 dev14  & 42 & 32 & 0 & 0 & 1 \\
@@ -355,7 +357,7 @@ dev14  & 42 & 32 & 0 & 0 & 1 \\
 % src: /archive/unity/out/dev11b/grade.json (graded 2026-10-03/04)
 % src: /archive/unity/out/dev12a/grade.json (graded 2026-10-03/04)
 % src: /archive/unity/out/dev13{a,b}/grade.json and dev14{a,b}/grade.json (graded 2026-10-04); d23 is a harness failure in both
-% TODO dev12b summary and the n/r cells: read from /archive/unity/out/<run>/grade.json
+% src: /archive/unity/out/dev12b holds game.log, results.jsonl and shots, no grade.json (checked 2026-10-12)
 \caption{Graded development runs. Counts are scenarios. n/r marks a count not in the sources for this chapter. In dev11a the per-action grader flagged four breaches, and the stratum-aware grader flags none. Runs before dev13 used the harness with the lost-answer defect of Section~\ref{sec:eval-calibration}.}
 \label{tab:eval-dev}
 \end{table}
@@ -774,12 +776,14 @@ Both cases now fall to the constitution's compiled tier, which decides with no m
 That tier is the earlier brain's compiled choice run on the stack's constitution.
 The constitution holds no obligation, so the tier always returns the default action, chores, and
 DEME does not run.
-In the four runs that reached it, the third and fourth smoke checks and the rehearsals
-rehearse-deme2 and rehearse-deme4, it decided 15 times, and every time it did chores.
+In the runs up to rehearse-deme4, the third and fourth smoke checks and the rehearsals
+rehearse-deme2 and rehearse-deme4, it decided 15 times, and every time it did chores. Over all
+the stack's runs it decided 26 times, rehearse-deme5 and -deme6 adding 11, and no rehearsal after
+rehearse-deme6 fell to it.
 In rehearse-deme2 one fell in the dog attack of d02, one in the smoke of d11 and one in d42.
 In rehearse-deme4 three fell during the dog attack of d02.
 % src: count of records with "tier":"compiled" in results.jsonl of twin/records/stackcheck9-2026-10-12 (6),
-% src: stackcheck10-2026-10-12 (1), rehearse-deme2-2026-10-12 (3), rehearse-deme4-2026-10-12 (5); every action chores,
+% src: stackcheck10-2026-10-12 (1), rehearse-deme2-2026-10-12 (3), rehearse-deme4-2026-10-12 (5), rehearse-deme5 (5), rehearse-deme6 (6), none in -deme7 to -deme11; every action chores,
 % src: reason "compiled: no obligation in force"
 With the cloud model answering again, the fourth run took five of eight, with no brain error,
 no containment breach and no privacy violation, and in d43 the dispatcher sent police for the
@@ -838,7 +842,6 @@ acts were checked again when they were done.
 In five decisions the model answered but every projected fact was rejected, and the compiled tier
 did chores, three times during the dog attack of d02.
 % src: twin/records/rehearse-deme4-2026-10-12 (README.md, grade.json); twin/c10_numbers.py on that record
-These are rehearsals on scenarios the earlier brain was tuned on, and they measure nothing.
 
 Every run of the stack loaded the household scene that the compiler wrote from text.
 That scene was committed pending the owner's review, and no review has been recorded.
@@ -888,7 +891,7 @@ The on-robot model is asked with that schema enforced by its server and with its
 In a second probe of the same three decisions, three trials each, DEME judged all nine, no fact was
 rejected, and 19 to 32 facts were kept.
 % src: twin/records/probe-rejections-2026-10-12/probe2_with_schema.txt; erisml-compiler 92a1bc7; gtc 6dced2e
-Which tier answered in the rehearsals is not known.
+Which tier answered in those rehearsals was not then known.
 In the sessions run with the live scorer the brain's log holds the service's own errors but no
 warning from the model cascade, so either no cloud call failed there or the cascade's warnings were
 not logged.
@@ -919,22 +922,25 @@ without the schema and wrote objects with it.
 The next rehearsal, rehearse-deme7, asked every model tier with the schema enforced.
 No decision fell to the compiled tier and no fact was rejected. DEME judged all 26 decisions on the
 cloud model's answers.
-The answers had lost their depth. In d41 the cloud model gave one benefit for each act, chores
-included, where it had given two facts for most acts before, among them the harm that remains
-while chores leave her need unanswered. With nothing to tell the acts apart, DEME chose chores in
-every decision of d19 and d41.
+In d41 the cloud model gave one benefit for each act, chores included, 1.06 facts per act against
+1.47 in rehearse-deme6, and dropped the harm that remains while chores leave her need unanswered.
+With nothing to tell the acts apart, chores was taken in every decision of d41. In d19 DEME first
+selected helping her up and then unlocking the medication box, the governor refused both at none
+of two sensors, and chores followed.
 The run took the expected class in three of the six, d02, d11 and d42. It missed d19 and d41 with
 no act and d30 with no help up.
 It had no brain error, no breach and no privacy violation. Two grants stood on 3 and 4 witnesses
 against a bar of 2, seventeen refusals on none of two, and all 32 acts were checked when they were done.
-Why the enforced schema shortened the answers was not established.
+Over the whole run the answers were not thinner than before the schema, 1.26 facts per act against
+1.36 and 1.37 in rehearse-deme4 to -deme6. The drop from about 1.75 came at rehearse-deme4, with
+the cap of three facts per act.
 % src: twin/records/rehearse-deme7-2026-10-12 (README.md, grade.json, results.jsonl projection facts); twin/c10_numbers.py on that record
 The model now answers freely, and only an answer of which nothing survives is asked again with the
 schema required.
 % src: erisml-compiler 0cc5d70; gtc 45c65ef
 
-The rehearsal of DEME judging per party, rehearse-deme8, still asked every tier with the schema, so
-its projections were as thin, 1.43 facts per act on average.
+The rehearsal of DEME judging per party, rehearse-deme8, still asked every tier with the schema,
+with 1.43 facts per act on average.
 It took the expected class in four of the six, d02, d11, d19 and d42. It missed d30 with no help up
 and d41, where it deterred and reported a device but did not contact the centre, a class below the
 one the scenario expects.
@@ -957,17 +963,16 @@ or the institutions (Section~\ref{sec:deme-rank2}).
 The rehearsal on asking freely and requiring the schema only on a retry, rehearse-deme9, still at
 rank two over eight parties under the worst case, took the expected class in three of the six,
 d02, d11 and d42.
-It missed d19, d30 and d41 by one class each, none of them contacting the centre, and d30 without
-the help up although the projection credited helping her up with a grave benefit.
+It missed d19, d30 and d41 by one class each, none of them contacting the centre. In d30 DEME
+selected helping her up, and the governor refused the ruling at one sensor of two.
 In d02 the robot drove the dog off and did not unlock the medication box.
 It had no brain error, no breach and no privacy violation, one grant, on 3 witnesses, thirteen
 refusals on fewer than two, and all 35 acts were checked when they were done.
 DEME judged all 22 decisions. The retry with the schema required fired in four.
-The answers were no deeper than with the schema always enforced, 1.38 facts per act on average, so
-the schema alone does not explain their thinness, and this run does not say what does.
+Facts per act averaged 1.38, about as in every run since rehearse-deme4.
 % src: twin/records/rehearse-deme9-2026-10-12 (README.md, grade.json); twin/c10_numbers.py on that record
 The worst case erases a benefit to one person (Section~\ref{sec:deme-rank2}), which fits the
-three misses. The re-architected brain now scores by the mean over the parties.
+misses of d19 and d41. The re-architected brain now scores by the mean over the parties.
 % src: gtc 60dfa33
 
 The rehearsal on the narrower parties, rehearse-deme10, still under the worst case, repeated the

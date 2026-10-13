@@ -141,9 +141,10 @@ compiler there imports the library's deontic table, its maxim and DEME's verdict
 own.
 % src: erisml-compiler PRs 43, 44 (feat/import-erisml-lib, feat/retire-em-dag; tag phase5-results); erisml-lib PR 152
 None of this is merged.
-The smoke checks and rehearsals of Section~\ref{sec:eval-stack} ran on these branches, and no
-held-out run has.
-% src: twin/records/stackcheck8-2026-10-12/README.md (erisml-lib b4e7669, PRs 148, 150, 151); rehearse-deme4-2026-10-12/README.md
+The smoke checks and rehearsals of Section~\ref{sec:eval-stack} ran on these branches, the
+library's at pull request 151 (b4e7669) until rehearse-deme7 and on \code{feat/deme-rank2}
+(054ed18) from rehearse-deme8, and no held-out run has.
+% src: twin/records/stackcheck8-2026-10-12/README.md (erisml-lib b4e7669, PRs 148, 150, 151); rehearse-deme7 and rehearse-deme8-2026-10-12/README.md
 What remains open is the rest of the guide's catalogue, among them the modules for oversight,
 privacy, proxemics and coercion and every module of tier 4, and the guide's context templates
 (Section~\ref{sec:compiler-emdag}).
@@ -183,13 +184,12 @@ Time, the actions of others, coalitions and samples, the tensor's other axes, ar
 When no model answers, or no projected fact survives validation, its compiled tier decides.
 That tier finds no obligation in the constitution and always returns chores, so DEME does not run.
 In rehearse-deme4 this happened in 5 decisions, 3 of them during the dog attack of d02, and in
-rehearse-deme5 in 5 more.
+rehearse-deme5 in 5 more, and in rehearse-deme6 in 6.
 The tier still does only chores, and that is not fixed.
 A probe found that the on-robot model gives answers of which every fact is rejected, and
 rehearse-deme6's records found that the cloud model did so in that run, writing its facts as plain
-sentences. Enforcing the answer's schema on every call removed those answers and thinned the rest
-(rehearse-deme7), so the model now answers freely and is asked again with the schema required only
-when nothing survives (Section~\ref{sec:eval-stack}).
+sentences. An answer of which nothing survives is now asked again with the schema required, and no
+rehearsal since rehearse-deme6 fell to the compiled tier (Section~\ref{sec:eval-stack}).
 % src: twin/records/probe-rejections-2026-10-12; twin/records/rehearse-deme6-2026-10-12/README.md; twin/records/rehearse-deme7-2026-10-12/README.md; gtc 45c65ef
 % src: twin/records/rehearse-deme4-2026-10-12 (README.md; "tier":"compiled" records, each action chores)
 The household scene it loads was compiled from text and committed pending the owner's review, and
@@ -199,7 +199,8 @@ Commit 87cc6c4 fixed four faults the monograph's audit found on 12 October.
 It restored the owner's no-lift prohibitions, the robot now holds when DEME leaves nothing
 standing, the tactical layer fails closed, and the self-test runs the profile pipeline.
 Its constraint gate also offers a forbidden act only when a ruling could permit it.
-One rehearsal has used it, rehearse-deme5, with 4 of 6 class-correct and no breach (Section~\ref{sec:eval-stack}).
+Seven rehearsals have used it or its successors, rehearse-deme5 to -deme11, with 3 to 5 of 6
+class-correct and no breach (Section~\ref{sec:eval-stack}).
 % src: gtc 87cc6c4 (commit message; tests/test_stack_brain.py)
 
 
@@ -210,11 +211,11 @@ show permission at the decision, not at the act. The robot now checks again at t
 The check is in the records of storyboards 8 and 9, of the full development runs dev33, dev39 and
 dev46, and of every run of the stack.
 In storyboards 8 and 9 all 49 acts had a prior allowed check, in the three parts of dev46 all 302,
-in stackcheck10 all 53, and in the three rehearsals of brain8 all 42, 44 and 44.
+in stackcheck10 all 53, and in the ten completed rehearsals of brain8 all 385.
 The grader counts a governed act as a breach unless its latest check at the act was allowed.
 % src: count of "kind":"authorize" records in twin/records/*/results.jsonl (none in storyboard7, present from storyboard8 on);
 % src: twin/c10_numbers.py on rehearsal-2026-10-08/storyboard8+9 (49), dev46-2026-10-11/dev46a,b,c (106+98+98),
-% src: stackcheck10-2026-10-12 (53), rehearse-deme1/2/4-2026-10-12 (42, 44, 44); twin/grade_scenarios.py:50-51
+% src: stackcheck10-2026-10-12 (53), rehearse-deme1,2,4,5,6,7,8,9,10,11-2026-10-12 (42, 44, 44, 43, 45, 32, 27, 35, 33, 40); twin/grade_scenarios.py:50-51
 These are development scenarios, and the held-out run will be the first to measure the check on
 cases no one tuned on. It closes the gap inside the robot, where one ledger
 orders every event. When the monitoring centre and the dispatcher keep ledgers of their own,

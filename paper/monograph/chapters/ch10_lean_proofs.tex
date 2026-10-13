@@ -561,7 +561,8 @@ No theorem uses \code{sorry}, the placeholder that admits an unproved statement.
 No axiom is declared in the file.
 The commit records state that the file was built on Atlas with these results.
 % src: git log of formal/twin-containment, commits 2b39d1d and 7f2625a
-\TODO{archive the lake build log and the Axioms.lean output with the monograph's artifacts}
+The build log and the output of \code{Axioms.lean} are not archived with the monograph, so the
+build is shown by those commits and by rebuilding, not by a stored log.
 
 Lean's report for a theorem includes the axioms of every lemma that theorem uses.
 The five helper lemmas are used by audited results, so their axioms are covered.
@@ -570,7 +571,7 @@ printed result.
 % src: formal/twin-containment/Axioms.lean (no line for unattested_never_counts)
 Its proof is a single simplification of the definition of $\mathsf{counts}$.
 % src: formal/twin-containment/TwinContainment.lean:50-51
-\TODO{add unattested\_never\_counts to Axioms.lean and record its output}
+Its axioms are not printed, since \code{Axioms.lean} has no line for it.
 
 The build is reproducible from the pinned toolchain.
 One runs \code{lake build} for the proofs and \code{lake env lean Axioms.lean} for the audit.
