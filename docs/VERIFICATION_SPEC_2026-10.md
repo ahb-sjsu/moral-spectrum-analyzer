@@ -360,7 +360,7 @@ refusals bind; the final rehearsal had 0 privacy violations. Secrets (model keys
 are not in the repository.
 
 **Technical documentation enough for reproduction.** `README.md`, `twin/README.md`, `web/README.md`,
-the pre-registrations in `docs/`, the demo runbook (`docs/DEMO_RUNBOOK.md`), and a 198-page
+the pre-registrations in `docs/`, the demo runbook (`docs/DEMO_RUNBOOK.md`), and a 202-page
 monograph (`paper/monograph/main.pdf`) that describes the architecture chapter by chapter against
 the code, says which brain each claim is about, and lists what is not built. Every number in this
 specification is recomputed by a named script from a committed record.
