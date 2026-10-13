@@ -14,8 +14,9 @@ writes a hashed record of the whole decision. The home-care twin of Part~III has
 ways. The earlier brain, the brain of the graded runs, uses it as an output gate on one action a
 model proposed. The re-architected brain, the brain of the GTC demonstration since 12 October
 2026, uses it to select among the candidate acts. This chapter describes the engine as the main
-branch of the library defines it, gives the arithmetic of each step, lists every module that
-exists, and says where an open pull request changes it. It then shows both ways the twin wires
+branch of the library defined it before 13 October 2026, gives the arithmetic of each step, lists
+every module that exists, and says where one of the pull requests merged that day, 148 and 150 to
+153, changes it. It then shows both ways the twin wires
 the engine in. The chapter ends with a plain account of which parts are deterministic and which
 parts rest on a model.
 % src: lib:src/erisml/ethics/deme.py:1-3 (name "Democratic Ethics Module Engine")
@@ -106,7 +107,7 @@ dictionaries that no module in this chapter reads.}
 The last block, \code{Maxim}, mirrors a structure that the \erisml{} compiler extracts from text.
 It holds an action kind, a polarity, affirmed or negated, and the description it was read from. A
 negated maxim such as ``did not promise'' is the maxim of not performing the action.
-On the branch of pull request 152 the maxim also names the agent, the purpose, the kind of
+Since pull request 152 the maxim also names the agent, the purpose, the kind of
 purpose and how the act treats persons, so that the deontic gate can tell a prohibition done for
 an imperfect duty from one done for nothing.
 % src: lib:src/erisml/ethics/facts.py:151-163 (main); feat/universalizability-kb facts.py Maxim (agent_id, purpose, purpose_kind, treats_persons_as)
@@ -195,8 +196,8 @@ flag \code{RIGHTS\_VIOLATION}. Discrimination on a protected attribute sets fair
 adds \code{DISCRIMINATION}. Missing consent without a violation sets rights respect to $0.5$.
 Coercion sets autonomy to $0.2$. Privacy is $1 - \code{privacy\_invasion\_level}$, halved for
 secondary use without consent. Epistemic quality is $1 - \code{uncertainty\_level}$, capped at
-$0.3$ for low evidence and $0.6$ for medium evidence. On the main branch the tactical layer uses
-this mapping only when it is disabled. On the branch of pull request 151 every new module starts
+$0.3$ for low evidence and $0.6$ for medium evidence. Before pull request 151 the tactical layer
+used this mapping only when it was disabled. Since then every new module starts
 its vector from this mapping and then sets the dimensions it judges.
 % src: feat/universalizability-kb modules/base.py (BaseEthicsModuleV2.baseline_vector)
 % src: lib:src/erisml/ethics/moral_vector.py:398-532
@@ -227,11 +228,11 @@ The tier sets both the module's weight in aggregation and whether its veto count
 Figure~\ref{fig:deme-tiers} gives the defaults of the tactical layer and the modules that exist
 at each tier. The tier packages state their intent. Tier 0 modules encode constraints that
 governance profiles cannot disable. Tier 1 is for physical safety, tier 2 for rights and
-fairness, tier 3 for soft values and tier 4 for checks on the governance system itself. On the
-main branch the packages for tiers 1, 3 and 4 contain no modules. Each holds a comment that names
-planned modules (\code{CorePhysicalSafetyEM}, \code{ProxemicsSafetyEM}, \code{BeneficenceEM},
+fairness, tier 3 for soft values and tier 4 for checks on the governance system itself. Before
+pull request 151 the packages for tiers 1, 3 and 4 contained no modules. Each held a comment that
+named planned modules (\code{CorePhysicalSafetyEM}, \code{ProxemicsSafetyEM}, \code{BeneficenceEM},
 \code{EnvironmentalImpactEM}, \code{PatternGuardEM}, \code{ProfileIntegrityEM}) and an empty
-export list. The branch of pull request 151 adds the first module of tier 1 and of tier 3
+export list. Pull request 151 adds the first module of tier 1 and of tier 3
 (Section~\ref{sec:deme-composition}). Tier 4 is still empty.
 % src: lib:src/erisml/ethics/layers/tactical.py:46-66 (tier_weights, tier_veto_enabled)
 % src: lib:src/erisml/ethics/modules/tier0/__init__.py:5-17
@@ -242,8 +243,8 @@ export list. The branch of pull request 151 adds the first module of tier 1 and 
 \centering
 \input{figures/ch06_tiers}
 \caption{The five module tiers with their default aggregation weights, whether their vetoes
-count, and the modules at each tier. On the main branch tiers 1, 3 and 4 hold no modules of their
-own, and the earlier brain of the twin places the advisory tragic-conflict module at tier 3. Pull
+count, and the modules at each tier. Before pull request 151 tiers 1, 3 and 4 held no modules of
+their own, and the earlier brain of the twin places the advisory tragic-conflict module at tier 3. Pull
 request 151 adds a module to tier 1 and to tier 3, drawn in red. E and R mark the modules the
 earlier and the re-architected brain run.}
 \label{fig:deme-tiers}
@@ -374,7 +375,7 @@ Module & Tier & What it does \\
 \code{TragicConflictEM} & V1 & tragic-conflict index, never vetoes (above) \\
 \bottomrule
 \end{tabularx}
-\caption{Every ethics module in the library's \code{modules} package on the main branch. V1 marks
+\caption{Every ethics module in the library's \code{modules} package before 13 October. V1 marks
 a version 1 module, which has no tier until an adapter gives it one. The safety and beneficence
 modules of pull request 151 are described in Section~\ref{sec:deme-composition}.}
 \label{tab:deme-modules}
@@ -405,9 +406,8 @@ effect, but in the tactical layer, through \code{GenevaEMV2}.
 % src: lib:src/erisml/ethics/layers/reflex.py:114-148 (defaults only when config is None)
 % src: lib:src/erisml/ethics/layers/pipeline.py:44-50 (PipelineConfig default_factory)
 % src: checked 2026-10-03 with python, len(DEMEPipeline().reflex.config.veto_rules) == 0
-On the branch of pull request 148 the default reflex configuration is none, so a default pipeline
-holds the three rules, and on the branch of pull request 150 a pipeline built from a profile carries
-them too.
+Since pull request 148 the default reflex configuration is none, so a default pipeline holds the
+three rules, and since pull request 150 a pipeline built from a profile carries them too.
 % src: erisml-lib PR 148 layers/pipeline.py (reflex_config: Optional = None); PR 150 interop/profile_adapters.py
 
 In the same phase the pipeline applies the deontic maxim gate to each option. An option whose
@@ -423,7 +423,7 @@ base has the three sets of Table~\ref{tab:deme-deontic}. The gate vetoes an affi
 (a contradiction in conception) and a negated imperfect duty (a contradiction in will). It passes
 every other known case. An absent maxim or an unknown action kind never vetoes.
 % src: lib:src/erisml/ethics/deontic_gate.py:1-136
-On the branch of pull request 152 the knowledge base lives in the library, in
+Since pull request 152 the knowledge base lives in the library, in
 \code{universalizability.py}, and the compiler imports it, so the copy is gone. The sets are
 unchanged. One case changes. An affirmed prohibition whose purpose is an imperfect duty, such as
 deceiving to protect, is a tragic conflict between duties. The gate then reports a conflict and
@@ -510,7 +510,7 @@ set. So the pipeline's \code{selected\_option\_id} can name an option that is al
 twin does, rather than trust the selected option alone.
 % src: lib:src/erisml/ethics/layers/pipeline.py:245-256 (selected_id = ranked[0][0], no forbidden check)
 % src: gtc:twin/output_gate.py:240-247 (the twin filters ranked against forbidden and allowed)
-On the branch of pull request 148 the ranking runs over the options outside the forbidden set, so
+Since pull request 148 the ranking runs over the options outside the forbidden set, so
 a forbidden option is never ranked or selected, and an advisory tier's flag no longer removes an
 option that tier may not veto.
 % src: erisml-lib PR 148, tests/test_pipeline_selection_safety.py
@@ -530,7 +530,7 @@ The pipeline was therefore biased toward doing nothing.
 % src: erisml-lib docs/guides/DEME_EFM_Design_Guide_v0.1.md sections 3.2 and 5
 % src: lib:src/erisml/ethics/moral_vector.py from_ethical_facts (no benefit term); modules/tier0/geneva_em.py, tier2/autonomy_consent_em.py (main)
 
-The branch of pull request 151 builds the guide's patterns.
+Pull request 151 builds the guide's patterns.
 A pattern is an ordered sequence of stages.
 Each stage runs the modules it admits, by tier and by registry tag, on the options still standing.
 A stage may veto, under the tier's veto rights and the governance profile, it may narrow the options
@@ -569,7 +569,7 @@ consent module before filled six dimensions with a constant.
 % src: erisml-lib PR 151 modules/tier1/core_physical_safety_em.py, modules/tier3/beneficence_em.py, modules/tier2/autonomy_consent_em.py
 % src: erisml-lib docs/moralvector_v2_architecture.md section 3 (dimension 0 physical_harm/welfare)
 
-On the branch of pull request 150 the pipeline also executes the governance profile.
+Since pull request 150 the pipeline also executes the governance profile.
 Its dimension weights, its module and stakeholder weights, its explicit veto modules, its disabled
 tiers, its score threshold and its tie breaker decide the outcome, and the worst-off aggregation
 across stakeholders is executed.
@@ -612,9 +612,9 @@ sets each new proof's \code{previous\_proof\_hash} to the last proof's hash befo
 and \code{verify\_chain} checks every hash and every link.
 % src: lib:src/erisml/ethics/decision_proof.py:203-271, 386-453
 
-Two properties of the hash matter to an auditor. On the main branch the pipeline finalizes each
-proof by itself, not through a chain, so a pipeline proof has no previous hash unless the caller
-chains it. On the branch of pull request 148 the pipeline chains them, setting each proof's
+Two properties of the hash matter to an auditor. Before pull request 148 the pipeline finalized
+each proof by itself, not through a chain, so a pipeline proof had no previous hash unless the
+caller chained it. Since then the pipeline chains them, setting each proof's
 previous hash to that of the last proof the strategic layer holds.
 % src: feat/universalizability-kb layers/pipeline.py decide (previous_proof_hash from strategic.latest_proof)
 Each proof also gets a random UUID and a wall-clock timestamp, both inside the hashed fields,
@@ -993,8 +993,8 @@ and its judgements over a tensor existed, but the pipeline never called them, an
 a version 2 module to version 3 copied one vector to every party. The compiler's module graph gives
 each module a single dimension, a narrower view still (Section~\ref{sec:compiler-emdag}).
 % src: lib main layers/tactical.py (judge only); modules/base_v3.py V2ToV3EMAdapter (broadcast); erisml-compiler em_dag/modules/*.py
-On the branch \code{feat/deme-rank2} of erisml-lib, not yet opened as a pull request, options given
-as per-party records are judged per party.
+Since pull request 153 of erisml-lib, merged on 13 October, options given as per-party records are
+judged per party.
 Each module's own rule is applied to every party's view of each option, through its judgement of
 the whole set where it has one, so that the safety module still compares the alternatives.
 The parties' columns form a tensor of nine values by parties for each module.

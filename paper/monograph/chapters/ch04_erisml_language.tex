@@ -117,9 +117,9 @@ replaces the \code{raw\_text}, and it serves as the act's maxim.
 
 \section{The intermediate representation is a typed record}\label{sec:erisml-ir}
 
-The intermediate representation is the Pydantic model \code{CompilerIR}. On the compiler's main
-branch its schema version is \code{erisml\_\allowbreak{}compiler\_\allowbreak{}ir\_\allowbreak{}v0.3}. On the branch of the
-open pull request 44 it is \code{v0.4}, which removes the module outputs of the retired EM-DAG.
+The intermediate representation is the Pydantic model \code{CompilerIR}. In the compiler's release
+0.9.0 its schema version is \code{erisml\_\allowbreak{}compiler\_\allowbreak{}ir\_\allowbreak{}v0.3}. Since pull request 44,
+merged on 13 October 2026, it is \code{v0.4}, which removes the module outputs of the retired EM-DAG.
 Assignments to its fields are validated as well as its construction.
 Figure~\ref{fig:erisml-ir-anatomy} groups its fields by who fills them.
 % src: erisml-compiler src/erisml_compiler/ir/schemas.py CompilerIR
@@ -202,8 +202,8 @@ on lifting her after a fall cite it. The household scene adds none.
 % src: gtc-prototype twin/scene/margaret_home.erisml:91-100
 
 \paragraph{Ethical facts and the remaining fields.}
-An ethical fact has a kind from fourteen on the main branch, subjects, a description, a severity
-and a confidence. The branch of the open pull request 41 adds two kinds, benefit and urgency, which
+An ethical fact has a kind from fourteen in release 0.9.0, subjects, a description, a severity
+and a confidence. Pull request 41, merged on 13 October, adds two kinds, benefit and urgency, which
 carry what an act secures and how soon, and the current brain's projector uses them.
 % src: erisml-compiler src/erisml_compiler/ir/schemas.py EthicalFactKind (14 values on main, 16 on feat/retire-em-dag; commit 05de053 on feat/bridge-benefit-urgency, PR 41)
 Margaret's home declares three, about her vulnerability, her refusal of consent, and the conflict

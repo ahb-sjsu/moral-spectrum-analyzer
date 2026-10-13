@@ -324,8 +324,8 @@ the compiler's structured loader and runs it in the compiler's scene runtime.
 In the current brain the compiler is also the extractor. It built the household scene from a text
 description, it turns each moment's observations into a checked patch of the scene, it projects
 each candidate act's consequences, and its bridge maps each act's scene to DEME's ethical facts.
-These parts are on the branches of erisml-compiler's open pull requests 40 to 44.
-% src: C:\source\gtc-prototype\twin\stack\compile_household.py; stack/brain.py StackBrain._decide; stack/facts_builder.py HomeFactsBuilder (ir_to_v2_facts); current_system_facts (PRs 40-44 open)
+These parts came in erisml-compiler's pull requests 40 to 45, merged on 13 October 2026.
+% src: C:\source\gtc-prototype\twin\stack\compile_household.py; stack/brain.py StackBrain._decide; stack/facts_builder.py HomeFactsBuilder (ir_to_v2_facts); erisml-compiler PRs 40-45 merged 2026-10-13
 The runtime checks every stratification when the scene loads. It raises an error, and the scene
 does not run, if a gate leads into an authority stratum on an event that is not a system event,
 or if a gate leaves an absorbing stratum on an event that is not human oversight.
@@ -399,8 +399,8 @@ and a physical safety module at tier~1 form the shell, and the autonomy and cons
 tier~2 and a beneficence module at tier~3 sit inside it. The reflex layer carries the library's
 default veto rules, and each act's description is its maxim. When DEME leaves no act standing the
 robot holds and watches. A module that fails vetoes here too. This profile runs on the branch
-\code{feat/deme-rank2} of erisml-lib, which is built on the modules of pull request 151 and is not
-yet merged or opened as a pull request (Section~\ref{sec:deme-rank2}).
+\code{feat/deme-rank2} of erisml-lib, which is built on the modules of pull request 151 and was
+merged as pull request 153 on 13 October (Section~\ref{sec:deme-rank2}).
 % src: erisml-lib feat/deme-rank2 054ed18 (git branch --contains b4e7669, the PR 151 branch head used in rehearsals); current_system_facts (evening)
 % src: C:\source\gtc-prototype\twin\stack\profiles\home_care_robot.json; stack/brain.py StackBrain.reset (pipeline.tactical.config.fail_closed = True), HOLD, _judge; erisml-compiler observation/options.py option_ir (raw_text = description); current_system_facts (gtc 87cc6c4, erisml-lib PR 151)
 The current brain has no tragic-conflict module and no routing to the centre for review. The

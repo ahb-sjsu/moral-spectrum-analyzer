@@ -12,7 +12,7 @@
 \def\pr#1{\textcolor{hsRed}{\bfseries #1}}
 \foreach \c/\y/\n/\name/\w/\v/\m in {
   Red/0/0/Constitutional/{weight 10.0}/{can veto}/{GenevaEMV2 (E, R)\\GenevaEMV3},
-  Orange/-13/1/Core safety/{weight 5.0}/{can veto}/{\pr{CorePhysicalSafetyEMV2} (R), \pr{PR 151}\\none on the main branch},
+  Orange/-13/1/Core safety/{weight 5.0}/{can veto}/{\pr{CorePhysicalSafetyEMV2} (R), \pr{PR 151}\\the only one},
   Purple/-26/2/Rights and fairness/{weight 2.0}/{can veto}/{AutonomyConsentEMV2 (E, R)\\TriageEMV3, RightsFirstEMV3},
   Blue/-39/3/Soft values/{weight 1.0}/{advisory}/{\pr{BeneficenceEMV2} (R), \pr{PR 151}\\TragicConflictEM, placed here by E},
   Grey/-52/4/Meta-governance/{weight 0.5}/{advisory}/{none yet (placeholder)}}{
@@ -23,5 +23,5 @@
   \node[mods] at ([xshift=80mm]t\n.west) {\m};
 }
 \draw[flow] ([xshift=-4mm]t4.south west) -- node[flowlabel, left, align=right]{more\\weight} ([xshift=-4mm]t0.north west);
-\node[figsub, anchor=north west] at ([yshift=-1.5mm]t4.south west) {E the earlier brain runs it\qquad R the re-architected brain runs it\qquad \pr{red} added by pull request 151, not on main};
+\node[figsub, anchor=north west] at ([yshift=-1.5mm]t4.south west) {E the earlier brain runs it\qquad R the re-architected brain runs it\qquad \pr{red} added by pull request 151};
 \end{tikzpicture}

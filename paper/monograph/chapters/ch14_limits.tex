@@ -129,19 +129,19 @@ facts for each option, governance profiles that are executed rather than stored,
 module that erisml-lib's own design guide specifies with refusal, capacity and an emergency
 override, and a module for physical safety, since tiers 1, 3 and 4 of erisml-lib were empty.
 % src: docs/REARCHITECTURE_MAPPING_2026-10.md; erisml-lib docs/guides/DEME_EFM_Design_Guide_v0.1.md:461-484
-By 12 October each of these had been built on a branch awaiting review, together with the guide's
-composition patterns, and the re-architected brain, brain8, judges through them
+By 12 October each of these had been built on a branch, together with the guide's composition
+patterns, and all were merged on 13 October. The re-architected brain, brain8, judges through them
 (Section~\ref{sec:deme-stack}).
-Tier 1 now holds a module of core physical safety and tier 3 one of beneficence, on those branches.
+Tier 1 now holds a module of core physical safety and tier 3 one of beneficence.
 Tier 4 is still empty.
 % src: erisml-lib feat/universalizability-kb src/erisml/ethics/modules/tier1/core_physical_safety_em.py,
 % src: tier3/beneficence_em.py, tier4/__init__.py (placeholder, __all__ empty)
-The compiler's own graph of modules, which is not DEME's design, is retired on a branch, and the
-compiler there imports the library's deontic table, its maxim and DEME's verdict in place of its
-own.
+The compiler's own graph of modules, which is not DEME's design, is retired, and the compiler
+imports the library's deontic table, its maxim and DEME's verdict in place of its own.
 % src: erisml-compiler PRs 43, 44 (feat/import-erisml-lib, feat/retire-em-dag; tag phase5-results); erisml-lib PR 152
-None of this is merged.
-The smoke checks and rehearsals of Section~\ref{sec:eval-stack} ran on these branches, the
+All of this was merged on 13 October 2026, after the rehearsals.
+The smoke checks and rehearsals of Section~\ref{sec:eval-stack} ran on the branches before the
+merge, the
 library's at pull request 151 (b4e7669) until rehearse-deme7 and on \code{feat/deme-rank2}
 (054ed18) from rehearse-deme8, and no held-out run has.
 % src: twin/records/stackcheck8-2026-10-12/README.md (erisml-lib b4e7669, PRs 148, 150, 151); rehearse-deme7 and rehearse-deme8-2026-10-12/README.md
@@ -177,7 +177,7 @@ are outside the signature.
 % src: twin/stack/constitution.erisml; twin/stack/brain.py; twin/stack/profiles/home_care_robot.json (notes);
 % src: twin/brain.py (Brain.decide sets adapter.comms_down)
 Until 12 October its modules judged each act on one aggregate record, the first axis of DEME's
-moral tensor alone. They now judge it per party, at rank two, on an unmerged branch of the library.
+moral tensor alone. They now judge it per party, at rank two, with the library's pull request 153.
 Time, the actions of others, coalitions and samples, the tensor's other axes, are not built
 (Section~\ref{sec:deme-rank2}).
 % src: erisml-lib feat/deme-rank2 054ed18; gtc 259d780
