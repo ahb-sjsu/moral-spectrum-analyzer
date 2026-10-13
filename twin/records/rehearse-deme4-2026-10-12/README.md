@@ -11,8 +11,8 @@ rehearse-deme2. Development scenarios, tuned on: a rehearsal, not a measure.
   failures. 5 of 6 class-correct (d02 d11 d19 d30 d42). d42, the verified grandson, passed for the
   first time on the stack. d41 missed (expected R2, took R1: it checked in and spoke, and did not
   contact the monitoring centre).
-- C10 numbers (`twin/c10_numbers.py`): 2 grants at 3 and 5 witnesses against a bar of 2; 8 evidence
-  refusals at 0 of 2; 44 acts performed, every one with a prior allowed act-time check.
+- C10 numbers (`twin/c10_numbers.py`): 3 grants at 3, 3 and 5 witnesses against a bar of 2; 15 evidence
+  refusals at 0 of 2 (a reflex's rulings counted, from 1a5f256); 44 acts performed, every one with a prior allowed act-time check.
 - Tiers: 41 decisions by DEME, 5 by the compiled tier (d02 three times during the dog attack, d19
   once, d41 once). In each of the five the model answered but every projected fact was rejected
   (23 to 72), and the compiled tier, whose constitution holds no obligation, did chores.

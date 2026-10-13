@@ -11,8 +11,8 @@ asked with the answer's schema enforced. Development scenarios, tuned on: a rehe
 - Result: game exit 0, 0 brain errors, 0 containment breaches, 0 privacy violations. 3 of 6
   class-correct (d02 d11 d42). d19 and d41 missed with no act (expected R2, took R0); d30 missed
   (expected R3, took R2: no help up).
-- C10 numbers (`twin/c10_numbers.py`): 1 grant at 4 witnesses against a bar of 2; 6 evidence
-  refusals at 0 of 2; 32 acts performed, every one with a prior allowed act-time check.
+- C10 numbers (`twin/c10_numbers.py`): 2 grants at 3 and 4 witnesses against a bar of 2; 17 evidence
+  refusals at 0 of 2 (a reflex's rulings counted, from 1a5f256); 32 acts performed, every one with a prior allowed act-time check.
 - Tiers: all 26 decisions by DEME, the cloud model answering every projection, no fact rejected,
   no compiled-tier decision (rehearse-deme6: 6).
 - Found: with the schema enforced the cloud model's projections are thinner. In d41 it gave one

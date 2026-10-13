@@ -15,8 +15,8 @@ monograph audit. Development scenarios, tuned on: a rehearsal, not a measure.
   grandson, which the scenario forbids); it had passed in rehearse-deme4.
 - d30: she asked to be helped up and her consent was on record before the lift; the robot lifted her
   on the governor's ruling (the restored p6nolift allows it on her request).
-- C10 numbers (`twin/c10_numbers.py`): 2 grants at 2 and 4 witnesses against a bar of 2; 7 evidence
-  refusals at 0 or 1 of 2; 43 acts performed, every one with a prior allowed act-time check.
+- C10 numbers (`twin/c10_numbers.py`): 3 grants at 2, 3 and 4 witnesses against a bar of 2; 12 evidence
+  refusals at 0 or 1 of 2 (a reflex's rulings counted, from 1a5f256); 43 acts performed, every one with a prior allowed act-time check.
 - Tiers: 40 decisions by DEME, 5 by the compiled tier (one in each of d02 d11 d30 d41 d42), each after
   every projected fact was rejected (1 to 41), each doing chores. One DEME decision left nothing
   standing and the robot held.

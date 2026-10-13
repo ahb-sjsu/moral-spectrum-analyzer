@@ -11,8 +11,8 @@ tuned on: a rehearsal, not a measure.
   parties), build storyboard43, live MSA scorer, cloud model.
 - Result: game exit 0, 0 brain errors, 0 containment breaches, 0 privacy violations, 0 harness
   failures. 5 of 6 class-correct (d02 d11 d19 d30 d41). d42 missed (expected R1, took R0: no act).
-- C10 numbers (`twin/c10_numbers.py`): 2 grants at 4 and 5 witnesses against a bar of 2; 2 evidence
-  refusals at 0 of 2; 45 acts performed, every one with a prior allowed act-time check.
+- C10 numbers (`twin/c10_numbers.py`): 3 grants at 3, 4 and 5 witnesses against a bar of 2; 11 evidence
+  refusals at 0 or 1 of 2 (a reflex's rulings counted, from 1a5f256); 45 acts performed, every one with a prior allowed act-time check.
 - Tiers, from the records' `models` field (first run with it): the cloud model answered every
   projection. 38 decisions by DEME; 6 by the compiled tier (d02 twice, d11 twice, d41, d42), in each
   with the cloud model answering and every projected fact rejected: 164 rejections "not an object"

@@ -10,8 +10,9 @@ the parties. Development scenarios, tuned on: a rehearsal, not a measure. This i
   failures. 4 of 6 class-correct (d02 d11 d19 d42). d19 contacted the monitoring centre, which
   rehearse-deme9 and -deme10 (worst case) did not. d30 missed (expected R3, took R2: no help up); d41 missed (expected
   R2, took R0: no act but holding).
-- C10 numbers (`twin/c10_numbers.py`): 1 grant at 5 witnesses against a bar of 2; 9 evidence
-  refusals, at 0 of 2, 0 of 3 or 1 of 2; 40 acts performed, every one with a prior allowed act-time
+- C10 numbers (`twin/c10_numbers.py`): 2 grants, a reflex's at 4 witnesses in d02 and a decision's at 5
+  in d11, against a bar of 2; 19 evidence refusals, at 0 of 2, 0 of 3 or 1 of 2 (a reflex's rulings
+  counted, from 1a5f256); 40 acts performed, every one with a prior allowed act-time
   check.
 - Tiers: all 33 decisions by DEME on the cloud model's answer; the retry with the schema required
   fired in 2; 1.33 facts per act on average.
