@@ -1157,20 +1157,48 @@ def test_a_cloud_refusal_is_not_retried(monkeypatch):
     assert c.call("s", "u") == "onboard" and calls == ["cloud", "onboard"]
 
 
-def test_an_offered_schema_goes_to_the_robots_own_model_with_reasoning_off(monkeypatch):
-    """The on-robot expert is asked with the answer's schema enforced (llama.cpp response_format)."""
+def test_an_offered_schema_goes_to_every_expert(monkeypatch):
+    """rehearse-deme6: the cloud model wrote every projected fact as a plain string; NRP's endpoint and
+    llama.cpp both enforce a response_format schema, so every expert is asked with it."""
     pytest.importorskip("agi.primer.vmoe")
-    mod, c, calls = _cascade(monkeypatch, {"cloud": (False, "", "down"), "onboard": (True, "unused")})
-    seen = {}
+    mod, c, calls = _cascade(monkeypatch, {"cloud": (True, "unused"), "onboard": (True, "unused")})
+    seen = []
 
     def structured(e, messages, max_tokens, schema):
-        seen.update(expert=e.name, max_tokens=max_tokens, schema=schema)
-        return '{"options": {}}', None
+        seen.append((e.name, schema))
+        return ("", "APIConnectionError: Connection error.") if e.name == "cloud" else ('{"options": {}}', None)
 
     monkeypatch.setattr(c, "_structured", structured)
     assert c.call("s", "u", json_schema={"type": "object"}, max_tokens=16000) == '{"options": {}}'
-    assert seen["expert"] == "onboard" and seen["schema"] == {"type": "object"} and calls == ["cloud"]
-    assert c.last_tier == "onboard"
+    assert [n for n, _ in seen] == ["cloud", "cloud", "onboard"] and calls == []
+    assert all(sc == {"type": "object"} for _, sc in seen) and c.last_tier == "onboard"
+
+
+def test_the_robots_own_model_is_asked_with_reasoning_off_and_within_its_context(monkeypatch):
+    pytest.importorskip("agi.primer.vmoe")
+    import openai
+
+    mod, c, _ = _cascade(monkeypatch, {"cloud": (True, "x"), "onboard": (True, "x")})
+    sent = {}
+
+    class _Done:
+        choices = [type("C", (), {"message": type("M", (), {"content": "{}"})()})()]
+
+    class _Client:
+        def __init__(self, **kw):
+            self.chat = type("Chat", (), {"completions": self})()
+
+        def create(self, **kw):
+            sent[kw["model"]] = kw
+            return _Done()
+
+    monkeypatch.setattr(openai, "OpenAI", _Client)
+    cloud, onboard = c.experts
+    c._structured(cloud, [], 16000, {"type": "object"})
+    c._structured(onboard, [], 16000, {"type": "object"})
+    assert "extra_body" not in sent[cloud.model] and sent[cloud.model]["max_tokens"] == 16000
+    assert sent[onboard.model]["extra_body"] == {"chat_template_kwargs": {"enable_thinking": False}}
+    assert sent[onboard.model]["max_tokens"] == mod.ONBOARD_MAX_TOKENS
 
 
 class _NoModel:
