@@ -458,3 +458,26 @@ def test_her_capacity_is_her_own_party_record(household):
     f = built["chores"]
     assert f.for_party("margaret").autonomy_and_agency.decision_capacity == "competent"
     assert f.for_party("monitoring_center").autonomy_and_agency.decision_capacity is None
+
+
+def test_the_parties_are_people_animals_and_other_robots(household):
+    """Owner, 2026-10-12: count only people, animals and other robots as parties; not institutions and
+    not the acting robot (rehearse-deme8 d02: its own projected harm became the defence's harm)."""
+    from erisml.ethics.domain.interfaces import CandidateOption, DomainAssessmentContext
+    from erisml_compiler.observation.options import OptionProjection
+
+    b = make(household, {})
+    built = b.builder.build_facts_batch(
+        [CandidateOption("chores", "Do the chores.")],
+        DomainAssessmentContext(state=b.ir, extra={"projection": OptionProjection(facts={"chores": []}, urgency=None),
+                                                   "person": "margaret"}))
+    parties = set(built["chores"].party_ids)
+    assert {"margaret", "coyote", "unknown_person"} <= parties  # the fixture household is Margaret alone
+    assert not parties & {"robot", "monitoring_center", "emergency_services"}
+
+    from erisml_compiler.ir.schemas import Stakeholder
+    from stack.facts_builder import parties_of
+
+    other = b.ir.model_copy(update={"stakeholders": list(b.ir.stakeholders)
+                                    + [Stakeholder(id="neighbours_robot", label="n", type="system")]})
+    assert "neighbours_robot" in parties_of(other) and "robot" not in parties_of(other)

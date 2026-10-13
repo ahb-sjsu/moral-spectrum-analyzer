@@ -33,6 +33,18 @@ from erisml_compiler.erisml_backend.v3_bridge import ir_to_party_facts, ir_to_v2
 from erisml_compiler.ir.schemas import CompilerIR
 from erisml_compiler.observation import OptionProjection, option_ir
 
+# the parties DEME judges each act for (rank 2): people, animals and other robots, not institutions and
+# not the acting robot itself (owner, 2026-10-12). Robots are the scene's "system" stakeholders, people
+# and animals its "individual" ones; the monitoring centre and emergency services ("institution") are
+# not parties, nor is the agent (extra.agent).
+PARTY_TYPES = frozenset({"system", "individual"})
+
+
+def parties_of(ir: CompilerIR) -> list[str]:
+    agent = (ir.extra or {}).get("agent")
+    return [s.id for s in ir.stakeholders if s.type in PARTY_TYPES and s.id != agent]
+
+
 CAPACITY_EVENTS = {
     "check_in_answered": "competent",
     "check_in_unanswered": "impaired",
@@ -67,7 +79,7 @@ class HomeFactsBuilder:
         for opt in options:
             scene = option_ir(ir, projection, opt.option_id, str(opt.payload))
             if self.rank >= 2:
-                facts = ir_to_party_facts(scene, option_id=opt.option_id)
+                facts = ir_to_party_facts(scene, option_id=opt.option_id, parties=parties_of(ir))
                 aa = facts.autonomy_and_agency
                 if aa is not None:
                     facts = replace(facts, autonomy_and_agency=replace(aa, per_party=tuple(
