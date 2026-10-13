@@ -106,8 +106,9 @@ Each claim names its input, its expected output and the file that holds the meas
 - **The actuation boundary, live** (C11). In the same twin, one byte of the body's copy of the
   signed manifest is changed from the developer panel. The status line turns to
   `LOCKED: manifest hash … is not the pinned …`, the robot stands still, and each action it is
-  given is refused with that reason. Undoing the change restores the hash and the robot acts
-  again. In a terminal, `twin/manifest.py verify` refuses a manifest file with one value
+  given is refused with that reason. Undoing the change restores the hash and the actuator
+  unlocks; whether the robot then acts is the brain's choice (on the demo build's probe it chose
+  chores, which is not an act). In a terminal, `twin/manifest.py verify` refuses a manifest file with one value
   changed.
 - **Re-run from committed data** (C3, C6, C7). The fitting and measurement scripts recompute the
   headline numbers from the committed score files.
@@ -394,7 +395,8 @@ specification is recomputed by a named script from a committed record.
 5. *The actuation boundary (C11).* During the live home, one byte of the body's manifest is
    changed from the developer panel. The caption turns to LOCKED with both hashes, the robot
    stops, and the next action it is given is refused with the lock as the reason. The change is
-   undone, the hash verifies, and the robot answers Margaret. Then `twin/manifest.py verify`
+   undone, the hash verifies and the actuator unlocks; the robot acts again only if the brain chooses
+   an act (on the demo build's probe it chose chores). Then `twin/manifest.py verify`
    refusing a changed manifest file in a terminal. About two minutes.
 
 **Evidence artifacts to be provided:**
@@ -468,4 +470,4 @@ specification is recomputed by a named script from a committed record.
 | C8 | Live run + document | `twin/run_twin.py` printing every ruling and the gate that made it, a threshold sweep with `twin/frontier.py`, and the suite's committed report (`twin/SUITE-REPORT.txt`) with its confusion matrix. |
 | C9 | Live run | The same scenarios run with the stub and with the validated backend, side by side, with identical grants. |
 | C10 | Live run + re-run | The smoke and dog-bite scenarios played live in the 3D twin, with each ruling and its witness count on screen and a one-byte tamper failing the hash check. Then `twin/grade_scenarios.py` and `twin/c10_numbers.py` recomputing the grades and every C10 number from the committed rehearsal records, including the two misses. |
-| C11 | Live run + re-run | The one-byte manifest tamper in the live twin: the lock with both hashes on screen, a refused action, the restore, and the robot acting again. `twin/manifest.py verify` refusing a changed file and `pytest tests/test_twin_manifest.py` in a terminal. The committed p02 record shows every refusal and act, including the missed response class. |
+| C11 | Live run + re-run | The one-byte manifest tamper in the live twin: the lock with both hashes on screen, a refused action, the restore and the actuator unlocking (acting again after the restore is recorded only on the earlier brain's builds). `twin/manifest.py verify` refusing a changed file and `pytest tests/test_twin_manifest.py` in a terminal. The committed p02 record shows every refusal and act, including the missed response class. |
