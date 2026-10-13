@@ -258,10 +258,18 @@ result file, and only after this register is updated.
 - **The manifest changed after those runs.** On 2026-10-10 the scene's description of a request
   for help was narrowed, so that an everyday request no longer obliges a call to the monitoring
   centre (commit `13e3101`). The scene's hash changed, and the manifest was signed again
-  (`a65385fb…`, still 25 actions). The demo build (storyboard17) pins the new hash. A check run on
+  (`a65385fb…`, still 25 actions). The earlier brain's build of that day (storyboard17) pins the new hash. A check run on
   it (`twin/records/scenefix-2026-10-10/check23/`) gave the same result at the boundary: in p02, 2
   actions refused under the lock and 0 performed. The C11 numbers above come from the two runs
   under manifest `525adf26…`.
+- **The demo build's manifest.** The DEME stack loads its own constitution, and its manifest was
+  signed from it: `be6dbd1f…` (25 actions), re-signed on 2026-10-12 when the constitution gained the
+  owner's no-lift prohibitions and the parties its floor rules record. The demo build (storyboard43)
+  pins that hash, and every rehearsal of the stack since rehearse-deme6 ran under it. On 2026-10-12
+  `twin/manifest.py verify` accepted it and refused a copy with one character of its canonical
+  text changed ("the canonical text does not match its hash"). The live lock-and-restore of C11 was
+  recorded on the earlier brain's builds; the body's code has changed since (commits `783133d`,
+  `13c9202`, `9c36846`), so the live beat on the demo build is shown, not yet recorded.
 
 ### Operational Ownership
 
@@ -271,6 +279,69 @@ prototype. All code is open source under the MIT license on GitHub
 (`moral-spectrum-analyzer`, `xbse`). Public CI runs the tests on every commit, so a third party
 can run, check or fork it without us. The lab is small. Continued operation beyond the challenge
 depends on the PI's time and on a GPU host for re-scoring new content.
+
+### Realistic context
+
+- **Moderation (C1 to C7):** held-out rows of two independent public corpora (Jigsaw
+  `civil_comments`, Berkeley Measuring Hate Speech), not synthetic text. The contraction is measured
+  out of fold on 1523 rows that share no text with any encoder's training data.
+- **Home care (C8 to C11):** a simulated home, not a real one. Margaret, the monitoring centre and
+  the emergency dispatcher are played by language models, the robot's perception is the game's
+  state except for the camera, which reads rendered frames, and the sensors' readings are signed
+  as an attested device would sign them. The scenarios were written by us, each with its required
+  and forbidden actions before it was run. The robot's own decisions come from a hosted
+  open-weights model through the compiler and DEME, as they would on a robot with a network link,
+  with an on-robot model as the fallback tier.
+
+### Technology-specific criteria
+
+The prototype is entered as Technical, so its domain criteria are the five technology-specific
+ones. Each answer points to the claims and records that carry it.
+
+**Functional correctness against the specification.** Each claim in the register names its input,
+its expected output and the committed result that matches it. The behaviour is pinned by tests
+that run in CI: 334 in this repository, 1361 in erisml-lib and 630 in erisml-compiler (counted on
+2026-10-12 on the demo code's branches). The twin's tests check, without a model, the containment
+the live runs rely on: authority only from corroborated sensors, the act-time re-check
+(`tests/test_twin_ladder.py::test_permission_is_rechecked_when_the_body_acts`), the manifest
+(`tests/test_twin_manifest.py`) and the DEME stack (`tests/test_stack_brain.py`).
+
+**Performance under stated conditions.** The measured performance is the claims' own numbers:
+C3 (out-of-fold AUROC 0.863 on 1523 rows, half the items decided), C6 and C7 (drift and
+cross-lingual indices on 60 and 50 held-out items), C8 (0 false clears and 0 over-restrictions on
+26 scenarios), C10 (0 containment breaches and 0 privacy violations in the final rehearsal's six
+runs). The governor and the browser verifier run in seconds on a laptop without a GPU. In the 3D
+twin each decision waits on a hosted model's answer, so decisions arrive with pauses; no latency
+figure is claimed.
+
+**Robustness and error handling.** What the system does when a part fails is designed and tested:
+- the analyzer escalates what it cannot score confidently and refuses text it has no encoder
+  output for (C4);
+- in the robot, a DEME module that raises vetoes the act it could not judge, and when nothing is
+  left standing the robot holds (`tests/test_stack_brain.py`);
+- an answer of the model from which no act's facts survive validation is asked for again with the
+  answer's schema enforced, and if no model answers the constitution's compiled tier decides (it
+  then does only chores, which is disclosed under Completeness);
+- authority lapses 60 s after its corroborating evidence goes stale, and every act is re-checked
+  against the moral state at the moment of acting (C10);
+- a manifest that fails its signature or does not match the scene stops the brain from starting,
+  and a manifest the body holds that does not match its pinned hash locks the actuator (C11).
+
+**Data management, security and privacy.** No personal data is used: the corpora are public, and
+the robot's household is a simulated one. Decisions and their records are hash-chained and an
+independent verifier rejects tampering (C5). The robot's capability manifest is signed with Ed25519
+and checked at the brain and at the body (C11); the signing key is a file on our workstation, with
+no rotation or revocation (disclosed under Completeness). Sensor readings that grant authority are
+signed, hashed and counter-checked before the governor counts them. In the home, recording, sharing
+her data and entering her bedroom are prohibited except on a governor's ruling, and her recorded
+refusals bind; the final rehearsal had 0 privacy violations. Secrets (model keys, the VNC password)
+are not in the repository.
+
+**Technical documentation enough for reproduction.** `README.md`, `twin/README.md`, `web/README.md`,
+the pre-registrations in `docs/`, the demo runbook (`docs/DEMO_RUNBOOK.md`), and a 197-page
+monograph (`paper/monograph/main.pdf`) that describes the architecture chapter by chapter against
+the code, says which brain each claim is about, and lists what is not built. Every number in this
+specification is recomputed by a named script from a committed record.
 
 ## 3. Demo Plan
 
