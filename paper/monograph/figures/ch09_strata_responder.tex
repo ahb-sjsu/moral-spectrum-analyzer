@@ -12,8 +12,7 @@
 \draw[grant] (door) -- node[lab, above]{entered} (in);
 \draw[grant] (exp.south east) to[bend right=12] node[lab, below, pos=0.3]{entered} (in.south west);
 \draw[flow] (in.north) .. controls (126mm,22mm) and (0,22mm) .. node[lab, above]{departed, from any state} (none.north);
-\node[detail, text width=34mm, anchor=north] at (100mm,-12mm) {the door may open and\\must open here only};
-\node[panel=Grey, text width=40mm, font=\sffamily\scriptsize, anchor=north] (claim) at (20mm,-12mm)
+\node[detail, text width=34mm, anchor=north] (doornote) at (88mm,-12mm) {the door may open and\\must open here only};\node[panel=Grey, text width=40mm, font=\sffamily\scriptsize, anchor=north] (claim) at (20mm,-12mm)
   {``Police, open up!'' is a claim\\and moves nothing};
 \draw[untrusted] (claim.north) -- ([xshift=4mm]none.south);
 \end{tikzpicture}

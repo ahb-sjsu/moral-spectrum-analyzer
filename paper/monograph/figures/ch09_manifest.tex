@@ -11,7 +11,7 @@
 \node[panel=Amber, p] (P4) at (93mm,0) {};
 \node[panel=Green, p] (P5) at (124mm,0) {};
 \foreach \P/\c/\n/\name/\dtl in {
-  P1/Blue/1/Scene/{capabilities\\their effects\\norms and\\refusals},
+  P1/Blue/1/Scene/{scene or\\constitution\\capabilities,\\effects, norms},
   P2/Teal/2/Compile/{one typed entry\\per action\\its tier and\\its witnesses},
   P3/Purple/3/Sign/{canonical text\\its SHA-256\\signed with\\Ed25519},
   P4/Amber/4/Brain/{starts only if it\\verifies and\\matches the scene\\refuses the rest},
@@ -27,7 +27,7 @@
 % the hash is pinned into the build
 \draw[flow] (P3.south) -- ++(0,-6mm) -| node[flowlabel, below, pos=0.25]{the hash is pinned into the game's build} (P5.south);
 % the models only propose
-\node[panel=Grey, minimum width=40mm, text width=38mm] (M) at (93mm,32mm)
-  {\textcolor{hsGreyLine}{\bfseries language models}\\[1pt]{\scriptsize\color{hsTextMid} propose one action}};
+\node[panel=Grey, minimum width=46mm, text width=44mm] (M) at (93mm,34mm)
+  {\textcolor{hsGreyLine}{\bfseries one proposed action}\\[1pt]{\scriptsize\color{hsTextMid}a model's choice (earlier brain)\\or \deme{}'s selection}};
 \draw[untrusted] (M.south) -- node[flowlabel, right]{a proposal} (P4.north);
 \end{tikzpicture}

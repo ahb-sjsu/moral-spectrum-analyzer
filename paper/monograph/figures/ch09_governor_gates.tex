@@ -1,6 +1,7 @@
 % Chapter 9. The governor's four gates and the order of the witness bars.
 % src: twin/governor.py:43-45, 84-132
 % src: twin/brain.py:45-47, 339-371 (govern_live)
+% src: twin/brain.py Brain.govern_live (authorize_ems at w_min=1 when cond:center_unavailable; measure gate, refuse_human_review), Brain._measures
 \begin{tikzpicture}[house,
   p/.style={minimum width=28mm, minimum height=30mm, text width=26mm},
   d/.style={detail, text width=24mm, anchor=south},
@@ -15,7 +16,7 @@
   P1/Blue/1/Fresh read/{signal age\\$a \le 30$ s},
   P2/Teal/2/Witnesses/{attested count\\$W \ge b$},
   P3/Amber/3/Analyzer/{can only refuse\\deferred for a reflex},
-  P4/Green/4/Elevate/{the only grant}}{
+  P4/Green/4/Grant/{elevate, or\\\code{authorize\_ems}\\at $b=1$}}{
   \node[step=\c] at ([yshift=-5mm]\P.north) {\n};
   \node[stepname=\c] at ([yshift=-11.5mm]\P.north) {\name};
   \node[d] at ([yshift=1.5mm]\P.south) {\dtl};
@@ -37,8 +38,11 @@
 \draw[flow] (P1.south) -- (R1.north);
 \draw[flow] (P2.south) -- (R2.north);
 \draw[flow] (P3.south) -- (R3.north);
+% the brain's measure gate, after a grant; it can only refuse
+\node[r] (R4) at (132mm,-30mm) {\textbf{measure} (brain)\\refuse, human\\review, if no\\witness measures\\the emergency};
+\draw[flow] (P4.south) -- (R4.north);
 % the bars
-\node[panel=Purple, minimum width=28mm, text width=26mm, font=\sffamily\scriptsize] (B) at (132mm,-30mm)
+\node[panel=Purple, minimum width=28mm, text width=26mm, font=\sffamily\scriptsize] (B) at (0mm,-30mm)
   {\textcolor{hsPurple}{\bfseries bars}\\$b=3$ restraint\\$b=2$ emergency\\$b=1$ EMS, centre\\unreachable};
 \draw[flow] (R2.south) -- ++(0,-5mm) -| node[flowlabel, below, pos=0.25]{a refusal is ruled again at the next bar} (B.south);
 \end{tikzpicture}

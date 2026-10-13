@@ -55,8 +55,8 @@ recounted these numbers on the scene file as of commit \code{67ffeb3}, its lates
 % src: paper/aies2027/kit/FACTS.md; twin/scene_counts.py output 2026-10-11 (rules, event types, capabilities, strata, devices)
 
 The re-architected brain runs on a different scene. Its constitution,
-\code{twin/stack/constitution.erisml}, is derived from the earlier scene by
-\code{twin/stack/make\_constitution.py}. It holds 17 norms, and every one is a non-defeasible
+\code{twin/\allowbreak{}stack/\allowbreak{}constitution.erisml}, is derived from the earlier scene by
+\code{twin/\allowbreak{}stack/\allowbreak{}make\_constitution.py}. It holds 17 norms, and every one is a non-defeasible
 prohibition. It has no obligation and no permission. It keeps one commitment, the duty of care,
 because the no-lift rules cite it. It keeps the 25 capabilities, 14 standing and 11 governed or
 elevated, and the seven stratifications with their 26 strata and 34 gates. It declares 35 event
@@ -64,8 +64,8 @@ types, of which 24 are system types, eight named conditions and seven floor rule
 process, no refusal tables and no capability ethics.
 % src: twin/stack/constitution.erisml (norms, commitments, extra.capabilities, extra.strata, extra.event_types, extra.conditions, extra.offline); counted with yaml.safe_load 2026-10-12
 % src: twin/stack/make_constitution.py
-The household scene, \code{twin/stack/household.ir.json}, was compiled by erisml-compiler from the
-text \code{twin/stack/household.md}. It names six stakeholders and records four consent events.
+The household scene, \code{twin/\allowbreak{}stack/\allowbreak{}household.ir.json}, was compiled by erisml-compiler from the
+text \code{twin/\allowbreak{}stack/\allowbreak{}household.md}. It names six stakeholders and records four consent events.
 Margaret consents to \code{contact\_monitoring\_center} and refuses \code{record},
 \code{share\_data} and \code{enter\_bedroom}. It holds no norm. It was committed pending the
 owner's review, and no review has been recorded since. At runtime the brain merges the household
@@ -139,7 +139,8 @@ Figure~\ref{fig:home-parties} shows the four parties and what passes between the
 \caption{The four parties of the twin and what passes between them. Each is played by a language
 model, and three act under their own scene. Red edges come from authenticated channels and are the
 only ones that change what the robot may do. Dashed grey edges carry words that a model reads, and
-none of them is red.}
+none of them is red. Light-blue edges carry an act or signed data and grant nothing. The robot's box
+gives both brains.}
 \label{fig:home-parties}
 \end{figure}
 
@@ -509,36 +510,50 @@ It projects each candidate's consequences as at most three ethical facts and the
 urgency once, and it is shown the attested strata. The compiler validates each fact and builds one
 scene per act. The twin's domain layer maps each scene to \deme{}'s \code{EthicalFacts}. The facts
 \deme{} judges therefore come from a model, and no second model checks them. \deme{}'s pipeline is
-built from the profile \code{twin/stack/profiles/home\_care\_robot.json}. \code{GenevaEMV2} at
+built from the profile \code{twin/\allowbreak{}stack/\allowbreak{}profiles/\allowbreak{}home\_care\_robot.json}. \code{GenevaEMV2} at
 tier~0 and \code{CorePhysicalSafetyEMV2} at tier~1 form the hard shell, and
 \code{AutonomyConsentEMV2} at tier~2 and \code{BeneficenceEMV2} at tier~3 sit inside it. A module
-that raises vetoes. Every decision leaves a hash-chained proof with the profile's hash
-(Section~\ref{sec:deme-stack}).
+that raises an exception vetoes the option it could not judge. Every decision leaves a hash-chained
+proof with the profile's hash (Section~\ref{sec:deme-stack}).
 % src: twin/stack/brain.py StackBrain._decide (projector.project), StackBrain._judge (pipeline.decide, fail_closed); twin/stack/facts_builder.py HomeFactsBuilder
 % src: twin/stack/profiles/home_care_robot.json
+\deme{} judges each act at rank~2, once for each party (Section~\ref{sec:deme-rank2}). The parties
+are the people, the animals and the other robots of the scene. Institutions are not parties, and
+neither is the acting robot. Each act is scored by the mean over the parties, and a veto for any one
+party vetoes the act. The record keeps each party's verdicts. An act for which the projector gave no
+consequences is dropped before \deme{} judges, since \deme{} cannot judge it. Chores, the default
+action, is passed to \deme{} as its baseline.
+% src: twin/stack/facts_builder.py PARTY_TYPES, parties_of (system and individual, minus extra.agent); twin/stack/brain.py StackBrain.reset (party_collapse = "mean")
+% src: erisml-lib feat/deme-rank2 054ed18 (a veto for any party vetoes; DecisionResult.party_verdicts)
+% src: twin/stack/brain.py StackBrain._judge (offered excludes projection.unprojected; baseline_option_id=default)
 
 \paragraph{The ruling and the act.} If \deme{} selects an act that is prohibited now and a ruling
 could permit, the governor rules with its witness bars, freshness and measure gate. Without a live
 scorer the analyzer is deferred. A refused act is set aside and \deme{} decides again. When \deme{}
 selects nothing, the robot holds with \code{wait\_and\_observe}. The manifest check and the check at
 the act follow as in the earlier brain. The record names the tier as \code{stack} or
-\code{compiled}, and it does not say which model answered.
+\code{compiled}. It also names the model tier that answered each model call, with the errors of the
+tiers before it, in its field \code{models}. It says whether the projection was asked again with the
+schema, in \code{projection.retried}, and it keeps each party's verdicts in \code{party\_verdicts}.
 % src: twin/stack/brain.py StackBrain._judge (HOLD, excluded, deferred, "tier": "stack"), StackBrain._compiled ("tier": "compiled")
+% src: twin/stack/brain.py StackBrain._decide (self._models), StackBrain._answered (adapter.last_tier, last_errors), StackBrain._judge ("models", "projection.retried", "party_verdicts")
 
 \section{The model cascade}\label{sec:home-cascade}
 
-The robot reasons in one of three tiers. In the earlier brain the log records which tier answered
-each cycle. The re-architected brain records only \code{stack} or \code{compiled}. The owner fixed
-this design for the case where communications fail, since the centre, EMS and the cloud model then
-become unreachable together.
+The robot reasons in one of three tiers. The owner fixed this design for the case where
+communications fail, since the centre, EMS and the cloud model then become unreachable together. In
+the earlier brain the log records which tier answered each cycle. The re-architected brain records
+which tier answered its observation call and which answered its projection call.
 % src: docs/AUTONOMY_PLAN.md:162-174 (section 3c)
-% src: twin/brain.py Brain.decide (tier = adapter.last_tier); twin/stack/brain.py StackBrain._judge, _compiled ("tier")
+% src: twin/brain.py Brain.decide (tier = adapter.last_tier); twin/stack/brain.py StackBrain._decide (self._models["observation"], ["projection"], ["unavailable"])
 
 \begin{figure}[t]
 \centering
 \input{figures/ch08_cascade}
 \caption{The robot's three reasoning tiers. A tier is used when the one before it gives no
-acceptable answer. In the earlier brain the cloud tier is skipped while communications are down. The structure that
+acceptable answer. In the earlier brain the cloud tier is skipped while communications are down.
+When a caller offers its answer's schema, the cloud model is held to it only on the compiler's
+retry, and the on-robot model always. The structure that
 contains the models runs on the robot in every tier, so losing a model changes who chooses and not
 what is allowed.}
 \label{fig:home-cascade}
@@ -549,17 +564,27 @@ what is allowed.}
 model name is \code{gpt-oss}, which the variable \code{ERISML\_LLM\_MODEL} can override. The brain
 that served the recorded runs set neither the variable nor the flag, so they used \code{gpt-oss}.
 % src: /proc/<brain pid>/environ and its command line on Atlas, checked 2026-10-04
-% src: twin/cascade.py:67-69 twin_experts (cloud expert, timeout 120 s, priority 10)
+% src: twin/cascade.py twin_experts (cloud expert, timeout 120 s, priority 10)
+A caller may offer the JSON schema of its answer, as the compiler's projector and observation
+compiler do. The cloud model is asked with that schema enforced only when the caller requires it.
+The compiler requires it only on its retry, after an answer of which nothing survived. A cloud call
+that loses its connection is tried once more before the on-robot tier. A timeout or a refusal is not
+retried.
+% src: twin/cascade.py Cascade.call (schema_required, attempt 1 and 2), Cascade._structured, _transient
+% src: erisml-compiler 0cc5d70 src/erisml_compiler/observation/options.py OptionProjector (schema_required, retried)
 % src: twin/service.py main (--llm-model default ERISML_LLM_MODEL or gpt-oss)
 % src: paper/aies2027/kit/FACTS.md:25
 
 \paragraph{The on-robot tier.} The second expert is a local OpenAI-compatible endpoint with a timeout
 of 90 seconds. In the twin it is a model on the host and not in the cloud. The fact sheet records it
-as gemma-4-26B-A4B, quantised to four bits in GGUF format and served by llama.cpp. While
+as gemma-4-26B-A4B, quantised to four bits in GGUF format and served by llama.cpp. When a caller
+offers a schema, this model is always asked within it, with its reasoning off and at most 4,096
+tokens of answer. While
 communications are down the cascade skips the cloud expert and asks only this one. Only the
 earlier brain tells the cascade that communications are down. The re-architected brain never sets
 the flag, so with communications down it still asks the cloud expert first.
-% src: twin/cascade.py:70-72 twin_experts (onboard, 90 s, priority 50), Cascade.call (pool = onboard if comms_down)
+% src: twin/cascade.py twin_experts (onboard, 90 s, priority 50), Cascade.call (pool = onboard if comms_down)
+% src: twin/cascade.py Cascade._structured (enable_thinking False, ONBOARD_MAX_TOKENS = 4096, response_format json_schema)
 % src: twin/brain.py Brain.decide (adapter.comms_down); twin/stack/brain.py (no comms_down assignment)
 % src: docs/AUTONOMY_PLAN.md:167-168
 % src: paper/aies2027/kit/FACTS.md:25 (/archive/unity/tools/brain7.sh)
@@ -583,11 +608,14 @@ model answers, and also when the model answers but no act's facts survive valida
 constitution holds no obligation, so the compiled choice always returns the default action, chores,
 and \deme{} does not run. Its seven floor rules cover the home's devices, a visitor and a wild
 animal, and nothing else. In rehearsal \code{rehearse-deme4} 5 of 46 decisions were made this way,
-three of them during the dog attack of d02, each after every projected fact had been rejected. This
-is not fixed.
+three of them during the dog attack of d02, each after every projected fact had been rejected. A
+projection of which nothing survives is now asked again with the schema required. In
+\code{rehearse-deme11}, run on the demo code, all 33 decisions were \deme{}'s, and the retry fired in
+two of them. The fallback to chores remains, and in that sense this is not fixed.
 % src: twin/stack/brain.py StackBrain._decide (ModelUnavailable, "no act projected"), StackBrain._compiled
 % src: twin/stack/constitution.erisml extra.offline (7 floor rules)
-% src: twin/records/rehearse-deme4-2026-10-12/README.md (Tiers: 44 by DEME, 5 compiled)
+% src: twin/records/rehearse-deme4-2026-10-12/README.md (Tiers: 41 by DEME, 5 compiled)
+% src: erisml-compiler 0cc5d70 (asked again with the schema required); twin/records/rehearse-deme11-2026-10-12/README.md (Tiers: all 33 decisions by DEME; the retry fired in 2)
 
 \section{The hash-chained log and the live ladder}\label{sec:home-log}
 

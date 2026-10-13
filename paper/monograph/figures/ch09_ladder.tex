@@ -26,8 +26,8 @@
 \node[task] (ref) at (77mm,-3mm) {Refer to the centre};
 \node[task] (gov) at (106mm,-3mm) {Ask the governor};
 \node[task, text width=24mm] (ems) at (146mm,4mm) {Call emergency\\services};
-\node[ev=Green] (watch) at (125mm,-12mm) {};
-\node[lab, anchor=west] at ([xshift=1mm]watch.east) {keep watching};
+\node[ev=Green] (watch) at (125mm,-9mm) {};
+\node[lab, anchor=north] at ([yshift=-0.5mm]watch.south) {keep watching};
 % Margaret lane
 \node[ev=Purple] (fine) at (40mm,0 |- L2.center) {};
 \node[lab, anchor=west] at ([xshift=2mm]fine.east) {she is alright};
@@ -48,7 +48,7 @@
 \draw[flow] (op) -- node[lab, right, pos=0.3]{sent EMS} (disp);
 \draw[flow] (op.east) -| node[lab, right, pos=0.75]{unreachable} (gov.south);
 \draw[grant] (gov.east) -- node[lab, above, sloped, pos=0.45]{authorized} (ems.west);
-\draw[flow] (gov.south east) -- node[lab, below, sloped, pos=0.5]{refused} (watch);
+\draw[flow] (gov.south east) -- node[lab, below left, pos=0.45, inner sep=1pt]{refused} (watch);
 \draw[grant] (sc) -| node[lab, above, pos=0.25]{elevate} (ems.north);
 \draw[flow] (ems.south) |- (help.east);
 \draw[flow] (disp) -- (help);

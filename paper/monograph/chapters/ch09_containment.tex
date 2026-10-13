@@ -222,7 +222,9 @@ Figure~\ref{fig:governor-gates} draws the gates and the order of the bars.
 \centering
 \input{figures/ch09_governor_gates}
 \caption{The governor's four gates and its three bars. A request passes gate~1 if its read is fresh
-and gate~2 if the attested witnesses $W$ reach the bar $b$, and gate~3 can only refuse. The red edge
+and gate~2 if the attested witnesses $W$ reach the bar $b$, and gate~3 can only refuse. A grant is
+an elevate, or \code{authorize\_ems} at $b=1$ when the centre is unreachable. The brain's measure
+gate then refuses any grant that no witness measures. The red edge
 from the signed readings is the only way gate~2 passes, so no language model output can grant. The
 camera's person detector is the one learned model on that edge, and it is one witness at most.}
 \label{fig:governor-gates}
@@ -533,10 +535,13 @@ authorized. Prohibition \code{n6p} forbids the call without one of the two gover
 
 A corroborated emergency skips the ladder. On a ruling of elevate, obligation \code{n6} makes the
 robot call EMS at once, without asking Margaret or the centre, and prohibition \code{n3} on every
-elevated action lifts. The governor gates every call the robot places. A robot that is fooled or
+elevated action lifts. The one exception is a fall that she may still answer about, with nothing
+else wrong. There \code{n6} does not hold, and \code{n6ask} owes a check in first
+(Section~\ref{sec:cont-owner}). The governor gates every call the robot places. A robot that is fooled or
 compromised must not be able to send emergency services to Margaret's door on words alone, from a
 television line, a network message or a forged device.
 % src: twin/scene/margaret_home.erisml:177-208
+% src: twin/scene/margaret_home.erisml n6 (not:cond:ask_first), n6ask (cond:ask_first)
 % src: docs/AUTONOMY_PLAN.md:87-96, 109-114
 
 The ladder is also declared as a BPMN~2.0 process, \code{escalation\_ladder}, with 23 nodes, 23 flows
@@ -556,7 +561,8 @@ brain carries none of the ladder's obligations and no process. It keeps \code{n3
 \centering
 \input{figures/ch09_ladder}
 \caption{The escalation ladder in its four lanes, simplified from the declared process. A
-corroborated emergency goes straight to the call, and otherwise the robot asks Margaret, then the
+corroborated emergency goes straight to the call, except after a fall where she can still answer,
+when the robot checks in first. Otherwise the robot asks Margaret, then the
 centre, then the governor. The robot reaches emergency services only along the two red edges, both
 of them governor rulings.}
 \label{fig:ladder}
@@ -582,7 +588,7 @@ and absorbing strata are left only by oversight. The totals are 26 strata and 34
 \label{tab:strata-summary}
 % src: twin/scene/margaret_home.erisml extra.strata
 % src: paper/aies2027/kit/FACTS.md:12-14
-\begin{tabular}{@{}lp{0.25\linewidth}lp{0.15\linewidth}lc@{}}
+\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{0.25\linewidth}l>{\raggedright\arraybackslash}p{0.17\linewidth}lc@{}}
 \toprule
 Stratification & States & Initial & Authority & Absorbing & Gates \\
 \midrule
@@ -818,9 +824,10 @@ Figure~\ref{fig:manifest} draws the path from the scene to the body.
 \begin{figure}[t]
 \centering
 \input{figures/ch09_manifest}
-\caption{The actuation boundary. The manifest is compiled from the scene, signed, verified by the
-brain against the scene it loaded and pinned into the game's build. The language models only
-propose, and whatever they propose, the body runs only an action the signed manifest lists.}
+\caption{The actuation boundary. The manifest is compiled from the scene, or in the re-architected
+brain from its constitution, signed, verified by the brain against the scene it loaded and pinned
+into the game's build. A model's choice in the earlier brain, or \deme{}'s selection in the
+re-architected one, is only a proposal, and the body runs only an action the signed manifest lists.}
 \label{fig:manifest}
 \end{figure}
 
@@ -837,7 +844,7 @@ signature, so an edit to them reaches the robot without a new one.
 A chooser that answers with a probability for each permitted option, rather than with text, would
 fit this boundary directly.
 
-\paragraph{In the twin.} The runs of this paragraph were made under the earlier brain.
+\paragraph{In the twin.} The first two runs below were made under the earlier brain.
 % src: twin/records/rehearsal-2026-10-10/rehearse21/results.jsonl, rehearse22/results.jsonl ("tier": "cloud"; twin/stack first committed 2026-10-11)
 On deployment the brain verified the manifest of 25 actions, 14 standing
 and 11 governed, and the game verified the same hash.
@@ -862,13 +869,13 @@ A second run of the same probe gave the same result at the boundary.
 The actuator refused both actions proposed under the lock, nothing was performed, and after the
 restore the robot spoke to Margaret twice and checked in on her, which is the expected response.
 % src: twin/records/rehearsal-2026-10-10/rehearse22/results.jsonl, actuator.log, grade.json
-These are two runs of one probe.
 The refusal of an action the manifest does not list was not provoked live and rests on its test.
+
 The same probe was run on 12 October on the re-architected brain's build, which pins the manifest
 signed from its constitution.
 At the tamper the actuator locked, and the one act proposed under the lock, approaching her, was
-refused with the lock named. After the restore the manifest verified again, but no act followed,
-because DEME chose the idle default when she asked the robot over.
+refused with the lock named. After the restore the manifest verified again, but no act followed.
+When she asked the robot over, \deme{} chose chores, the default, which is not an act.
 The boundary held there too, and the choice was again poor.
 % src: twin/records/c11probe-deme-2026-10-12 (README.md, actuator.log, results.jsonl, grade.json)
 
@@ -878,10 +885,11 @@ The re-architected brain of Section~\ref{sec:home-brain8} subclasses the earlier
 evidence plane. Authority still enters only through governor rulings and system events. The input
 layer, the signed readings, the quarantine and the credentials work as above. The governor keeps
 its bars of two, three and one witnesses, its 30-second freshness bound and the measure gate. Rights
-lapse after 60 seconds below their bar. The reflexes, the situation stratum, the check at the act
-and the signed manifest of 25 actions are unchanged.
+lapse after 60 seconds below their bar. The reflexes, the situation stratum and the check at the act
+are unchanged. It has a signed manifest of the same 25 actions, compiled from the constitution
+(\code{be6dbd1f}).
 % src: twin/stack/brain.py StackBrain (inherits Readings, govern_live, _measures, _lapse, reflex, _credentials, authorize, _in_manifest); twin/brain.py FRESHNESS_BOUND_S, RESTRAINT_BAR
-% src: twin/stack/constitution.erisml evidence_lapse_s, extra.strata; twin/manifest/constitution.manifest.json (25 actions)
+% src: twin/stack/constitution.erisml evidence_lapse_s, extra.strata; twin/manifest/constitution.manifest.json (25 actions, scene constitution.erisml, sha256 be6dbd1f...)
 
 Other principles of this chapter do not hold for it.
 \begin{itemize}
@@ -890,14 +898,17 @@ maps them. No second model checks them.
 \item Heard words reach a model, the observation compiler, cut to length but not canonicalized,
 and the free text of an utterance or a claim reaches the projector.
 \item \deme{} runs the profile pipeline of Section~\ref{sec:deme-stack}, not the output gate. It has
-no tragic routing to the centre. A module that raises vetoes, and when nothing is left standing the
-robot holds. An exception in the pipeline itself fails the request. The earlier output gate still
+no tragic routing to the centre. A module that raises an exception vetoes the option it could not
+judge, and when nothing is left standing the robot holds. An exception in the pipeline itself fails the request. The earlier output gate still
 checks reflex actions, but under the constitution it has no capability ethics and no refusals.
 \item The constitution has no obligation. The ladder, the check-in duties, \code{ask\_first},
 \code{p6help} and the mandatory report \code{p5r} are gone, as are the refusal tables and the
 privacy promise.
 \item When no act's facts survive, or no model answers, the compiled tier does chores and \deme{}
-does not run.
+does not run. In \code{rehearse-deme4} 5 of 46 decisions went this way. A projection of which
+nothing survives is now asked again with the schema required. In \code{rehearse-deme11}, run on the
+demo code, all 33 decisions were \deme{}'s. The fallback to chores remains.
+% src: twin/records/rehearse-deme4-2026-10-12/README.md (5 compiled); erisml-compiler 0cc5d70; twin/records/rehearse-deme11-2026-10-12/README.md (all 33 decisions by DEME)
 \item The cascade is never told that communications are down.
 \item The household scene and the \deme{} profile are not signed, and the household scene still
 awaits the owner's review.

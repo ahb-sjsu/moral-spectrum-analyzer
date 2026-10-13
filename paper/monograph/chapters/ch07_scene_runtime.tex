@@ -94,9 +94,10 @@ absorbing. The legitimacy machine has six, and void is absorbing.
 \begin{figure}[t]
 \centering
 \input{figures/ch07_machines}
-\caption{The three moral state machines as their tables define them. Dashed transitions exist in
-the tables, but the scene runtime never sends their tags, so it never reaches defeated or void
-through a commitment.}
+\caption{The three moral state machines as their tables define them. Solid transitions share
+one grey style, the one that lifts a promise's prohibitions included, since red in this book marks
+a grant by a system event. Dashed transitions exist in the tables, but the scene runtime never sends their tags, so it
+never reaches defeated or void through a commitment.}
 \label{fig:runtime-machines}
 \end{figure}
 
@@ -332,7 +333,8 @@ serve every agent of a scene with several parties.
 \centering
 \input{figures/ch07_agent}
 \caption{The isolated scene agent. What the two models write passes through checks before it
-reaches the runtime or the robot, and the chooser never sees the perception facts.}
+reaches the runtime or the robot. In the isolated view the chooser never sees the perception facts.}
+% src: erisml-compiler src/erisml_compiler/runtime/agent.py ActionChooser (view="canonical"), SceneAgent (isolated=False by default)
 \label{fig:runtime-agent}
 \end{figure}
 
@@ -493,8 +495,8 @@ event's type is declared. Checks happen where events enter and where gates and p
 does not check that an obliged action is one of the agent's capabilities. It does not resolve a
 conflict between an obligation and a prohibition. It reports both, and the chooser resolves it toward
 the prohibition. It does not decide whether an allowed action is wise or safe for Margaret. In the
-earlier brain that judgement belongs to the governor and the \deme{} output gate of Chapters~6
-and~9. In the re-architected brain it belongs to the governor and to \deme{}'s profile pipeline,
+earlier brain that judgement belongs to the governor and the \deme{} output gate of Chapters~\ref{ch:deme}
+and~\ref{ch:containment}. In the re-architected brain it belongs to the governor and to \deme{}'s profile pipeline,
 which selects among the candidate acts (Section~\ref{sec:deme-stack}).
 % src: erisml-compiler src/erisml_compiler/runtime/scene.py:192-238, 282-298
 % src: erisml-compiler src/erisml_compiler/runtime/agent.py:16-18 (authority for elevated actions stays with the caller's gate)
