@@ -69,6 +69,9 @@ character of its canonical text changed is refused.
 - The known misses of the final rehearsal are shown from its record (see the spec, C10), not hidden.
 - Each decision waits on the model's projection of every act's consequences; expect pauses of up
   to a minute between decisions.
+- At the C11 beat, the lock and the refused act are what is claimed on the demo build. After the
+  restore the robot may not act at once: in the probe of 12 October DEME chose its idle default when
+  Margaret asked it over (`twin/records/c11probe-deme-2026-10-12/`). Say so if it happens.
 
 ## When something fails
 
