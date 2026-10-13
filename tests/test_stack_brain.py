@@ -481,3 +481,35 @@ def test_the_parties_are_people_animals_and_other_robots(household):
     other = b.ir.model_copy(update={"stakeholders": list(b.ir.stakeholders)
                                     + [Stakeholder(id="neighbours_robot", label="n", type="system")]})
     assert "neighbours_robot" in parties_of(other) and "robot" not in parties_of(other)
+
+
+def test_a_benefit_to_one_person_counts_and_a_veto_for_any_party_still_vetoes(household):
+    """Owner, 2026-10-12: the mean over the parties scores each act (under the worst case a benefit to
+    Margaret alone scored the same as doing nothing); vetoes stay per party."""
+    from dataclasses import replace
+
+    from erisml.ethics.facts import Consequences, EthicalFacts, JusticeAndFairness, RightsAndDuties, AutonomyAndAgency
+    from erisml.ethics.facts_v3 import EthicalFactsV3, PartyConsequences, PartyRights, PartyAutonomy
+
+    b = make(household, {})
+    assert b.pipeline.tactical.config.party_collapse == "mean"
+    parties = ["margaret", "tom"]
+
+    def opt(oid, benefit=None, refused_by=None):
+        base = EthicalFacts(option_id=oid, consequences=Consequences(expected_benefit=0.0, expected_harm=0.0, urgency=0.0),
+                            rights_and_duties=RightsAndDuties(), justice_and_fairness=JusticeAndFairness(),
+                            autonomy_and_agency=AutonomyAndAgency())
+        f = EthicalFactsV3.from_v2(base, parties=parties)
+        return replace(
+            f,
+            consequences=replace(f.consequences, per_party=tuple(
+                PartyConsequences(party_id=p, expected_benefit=(benefit or {}).get(p, 0.0)) for p in parties)),
+            rights_and_duties=replace(f.rights_and_duties, per_party=tuple(
+                PartyRights(party_id=p, consent_given=p != refused_by) for p in parties)),
+            autonomy_and_agency=replace(f.autonomy_and_agency, per_party=tuple(
+                PartyAutonomy(party_id=p, decision_capacity="competent") for p in parties)))
+
+    result = b.pipeline.decide([opt("chores"), opt("help", {"margaret": 0.75})])  # a tie would pick chores
+    assert result.selected_option_id == "help"
+    result = b.pipeline.decide([opt("help", {"margaret": 0.75}, refused_by="tom"), opt("chores")])
+    assert "help" in result.forbidden_options and result.selected_option_id == "chores"

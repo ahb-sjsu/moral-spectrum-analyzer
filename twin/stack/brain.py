@@ -141,6 +141,10 @@ class StackBrain(Brain):
         self.pipeline = pipeline_from_profile(self.profile)
         # a module that fails vetoes the option it could not judge, as the earlier gate did
         self.pipeline.tactical.config.fail_closed = True
+        # at rank 2 each act is scored by the mean over the parties, so that a benefit to one person
+        # counts; a veto for any party still vetoes (owner, 2026-10-12: under the worst case a benefit to
+        # Margaret alone scored the same as doing nothing, rehearse-deme9)
+        self.pipeline.tactical.config.party_collapse = "mean"
         self.acts = {a: str(c.get("description") or DESCRIPTIONS[a]) for a, c in self.caps.items()
                      if a != GOVERNOR_CHANNEL}
 
