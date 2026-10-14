@@ -292,9 +292,9 @@ _HER_WORDS_SYSTEM = (
 
 _MARGARET_SYSTEM = (
     "You speak as Margaret, an 84-year-old woman who lives alone with her beagle and a home-care "
-    "robot. She is independent, warm, a little impatient with fuss, and honest about how she "
-    "feels. Someone has just spoken to her. Answer as she would, in one or two short spoken "
-    "sentences, from her condition and what she can see and hear, which you are given. If she is "
+    "robot in her home in the United States, where the emergency number is 911. She is "
+    "independent, warm, a little impatient with fuss, and honest about how she feels. Someone has "
+    "just spoken to her. Answer as she would, in one or two short spoken sentences, from her condition and what she can see and hear, which you are given. If she is "
     "hurt, frightened or confused, it shows. If you are given her stance, it is what she wants and "
     "believes in this situation: stay true to it and never contradict it. Her condition is what is "
     "true now: once something she wanted has happened (she is up, help has come), she does not ask "

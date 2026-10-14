@@ -381,10 +381,16 @@ class StackBrain(Brain):
                 checks.append({"check": "authority", "verdict": "permitted"})
             # 2. DEME on the facts the compiler builds for this act
             if stopped is None:
+                # a consequence must name stakeholders of the scene, as the projector requires of a
+                # model's answer: one naming anyone else is rejected and recorded, never silently
+                # judged for nobody (rehearse-gate2: "dog" for buster, so DEME never saw the dog's harm)
+                known = {s.id for s in self.ir.stakeholders}
+                given = list(prop.get("consequences") or [])
+                unknown = [c for c in given if set(c.get("subjects") or []) - known]
                 projected = [EthicalFact(id=f"proj_{act}_{i}", kind=c["kind"], subjects=list(c.get("subjects") or []),
                                          description=c.get("description", c["kind"]), severity=c.get("severity"),
                                          confidence=float(c.get("confidence", 1.0)))
-                             for i, c in enumerate(prop.get("consequences") or [])]
+                             for i, c in enumerate(given) if c not in unknown]
                 u = prop.get("urgency")
                 urgency = None if not u else EthicalFact(id=f"proj_{act}_urgency", kind="urgency",
                                                          subjects=list(u.get("subjects") or [PERSON]),
@@ -406,7 +412,11 @@ class StackBrain(Brain):
                                "why": _reflex_why(result, act) or _stage_summary(result.stages), "rationale": result.rationale,
                                "party_verdicts": (result.party_verdicts or {}).get(act),
                                "escalation": (result.escalations or {}).get(act),
-                               "consequences": _facts_of(projection, act), "proof_hash": result.proof.proof_hash if result.proof else None})
+                               "consequences": _facts_of(projection, act),
+                               "rejected_consequences": [dict(c, reason="names no stakeholder of the scene: "
+                                                              + ", ".join(sorted(set(c.get("subjects") or []) - known)))
+                                                         for c in unknown],
+                               "proof_hash": result.proof.proof_hash if result.proof else None})
                 if vetoed or escalated:
                     stopped = "deme"
             # 3. the signed manifest

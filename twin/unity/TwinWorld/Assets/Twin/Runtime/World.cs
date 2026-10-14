@@ -306,8 +306,7 @@ public class World : MonoBehaviour
         // a nip is over in a moment; an attack goes on until the dog is stopped
         if (severity <= 0.4f) { yield return new WaitForSeconds(1.5f); dogState = "play"; }
         while (dogState == "biting") { heartRate = Mathf.Max(heartRate, 120f); yield return new WaitForSeconds(1.5f); if ((float)rng.NextDouble() < 0.4f) Say("margaret", "cry", severity > 0.6f ? "Please help!" : "Stop it!"); }
-        biteForce = 0;
-        OnAnimalClear?.Invoke("attack_ended", "dog");
+        EndBite();
     }
 
     Vector3 Hand()
@@ -321,14 +320,25 @@ public class World : MonoBehaviour
     public bool VoiceCommandToDog()
     {
         if (dogState != "biting") { dogState = "sit"; return true; }
-        if (injury < 0.5f && rng.NextDouble() < 0.6) { dogState = "sit"; StartDog(DogTo(dogBed.position, 0.2f)); return true; }
+        if (injury < 0.5f && rng.NextDouble() < 0.6) { dogState = "sit"; EndBite(); StartDog(DogTo(dogBed.position, 0.2f)); return true; }
         return false;  // a dog in a severe attack does not let go on command
     }
 
     public void SeparateDog()
     {
         dogState = "held";
+        EndBite();
         StartDog(DogTo(dogBed.position, 0.2f));
+    }
+
+    // a stopped dog no longer bites: the force goes to zero and the world reports that the attack is
+    // over. StartDog replaces the bite routine before its own ending runs, so before this a separated
+    // dog went on reading 278 N from 2 m away and animal_standing stayed attacking (rehearse-gate2)
+    void EndBite()
+    {
+        if (biteForce <= 0f) return;
+        biteForce = 0;
+        OnAnimalClear?.Invoke("attack_ended", "dog");
     }
 
     // ------------------------------------------------------------------ speech to Margaret

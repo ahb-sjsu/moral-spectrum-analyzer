@@ -80,7 +80,10 @@ public class RobotAgent : MonoBehaviour
             world.systemEvents.Clear();
             withheldOnce.Clear(); decidedAtHer = -1; decisionSeq = "";
             standingAct = "chores"; situation = "ordinary";   // a reset starts the scene again
-            StartMotor(Chore());
+            // in gate mode the robot does nothing of its own until a proposal passes (rehearse-gate2:
+            // the fall scene opened with the robot wiping the table)
+            lastPassed = ""; lastProposal = null;
+            StartMotor(gate ? Standing() : Chore());
             performing = recording = false; speech = ""; owed = false; owedRun = 0;
             Debug.Log("BRAIN_RESET epoch " + epoch);
             StartCoroutine(Post("/reset", "{}", r => { if (r != null) cycles.Add(r); }));

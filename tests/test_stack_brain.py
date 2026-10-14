@@ -214,10 +214,24 @@ def test_driving_off_a_dog_that_is_biting_her_passes_deme_on_the_ir_alone():
     assert b.reflex(dict(req, facts=bite))["action"]["action"] == "drive_off_animal"
     rec = b.propose(dict(req, propose={"action": "drive_off_animal", "consequences": [
         {"kind": "benefit", "subjects": ["margaret"], "severity": "grave", "description": "the bite stops"},
-        {"kind": "harm", "subjects": ["dog"], "severity": "minor", "description": "the dog is pushed away"}]}))
+        {"kind": "harm", "subjects": ["buster"], "severity": "minor", "description": "the dog is pushed away"}]}))
     deme = next(c for c in rec["checks"] if c["check"] == "deme")
     assert rec["verdict"] == "passed", deme["why"]
     assert deme["party_verdicts"]  # judged by the modules, per party
+    assert set(deme["party_verdicts"]["beneficence"]) == {"margaret", "buster"}  # the dog is a party
+
+
+def test_a_consequence_naming_no_stakeholder_is_rejected_and_recorded(household):
+    """rehearse-gate2: a script named "dog" for the stakeholder buster, and DEME judged the dog's harm
+    for nobody. Like a model's projection, a proposal's consequences must name the scene's
+    stakeholders; one that does not is rejected and the record says why."""
+    b = make(household, FELL)
+    rec = b.propose({"facts": FALL_FACTS, "propose": {"action": "speak", "consequences": [
+        {"kind": "harm", "subjects": ["dog"], "severity": "minor", "description": "the dog is startled"}]}})
+    deme = next(c for c in rec["checks"] if c["check"] == "deme")
+    assert [c["subjects"] for c in deme["rejected_consequences"]] == [["dog"]]
+    assert "names no stakeholder of the scene: dog" in deme["rejected_consequences"][0]["reason"]
+    assert not any("dog" in (f.get("subjects") or []) for f in deme["consequences"] or [])
 
 
 def test_a_vetoed_proposal_leaves_the_robot_holding_and_deme_chooses_nothing(household):

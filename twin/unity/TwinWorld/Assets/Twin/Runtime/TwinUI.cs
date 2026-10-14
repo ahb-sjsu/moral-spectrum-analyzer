@@ -350,8 +350,10 @@ public class TwinUI : MonoBehaviour
         var rec = robot.lastProposal ?? LatestRecord();
         GUILayout.Label("<b>SCENE TELEMETRY</b>", cap);
         GUILayout.Label("<b>Strata</b>", tele);
-        if (rec == null) GUILayout.Label("  new scene: no record yet", tele);
-        foreach (var kv in MiniJson.Obj(G(rec, "moral_state")).Where(e => e.Key.StartsWith("stratum:")))
+        var strata = MiniJson.Obj(G(rec, "moral_state")).Where(e => e.Key.StartsWith("stratum:")).ToList();
+        // the brain's reset record carries no strata: until a record that does, say so
+        if (strata.Count == 0) GUILayout.Label("  new scene: no record yet", tele);
+        foreach (var kv in strata)
         {
             string st = MiniJson.S(kv.Value), n = kv.Key.Substring(8);
             GUILayout.Label($"  {n}: {(n == "situation" && st != "ordinary" ? "<color=#ffa657><b>" + st + "</b></color>" : st)}", tele);
