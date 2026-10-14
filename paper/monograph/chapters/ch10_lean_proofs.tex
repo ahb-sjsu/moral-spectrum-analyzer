@@ -34,9 +34,12 @@ It decides by a different loop, over candidate acts that include acts forbidden 
 could permit.
 It decides on a different scene, a constitution derived from the earlier scene and merged with a
 household scene the compiler wrote.
-Neither the Lean model nor the static tests cover that loop or that scene.
+Neither the Lean model of the decision loop nor the static tests cover that loop or that scene.
 Brain8 keeps the governor, the witness bars, the strata that move only on rulings and system
-events, and the check at the act, but no theorem here is a theorem about brain8.
+events, and the check at the act. Of the theorems here only the two strata theorems of
+Section~\ref{sec:lean-strata} hold for brain8. They hold for every scene the loader accepts, and
+brain8 builds its seven stratifications through the same checked loader.
+% src: erisml-compiler runtime/scene.py:129 (strata.load), runtime/strata.py Stratification.__init__ (_check per gate); checked 2026-10-13, StackBrain().reset() loads the seven stratifications of twin/stack/constitution.erisml
 % src: twin/stack/brain.py (_decide, _judge, merge); twin/stack/constitution.erisml; twin/stack/household.ir.json
 
 The model instantiates part (iv) of the No Escape theorem of the \erisml{} foundations paper,

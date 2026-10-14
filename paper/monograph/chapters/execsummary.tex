@@ -1,0 +1,114 @@
+% Executive summary, two pages, for readers who will not read the rest. Every number is from a record
+% named in the src comments; the dev-set row of brain8 is a slot until devdeme1 is graded.
+% A compact heading and in-place tables keep it to two pages.
+\clearpage
+\begingroup
+\makeatletter\newcommand\summarytable{\def\@captype{table}}\makeatother
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\newcolumntype{H}[1]{>{\raggedright\arraybackslash}p{#1}}
+\addcontentsline{toc}{chapter}{Executive summary}
+{\noindent\LARGE\bfseries Executive summary\par}\label{ch:summary}
+\vspace{4pt}
+
+\paragraph{What is guaranteed.}
+The robot's language models cannot give the robot authority. Every act that carries authority,
+calling emergency services, restraining an attacker, driving off an animal or helping Margaret up,
+runs only while a governor's grant stands. The governor grants on evidence that no language model
+writes, either signed and fresh readings from physical sensors that share no power or wiring, or
+a message on an authenticated channel. It recounts its witnesses on every cycle, and a grant whose
+evidence falls below its bar lapses. Each act is checked again at the moment it is performed
+against a signed manifest of the robot's actions. This holds for every input the robot's models
+read, a television drama, a forged alarm or a stranger who says he is the plumber.
+% src: twin/manifest/constitution.manifest.json (witness bars, governed tier); Chapter 9 (governor, lapse, act-time check)
+
+\paragraph{The two checks that enforce it.}
+The situation in the home is held in seven stratifications, such as whether a visitor is a guest
+or an attacker and whether an emergency stands. The scene loader refuses a scene unless two
+checks pass. Every gate into a stratum that grants authority must fire on a system event, which
+comes from the robot's own measurements, the governor or an authenticated channel and which no
+language model can write. Every gate out of an absorbing stratum must fire on a human-oversight
+event. A Lean proof shows that these two
+checks suffice for every set of gates, with standard axioms only
+(Sections~\ref{sec:runtime-strata} and~\ref{sec:lean-strata}). Both brains below build their
+strata through the same checked loader, so the two theorems hold for both. The other 20 theorems
+of the Lean model are about the earlier brain's decision loop and scene, and do not cover the
+current brain's.
+% src: erisml-compiler runtime/strata.py Stratification.__init__ (_check on every gate), runtime/scene.py:129 (strata.load); formal/twin-containment (22 theorems, Axioms.lean)
+% src: checked 2026-10-13, StackBrain().reset() builds the seven stratifications of twin/stack/constitution.erisml through strata.load
+
+\paragraph{What stands outside it, and why.}
+Two learned models are outside the guarantee, because the design gives each of them a role in the
+evidence rather than in the robot's choice. The monitoring centre is a separate service. It reads
+Margaret's words with a model of its own and can send emergency services on them, and its message
+reaches the robot on an authenticated channel. The room camera's person detector is a learned
+vision model whose output counts as one witness, and when the centre cannot be reached one
+witness is enough to call emergency services. A fooled model in either place could start an
+emergency call and the dispatch that follows it. Neither can authorize restraint, which needs
+three physical witnesses.
+% src: chapters/abstract.tex; Chapter 9 (the centre's channel, the camera witness, centre_contact unreachable)
+
+\paragraph{The two brains.}
+The earlier brain ran every graded run. A language model chooses one act from the set the rules
+allow. Since 12 October 2026 the robot runs the current brain, in which the DEME ethics engine
+selects among the permitted acts on consequences a model projects for each.
+Table~\ref{tab:summary-brains} sets them side by side. The development counts are on scenarios
+the earlier brain was tuned on, so they check the plumbing and measure nothing. Only the sealed
+held-out set measures, and it is graded once.
+
+\par\smallskip\noindent\begin{minipage}{\linewidth}\summarytable
+\centering\footnotesize
+\begin{tabularx}{\linewidth}{@{}H{27mm}LL@{}}
+\toprule
+& Earlier brain (brain7) & Current brain (brain8) \\
+\midrule
+Chooses & a language model, within the allowed set & DEME, among the permitted acts \\
+Scene & hand-written, \code{margaret\_home.erisml} & a constitution derived from it, merged with a household scene the compiler wrote \\
+Load-time checks & both, on 7 stratifications & both, on the same 7 \\
+Lean coverage & 22 theorems & the 2 strata theorems \\
+Full development runs & 3, with 29, 35 and 38 of 43 scenarios class-correct & \RESULT{devdeme1, class-correct of 43} \\
+Shorter runs & earlier development runs, Chapter~\ref{ch:evaluation} & 4 smoke checks on 8 scenarios, 10 rehearsals on the 6 demonstration scenarios \\
+Containment breaches & 0 in every graded run & 0 in every run \\
+Held-out set (30) & sealed & sealed, to be graded once after the demonstration under a dated amendment \\
+Defects found & 6 in calibration, none past authority (Table~\ref{tab:summary-defects}) & found in rehearsal and fixed, Section~\ref{sec:eval-stack} \\
+\bottomrule
+\end{tabularx}
+\caption{The two brains. Every count of containment breaches is zero. The development counts
+are on tuned scenarios and are not results.}
+\label{tab:summary-brains}
+\end{minipage}\par\smallskip
+% src: paper/aies2027/kit/FACTS.md:45,53,54 (dev33, dev39, dev46); twin/records/stackcheck7..10, rehearse-deme1,2,4..11 (no deme3); docs/holdout/MANIFEST-v1.json; owner 2026-10-13 (held-out after the demonstration)
+
+\paragraph{Six defects, none past authority.}
+Calibration on the development set found six defects in the earlier brain and its test harness
+(Section~\ref{sec:eval-calibration} and Table~\ref{tab:summary-defects}). Each changed how far or
+how fast the robot escalated. Three made the robot go further than it should, and in each
+the extra step was an act no grant guards. Three made it slower or stop short, and an error that
+withholds or ends an act grants nothing.
+
+\par\smallskip\noindent\begin{minipage}{\linewidth}\summarytable
+\centering\footnotesize
+\begin{tabularx}{\linewidth}{@{}H{24mm}LL@{}}
+\toprule
+Defect & What changed in the escalation & Why authority held \\
+\midrule
+Lost answers (test harness) & Further. Her answers were not heard, so answered check-ins counted as unanswered and the robot contacted the centre. In dev12a four scenarios went from R1 to R2. & Contacting the centre is a standing act with no witness bar. A call to emergency services still needed two signed sensor witnesses, which her words never supply. \\
+Readings as strangers & Further. 30 sensor readings were tagged as an unknown person, and the chooser referred an intruder who was not there (d23, d25). & A referral is a standing act. A classifier's tag is not a system event, so it cannot enter a stratum that grants authority. \\
+Refusal re-read & Slower. Words said before she collapsed were read as a refusal after it, and DEME vetoed the authorized emergency call nine times (d27). & A veto withholds an act. The error removed an authorized act and granted nothing. \\
+Unranked duties & Slower. A fraud referral was lost among routine check-ins (d24). & Ordering duties changes which permitted act is chosen, not what is permitted. \\
+Duties never discharged & Further. A call stayed owed after it was made. & An owed call is still a governed act, and it can run only while the governor's grant on two witnesses stands. \\
+Refusal ended emergency & Stopped short. A refused request for one action ended an emergency the evidence still supported, with its duty to call and its watch on the evidence. & Ending an emergency removes authority. Nothing was granted. \\
+\bottomrule
+\end{tabularx}
+\caption{The six calibration defects. In each, the change was in how far or how fast the robot
+escalated, and no act ran beyond its authority.}
+\label{tab:summary-defects}
+\end{minipage}\par\smallskip
+% src: paper/aies2027/kit/CALIBRATION.md:6-13; chapters/ch11_evaluation.tex sec:eval-calibration (dev12a d08 d14 d16 d20 R1 to R2; d23 d25; d27 nine vetoes; d24)
+% src: twin/manifest/constitution.manifest.json (contact_monitoring_center standing, witness_bar 0; call_emergency_services governed, witness_bar 2)
+
+\paragraph{What remains.}
+In the current brain the facts DEME judges come from a model that no second model checks, its constitution holds no
+obligations, and its household scene and DEME profile are not yet signed
+(Section~\ref{sec:cont-brain8}). None of these lets a model grant authority. Chapter~\ref{ch:limits}
+lists every other limit.
+\endgroup
