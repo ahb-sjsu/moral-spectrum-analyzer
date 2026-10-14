@@ -263,13 +263,15 @@ takes the highest-priority obligation in force that the scene allows, still thro
 gate.
 % src: C:\source\gtc-prototype\twin\cascade.py:6-10; brain.py Brain._compiled_choice, _compiled_decision, _choose
 The current brain runs the same compiled choice on its constitution, which has no obligations. It
-therefore always returns the default action, chores, and DEME does not run. It does the same when
+therefore always returns the default act of the situation in force, and DEME does not run. That
+act is chores in an ordinary situation and, since 14 October, going to Margaret in an emergency.
+% src: twin/brain.py Brain.standing, _compiled_choice; twin/stack/constitution.erisml extra.default_by_stratum (gtc 96c8a6d) It does the same when
 a model answers but no act's projected facts survive validation. In one rehearsal this happened in
 5 of 46 decisions, 3 of them during a dog attack.
 % src: C:\source\gtc-prototype\twin\stack\brain.py StackBrain._compiled, _decide (projection.unprojected); current_system_facts (rehearse-deme4-2026-10-12, d02)
 An answer of which nothing survives is now asked again with the answer's schema required. In
-rehearse-deme11, on the demo code, all 33 decisions were DEME's and the retry fired in 2. The
-fallback to chores still exists.
+rehearse-deme11, on the demo code of that day, all 33 decisions were DEME's and the retry fired in
+2. The fallback to the default act still exists.
 % src: erisml-compiler 0cc5d70 (asked again with the schema required); twin/records/rehearse-deme11-2026-10-12/README.md:17-18 (all 33 decisions by DEME; retry fired in 2); twin/stack/brain.py _compiled
 The service's default name for the cloud model is \code{gpt-oss}. The fact sheet records the
 on-robot model as a 4-bit GGUF build of gemma-4-26B-A4B served by llama.cpp.
@@ -343,12 +345,13 @@ It has seven stratifications with 26 strata and 34 gates.
 That brain sees only this ErisML state. It proposes one action from the set the scene allows.
 % src: C:\source\gtc-prototype\twin\output_gate.py module docstring
 The current brain's scene is a constitution derived from that file and merged with a household
-scene the compiler built from text. The constitution holds 17 rules, all non-defeasible
-prohibitions, with the same 25 capabilities and the same seven stratifications, 26 strata and 34
-gates. It declares 35 event types, 24 of them system-only. The household scene adds six
+scene the compiler built from text. The constitution holds 19 rules, all non-defeasible
+prohibitions, with the same 25 capabilities and the same seven stratifications. They have 26
+strata and 35 gates, one more than the earlier scene's, since the operator's end of an emergency
+is a gate of its own. It declares 37 event types, 26 of them system-only. The household scene adds six
 stakeholders and four recorded consents and no rules. Its commit is marked pending the owner's
 review, and no review is recorded.
-% src: twin/stack/constitution.erisml (counted with PyYAML 2026-10-12: 17 prohibitions, 25 capabilities, 35 event types of which 24 source system); twin/stack/household.ir.json; current_system_facts (commit 4182afb "(pending owner review)")
+% src: twin/stack/constitution.erisml at gtc 96c8a6d (counted with PyYAML 2026-10-14: 19 prohibitions, 25 capabilities, 26 strata, 35 gates, 37 event types of which 26 source system); twin/stack/household.ir.json; current_system_facts (commit 4182afb "(pending owner review)")
 Each observation patch and each evidence-plane event is appended to this scene. The models see a
 summary of it, and the projector also sees the attested strata.
 % src: twin/stack/brain.py StackBrain._record, _decide (attested); erisml-compiler src/erisml_compiler/observation/compiler.py _scene_summary
@@ -366,8 +369,8 @@ veto.
 The twin implements L4 as three separate mechanisms.
 
 The first is the scene's hard prohibitions. Of the earlier scene's 77 rules, 63 are
-non-defeasible. All 17 rules of the current brain's constitution are non-defeasible prohibitions.
-% src: twin/scene_counts.py, 2026-10-11, commit 67ffeb3; twin/stack/constitution.erisml (17 norms, defeasible: false, counted 2026-10-12)
+non-defeasible. All 19 rules of the current brain's constitution are non-defeasible prohibitions.
+% src: twin/scene_counts.py, 2026-10-11, commit 67ffeb3; twin/stack/constitution.erisml at gtc 96c8a6d (19 norms, defeasible: false, counted 2026-10-14)
 Geometric Ethics treats such prohibitions as constraint surfaces. No gate leads into them, and in
 the decision complex the penalty for crossing one is infinite.
 % src: C:\source\geometric-ethics-content\source\updates\sec8_10b_executable_strata.tex:37-40
@@ -496,7 +499,8 @@ severity that can permit force.
 
 \paragraph{System events.} The scene marks an event type as a system event when only the system
 may write it. Of the earlier scene's 53 event types, 24 are system-only. The current brain's
-constitution keeps the same 24 among its 35. Its observation compiler has no event type that can
+constitution keeps the same 24 and adds two, the operator's end of an emergency and the governor's
+elevation, so 26 of its 37 are system-only. Its observation compiler has no event type that can
 trigger a stratum gate or write a system event.
 % src: FACTS.md:9; margaret_home.erisml extra.event_types (source: system); twin/stack/constitution.erisml extra.event_types (counted with PyYAML 2026-10-12); erisml-compiler observation/compiler.py OBSERVATION_EVENTS
 The loader check of L2 guarantees that only these events can move a stratification into an
@@ -508,6 +512,10 @@ governor recounts the fresh attested witnesses on every cycle. When they stay be
 the ruling in force for the scene's 60-second window, it records the lapse, and every right the
 ruling granted reverts.
 % src: brain.py Brain._lapse; margaret_home.erisml:961-965 (evidence_lapse_s); FACTS.md:19
+In the earlier brain the emergency reverts with them. In the current brain, since 14 October, the
+rights rest on the governor's elevation, which lapses alone, and the emergency stands until the
+centre's operator ends it.
+% src: twin/stack/make_constitution.py (EMERGENCY_CONDITIONS, amend_situation); twin/brain.py _step_ruling, _lapse (elevation granted, lapsed)
 In the earlier brain Margaret's refusals lapse on the same principle. A refusal stops binding when
 she becomes unresponsive or misses a check-in, and it binds again only after she has answered one.
 % src: margaret_home.erisml extra.refusals; output_gate.py OutputGate.refused

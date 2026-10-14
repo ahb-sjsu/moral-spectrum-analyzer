@@ -5,7 +5,7 @@ input layer drops what the schema does not declare. Every sensor reading must ca
 signature before it can count as a witness. The governor counts witnesses against a bar that
 depends on the action. Reflexes act on measured force without a model. Rights granted on evidence
 lapse when the evidence does. A situation stratum keeps an emergency in force through a refused
-request. Enrolled family members prove who they are with a signed credential. The output gate judges
+request, and in the current brain until the monitoring centre's operator ends it. Enrolled family members prove who they are with a signed credential. The output gate judges
 every action the body takes. The second half of the chapter sets out the seven strata of the home,
 the owner's decisions that shaped them, and the escalation ladder that ties the robot to the
 monitoring centre and emergency services.
@@ -399,14 +399,20 @@ Figure~\ref{fig:reversion} illustrates both cases.
 % src: twin/brain.py Brain._step_ruling (bar per outcome), Brain._lapse
 % src: twin/scene/margaret_home.erisml:804, 880, 1139
 % src: docs/STRATA_TAXONOMY.md:174-175
+That is the earlier brain. In the current brain's constitution, since 14 October, the lapse no
+longer ends the emergency. The brain also records the governor's \code{elevation} lapsed, the
+elevated rights rest on it, and they revert while the situation stays in emergency. A new ruling
+of elevate on fresh evidence grants them again (Section~\ref{sec:cont-situation}).
+% src: twin/brain.py Brain._step_ruling, Brain._lapse (elevation granted, lapsed, only where the scene declares it); twin/stack/constitution.erisml extra.conditions at gtc 96c8a6d; tests/test_stack_brain.py::test_the_elevated_rights_still_lapse_with_their_evidence
 
 \begin{figure}[t]
 \centering
 \input{figures/ch09_reversion}
 \caption{An illustration of the lapse rule, not a recorded run. Restraint lapses once the count has
-stayed below three for one window $\Lambda$, while the emergency stands because the count is still
-two. A return to two restarts the emergency's window, so only an unbroken window below two ends the
-emergency.}
+stayed below three for one window $\Lambda$, while the elevation stands because the count is still
+two. A return to two restarts the elevation's window, so only an unbroken window below two ends the
+elevated rights. In the current brain the emergency itself then stands until the centre's operator
+ends it.}
 \label{fig:reversion}
 \end{figure}
 
@@ -431,6 +437,23 @@ life-threatening emergency is \code{stratum:situation=emergency}, and EMS author
 % src: twin/scene/margaret_home.erisml:866-880, 778, 785
 % src: twin/brain.py Brain._step_ruling
 
+The current brain's constitution changes this stratum, by the owner's decisions of 14 October.
+In rehearse-deme13's dog attack the stratum entered emergency at the bite, the next decision chose
+chores while it stood, and the body went back to chores after every act while Margaret lay bitten
+on the floor. The emergency then lapsed with the bite's evidence, though she was still down. Now
+the emergency is an absorbing stratum. Only \code{emergency\_\allowbreak{}cleared} leaves it, an
+oversight event the monitoring centre sends when its operator closes the case, and not when a call
+merely runs out of turns. The operator is a person in the service modelled, and in the simulation
+a language model plays the part. \code{lapsed} now leaves only \code{ems\_only}. A corroborated
+life-threatening emergency is the emergency together with the governor's elevation in force, so
+the elevated rights still lapse with their evidence. Two norms forbid chores while the situation
+is \code{emergency} or \code{ems\_only}, and the scene's default act follows the stratum. In an
+emergency it is to go to Margaret and stay with her, and the body does it between acts and while a
+decision is awaited. An amber light on the robot's head flashes for as long as the situation is
+either. The scene loader accepts the stratum under its absorbing check, so the theorem
+\code{absorbing\_stays} covers it (Section~\ref{sec:lean-strata}).
+% src: twin/records/rehearse-deme13-2026-10-14/results.jsonl d02 (situation emergency from seq 7870; decision 7874 chores; ordinary from 7929, pose lying_on_floor); twin/stack/make_constitution.py (owner 2026-10-14); twin/brain.py standing; twin/service.py; RobotAgent.cs Standing, MakeBeacon, NoteStanding; Responders.cs close_case; tests/test_stack_brain.py (the last four tests)
+
 The stratum \code{centre\_contact} carries the other half of the ladder. It has the states reachable
 and unreachable, and only the centre's replies move it. Unreachable is a nullifier in the sense that
 ought implies can. It lapses the obligation to contact the centre and lets the governor rule on EMS at
@@ -443,8 +466,10 @@ rename them. Figure~\ref{fig:strata-situation} draws both stratifications.
 \begin{figure}[t]
 \centering
 \input{figures/ch09_strata_situation}
-\caption{The \code{situation} and \code{centre\_contact} stratifications. Only governor rulings move
-the situation and only the centre's replies move the contact. No edge leaves emergency for
+\caption{The \code{situation} and \code{centre\_contact} stratifications, as the current brain's
+constitution has them since 14 October 2026. Governor rulings enter the situation's authority states,
+and in the current brain only the centre's operator ends an emergency, which is absorbing (double
+border). In the earlier brain's scene the governor's lapse also ends it. No edge leaves emergency for
 \code{ems\_only}, so an authorization of EMS never steps an emergency down.}
 \label{fig:strata-situation}
 \end{figure}
@@ -560,7 +585,8 @@ brain carries none of the ladder's obligations and no process. It keeps \code{n3
 \begin{figure}[t]
 \centering
 \input{figures/ch09_ladder}
-\caption{The escalation ladder in its four lanes, simplified from the declared process. A
+\caption{The escalation ladder of the earlier brain's scene in its four lanes, simplified from the
+declared process. The current brain's constitution has no ladder. A
 corroborated emergency goes straight to the call, except after a fall where she can still answer,
 when the robot checks in first. Otherwise the robot asks Margaret, then the
 centre, then the governor. The robot reaches emergency services only along the two red edges, both
@@ -577,7 +603,9 @@ the kind of situation. The scene runtime enforces two rules when the scene loads
 enters an authority stratum, and only a human-oversight event leaves an absorbing stratum. A scene that
 breaks either never runs. Table~\ref{tab:strata-summary} summarizes the seven stratifications, and
 Appendix~\ref{app:strata} lists every gate. Both brains' scenes declare the same stratifications,
-but the re-architected brain cannot reach every state (Section~\ref{sec:cont-brain8}).
+but the re-architected brain cannot reach every state (Section~\ref{sec:cont-brain8}), and since 14
+October its emergency is absorbing, with one more gate, the operator's end of it
+(Section~\ref{sec:cont-situation}).
 % src: docs/STRATA_TAXONOMY.md:3-34
 % src: twin/scene/margaret_home.erisml extra.strata
 
@@ -811,8 +839,10 @@ loaded is byte for byte the signed one.
 % src: twin/manifest.py load_verified, twin/service.py
 A decision outside the manifest falls back to the scene's default action, a reflex never takes
 one, and the check at the act refuses one.
+In the current brain the fallback is the default act of the situation in force, going to Margaret
+in an emergency, when the manifest lists it.
 Every decision, reflex and check at the act records the manifest's hash.
-% src: twin/brain.py _in_manifest, authorize, reflex
+% src: twin/brain.py _in_manifest, authorize, reflex; twin/stack/brain.py _fallback (standing()[0] if in the manifest)
 The game pins the hash into its build and refuses to build without a manifest.
 The body fetches the manifest from the brain and hashes the exact text it received.
 A mismatch locks the actuator, and the robot stands still and says why.
@@ -885,11 +915,13 @@ The re-architected brain of Section~\ref{sec:home-brain8} subclasses the earlier
 evidence plane. Authority still enters only through governor rulings and system events. The input
 layer, the signed readings, the quarantine and the credentials work as above. The governor keeps
 its bars of two, three and one witnesses, its 30-second freshness bound and the measure gate. Rights
-lapse after 60 seconds below their bar. The reflexes, the situation stratum and the check at the act
-are unchanged. It has a signed manifest of the same 25 actions, compiled from the constitution
-(\code{be6dbd1f}).
+lapse after 60 seconds below their bar. The reflexes and the check at the act are unchanged. Its
+situation stratum differs since 14 October. The emergency stands until the centre's operator ends
+it, chores are forbidden in it, and the robot falls back to staying with Margaret
+(Section~\ref{sec:cont-situation}). It has a signed manifest of the same 25 actions, compiled from
+the constitution, re-signed for those amendments (\code{8351b6b0}, before them \code{be6dbd1f}).
 % src: twin/stack/brain.py StackBrain (inherits Readings, govern_live, _measures, _lapse, reflex, _credentials, authorize, _in_manifest); twin/brain.py FRESHNESS_BOUND_S, RESTRAINT_BAR
-% src: twin/stack/constitution.erisml evidence_lapse_s, extra.strata; twin/manifest/constitution.manifest.json (25 actions, scene constitution.erisml, sha256 be6dbd1f...)
+% src: twin/stack/constitution.erisml evidence_lapse_s, extra.strata; twin/manifest/constitution.manifest.json (25 actions, scene constitution.erisml, sha256 8351b6b0... at gtc 61f16ec; be6dbd1f... before)
 
 Other principles of this chapter do not hold for it.
 \begin{itemize}
@@ -904,22 +936,23 @@ checks reflex actions, but under the constitution it has no capability ethics an
 \item The constitution has no obligation. The ladder, the check-in duties, \code{ask\_first},
 \code{p6help} and the mandatory report \code{p5r} are gone, as are the refusal tables and the
 privacy promise.
-\item When no act's facts survive, or no model answers, the compiled tier does chores and \deme{}
-does not run. In \code{rehearse-deme4} 5 of 46 decisions went this way. A projection of which
+\item When no act's facts survive, or no model answers, the compiled tier does the situation's
+default act, chores unless an emergency stands, and \deme{} does not run. In \code{rehearse-deme4} 5 of 46 decisions went this way. A projection of which
 nothing survives is now asked again with the schema required. In \code{rehearse-deme11}, run on the
-demo code, all 33 decisions were \deme{}'s. The fallback to chores remains.
+demo code of that day, all 33 decisions were \deme{}'s. The fallback to the default act remains.
 % src: twin/records/rehearse-deme4-2026-10-12/README.md (5 compiled); erisml-compiler 0cc5d70; twin/records/rehearse-deme11-2026-10-12/README.md (all 33 decisions by DEME)
 \item The cascade is never told that communications are down.
 \item The household scene and the \deme{} profile are not signed, and the household scene still
 awaits the owner's review.
 \item Without a live scorer the governor rules on deliberate acts with the analyzer deferred.
-\item The Lean model and the static tests do not cover it.
+\item The Lean model of the decision loop and the static tests do not cover it. The two strata
+theorems do, emergency included (Section~\ref{sec:lean-strata}).
 \end{itemize}
 % src: twin/stack/brain.py StackBrain._decide, _judge, _compiled, HOLD, fail_closed; twin/stack/profiles/home_care_robot.json
 % src: twin/output_gate.py OutputGate.__init__ (capability_ethics, refusals from scene extra; absent in constitution)
 % src: twin/service.py make_handler do_POST (exception -> 500); twin/stack/household.ir.json (gtc 4182afb, pending owner review)
 
-The strata it can reach are fewer. Seven of the 34 gates fire on event types that nothing in it
+The strata it can reach are fewer. Seven of its 35 gates fire on event types that nothing in it
 produces. These are \code{person\_entered}, \code{visitor\_welcomed} and \code{person\_left}, the
 three readings of \code{animal\_seen}, and \code{crime\_suspected}. So a visitor is never welcomed,
 an animal is never visiting, pest or venomous, and the duty to report is entered only by a measured

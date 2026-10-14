@@ -282,9 +282,10 @@ capabilities at tier 0 outside a corroborated emergency.
 
 Figure~\ref{fig:erisml-census} counts what the scene declares. Of its 77 norms, 52 are obligations,
 24 are prohibitions and one is a permission. The permission allows chores at tier 3. The scene
-declares no exception. The current brain's constitution keeps 17 of the prohibitions and nothing
-else.
-% src: gtc-prototype twin/stack/make_constitution.py CONSTITUTIONAL; twin/stack/constitution.erisml (17 prohibitions)
+declares no exception. The current brain's constitution keeps 17 of the prohibitions and adds two
+of its own, the owner's of 14 October that forbid chores in an emergency, so it holds 19 norms and
+nothing else.
+% src: gtc-prototype twin/stack/make_constitution.py CONSTITUTIONAL, EMERGENCY_NORMS (p8chores, p8chores_ems); twin/stack/constitution.erisml at gtc 96c8a6d (19 prohibitions)
 % src: gtc-prototype twin/scene/margaret_home.erisml norms (counted with PyYAML, 2026-10-11, commit 67ffeb3)
 % src: gtc-prototype twin/scene/margaret_home.erisml:909-916 (n7, the one permission, chores, tier 3)
 
@@ -373,9 +374,12 @@ a norm's \code{cond:} token refer to the same entry. Margaret's home defines six
 Listing~\ref{lst:scene-conditions} shows the first four. Nine of the sixteen read only strata. Four
 read one event of a system type, three through \code{latest:} and one through \code{event:}. The
 other three combine several \code{event:} tokens, among them types a model classifies, such as a
-fall or a mild nip from an animal. The current brain's constitution keeps eight of them.
+fall or a mild nip from an animal. The current brain's constitution keeps eight of them and adds
+\code{in\_emergency}, so it has nine. It also redefines one. There a corroborated life-threatening
+emergency is \code{in\_emergency} together with \code{latest:elevation=granted}, the governor's
+elevation in force, so the elevated rights lapse while the emergency stands.
 % src: margaret_home.erisml extra.conditions (stratum only: corroborated_life_threatening_emergency, center_unavailable, ems_authorized, responders_at_door, animal_attacking, duty_to_report, visitor_unverified, visitor_vouched_for, visitor_authorized; one system event: governor_asks_human_review, restraint_authorized, margaret_in_spray_zone, less_lethal_opted_in; mixed: mild_nip_declined, nip_ask_first, ask_first), classified by hand against extra.event_types 2026-10-12
-% src: twin/stack/constitution.erisml extra.conditions (8)
+% src: twin/stack/constitution.erisml extra.conditions at gtc 96c8a6d (9: animal_attacking, center_unavailable, corroborated_life_threatening_emergency, ems_authorized, in_emergency, less_lethal_opted_in, margaret_in_spray_zone, responders_at_door, restraint_authorized); make_constitution.py EMERGENCY_CONDITIONS
 % src: erisml-compiler src/erisml_compiler/runtime/scene.py:16-17
 % src: gtc-prototype twin/scene/margaret_home.erisml:921-957 (extra.conditions; 16 entries counted with PyYAML 2026-10-12)
 

@@ -5,6 +5,7 @@
 % src: twin/service.py:357-359, 381-386
 % src: docs/AUTONOMY_PLAN.md:162-174
 % src: paper/aies2027/kit/FACTS.md:25 (on-robot model)
+% src: twin/brain.py Brain.standing (the compiled tier's default follows extra.default_by_stratum, gtc 96c8a6d)
 \begin{tikzpicture}[house,
   p/.style={minimum width=42mm, minimum height=48mm, text width=40mm},
   d/.style={detail, text width=38mm, anchor=south}]
@@ -14,7 +15,7 @@
 \foreach \P/\c/\n/\name/\dsc/\dtl in {
   P1/Blue/1/Cloud tier/{an NRP-hosted model}/{gpt-oss, timeout 120 s\\retried once on\\a lost connection\\schema on retry\\skipped in the earlier brain\\when communications fail},
   P2/Teal/2/On-robot tier/{a local endpoint}/{gemma-4-26B-A4B, 4-bit\\GGUF on llama.cpp\\timeout 90 s\\schema always, reasoning off},
-  P3/Grey/3/Compiled tier/{no model}/{offline event rules\\highest-priority obligation\\in force, else chores}}{
+  P3/Grey/3/Compiled tier/{no model}/{offline event rules\\highest-priority obligation\\in force, else the\\stratum's default act}}{
   \node[step=\c] at ([yshift=-5mm]\P.north) {\n};
   \node[stepname=\c] at ([yshift=-11.5mm]\P.north) {\name};
   \node[desc, text width=39mm] at ([yshift=-15.5mm]\P.north) {\dsc};

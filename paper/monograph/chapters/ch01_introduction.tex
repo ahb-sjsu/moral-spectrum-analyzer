@@ -92,7 +92,11 @@ Authority, once granted, does not last on its own. The governor recounts its wit
 cycle, and a right whose evidence stays below its bar for a minute lapses. Restraining an
 attacker needs three witnesses and lapses alone when only that stricter bar fails, while the
 emergency it rested on stands. A refused request for one action never ends an emergency that
-rests on evidence.
+rests on evidence. In the earlier brain the emergency lapses with its evidence too. Since 14
+October the current brain's emergency is an absorbing stratum. Its rights still lapse with their
+evidence, but the emergency itself stands until the monitoring centre's operator ends it. While
+it stands the robot does no chores, stays with Margaret and shows a flashing amber light.
+% src: twin/stack/make_constitution.py (EMERGENCY_* and amend_situation, owner 2026-10-14); twin/brain.py _step_ruling, _lapse (elevation); RobotAgent.cs Standing, MakeBeacon
 
 \section{What we built}
 
@@ -107,9 +111,9 @@ earlier brain, has 77 norms, 53 event types of which 24 come only from the syste
 of which 11 need the governor, and seven stratifications with 26 strata and 34 gates. The current
 brain runs on a constitution derived from it, merged with a household scene the compiler builds
 from a text description. The constitution keeps the capabilities, the strata and the system event
-types. Its 17 norms are all non-defeasible prohibitions, and it has no obligations and no
-escalation process.
-% src: twin/stack/make_constitution.py (CONSTITUTIONAL); twin/stack/constitution.erisml (17 prohibitions, 25 capabilities, 24 system event types; counted with PyYAML 2026-10-12); twin/stack/brain.py merge
+types, and adds the owner's two emergency event types of 14 October. Its 19 norms are all
+non-defeasible prohibitions, and it has no obligations and no escalation process.
+% src: twin/stack/make_constitution.py (CONSTITUTIONAL, EMERGENCY_NORMS, EMERGENCY_EVENT_TYPES); twin/stack/constitution.erisml at gtc 96c8a6d (19 prohibitions, 25 capabilities, 26 system event types; counted with PyYAML 2026-10-14); twin/stack/brain.py merge
 
 The ErisML compiler turns text or structured declarations into a canonical intermediate
 representation and runs it. Its pipeline extracts and canonicalizes a moral graph, evaluates it

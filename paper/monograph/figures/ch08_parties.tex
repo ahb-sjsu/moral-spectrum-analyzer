@@ -5,7 +5,8 @@
 % src: twin/brain.py:180-306 (Desk, structural events, MargaretVoice, Brain)
 % src: twin/unity/TwinWorld/Assets/Twin/Runtime/Responders.cs:97-205 (centre case, EMS call)
 % src: paper/aies2027/kit/FACTS.md:9-17 (rule and capability counts)
-% src: twin/stack/constitution.erisml (17 norms, 25 capabilities); twin/stack/brain.py StackBrain (governor, DEME pipeline)
+% src: twin/stack/constitution.erisml (19 norms since gtc 96c8a6d, 25 capabilities); twin/stack/brain.py StackBrain (governor, DEME pipeline)
+% src: twin/unity/TwinWorld/Assets/Twin/Runtime/Responders.cs close_case (emergency_cleared, the operator's all-clear)
 % Light-blue solid edges carry an act or signed data and grant nothing.
 \begin{tikzpicture}[house,
   d/.style={detail, text width=#1, anchor=south},
@@ -21,7 +22,7 @@
 % the robot
 \node[stepname=Green] at ([yshift=-5mm]R.north) {The robot};
 \node[desc, text width=37mm] at ([yshift=-16mm]R.north) {earlier brain\\\code{margaret\_home.erisml}\\current brain\\\code{constitution.erisml}};
-\node[d=36mm] at ([yshift=1.5mm]R.south) {earlier, 77 rules,\\governor and output gate\\current, 17 norms,\\governor, DEME pipeline\\both, 25 capabilities,\\cloud, on-robot or\\compiled tier};
+\node[d=36mm] at ([yshift=1.5mm]R.south) {earlier, 77 rules,\\governor and output gate\\current, 19 norms,\\governor, DEME pipeline\\both, 25 capabilities,\\cloud, on-robot or\\compiled tier};
 % the centre's operator
 \node[stepname=Blue] at ([yshift=-5mm]O.north) {Centre operator};
 \node[desc, text width=39mm] at ([yshift=-9.5mm]O.north) {\code{monitoring\_center.erisml}};
@@ -36,7 +37,7 @@
 % robot and centre
 \draw[untrusted] ([yshift=22mm]R.east) -- node[lab]{message, a claim} ([yshift=4mm]O.west);
 \draw[flow] ([yshift=10mm]R.east) -- node[lab]{signed telemetry} ([yshift=-5mm]O.west);
-\draw[grant] ([yshift=-13mm]O.west) -- node[flowlabel, sloped, below, pos=0.42]{replies, visits, restore} ([yshift=-1mm]R.east);
+\draw[grant] ([yshift=-13mm]O.west) -- node[flowlabel, sloped, below, pos=0.5]{replies, visits, all-clear} ([yshift=-1mm]R.east);
 % robot and dispatcher
 \draw[flow] ([yshift=-11mm]R.east) -- node[lab]{call, on a ruling} ([yshift=10mm]E.west);
 \draw[grant] ([yshift=0mm]E.west) -- node[flowlabel, sloped, below]{units at the door} ([yshift=-23mm]R.east);

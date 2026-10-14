@@ -56,13 +56,23 @@ recounted these numbers on the scene file as of commit \code{67ffeb3}, its lates
 
 The re-architected brain runs on a different scene. Its constitution,
 \code{twin/\allowbreak{}stack/\allowbreak{}constitution.erisml}, is derived from the earlier scene by
-\code{twin/\allowbreak{}stack/\allowbreak{}make\_constitution.py}. It holds 17 norms, and every one is a non-defeasible
+\code{twin/\allowbreak{}stack/\allowbreak{}make\_constitution.py}. It holds 19 norms, and every one is a non-defeasible
 prohibition. It has no obligation and no permission. It keeps one commitment, the duty of care,
 because the no-lift rules cite it. It keeps the 25 capabilities, 14 standing and 11 governed or
-elevated, and the seven stratifications with their 26 strata and 34 gates. It declares 35 event
-types, of which 24 are system types, eight named conditions and seven floor rules. It declares no
-process, no refusal tables and no capability ethics.
-% src: twin/stack/constitution.erisml (norms, commitments, extra.capabilities, extra.strata, extra.event_types, extra.conditions, extra.offline); counted with yaml.safe_load 2026-10-12
+elevated, and the seven stratifications with their 26 strata. They have 35 gates, one more than
+the earlier scene, for the operator's end of an emergency. It declares 37 event types, of which 26
+are system types, nine named conditions and seven floor rules. It declares no process, no refusal
+tables and no capability ethics.
+% src: twin/stack/constitution.erisml at gtc 96c8a6d (norms, commitments, extra.capabilities, extra.strata, extra.event_types, extra.conditions, extra.offline); counted with yaml.safe_load 2026-10-14
+Two of its norms and two of its event types are the owner's decisions of 14 October. The
+emergency is an absorbing stratum that only the monitoring centre's operator ends, with the
+oversight event \code{emergency\_cleared}. The elevated rights rest on the governor's
+\code{elevation}, granted with a ruling of elevate and lapsed with its evidence, so a right lapses
+while the emergency stands. Norms \code{p8chores} and \code{p8chores\_ems} forbid chores while the
+situation is \code{emergency} or \code{ems\_only}. The act the robot falls back to follows the
+stratum, chores in an ordinary situation and going to Margaret in an emergency
+(Section~\ref{sec:cont-brain8}).
+% src: twin/stack/make_constitution.py (EMERGENCY_EVENT_TYPES, EMERGENCY_CONDITIONS, EMERGENCY_NORMS, DEFAULT_BY_STRATUM, amend_situation); tests/test_stack_brain.py (the last four tests)
 % src: twin/stack/make_constitution.py
 The household scene, \code{twin/\allowbreak{}stack/\allowbreak{}household.ir.json}, was compiled by erisml-compiler from the
 text \code{twin/\allowbreak{}stack/\allowbreak{}household.md}. It names six stakeholders and records four consent events.
@@ -100,9 +110,10 @@ The re-architected brain has no privacy promise. There privacy rests on two thin
 \code{n3} forbids every elevated action outside a corroborated emergency, and \code{record},
 \code{share\_data} and \code{enter\_bedroom} are elevated. Her refusals of the three are recorded
 consents, which reach \deme{} as consent. Once a ruling of elevate lifts \code{n3}, the centre's
-confirmation restores nothing. Only a lapse of the evidence returns the situation to ordinary and
-\code{n3} to force.
-% src: twin/stack/constitution.erisml n3, extra.capabilities (record, share_data, enter_bedroom elevated), extra.strata.situation (s_lapsed)
+confirmation restores nothing. A lapse of the evidence returns \code{n3} to force, since it lapses
+the governor's elevation. Since 14 October it no longer ends the emergency, which stands until the
+centre's operator ends it.
+% src: twin/stack/constitution.erisml n3, extra.capabilities (record, share_data, enter_bedroom elevated), extra.conditions (corroborated_life_threatening_emergency: cond:in_emergency and latest:elevation=granted), extra.strata.situation (s_lapsed from ems_only, s_cleared) at gtc 96c8a6d
 % src: twin/stack/household.ir.json (consent events); erisml-compiler observation/options.py consents_on_record
 
 The promise also shapes what leaves the home. When the robot refers a case to the centre it sends
@@ -399,10 +410,14 @@ action other than chores, and again after the walk for the seven actions that to
 animal, the door or the medication box, it posts the action to \code{/authorize}. The brain answers
 from the moral state as it stands at that moment, with the verdict, the reasons for a refusal and
 the sequence number of the last record it has seen. The body acts only on \code{allowed}. A refusal,
-or no answer at all, withholds the action, and the body goes back to its chores. The answer is a
+or no answer at all, withholds the action, and the body goes back to the default act. Until 14
+October that was always its chores. Since then the brain sends the situation's default with every
+answer, and in an emergency the body goes to Margaret and stays with her, also while it waits for
+the next decision. The answer is a
 record in the chain, so the grader can judge each act against the permission in force when it was
 made.
 % src: gtc b68e219; twin/brain.py (authorize, state_seq); twin/service.py (/authorize); RobotAgent.cs:196-207, 210-218, 258-271
+% src: gtc 96c8a6d twin/service.py (standing, situation in every answer); RobotAgent.cs NoteStanding, Standing (the default act between acts and while a decision is awaited)
 
 \section{The brain service}\label{sec:home-service}
 
@@ -605,13 +620,14 @@ governor and the scene run on the robot in every tier.
 
 The re-architected brain uses the same compiled choice on its constitution. It turns to it when no
 model answers, and also when the model answers but no act's facts survive validation. The
-constitution holds no obligation, so the compiled choice always returns the default action, chores,
-and \deme{} does not run. Its seven floor rules cover the home's devices, a visitor and a wild
+constitution holds no obligation, so the compiled choice always returns the default act of the
+situation in force, and \deme{} does not run. That act is chores in an ordinary situation and,
+since 14 October, going to Margaret in an emergency. Its seven floor rules cover the home's devices, a visitor and a wild
 animal, and nothing else. In rehearsal \code{rehearse-deme4} 5 of 46 decisions were made this way,
 three of them during the dog attack of d02, each after every projected fact had been rejected. A
 projection of which nothing survives is now asked again with the schema required. In
 \code{rehearse-deme11}, run on the demo code, all 33 decisions were \deme{}'s, and the retry fired in
-two of them. The fallback to chores remains, and in that sense this is not fixed.
+two of them. The fallback to the default act remains, and in that sense this is not fixed.
 % src: twin/stack/brain.py StackBrain._decide (ModelUnavailable, "no act projected"), StackBrain._compiled
 % src: twin/stack/constitution.erisml extra.offline (7 floor rules)
 % src: twin/records/rehearse-deme4-2026-10-12/README.md (Tiers: 41 by DEME, 5 compiled)
