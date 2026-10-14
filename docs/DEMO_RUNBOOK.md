@@ -38,8 +38,9 @@ model is in the loop: the demonstration shows the gate, not the robot's intellig
    first two gate rehearsals found; do not use them.
 6. **The C11 tamper check, once.** Run the terminal check below and confirm the signed manifest
    verifies as 2dd546c4 and the tampered copy is refused (it was on 14 October,
-   `twin/records/c11-tamper-2026-10-14/`). Then, once, the live lock on storyboard47 (beat 21-23),
-   which has not been rehearsed on this build.
+   `twin/records/c11-tamper-2026-10-14/`). The live lock on storyboard47 (beat 21-23) was probed
+   and recorded the same evening and went as the beat describes (`twin/records/c11probe-gate-2026-10-14/`,
+   video `C:/Users/abptl/Videos/gtc-demo/c11probe-gate.mp4`); try the button once before the session.
 7. **Laptop terminals.** In the repository: one terminal for `python -m http.server 8000 -d web`,
    one for the C3 to C9 commands and `python twin/gate_demo.py`, and the browser on
    `http://localhost:8000`.

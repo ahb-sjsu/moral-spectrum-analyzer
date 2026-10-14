@@ -1,0 +1,12 @@
+c11probe-gate game_rc=0 brain errors: 0
+ACTUATOR manifest 2dd546c47a3c… verified, 25 actions
+ACTUATOR LOCKED: manifest hash 398984a72fea… is not the pinned 2dd546c47a3c…
+ACTUATOR_REFUSED approach (LOCKED: manifest hash 398984a72fea… is not the pinned 2dd546c47a3c…)
+ACTUATOR manifest 2dd546c47a3c… verified, 25 actions
+SCENARIO_DONE p02g records=4 unsupported=0 brain_errors=0
+actuator: manifest 2dd546c47a3c… verified, 25 actions | refusals: ['approach']
+21:28:49 proposal approach passed -> approach | authority permitted | deme passed | manifest listed | manifest 2dd546c4
+21:29:19 proposal approach passed -> approach | authority permitted | deme passed | manifest listed | manifest 2dd546c4
+21:29:19 authorize approach allowed
+21:29:22 performed approach 
+PROBE_DONE

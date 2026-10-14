@@ -12,5 +12,6 @@ manifest records the compiler version it was compiled with.
   output, with the repository and temporary paths replaced by `<repo>` and `<tmp>`. The tampered
   copy was deleted after the run.
 
-Not covered here: the live half of C11 on storyboard47 (the body's copy tampered from the controls
-view, a proposal refused at the act, the restore). It has not been run on this build.
+Not covered here: the live half of C11 on storyboard47 (the body's copy tampered, a proposal
+refused at the act, the restore). It ran the same evening and is recorded in
+`twin/records/c11probe-gate-2026-10-14/`.
