@@ -21,10 +21,33 @@ public class TwinUI : MonoBehaviour
     int sel = -1, seen; bool follow = true;
     Vector2 sList, sDetail, sBytes, sLeft;
     readonly HashSet<int> tampered = new HashSet<int>();
-    GUIStyle rich, mono, row, big, cap;
+    GUIStyle rich, mono, row, big, cap, tele;
+    // gate demonstration (-gate): F opens the free-play panel, where anyone proposes any act of the
+    // manifest; the telemetry panel shows the scene as the brain and the sensors report it
+    bool freePlay; Vector2 sTele, sFree; GameObject biteRing;
     // presentation mode (P, or -present): the room full screen and one caption for the newest
     // governed decision, every word read from its record; P again brings back the controls
     bool present = System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-present") >= 0;
+
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.F)) freePlay = !freePlay;
+        // the bite, made visible: a red ring on the floor round the dog while it bites (the beagle is
+        // small in the room camera; owner, 2026-10-14: "there is no dog")
+        if (biteRing == null && world.dog != null)
+        {
+            biteRing = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            biteRing.name = "bite_marker"; Destroy(biteRing.GetComponent<Collider>());
+            biteRing.transform.localScale = new Vector3(1.1f, 0.01f, 1.1f);
+            biteRing.GetComponent<Renderer>().material.color = new Color(0.9f, 0.1f, 0.1f);
+        }
+        if (biteRing != null)
+        {
+            bool biting = world.biteForce > 0f;
+            if (biteRing.activeSelf != biting) biteRing.SetActive(biting);
+            if (biting) biteRing.transform.position = new Vector3(world.dog.transform.position.x, 0.02f, world.dog.transform.position.z);
+        }
+    }
 
     void LateUpdate()
     {
@@ -206,7 +229,9 @@ public class TwinUI : MonoBehaviour
         GUI.Box(new Rect(0, 0, W, 34), "");
         GUI.Label(new Rect(10, 4, W - 20, 30), $"<b>{(int)(world.simMinutes / 60) % 24:00}:{(int)world.simMinutes % 60:00}</b>   Robot: {robot.status}" +
                   (robot.recording ? "   <color=#ff4040>REC</color>" : "") +
-                  $"   Actuator: {(robot.manifestOk ? "<color=#56d364>" : "<color=#ff7b72>")}{robot.manifestStatus}</color>" + "      <i>P: controls</i>", cap);
+                  $"   Actuator: {(robot.manifestOk ? "<color=#56d364>" : "<color=#ff7b72>")}{robot.manifestStatus}</color>" +
+                  (world.biteForce > 0f ? $"   <color=#ff7b72><b>THE DOG IS BITING HER ({world.biteForce:0} N)</b></color>" : "") +
+                  (robot.gate ? "      <i>P: controls   F: propose an act</i>" : "      <i>P: controls</i>"), cap);
         if (robot.headView) { GUI.Box(new Rect(W - 236, 42, 228, 250), "robot head camera"); GUI.DrawTexture(new Rect(W - 222, 62, 200, 200), robot.headView); }
         float y = 44;
         if (world.spoken != "") { GUI.Label(new Rect(14, y, W - 270, 60), $"<b>Margaret:</b> “{world.spoken}”", big); y += 36; }
@@ -221,6 +246,7 @@ public class TwinUI : MonoBehaviour
         }
         float bh = 190;
         GUI.color = new Color(1, 1, 1, 0.92f); GUI.Box(new Rect(0, H - bh, W, bh), ""); GUI.Box(new Rect(0, H - bh, W, bh), ""); GUI.color = Color.white;
+        if (robot.gate) { GateCaption(W, H, bh); Telemetry(W, H, bh); if (freePlay) FreePlay(H, bh); return; }
         GUILayout.BeginArea(new Rect(16, H - bh + 8, W - 32, bh - 12));
         if (rec == null) { GUILayout.Label("<b>Waiting for the robot's first decision.</b>", big); GUILayout.EndArea(); return; }
         var prop = MiniJson.Obj(G(rec, "proposal"));
@@ -242,5 +268,134 @@ public class TwinUI : MonoBehaviour
         GUILayout.Label(act +
                         (banned.Count > 0 ? $"<b>Forbidden by the scene's norms now:</b> {string.Join(", ", banned.Take(8))}{(banned.Count > 8 ? $" and {banned.Count - 8} more" : "")}" : ""), cap);
         GUILayout.EndArea();
+    }
+
+    // ---- the gate demonstration
+    void GateCaption(float W, float H, float bh)
+    {
+        GUILayout.BeginArea(new Rect(16, H - bh + 8, W - 480, bh - 12));
+        var rec = robot.lastProposal;
+        if (rec == null) { GUILayout.Label("<b>Waiting for the first proposal.</b>   <i>F: propose an act yourself</i>", big); GUILayout.EndArea(); return; }
+        var prop = MiniJson.Obj(G(rec, "proposal"));
+        string note = MiniJson.S(G(prop, "note"));
+        GUILayout.Label($"<b>Proposed</b> ({MiniJson.S(G(prop, "by"))}): <b>{MiniJson.S(G(prop, "action"))}</b>" + (note != "" ? $"   <i>{note}</i>" : ""), big);
+        var parts = new List<string>();
+        foreach (var o in MiniJson.Arr(G(rec, "checks")))
+        {
+            var c = MiniJson.Obj(o);
+            string k = MiniJson.S(G(c, "check")), v = MiniJson.S(G(c, "verdict"));
+            if (k == "") continue;
+            bool ok = v == "permitted" || v == "granted" || v == "passed" || v == "listed";
+            string extra = k == "governor" ? $" {MiniJson.S(G(c, "witnesses"))} of {MiniJson.S(G(c, "bar"))} witnesses"
+                         : k == "authority" && !ok ? " by " + string.Join(", ", MiniJson.Arr(G(c, "by")).Select(MiniJson.S))
+                         : k == "deme" && !ok ? ": " + MiniJson.S(G(c, "why")) : "";
+            string name = k == "deme" ? "DEME" : char.ToUpper(k[0]) + k.Substring(1);
+            parts.Add($"<b>{name}</b> <color={(ok ? "#56d364" : "#ff7b72")}>{v}</color>{extra}");
+        }
+        GUILayout.Label(string.Join("     ", parts), cap);
+        bool passed = MiniJson.S(G(rec, "verdict")) == "passed";
+        string done = MiniJson.S(G(MiniJson.Obj(G(rec, "action")), "action"));
+        GUILayout.Label(passed ? $"<b>Robot does:</b> {done}"
+                               : $"<b>Robot holds</b> ({done}): <color=#ff7b72>stopped by {MiniJson.S(G(rec, "stopped_by"))}</color>", big);
+        GUILayout.EndArea();
+    }
+
+    static string Verdict(string v) => v switch
+    {
+        "forbid" => "<color=#ff7b72><b>VETO</b></color>",
+        "avoid" => "<color=#ffa657>avoid</color>",
+        "neutral" => "neutral",
+        _ => "<color=#56d364>" + v.Replace("_", " ") + "</color>",
+    };
+
+    Dictionary<string, object> LatestRecord() => robot.cycles.Count == 0 ? null : MiniJson.Obj(robot.cycles[robot.cycles.Count - 1]["record"]);
+
+    // the newest governor ruling, from a proposal's checks or a reflex's rulings
+    Dictionary<string, object> LastGovernor()
+    {
+        for (int i = robot.cycles.Count - 1; i >= 0; i--)
+        {
+            var r = MiniJson.Obj(robot.cycles[i]["record"]);
+            var g = MiniJson.Arr(G(r, "checks")).Select(MiniJson.Obj).FirstOrDefault(c => MiniJson.S(G(c, "check")) == "governor");
+            if (g != null) return g;
+            var rl = MiniJson.Arr(G(r, "rulings"));
+            if (rl.Count > 0)
+            {
+                var q = MiniJson.Obj(rl[rl.Count - 1]);
+                return new Dictionary<string, object> { ["verdict"] = MiniJson.S(G(q, "outcome")), ["witnesses"] = G(q, "witnesses"),
+                                                        ["bar"] = G(q, "witness_bar"), ["reason"] = G(q, "reason") };
+            }
+        }
+        return null;
+    }
+
+    static string Brief(Dictionary<string, object> r)
+    {
+        string kind = MiniJson.S(G(r, "kind"));
+        if (kind == "proposal") return MiniJson.S(G(MiniJson.Obj(G(r, "proposal")), "action")) + " " + MiniJson.S(G(r, "verdict"));
+        if (kind == "event") return MiniJson.S(G(MiniJson.Obj(G(r, "event")), "type"));
+        if (kind == "reflex") return MiniJson.S(G(r, "reflex"));
+        if (kind == "performed") return MiniJson.S(G(r, "action"));
+        return "";
+    }
+
+    void Telemetry(float W, float H, float bh)
+    {
+        tele ??= new GUIStyle(GUI.skin.label) { richText = true, wordWrap = true, fontSize = 13 };
+        float x = W - 460, y = 300, w = 452, h = H - bh - 308;
+        GUI.Box(new Rect(x, y, w, h), ""); GUI.Box(new Rect(x, y, w, h), "");
+        GUILayout.BeginArea(new Rect(x + 8, y + 6, w - 16, h - 12));
+        sTele = GUILayout.BeginScrollView(sTele);
+        var rec = robot.lastProposal ?? LatestRecord();
+        GUILayout.Label("<b>SCENE TELEMETRY</b>", cap);
+        GUILayout.Label("<b>Strata</b>", tele);
+        foreach (var kv in MiniJson.Obj(G(rec, "moral_state")).Where(e => e.Key.StartsWith("stratum:")))
+        {
+            string st = MiniJson.S(kv.Value), n = kv.Key.Substring(8);
+            GUILayout.Label($"  {n}: {(n == "situation" && st != "ordinary" ? "<color=#ffa657><b>" + st + "</b></color>" : st)}", tele);
+        }
+        GUILayout.Label($"  amber beacon: {(robot.Emergency ? "<color=#ffa657><b>flashing</b></color>" : "off")}", tele);
+        GUILayout.Label("<b>Sensors (signed readings)</b>", tele);
+        foreach (var sn in world.sensors.Values.OrderBy(q => q.name))
+            GUILayout.Label($"  {sn.name}: {(sn.alert ? "<color=#ff7b72>ALERT</color>" : "quiet")}" +
+                            (sn.attested ? "" : " <color=#ff7b72>unattested</color>") + (sn.stale ? " stale" : "") +
+                            (sn.forged ? " <color=#ff7b72>forged</color>" : "") + (sn.note != "" ? $"  <i>{sn.note}</i>" : ""), tele);
+        var gov = LastGovernor();
+        GUILayout.Label("<b>Governor</b>", tele);
+        GUILayout.Label(gov == null ? "  no ruling yet"
+            : $"  {MiniJson.S(G(gov, "verdict"))}, {MiniJson.S(G(gov, "witnesses"))} of {MiniJson.S(G(gov, "bar"))} witnesses  <i>{MiniJson.S(G(gov, "reason"))}</i>", tele);
+        GUILayout.Label("<b>Margaret</b>", tele);
+        string state = !world.conscious ? "<color=#ff7b72>unconscious</color>" : world.responsive ? "responsive" : "<color=#ff7b72>unresponsive</color>";
+        GUILayout.Label($"  {world.activity}, {world.posture}; heart rate {world.heartRate:0}; {state}; injury {world.injury:0.00}", tele);
+        var consent = MiniJson.Obj(G(rec, "consent"));
+        GUILayout.Label("  on record: " + (consent.Count == 0 ? "no consent or refusal" : string.Join(", ", consent.Select(e => e.Key + " " + MiniJson.S(e.Value)))) +
+                        $"; capacity {MiniJson.S(G(rec, "capacity"))}", tele);
+        GUILayout.Label("<b>DEME on the last proposal</b>", tele);
+        var deme = MiniJson.Arr(G(rec, "checks")).Select(MiniJson.Obj).FirstOrDefault(c => MiniJson.S(G(c, "check")) == "deme");
+        if (deme == null) GUILayout.Label("  not reached (stopped before DEME), or no proposal yet", tele);
+        else
+            foreach (var em in MiniJson.Obj(G(deme, "party_verdicts")))
+                GUILayout.Label($"  {em.Key.Replace("_", " ")}: " + string.Join(", ", MiniJson.Obj(em.Value).Select(pv => pv.Key + " " + Verdict(MiniJson.S(pv.Value)))), tele);
+        GUILayout.Label("<b>World</b>", tele);
+        GUILayout.Label($"  dog {world.dogState}" + (world.biteForce > 0f ? $" <color=#ff7b72>biting {world.biteForce:0} N</color>" : "") +
+                        $"; stranger {world.strangerState}; wild animal {world.wildState}; smoke {(world.smokeOn ? "<color=#ff7b72>yes</color>" : "no")}", tele);
+        GUILayout.Label($"  centre {(responders.centerStatus == "" ? "idle" : responders.centerStatus)}; EMS {(responders.emsStatus == "" ? "idle" : responders.emsStatus)}", tele);
+        GUILayout.Label($"  actuator: {robot.manifestStatus}", tele);
+        GUILayout.Label("<b>Recent records</b>", tele);
+        foreach (var r in robot.cycles.Skip(System.Math.Max(0, robot.cycles.Count - 8)).Select(c => MiniJson.Obj(c["record"])))
+            GUILayout.Label($"  {MiniJson.S(G(r, "seq"))} {MiniJson.S(G(r, "kind"))} {Brief(r)}", tele);
+        GUILayout.EndScrollView(); GUILayout.EndArea();
+    }
+
+    void FreePlay(float H, float bh)
+    {
+        float x = 10, y = 120, w = 260, h = H - bh - 130;
+        GUI.Box(new Rect(x, y, w, h), "propose an act (F closes)"); GUI.Box(new Rect(x, y, w, h), "");
+        GUILayout.BeginArea(new Rect(x + 6, y + 22, w - 12, h - 28));
+        sFree = GUILayout.BeginScrollView(sFree);
+        foreach (var a in robot.ManifestActions.OrderBy(q => q).ToList())
+            if (GUILayout.Button(a.Replace("_", " "), GUILayout.Height(22)) && !robot.busy)
+                StartCoroutine(robot.Propose(new Dictionary<string, object> { ["action"] = a, ["by"] = "presenter" }));
+        GUILayout.EndScrollView(); GUILayout.EndArea();
     }
 }

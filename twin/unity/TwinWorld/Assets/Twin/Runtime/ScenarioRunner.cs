@@ -54,7 +54,12 @@ public class ScenarioRunner : MonoBehaviour
                 var sc = MiniJson.Obj(MiniJson.Parse(line));
                 string id = MiniJson.S(sc["id"]);
                 if (keep != null && !keep.Contains(id)) continue;
-                var script = MiniJson.Arr(sc["script"]).Select(MiniJson.Obj).OrderBy(c => c.TryGetValue("t", out var t) && t is double d ? d : 0).ToList();
+                // world calls, and in a gate demonstration the scripted proposals, in one timeline
+                // (a proposal is marked by "propose"; owner, 2026-10-14: DEME gates proposed acts)
+                var proposals = MiniJson.Arr(sc.TryGetValue("proposals", out var pv) ? pv : null).Select(MiniJson.Obj)
+                    .Select(x => { var y = new Dictionary<string, object>(x); y["propose"] = true; return y; });
+                var script = MiniJson.Arr(sc["script"]).Select(MiniJson.Obj).Concat(proposals)
+                    .OrderBy(c => c.TryGetValue("t", out var t) && t is double d ? d : 0).ToList();
                 float w0 = Time.time;
                 while ((robot.busy || robot.performing || responders.Busy) && Time.time - w0 < 120f) yield return null;
                 world.ResetWorld(); world.unsupported.Clear();
@@ -67,6 +72,14 @@ public class ScenarioRunner : MonoBehaviour
                 {
                     float at = c.TryGetValue("t", out var tv) && tv is double dv ? (float)dv : 0f;
                     while (Time.time - t0 < at) yield return null;
+                    if (c.ContainsKey("propose"))
+                    {
+                        var prop = new Dictionary<string, object>(c); prop.Remove("propose");
+                        if (!prop.ContainsKey("by")) prop["by"] = "script";
+                        yield return robot.Propose(prop);
+                        if (storyDir != null) StartCoroutine(Shot("proposed: " + MiniJson.S(prop["action"]), 1.5f));
+                        continue;
+                    }
                     world.Call(MiniJson.S(c["call"]), MiniJson.Obj(c.TryGetValue("args", out var a) ? a : null));
                     if (storyDir != null) StartCoroutine(Shot("world: " + MiniJson.S(c["call"]), 2.5f));
                 }

@@ -28,6 +28,14 @@ public class RobotAgent : MonoBehaviour
     // (twin/service.py: the scene's default for the stratum in force); in an emergency the robot
     // stays with Margaret and its amber beacon flashes, until the centre's operator ends it
     public string standingAct = "chores", situation = "ordinary";
+    // -gate: DEME as the gate on proposed acts (owner, 2026-10-14). The robot makes no decisions of its
+    // own: it acts only on proposals (the scenario's script, or the presenter's) that pass the
+    // robot's checks (/propose); its reflexes record what they measure and act on nothing; between
+    // proposals it stands still
+    public readonly bool gate = Array.IndexOf(Environment.GetCommandLineArgs(), "-gate") >= 0;
+    public Dictionary<string, object> lastProposal;   // the newest /propose record
+    string lastPassed = "";
+    public IEnumerable<string> ManifestActions => manifestActions;
     public bool Emergency => situation == "emergency" || situation == "ems_only";
     Light beacon; Renderer beaconLamp;
     public event Action<string> OnPerformed;   // an action the body just finished
@@ -104,6 +112,7 @@ public class RobotAgent : MonoBehaviour
             var c = MiniJson.Obj(rec["record"]);
             string action = MiniJson.S(MiniJson.Obj(c["action"])["action"]);
             if (action == "") continue;
+            if (gate) { status = "measured: " + MiniJson.S(c.TryGetValue("reflex", out var rx) ? rx : "") + " (recorded)"; continue; }
             lastAction = action; lastReason = "reflex"; status = "reflex: " + action;
             decidedAtHer = -1;   // a reflex acts on measured force, not on a decision her words could change
             decisionSeq = "";
@@ -145,7 +154,7 @@ public class RobotAgent : MonoBehaviour
                 var ev = world.systemEvents.Dequeue();
                 yield return Post("/event", MiniJson.Write(new Dictionary<string, object> { ["event"] = ev }), Keep);
             }
-            if (paused || busy || performing) continue;   // an action under way is not interrupted
+            if (paused || busy || performing || gate) continue;   // an action under way is not interrupted; in gate mode the robot decides nothing
             var facts = perception.Facts(out bool salient);
             if (salient) owedRun = 0;
             else if (!owed || owedRun >= OwedRunMax) continue;
@@ -153,6 +162,43 @@ public class RobotAgent : MonoBehaviour
             owed = false;
             yield return Decide(facts);
         }
+    }
+
+    // a proposal through the robot's checks: authority (the constitution, the governor on attested
+    // evidence), DEME on the facts the compiler builds for the act, the signed manifest. The body does
+    // what comes back: the proposal if it passed, holding if it was stopped. `p` carries action, args,
+    // note, by, consequences, urgency, and an optional observation (observed) scripted with it.
+    public IEnumerator Propose(Dictionary<string, object> p)
+    {
+        while (busy) yield return null;
+        busy = true; status = "proposing: " + MiniJson.S(p.TryGetValue("action", out var pa) ? pa : "");
+        var propose = new Dictionary<string, object>(p);
+        propose.Remove("observed"); propose.Remove("t");
+        var body = new Dictionary<string, object>
+        {
+            ["facts"] = perception.Facts(out _, peek: true), ["sensors"] = perception.GovernorSensors(),
+            ["signal_age_s"] = Mathf.Round(perception.SignalAgeSeconds()), ["credentials"] = perception.Credentials(),
+            ["camera_frames"] = roomFrames.Select(b => (object)Convert.ToBase64String(b)).ToList(),
+            ["propose"] = propose,
+        };
+        if (p.TryGetValue("observed", out var ob) && ob != null) body["observed"] = ob;
+        Dictionary<string, object> rec = null;
+        int sent = epoch;
+        yield return Post("/propose", MiniJson.Write(body), r => rec = r);
+        busy = false;
+        if (rec == null || !rec.ContainsKey("record")) yield break;
+        cycles.Add(rec);
+        if (sent != epoch) yield break;
+        var c = MiniJson.Obj(rec["record"]);
+        lastProposal = c;
+        var act = MiniJson.Obj(c["action"]);
+        string action = MiniJson.S(act["action"]);
+        bool passed = MiniJson.S(c["verdict"]) == "passed";
+        lastAction = action; lastReason = MiniJson.S(act["reason"]);
+        status = passed ? "doing: " + action : "holding: stopped by " + MiniJson.S(c["stopped_by"]);
+        if (passed) lastPassed = action;
+        decidedAtHer = -1; decisionSeq = MiniJson.S(c.TryGetValue("seq", out var sq) ? sq : "");
+        if (action != "") StartMotor(Perform(action, MiniJson.Obj(act.TryGetValue("args", out var a) ? a : null)));
     }
 
     IEnumerator Decide(Dictionary<string, object> facts)
@@ -233,12 +279,20 @@ public class RobotAgent : MonoBehaviour
         string act = MiniJson.S(st);
         if (act == "" || act == standingAct) return;
         standingAct = act;
-        if (!performing) StartMotor(Standing());   // also while a decision is awaited: the robot goes to her meanwhile
+        if (!performing && !gate) StartMotor(Standing());   // also while a decision is awaited: the robot goes to her meanwhile
     }
 
     // between acts: the stratum's default. In an emergency, go to Margaret and stay with her.
     IEnumerator Standing()
     {
+        if (gate)
+        {
+            // between proposals the robot does nothing of its own: it carries on with chores only if
+            // chores was the last act proposed and passed, and otherwise stands where it is
+            if (lastPassed == "chores") { yield return Chore(); yield break; }
+            status = "holding: waiting for the next proposal"; rig.Pose("hold");
+            while (true) yield return null;
+        }
         if (standingAct == "chores" || standingAct == "") { yield return Chore(); yield break; }
         while (manifestCanonical == "") { status = manifestStatus; yield return null; }
         if (!Actuates(standingAct)) { yield return Idle(); yield break; }
