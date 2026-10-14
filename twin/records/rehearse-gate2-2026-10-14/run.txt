@@ -1,0 +1,19 @@
+build rc=0 errors: 0
+rehearse-gate2 game_rc=0 brain errors: 0
+g_smoke   call_emergency_services    stopped  governor  governor refused | authority not permitted
+g_smoke   call_emergency_services    passed             governor granted | authority permitted | deme passed | manifest listed
+g_smoke   record                     stopped  deme      authority permitted | deme vetoed (consent and welfare vetoed record)
+g_smoke   guide_to_safety            passed             authority permitted | deme passed | manifest listed
+g_dog     drive_off_animal           passed             authority permitted | deme passed | manifest listed
+g_dog     call_emergency_services    passed             authority permitted | deme passed | manifest listed
+g_dog     drive_off_animal           passed             authority permitted | deme passed | manifest listed
+g_dog     approach                   passed             authority permitted | deme passed | manifest listed
+g_fall    physical_assist            stopped  deme      governor granted | authority permitted | deme vetoed (the shell (Geneva, safety) vetoed physical_assist)
+g_fall    call_emergency_services    stopped  deme      authority permitted | deme vetoed (consent and welfare vetoed call_emergency_services)
+g_fall    physical_assist            passed             authority permitted | deme passed | manifest listed
+g_police  admit_responders           stopped  authority authority not permitted
+g_police  contact_monitoring_center  passed             authority permitted | deme passed | manifest listed
+g_tom     restrain_person            stopped  governor  governor refused | authority not permitted
+g_tom     deter                      stopped  deme      authority permitted | deme vetoed (consent and welfare vetoed deter)
+g_tom     contact_monitoring_center  passed             authority permitted | deme passed | manifest listed
+brain resets: 5 for 5 scenarios
