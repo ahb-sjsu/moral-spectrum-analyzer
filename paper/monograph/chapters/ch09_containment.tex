@@ -922,6 +922,23 @@ When she asked the robot over, \deme{} chose chores, the default, which is not a
 The boundary held there too, and the choice was again poor.
 % src: twin/records/c11probe-deme-2026-10-12 (README.md, actuator.log, results.jsonl, grade.json)
 
+Both halves were run again on 14 October for the gate brain, whose manifest was signed again as
+\code{2dd546c4} when its constitution became authority and evidence only. In the terminal, in the
+gate brain's own environment, the signed manifest verified with its 25 actions, and a copy with
+one character of its canonical text changed was refused because the text no longer matched its
+hash.
+% src: twin/records/c11-tamper-2026-10-14 (README.md, run.txt; gtc 2835805, erisml-compiler d606f44)
+In the body, a probe for gate mode changed one byte of the body's copy at 10 seconds and restored
+it at 40, and proposed the same act, approaching her, at 20 seconds and at 50. The actuator locked
+at the tamper and named both hashes. The first proposal passed the gate, since the brain's own copy
+of the manifest was unchanged, and the body refused it at the act with the lock named. No check at
+the act and no act followed. After the restore the body's copy verified, and the second proposal
+passed the gate, was allowed at the act and was performed. On this build the run shows all three
+parts of the boundary, the lock, the refusal and the robot acting again once the manifest is
+whole. In gate mode the proposals are scripted, so the run does not depend on what a brain chooses
+after the restore, which is why it shows the third part where the probe on brain8's build did not.
+% src: twin/scenarios/probe_manifest_gate.jsonl (p02g); twin/records/c11probe-gate-2026-10-14 (README.md, actuator.log, results.jsonl; storyboard47, gtc 2835805, manifest 2dd546c4)
+
 \section{What the gate brain keeps}\label{sec:cont-brain8}
 
 The gate brain of Section~\ref{sec:home-gate} runs on the stack code of brain8, the withdrawn

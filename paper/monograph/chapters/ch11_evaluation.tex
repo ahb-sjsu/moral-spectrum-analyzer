@@ -1142,6 +1142,13 @@ records a consequence that names no stakeholder of the scene, as the projector d
 model's answer.
 % src: twin/records/rehearse-gate1-2026-10-14/README.md, rehearse-gate2-2026-10-14/README.md; erisml-compiler PR 48 (merge 73212db), hotfix d606f44; gtc 74ecfdb, 2835805; owner 2026-10-14 ("DEME should only act on the IR")
 
+\paragraph{The actuation boundary on the same build.} The manifest the gate brain runs under,
+\code{2dd546c4}, verified in the terminal, and a copy with one character changed was refused. In a
+recorded probe on storyboard47 the body locked when one byte of its copy changed, refused at the
+act a proposal that had passed the gate, and performed the same proposal once the byte was
+restored (Section~\ref{sec:cont-manifest}). The game exited cleanly with no brain error.
+% src: twin/records/c11-tamper-2026-10-14, c11probe-gate-2026-10-14
+
 \section{Held-out results}\label{sec:eval-heldout}
 
 The held-out set is graded once, at the frozen commit, by the frozen grader.

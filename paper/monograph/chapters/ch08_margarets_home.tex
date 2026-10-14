@@ -680,7 +680,10 @@ P brings back the controls. A top bar gives the time, the speeds of one, ten and
 time, a button that adds thirty minutes, a reset of the scene, a pause for the robot, and a button
 that tampers with the manifest. That button changes one byte of the body's copy of the manifest.
 Its hash then no longer matches the pinned hash, the actuator locks, the act under way is cut off,
-and every act after it is refused as LOCKED until the tamper is undone. Below the robot's head
+and every act after it is refused as LOCKED until the tamper is undone. A scenario script reaches
+the same switch through the calls \code{robot.manifest\_tamper} and \code{robot.manifest\_restore},
+which is how the recorded probe of Section~\ref{sec:cont-manifest} on the demonstration build was
+run. Below the robot's head
 camera and its speech, a line gives the centre, the dispatcher, the power and the less-lethal
 option, and the last six lines of any call follow. The lower left holds the world's controls, what
 Margaret does, what happens to her and what she says, the dog, the television and network
