@@ -1,0 +1,16 @@
+gtc 2835805 compiler d606f44
+== the signed manifest
+verified: 25 actions, sha256 2dd546c47a3cbb8b8361834abb354f3cdb87b3752983e0147099f66d77b98fbb
+rc=0
+== one character of the canonical text changed
+Traceback (most recent call last):
+  File "<repo>/twin/manifest.py", line 179, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "<repo>/twin/manifest.py", line 173, in main
+    m = load_verified(a.manifest, a.scene)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<repo>/twin/manifest.py", line 131, in load_verified
+    raise RuntimeError(f"manifest {manifest_path}: {why}")
+RuntimeError: manifest <tmp>/tampered.manifest.json: the canonical text does not match its hash
+rc=1

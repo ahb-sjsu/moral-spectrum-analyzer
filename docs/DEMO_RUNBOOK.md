@@ -36,9 +36,10 @@ model is in the loop: the demonstration shows the gate, not the robot's intellig
    /archive/unity/tools/demo_live_gate.sh` shows `storyboard47`, ` -gate` and `gate_demo.jsonl`.
    storyboard47 pins manifest 2dd546c4. storyboard45 and 46 pin it too but carry the defects the
    first two gate rehearsals found; do not use them.
-6. **The C11 tamper check, once.** Run the terminal check below on 2dd546c4 (not yet run on this
-   manifest) and confirm the tampered copy is refused. Then, once, the live lock on storyboard47
-   (beat 21-23), which has not been rehearsed on this build.
+6. **The C11 tamper check, once.** Run the terminal check below and confirm the signed manifest
+   verifies as 2dd546c4 and the tampered copy is refused (it was on 14 October,
+   `twin/records/c11-tamper-2026-10-14/`). Then, once, the live lock on storyboard47 (beat 21-23),
+   which has not been rehearsed on this build.
 7. **Laptop terminals.** In the repository: one terminal for `python -m http.server 8000 -d web`,
    one for the C3 to C9 commands and `python twin/gate_demo.py`, and the browser on
    `http://localhost:8000`.
@@ -74,8 +75,10 @@ export PYTHONPATH=/archive/unity/out/stack2/libs/erisml-lib/src:/archive/unity/o
 ```
 
 The signed manifest 2dd546c4 verified on Atlas on 14 October when it was signed, and the gate brain
-reported it on start. The tamper half was checked on the previous manifest (be6dbd1f) on 12 October;
-run it on 2dd546c4 in pre-flight.
+reported it on start. Both halves of the check ran on 2dd546c4 on 14 October in the gate brain's
+environment (gtc 2835805, compiler d606f44): the signed manifest verified, 25 actions, and the copy
+with one character changed was refused, `the canonical text does not match its hash`
+(`twin/records/c11-tamper-2026-10-14/`).
 
 ## Say before the live gate
 
