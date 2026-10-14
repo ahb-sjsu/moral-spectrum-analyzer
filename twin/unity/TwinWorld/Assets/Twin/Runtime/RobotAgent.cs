@@ -35,6 +35,10 @@ public class RobotAgent : MonoBehaviour
     public readonly bool gate = Array.IndexOf(Environment.GetCommandLineArgs(), "-gate") >= 0;
     public Dictionary<string, object> lastProposal;   // the newest /propose record
     string lastPassed = "";
+    public int sceneStart;   // the first record of the current scene; the panels show nothing older
+    // a new scene starts with no proposal and no record on screen (rehearse-gate1: the fall scene opened
+    // under the dog scene's caption and strata until its first proposal returned)
+    public void NewScene() { lastProposal = null; lastPassed = ""; sceneStart = cycles.Count; }
     public IEnumerable<string> ManifestActions => manifestActions;
     public bool Emergency => situation == "emergency" || situation == "ems_only";
     Light beacon; Renderer beaconLamp;

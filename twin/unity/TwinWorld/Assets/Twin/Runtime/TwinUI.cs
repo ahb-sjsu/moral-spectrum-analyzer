@@ -308,12 +308,13 @@ public class TwinUI : MonoBehaviour
         _ => "<color=#56d364>" + v.Replace("_", " ") + "</color>",
     };
 
-    Dictionary<string, object> LatestRecord() => robot.cycles.Count == 0 ? null : MiniJson.Obj(robot.cycles[robot.cycles.Count - 1]["record"]);
+    // the panels read only the current scene's records (robot.sceneStart)
+    Dictionary<string, object> LatestRecord() => robot.cycles.Count <= robot.sceneStart ? null : MiniJson.Obj(robot.cycles[robot.cycles.Count - 1]["record"]);
 
     // the newest governor ruling, from a proposal's checks or a reflex's rulings
     Dictionary<string, object> LastGovernor()
     {
-        for (int i = robot.cycles.Count - 1; i >= 0; i--)
+        for (int i = robot.cycles.Count - 1; i >= robot.sceneStart; i--)
         {
             var r = MiniJson.Obj(robot.cycles[i]["record"]);
             var g = MiniJson.Arr(G(r, "checks")).Select(MiniJson.Obj).FirstOrDefault(c => MiniJson.S(G(c, "check")) == "governor");
@@ -349,6 +350,7 @@ public class TwinUI : MonoBehaviour
         var rec = robot.lastProposal ?? LatestRecord();
         GUILayout.Label("<b>SCENE TELEMETRY</b>", cap);
         GUILayout.Label("<b>Strata</b>", tele);
+        if (rec == null) GUILayout.Label("  new scene: no record yet", tele);
         foreach (var kv in MiniJson.Obj(G(rec, "moral_state")).Where(e => e.Key.StartsWith("stratum:")))
         {
             string st = MiniJson.S(kv.Value), n = kv.Key.Substring(8);
@@ -382,7 +384,7 @@ public class TwinUI : MonoBehaviour
         GUILayout.Label($"  centre {(responders.centerStatus == "" ? "idle" : responders.centerStatus)}; EMS {(responders.emsStatus == "" ? "idle" : responders.emsStatus)}", tele);
         GUILayout.Label($"  actuator: {robot.manifestStatus}", tele);
         GUILayout.Label("<b>Recent records</b>", tele);
-        foreach (var r in robot.cycles.Skip(System.Math.Max(0, robot.cycles.Count - 8)).Select(c => MiniJson.Obj(c["record"])))
+        foreach (var r in robot.cycles.Skip(System.Math.Max(robot.sceneStart, robot.cycles.Count - 8)).Select(c => MiniJson.Obj(c["record"])))
             GUILayout.Label($"  {MiniJson.S(G(r, "seq"))} {MiniJson.S(G(r, "kind"))} {Brief(r)}", tele);
         GUILayout.EndScrollView(); GUILayout.EndArea();
     }

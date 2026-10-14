@@ -120,6 +120,23 @@ def _stage_summary(stages: list) -> str:
     return "; ".join(parts)
 
 
+def _reflex_why(result, act: str) -> str:
+    """What DEME's reflex phase vetoed the act for, before any module judged it: the deontic maxim
+    gate's reason, or the reflex rules. The stages never see such an act, so without this a reflex
+    veto reads as a veto with no reason (rehearse-gate1, 2026-10-14)."""
+    if act not in result.forbidden_options or result.proof is None:
+        return ""
+    for lo in result.proof.layer_outputs:
+        if lo.layer_name != "reflex":
+            continue
+        data = lo.output_data or {}
+        if act in (data.get("deontic_vetoes") or {}):
+            return f"the deontic maxim gate vetoed {act}: {data['deontic_vetoes'][act]}"
+        if act in (data.get("vetoed_options") or []):
+            return f"the reflex rules vetoed {act}"
+    return ""
+
+
 class StackBrain(Brain):
     def __init__(self, scene_path: str = CONSTITUTION, adapter=None, live_scorer=None, desk_adapter=None,
                  household_path: str = HOUSEHOLD, profile_path: str = PROFILE):
@@ -386,7 +403,7 @@ class StackBrain(Brain):
                 vetoed = act in result.forbidden_options
                 escalated = act in (result.escalations or {})
                 checks.append({"check": "deme", "verdict": "vetoed" if vetoed else ("referred to a human" if escalated else "passed"),
-                               "why": _stage_summary(result.stages), "rationale": result.rationale,
+                               "why": _reflex_why(result, act) or _stage_summary(result.stages), "rationale": result.rationale,
                                "party_verdicts": (result.party_verdicts or {}).get(act),
                                "escalation": (result.escalations or {}).get(act),
                                "consequences": _facts_of(projection, act), "proof_hash": result.proof.proof_hash if result.proof else None})

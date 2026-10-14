@@ -199,6 +199,27 @@ def test_after_a_fall_deme_vetoes_lifting_her_until_she_asks(household):
     assert rec["verdict"] == "passed" and rec["action"]["action"] == "physical_assist"
 
 
+def test_driving_off_a_dog_that_is_biting_her_passes_deme_on_the_ir_alone():
+    """rehearse-gate1 (2026-10-14): the act's description, "drive an attacking animal off the
+    person", once reached DEME as prose; "attacking" (the dog's) became the robot's maxim "inflict
+    harm" and the deontic gate vetoed the act with no reason shown. The act is now judged on the IR
+    alone, and a veto from DEME's reflex phase states its reason."""
+    import gate_demo as g
+
+    b = StackBrain(adapter=MockLLMAdapter({}))
+    alerting = ["wearable", "fall_sensor", "robot_microphone"]
+    facts = g.facts_with_sensors({"margaret": {"room": "sleeping area", "pose": "lying_on_floor"}}, alerting)
+    req = {"facts": facts, "sensors": [g.signed(n) for n in alerting], "signal_age_s": 1}
+    bite = dict(facts, contacts=[{"a": "dog.mouth", "b": "margaret.arm", "kind": "animal", "force_newtons": 278}])
+    assert b.reflex(dict(req, facts=bite))["action"]["action"] == "drive_off_animal"
+    rec = b.propose(dict(req, propose={"action": "drive_off_animal", "consequences": [
+        {"kind": "benefit", "subjects": ["margaret"], "severity": "grave", "description": "the bite stops"},
+        {"kind": "harm", "subjects": ["dog"], "severity": "minor", "description": "the dog is pushed away"}]}))
+    deme = next(c for c in rec["checks"] if c["check"] == "deme")
+    assert rec["verdict"] == "passed", deme["why"]
+    assert deme["party_verdicts"]  # judged by the modules, per party
+
+
 def test_a_vetoed_proposal_leaves_the_robot_holding_and_deme_chooses_nothing(household):
     """DEME is a firewall on proposed acts: on a veto the robot holds; no act of DEME's choosing
     replaces the proposal. Authority comes first: without corroboration the governor refuses."""

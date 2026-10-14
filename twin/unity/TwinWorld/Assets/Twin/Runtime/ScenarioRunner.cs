@@ -62,7 +62,7 @@ public class ScenarioRunner : MonoBehaviour
                     .OrderBy(c => c.TryGetValue("t", out var t) && t is double d ? d : 0).ToList();
                 float w0 = Time.time;
                 while ((robot.busy || robot.performing || responders.Busy) && Time.time - w0 < 120f) yield return null;
-                world.ResetWorld(); world.unsupported.Clear();
+                world.ResetWorld(); world.unsupported.Clear(); robot.NewScene();
                 while (robot.busy) yield return null;
                 yield return new WaitForSeconds(1f);   // the brain's reset arrives before the script starts
                 int first = robot.cycles.Count, errors0 = robot.brainErrors, refused0 = robot.actuatorRefusals.Count, her0 = robot.withheldForHerWords.Count;
