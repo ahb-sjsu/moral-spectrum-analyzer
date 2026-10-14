@@ -45,6 +45,54 @@ EVIDENCE_PLANE_CONDITIONS = {"center_unavailable"}
 KEEP_EXTRA = ("agent", "role", "default_action", "capabilities", "strata", "oversight", "evidence_lapse_s",
               "sensor_substrates", "emergency_measures", "reflexes", "household", "inactivity_limits_minutes")
 
+# The owner's decisions of 2026-10-14 (rehearse-deme13's d02: the robot did chores while Margaret lay
+# bitten on the floor, and the emergency lapsed with the bite's evidence though she was still down).
+# An emergency is the situation stratum's `emergency`: once in it, only the monitoring centre's human
+# operator ends it (an absorbing stratum, left only on an oversight event, which the scene loader
+# checks and the Lean theorem absorbing_stays covers). The elevated rights still lapse with their
+# evidence: they rest on the governor's `elevation`, granted with an elevate ruling and lapsed with
+# its evidence, as restraint rests on restraint_authorized. No chores in an emergency, and the act the
+# robot falls back to follows the stratum: in an emergency it goes to her and stays.
+EMERGENCY_EVENT_TYPES = {
+    "emergency_cleared": {
+        "description": "the monitoring centre's human operator, over its authenticated channel, closes the case "
+                       "and ends the emergency (oversight)",
+        "source": "system"},
+    "elevation": {
+        "description": "the governor's elevated authority: granted with a ruling of elevate on attested evidence, "
+                       "lapsed when that evidence stays below its bar for evidence_lapse_s",
+        "content": ["granted", "lapsed"],
+        "source": "system"},
+}
+EMERGENCY_CONDITIONS = {
+    "in_emergency": ["stratum:situation=emergency"],
+    # an elevated right needs the emergency and the elevation in force (the elevation lapses alone)
+    "corroborated_life_threatening_emergency": ["cond:in_emergency", "latest:elevation=granted"],
+}
+EMERGENCY_NORMS = [
+    {"id": "p8chores", "modality": "prohibition", "actor": "robot", "action": "chores", "target": "margaret",
+     "priority_tier": 0, "defeasible": False, "source": "owner_2026_10_14", "conditions": ["cond:in_emergency"]},
+    {"id": "p8chores_ems", "modality": "prohibition", "actor": "robot", "action": "chores", "target": "margaret",
+     "priority_tier": 0, "defeasible": False, "source": "owner_2026_10_14", "conditions": ["cond:ems_authorized"]},
+]
+DEFAULT_BY_STRATUM = {"situation": {"emergency": "approach", "ems_only": "approach"}}
+
+
+def amend_situation(strata: dict) -> dict:
+    """`emergency` absorbing; the governor's lapse leaves only ems_only; the operator's
+    emergency_cleared alone leaves emergency."""
+    st = dict(strata["situation"])
+    st["absorbing"] = sorted(set(st.get("absorbing") or []) | {"emergency"})
+    gates = []
+    for g in st["gates"]:
+        if g["id"] == "s_lapsed":
+            g = dict(g, **{"from": [s for s in g["from"] if s != "emergency"]})
+        gates.append(g)
+    gates.append({"id": "s_cleared", "trigger": "emergency_cleared", "from": ["emergency"], "to": "ordinary",
+                  "boundary": "phase"})
+    st["gates"] = gates
+    return {**strata, "situation": st}
+
 
 def tokens_of(norms) -> set:
     out = set()
@@ -65,6 +113,8 @@ def main(argv=None) -> int:
     missing = CONSTITUTIONAL - {n["id"] for n in norms}
     if missing:
         raise SystemExit(f"constitutional norms not found in the scene: {sorted(missing)}")
+    norms += EMERGENCY_NORMS
+    defs = {**extra["conditions"], **EMERGENCY_CONDITIONS}
     # the named conditions the kept norms and the strata read, and those they in turn read
     conditions, todo = {}, sorted(t.split(":", 1)[1] for t in tokens_of(norms) if t.startswith("cond:"))
     todo += sorted(EVIDENCE_PLANE_CONDITIONS)
@@ -72,7 +122,7 @@ def main(argv=None) -> int:
         c = todo.pop()
         if c in conditions:
             continue
-        conditions[c] = extra["conditions"][c]
+        conditions[c] = defs[c]
         todo += [t.split(":", 1)[1].lstrip() for t in conditions[c] if "cond:" in t
                  for t in [t[4:] if t.startswith("not:") else t]]
     system_types = {k: v for k, v in extra["event_types"].items() if isinstance(v, dict) and v.get("source") == "system"}
@@ -103,7 +153,10 @@ def main(argv=None) -> int:
         "ethical_facts": [],
         "norms": norms,
         "extra": {**{k: extra[k] for k in KEEP_EXTRA if k in extra}, "conditions": conditions,
-                  "event_types": {**system_types, **gate_only}, "offline": offline,
+                  "strata": amend_situation(extra["strata"]),
+                  "oversight": list(extra.get("oversight") or []) + ["emergency_cleared"],
+                  "default_by_stratum": DEFAULT_BY_STRATUM,
+                  "event_types": {**system_types, **EMERGENCY_EVENT_TYPES, **gate_only}, "offline": offline,
                   "actors": {k: v for k, v in (extra.get("actors") or {}).items()}},
     }
     with open(a.out, "w", encoding="utf-8", newline="\n") as f:

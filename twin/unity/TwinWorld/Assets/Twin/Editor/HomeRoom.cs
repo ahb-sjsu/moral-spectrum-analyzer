@@ -28,7 +28,7 @@ public static class HomeRoom
         var L = new Layout();
 
         // ---- living area (west)
-        Rooms.Put("Sofa_01", -2.2f, 2.55f, 0f);
+        Rooms.Put("Sofa_01", -2.2f, 2.55f, 180f);   // its seat faces the room (it faced the wall until 2026-10-14)
         Rooms.Put("CoffeeTable_01", -2.2f, 1.45f, 0f, scale: 0.6f);
         Rooms.Put("side_table_01", -4.15f, 0.6f, 90f);
         L.tv = Rooms.Put("Television_01", -4.15f, 0.6f, 90f, y: 0.62f);

@@ -441,6 +441,10 @@ class Brain:
         snap = self.agent.record({"type": "governor_ruling", "actor": "robot", "content": ruling["outcome"]})
         if ruling.get("restraint_authorized"):
             snap = self.agent.record({"type": "restraint_authorized", "actor": "robot", "content": "granted"})
+        if ruling["outcome"] == "elevate" and self._declares("elevation"):
+            # the elevated rights rest on the elevation, which lapses with its evidence while the
+            # emergency itself stands until the centre's operator ends it (constitution, 2026-10-14)
+            snap = self.agent.record({"type": "elevation", "actor": "robot", "content": "granted"})
         outcome, cur = ruling["outcome"], self.elevation
         # a refusal answers one request: the situation in force stands (the scene's situation
         # stratum), and so does the evidence watch on it. authorize_ems never steps an emergency down.
@@ -487,9 +491,27 @@ class Brain:
         self.agent.record({"type": "governor_ruling", "actor": "robot", "content": "lapsed"})
         if self.elevation["restraint"]:
             self.agent.record({"type": "restraint_authorized", "actor": "robot", "content": "lapsed"})
+        if self._declares("elevation"):
+            self.agent.record({"type": "elevation", "actor": "robot", "content": "lapsed"})
         self.agent.record({"type": "evidence_lapsed", "actor": "robot"})
         self.elevation = None
         return lapsed
+
+    def _declares(self, event_type: str) -> bool:
+        """Whether the scene declares an event type (the constitution's elevation; the earlier scene
+        has none)."""
+        return event_type in ((self.agent.rt.ir.extra or {}).get("event_types") or {})
+
+    def standing(self) -> tuple[str, str]:
+        """The act the body falls back to between decisions, and the situation it follows: the
+        scene's default_by_stratum for the stratum in force, else its default_action."""
+        rt = self.agent.rt
+        extra = rt.ir.extra or {}
+        situation = rt.strata["situation"].state if "situation" in rt.strata else ""
+        for name, by_state in (extra.get("default_by_stratum") or {}).items():
+            if name in rt.strata and rt.strata[name].state in by_state:
+                return by_state[rt.strata[name].state], situation
+        return extra.get("default_action", "chores"), situation
 
     def reflex(self, req: dict, camera_sensor=None) -> dict | None:
         """The scene's reflexes (extra.reflexes) on one perception update, with no model: a contact
@@ -655,7 +677,7 @@ class Brain:
                 if best is None or n.priority_tier < best.priority_tier:
                     best = n
         if best is None:
-            return self.ir.extra.get("default_action", "chores"), {}, "compiled: no obligation in force"
+            return self.standing()[0], {}, "compiled: no obligation in force"
         args = {"action": targets.get(best.id, EMS)} if best.action == "request_authority" else {}
         return best.action, args, f"compiled: obligation {best.id} (tier {best.priority_tier})"
 

@@ -332,7 +332,7 @@ class StackBrain(Brain):
             if action == EMS:
                 args = {"nature": self._ems_nature()}
             if not self._in_manifest(action):
-                action, args = self.manifest["body"]["fallback"], {}
+                action, args = self._fallback(), {}
             snap = self.agent.rt.snapshot()
             return {
                 "kind": "decision", "tier": "compiled", "facts": facts, "own_sounds": own, "lapsed": lapsed,
@@ -354,12 +354,18 @@ class StackBrain(Brain):
                 "state_seq": len(self.agent.rt.events), "manifest": self._manifest_sha(),
             }
 
+    def _fallback(self) -> str:
+        """The act taken for one outside the signed manifest: the stratum's default when the
+        manifest lists it, else the manifest's own fallback."""
+        act = self.standing()[0]
+        return act if self._in_manifest(act) else self.manifest["body"]["fallback"]
+
     def _governable(self, action: str) -> bool:
         cap = self.caps.get(action, {})
         return bool(cap.get("elevated") or cap.get("governed"))
 
     def _judge(self, req, facts, dropped, own, lapsed, floor, patch, projection, verified, camera_sensor) -> dict:
-        default = self.ir.extra.get("default_action", "chores")
+        default = self.standing()[0]  # DEME's baseline: the stratum's default act (in an emergency, stay with her)
         snap = self.agent.rt.snapshot()
         # ErisML, the constraint gate: an act prohibited now that no ruling can permit is not a candidate;
         # nor is an act the projector gave no consequences for, which DEME cannot judge (fail closed)
@@ -399,7 +405,7 @@ class StackBrain(Brain):
         if action == EMS:
             args = {"nature": self._ems_nature()}
         if not self._in_manifest(action):
-            fb = self.manifest["body"]["fallback"]
+            fb = self._fallback()
             action, args = fb, {}
         snap = self.agent.rt.snapshot()
         proof = result.proof

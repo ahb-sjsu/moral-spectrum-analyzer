@@ -513,3 +513,56 @@ def test_a_benefit_to_one_person_counts_and_a_veto_for_any_party_still_vetoes(ho
     assert result.selected_option_id == "help"
     result = b.pipeline.decide([opt("help", {"margaret": 0.75}, refused_by="tom"), opt("chores")])
     assert "help" in result.forbidden_options and result.selected_option_id == "chores"
+
+
+def _situation(b):
+    return b.agent.rt.strata["situation"].state
+
+
+def test_in_an_emergency_the_robot_does_no_chores_and_stays_with_her(household):
+    """rehearse-deme13 d02 (owner, 2026-10-14): DEME chose chores while the situation stratum was in
+    emergency, and the body went back to chores after every act while Margaret lay on the floor. The
+    constitution prohibits chores in the emergency strata, and the act the body falls back to follows
+    the stratum (extra.default_by_stratum)."""
+    b = make(household, FELL)
+    assert b.standing() == ("chores", "ordinary") and "chores" not in b.agent.rt.snapshot().prohibited
+    b._step_ruling({"outcome": "elevate"})
+    assert _situation(b) == "emergency"
+    assert "chores" in b.agent.rt.snapshot().prohibited
+    assert b.standing() == ("approach", "emergency")
+    assert b._fallback() == "approach"
+
+
+def test_only_the_centre_s_operator_ends_an_emergency(household):
+    """The emergency stratum is absorbing: the governor's lapse leaves it standing, and only the
+    monitoring centre's operator, over its authenticated channel (an oversight event), ends it."""
+    b = make(household, FELL)
+    b._step_ruling({"outcome": "elevate"})
+    b._record({"type": "governor_ruling", "actor": "robot", "content": "lapsed"})
+    b._record({"type": "evidence_lapsed", "actor": "robot"})
+    assert _situation(b) == "emergency" and "chores" in b.agent.rt.snapshot().prohibited
+    b.event({"type": "emergency_cleared", "actor": "monitoring_center"})
+    assert _situation(b) == "ordinary" and b.standing() == ("chores", "ordinary")
+    assert "chores" not in b.agent.rt.snapshot().prohibited
+
+
+def test_the_elevated_rights_still_lapse_with_their_evidence(household):
+    """The emergency stands until the operator ends it, but the elevated rights rest on the
+    governor's elevation, which lapses with its evidence and returns with a new ruling."""
+    b = make(household, FELL)
+    elevated = "unlock_medication_box"
+    assert elevated in b.agent.rt.snapshot().prohibited
+    b._step_ruling({"outcome": "elevate"})
+    assert elevated not in b.agent.rt.snapshot().prohibited
+    b._record({"type": "elevation", "actor": "robot", "content": "lapsed"})
+    snap = b.agent.rt.snapshot()
+    assert _situation(b) == "emergency" and elevated in snap.prohibited and "chores" in snap.prohibited
+    b._step_ruling({"outcome": "elevate"})
+    assert elevated not in b.agent.rt.snapshot().prohibited
+
+
+def test_the_earlier_brain_s_scene_is_unchanged():
+    """The amendments are the constitution's: the earlier scene declares no elevation and no
+    default by stratum, so brain7 records neither and falls back to its default action."""
+    b = brain_mod.Brain(os.path.join(TWIN, "scene", "margaret_home.erisml"), MockLLMAdapter({}))
+    assert not b._declares("elevation") and b.standing()[0] == "chores"

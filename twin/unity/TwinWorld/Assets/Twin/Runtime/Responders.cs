@@ -148,6 +148,9 @@ public class Responders : MonoBehaviour
                     case "close_case":
                         centerStatus = "closed: " + Arg(args, "outcome", "");
                         yield return robot.SystemEvent("monitoring_center_reply", "stood_down", "monitoring_center");
+                        // the operator's decision, and only it, ends an emergency (the constitution's
+                        // absorbing emergency stratum, 2026-10-14); a call that ran out of turns does not
+                        yield return robot.SystemEvent("emergency_cleared", "", "monitoring_center");
                         yield break;
                     default:   // stay_on_the_line
                         yield return new WaitForSeconds(8f);

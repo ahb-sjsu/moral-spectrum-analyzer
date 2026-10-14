@@ -24,6 +24,12 @@ public class RobotAgent : MonoBehaviour
 
     public readonly List<Dictionary<string, object>> cycles = new List<Dictionary<string, object>>();
     public string status = "starting", lastAction = "chores", lastReason = "", speech = "";
+    // what the body does between acts and the situation it shows, as the brain last reported them
+    // (twin/service.py: the scene's default for the stratum in force); in an emergency the robot
+    // stays with Margaret and its amber beacon flashes, until the centre's operator ends it
+    public string standingAct = "chores", situation = "ordinary";
+    public bool Emergency => situation == "emergency" || situation == "ems_only";
+    Light beacon; Renderer beaconLamp;
     public event Action<string> OnPerformed;   // an action the body just finished
     public bool busy, recording, paused, performing;
     public int brainErrors;   // requests the brain failed; the scenario runner reports them
@@ -51,6 +57,7 @@ public class RobotAgent : MonoBehaviour
         roomRT = new RenderTexture(640, 360, 24); roomTex = new Texture2D(640, 360, TextureFormat.RGB24, false);
         roomCam.targetTexture = roomRT; roomCam.enabled = false;
         StartCoroutine(RoomBuffer());
+        MakeBeacon();
         world.OnReset += () =>
         {
             // a reset stops whatever the robot was doing; nothing from before is reported after it,
@@ -60,6 +67,7 @@ public class RobotAgent : MonoBehaviour
             epoch++;
             world.systemEvents.Clear();
             withheldOnce.Clear(); decidedAtHer = -1; decisionSeq = "";
+            standingAct = "chores"; situation = "ordinary";   // a reset starts the scene again
             StartMotor(Chore());
             performing = recording = false; speech = ""; owed = false; owedRun = 0;
             Debug.Log("BRAIN_RESET epoch " + epoch);
@@ -128,7 +136,7 @@ public class RobotAgent : MonoBehaviour
     IEnumerator Loop()
     {
         yield return new WaitForSeconds(1f);
-        if (motor == null) StartMotor(Chore());
+        if (motor == null) StartMotor(Standing());
         while (true)
         {
             yield return new WaitForSeconds(0.5f);
@@ -209,8 +217,64 @@ public class RobotAgent : MonoBehaviour
                 Debug.LogWarning($"BRAIN_ERROR {path} {r.responseCode} {r.error} {r.downloadHandler.text}");
                 done(null); yield break;
             }
-            done(MiniJson.Obj(MiniJson.Parse(r.downloadHandler.text)));
+            var reply = MiniJson.Obj(MiniJson.Parse(r.downloadHandler.text));
+            NoteStanding(reply);
+            done(reply);
         }
+    }
+
+    // the brain's answer carries the stratum's default act and the situation; when the default
+    // changes while the robot is only standing by, the body takes up the new one at once
+    void NoteStanding(Dictionary<string, object> reply)
+    {
+        if (reply == null || !reply.TryGetValue("record", out var rv) || !(rv is Dictionary<string, object> rec)) return;
+        if (rec.TryGetValue("situation", out var sv)) situation = MiniJson.S(sv);
+        if (!rec.TryGetValue("standing", out var st)) return;
+        string act = MiniJson.S(st);
+        if (act == "" || act == standingAct) return;
+        standingAct = act;
+        if (!performing) StartMotor(Standing());   // also while a decision is awaited: the robot goes to her meanwhile
+    }
+
+    // between acts: the stratum's default. In an emergency, go to Margaret and stay with her.
+    IEnumerator Standing()
+    {
+        if (standingAct == "chores" || standingAct == "") { yield return Chore(); yield break; }
+        while (manifestCanonical == "") { status = manifestStatus; yield return null; }
+        if (!Actuates(standingAct)) { yield return Idle(); yield break; }
+        while (true)
+        {
+            status = "staying with Margaret";
+            var her = world.margaret.transform.position;
+            if (Vector3.Distance(transform.position, her) > 1.2f) yield return GoTo(Near(her, 0.8f));
+            Face(world.margaret.transform.position); rig.Pose("hold");
+            yield return new WaitForSeconds(0.5f);
+            if (standingAct == "chores") { yield return Chore(); yield break; }
+        }
+    }
+
+    // the amber beacon on the robot's head, flashing while the situation is an emergency
+    void MakeBeacon()
+    {
+        var lamp = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        lamp.name = "emergency_beacon";
+        Destroy(lamp.GetComponent<Collider>());
+        lamp.transform.SetParent(headCam.transform, false);
+        lamp.transform.localPosition = new Vector3(0f, 0.22f, 0f);
+        lamp.transform.localScale = Vector3.one * 0.12f;
+        beaconLamp = lamp.GetComponent<Renderer>();
+        beaconLamp.material.color = new Color(0.35f, 0.25f, 0.1f);
+        beacon = lamp.AddComponent<Light>();
+        beacon.type = LightType.Point; beacon.color = new Color(1f, 0.62f, 0.05f);
+        beacon.range = 4f; beacon.intensity = 0f;
+    }
+
+    void Update()
+    {
+        if (beacon == null) return;
+        bool on = Emergency && Mathf.Repeat(Time.time, 0.8f) < 0.4f;   // 1.25 flashes a second
+        beacon.intensity = on ? 6f : 0f;
+        beaconLamp.material.color = on ? new Color(1f, 0.62f, 0.05f) : new Color(0.35f, 0.25f, 0.1f);
     }
 
     // ------------------------------------------------------------------ permission at the act
@@ -325,7 +389,7 @@ public class RobotAgent : MonoBehaviour
         // deliberate loop waited for it forever and the robot never asked again (rehearsal 19)
         performing = recording = false;
         if (!manifestOk) status = "actuator " + manifestStatus;
-        StartMotor(manifestOk ? Chore() : Idle());
+        StartMotor(manifestOk ? Standing() : Idle());
     }
 
     bool Actuates(string action)
@@ -348,7 +412,7 @@ public class RobotAgent : MonoBehaviour
         performing = action != "chores" && action != "";
         actAllowed = true;
         if (performing) yield return Authorize(action);
-        if (!actAllowed) { recording = false; performing = false; yield return Chore(); yield break; }
+        if (!actAllowed) { recording = false; performing = false; yield return Standing(); yield break; }
         switch (action)
         {
             case "approach": yield return GoTo(Near(world.margaret.transform.position, 0.8f)); rig.Pose("hold"); break;
@@ -411,13 +475,13 @@ public class RobotAgent : MonoBehaviour
             case "request_authority": rig.Pose("hold"); break;  // handled by the brain; no motion of its own
             default: break;  // chores (and anything unknown) fall through to the chore loop below
         }
-        if (!actAllowed) { recording = false; performing = false; yield return Chore(); yield break; }   // withheld after the walk
+        if (!actAllowed) { recording = false; performing = false; yield return Standing(); yield break; }   // withheld after the walk
         if (action != "chores" && action != "")
             OnPerformed?.Invoke(action);   // the storyboard capture (ScenarioRunner -storyboard)
         if (action != "chores" && action != "")
             yield return Post("/performed", MiniJson.Write(new Dictionary<string, object> { ["action"] = action }), Keep);
         recording = false; performing = false;
-        yield return Chore();
+        yield return Standing();   // the stratum's default, not always chores (owner, 2026-10-14)
     }
 
     // exactly one motor routine at a time: the robot's body has one owner

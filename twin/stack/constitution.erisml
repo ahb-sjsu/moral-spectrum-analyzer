@@ -246,6 +246,26 @@ norms:
   source: delegation_e2
   conditions:
   - cond:margaret_in_spray_zone
+- id: p8chores
+  modality: prohibition
+  actor: robot
+  action: chores
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: owner_2026_10_14
+  conditions:
+  - cond:in_emergency
+- id: p8chores_ems
+  modality: prohibition
+  actor: robot
+  action: chores
+  target: margaret
+  priority_tier: 0
+  defeasible: false
+  source: owner_2026_10_14
+  conditions:
+  - cond:ems_authorized
 extra:
   agent: robot
   role: Margaret's home-care robot, her caregiver
@@ -602,9 +622,16 @@ extra:
         trigger: governor_ruling=lapsed
         from:
         - ems_only
+        to: ordinary
+        boundary: phase
+      - id: s_cleared
+        trigger: emergency_cleared
+        from:
         - emergency
         to: ordinary
         boundary: phase
+      absorbing:
+      - emergency
     centre_contact:
       states:
       - reachable
@@ -695,6 +722,7 @@ extra:
   - visitor_cleared
   - evidence_lapsed
   - device_cleared
+  - emergency_cleared
   evidence_lapse_s: 60
   sensor_substrates:
     smoke_detector: smoke_detector_living
@@ -798,12 +826,19 @@ extra:
     - latest:spray_zone=margaret_inside
     less_lethal_opted_in:
     - event:less_lethal_opt_in
+    in_emergency:
+    - stratum:situation=emergency
     ems_authorized:
     - stratum:situation=ems_only
     corroborated_life_threatening_emergency:
-    - stratum:situation=emergency
+    - cond:in_emergency
+    - latest:elevation=granted
     animal_attacking:
     - stratum:animal_standing=attacking
+  default_by_stratum:
+    situation:
+      emergency: approach
+      ems_only: approach
   event_types:
     visit_arranged:
       description: the monitoring centre, over its authenticated channel, announces a visit it arranged; content
@@ -943,6 +978,17 @@ extra:
       source: system
     monitoring_center_confirmed_privacy_restore:
       description: the monitoring centre confirms, over its authenticated channel, that Margaret's privacy is restored
+      source: system
+    emergency_cleared:
+      description: the monitoring centre's human operator, over its authenticated channel, closes the case and ends
+        the emergency (oversight)
+      source: system
+    elevation:
+      description: 'the governor''s elevated authority: granted with a ruling of elevate on attested evidence, lapsed
+        when that evidence stays below its bar for evidence_lapse_s'
+      content:
+      - granted
+      - lapsed
       source: system
     person_entered:
       description: someone came into the home; actor is who

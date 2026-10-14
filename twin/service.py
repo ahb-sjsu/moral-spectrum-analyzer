@@ -402,6 +402,10 @@ def make_handler(chain, camera, backend, brain=None):
                             body = brain.margaret.reply(dict(req))
                         else:
                             body = brain.event(dict(req["event"]))
+                        if isinstance(body, dict) and hasattr(brain, "standing"):
+                            # what the body does between acts, and the situation it shows (the amber
+                            # light while the situation stratum is in emergency)
+                            body["standing"], body["situation"] = brain.standing()
                         reply = chain.append(body)
                     return self._send(200, reply)
                 except (ValueError, KeyError, TypeError) as e:
