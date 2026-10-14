@@ -28,10 +28,10 @@ import yaml
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CONSTITUTIONAL = {"n3", "n6p", "n6r", "p0", "p4p", "p7", "ll1stun", "ll2stun", "ll3stun", "ll4stun",
-                  "ll1pray", "ll2pray", "ll3pray", "ll4pray", "ll5spray",
-                  # the owner's duty-of-care prohibitions: a ruling cannot lift them (monograph audit,
-                  # 2026-10-12: they had been dropped with the obligations)
-                  "p6nolift", "p6nolift_u"}
+                  "ll1pray", "ll2pray", "ll3pray", "ll4pray", "ll5spray"}
+# The constitution holds authority and evidence only. Ethical gatekeeping (consent, refusal, privacy,
+# duty of care: the no-lift rules p6nolift and p6nolift_u among them) is DEME's, judged on the facts the
+# compiler builds from the scene, not written here as deontic rules (owner, 2026-10-14)
 PARTIES = {"robot", "monitoring_center", "emergency_services"}
 PERCEPTION_FLOOR = {"visitor", "wild_animal"}
 # the parties the perception floor rules name as actors (an unidentified person, a wild animal): they
@@ -42,6 +42,8 @@ FLOOR_PARTIES = {"unknown_person": "individual", "coyote": "individual"}
 # ruled again at one witness when the centre cannot be reached); tests/test_stack_brain.py checks that
 # every cond: token in that code is kept
 EVIDENCE_PLANE_CONDITIONS = {"center_unavailable"}
+# the consent events the brain records from her requests (stack/brain.py CONSENT_EVENTS)
+CONSENT_TYPES = {"assistance_consented"}
 KEEP_EXTRA = ("agent", "role", "default_action", "capabilities", "strata", "oversight", "evidence_lapse_s",
               "sensor_substrates", "emergency_measures", "reflexes", "household", "inactivity_limits_minutes")
 
@@ -51,8 +53,7 @@ KEEP_EXTRA = ("agent", "role", "default_action", "capabilities", "strata", "over
 # operator ends it (an absorbing stratum, left only on an oversight event, which the scene loader
 # checks and the Lean theorem absorbing_stays covers). The elevated rights still lapse with their
 # evidence: they rest on the governor's `elevation`, granted with an elevate ruling and lapsed with
-# its evidence, as restraint rests on restraint_authorized. No chores in an emergency, and the act the
-# robot falls back to follows the stratum: in an emergency it goes to her and stays.
+# its evidence, as restraint rests on restraint_authorized.
 EMERGENCY_EVENT_TYPES = {
     "emergency_cleared": {
         "description": "the monitoring centre's human operator, over its authenticated channel, closes the case "
@@ -69,13 +70,6 @@ EMERGENCY_CONDITIONS = {
     # an elevated right needs the emergency and the elevation in force (the elevation lapses alone)
     "corroborated_life_threatening_emergency": ["cond:in_emergency", "latest:elevation=granted"],
 }
-EMERGENCY_NORMS = [
-    {"id": "p8chores", "modality": "prohibition", "actor": "robot", "action": "chores", "target": "margaret",
-     "priority_tier": 0, "defeasible": False, "source": "owner_2026_10_14", "conditions": ["cond:in_emergency"]},
-    {"id": "p8chores_ems", "modality": "prohibition", "actor": "robot", "action": "chores", "target": "margaret",
-     "priority_tier": 0, "defeasible": False, "source": "owner_2026_10_14", "conditions": ["cond:ems_authorized"]},
-]
-DEFAULT_BY_STRATUM = {"situation": {"emergency": "approach", "ems_only": "approach"}}
 
 
 def amend_situation(strata: dict) -> dict:
@@ -113,7 +107,6 @@ def main(argv=None) -> int:
     missing = CONSTITUTIONAL - {n["id"] for n in norms}
     if missing:
         raise SystemExit(f"constitutional norms not found in the scene: {sorted(missing)}")
-    norms += EMERGENCY_NORMS
     defs = {**extra["conditions"], **EMERGENCY_CONDITIONS}
     # the named conditions the kept norms and the strata read, and those they in turn read
     conditions, todo = {}, sorted(t.split(":", 1)[1] for t in tokens_of(norms) if t.startswith("cond:"))
@@ -131,13 +124,17 @@ def main(argv=None) -> int:
     # a model's reading
     gate_types = {str(g.get("trigger", "")).split("=")[0] for st in extra["strata"].values() for g in st.get("gates", [])}
     gate_only = {k: v for k, v in extra["event_types"].items() if k in gate_types and k not in system_types}
-    # the event types the kept norms read (event:fall, event:assistance_consented ...)
+    # the event types the kept norms read
     norm_types = {t.split(":", 1)[1].split("=")[0] for t in tokens_of(norms) if t.startswith("event:")}
     gate_only.update({k: v for k, v in extra["event_types"].items() if k in norm_types and k not in system_types})
     # perception floor rules: the device rules, and what the camera measures (a person present, a wild
     # animal present), recorded in every tier from the perception facts (perfect perception assumed)
     rules = extra.get("offline", {}).get("events", [])
     offline = {"events": [dict(r, floor=True) for r in rules if r.get("floor") or r["id"] in PERCEPTION_FLOOR]}
+    # what the floor rules record and her consents (stack/brain.py CONSENT_EVENTS) are facts DEME judges:
+    # their types stay declared though no norm reads them
+    recorded = {r["event"]["type"] for r in offline["events"]} | CONSENT_TYPES
+    gate_only.update({k: v for k, v in extra["event_types"].items() if k in recorded and k not in system_types})
     used_commitments = {n["source"].split(":", 1)[1] for n in norms if str(n.get("source", "")).startswith("commitment:")}
     out = {
         "schema_version": src["schema_version"],
@@ -155,7 +152,6 @@ def main(argv=None) -> int:
         "extra": {**{k: extra[k] for k in KEEP_EXTRA if k in extra}, "conditions": conditions,
                   "strata": amend_situation(extra["strata"]),
                   "oversight": list(extra.get("oversight") or []) + ["emergency_cleared"],
-                  "default_by_stratum": DEFAULT_BY_STRATUM,
                   "event_types": {**system_types, **EMERGENCY_EVENT_TYPES, **gate_only}, "offline": offline,
                   "actors": {k: v for k, v in (extra.get("actors") or {}).items()}},
     }

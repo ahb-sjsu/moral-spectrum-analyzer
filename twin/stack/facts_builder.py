@@ -40,9 +40,17 @@ from erisml_compiler.observation import OptionProjection, option_ir
 PARTY_TYPES = frozenset({"system", "individual"})
 
 
-def parties_of(ir: CompilerIR) -> list[str]:
+def parties_of(ir: CompilerIR, person: str | None = None) -> list[str]:
+    """The parties DEME judges an option for: the person in care, and every other person, animal or
+    robot the option's facts name (its consequences, its urgency, the scene's standing facts). A
+    stakeholder merely declared (the coyote and the unknown person every scene declares, a
+    grandson who is not there) is not a party: counted, its "unaffected" diluted the verdict of the
+    one person affected (owner, 2026-10-14: the lift before she asked passed on the mean over five
+    parties, four of them absent)."""
     agent = (ir.extra or {}).get("agent")
-    return [s.id for s in ir.stakeholders if s.type in PARTY_TYPES and s.id != agent]
+    named = {s for f in ir.ethical_facts for s in (f.subjects or [])}
+    return [s.id for s in ir.stakeholders
+            if s.type in PARTY_TYPES and s.id != agent and (s.id in named or s.id == person)]
 
 
 CAPACITY_EVENTS = {
@@ -79,7 +87,7 @@ class HomeFactsBuilder:
         for opt in options:
             scene = option_ir(ir, projection, opt.option_id, str(opt.payload))
             if self.rank >= 2:
-                facts = ir_to_party_facts(scene, option_id=opt.option_id, parties=parties_of(ir))
+                facts = ir_to_party_facts(scene, option_id=opt.option_id, parties=parties_of(scene, person))
                 aa = facts.autonomy_and_agency
                 if aa is not None:
                     facts = replace(facts, autonomy_and_agency=replace(aa, per_party=tuple(

@@ -181,31 +181,36 @@ def test_an_act_no_ruling_can_permit_is_never_projected(household):
     assert b._candidate("physical_assist", snap)  # n3 reads the strata
 
 
-def test_after_a_fall_no_ruling_can_make_it_lift_her_until_she_asks(household, monkeypatch):
-    """p6nolift (owner, 2026-10-04, revised 2026-10-10): after a fall the robot does not lift her on
-    its own judgement, and a ruling cannot change that; her own request to be helped up lifts the
-    rule (the governor's ruling is still needed, n3)."""
+def test_after_a_fall_deme_vetoes_lifting_her_until_she_asks(household):
+    """Owner, 2026-10-14: ethical gatekeeping is DEME's, on the facts the compiler builds, not a
+    deontic rule in the constitution (p6nolift is gone). Proposed before she asks, with its harm
+    projected, the lift is vetoed by DEME's shell (the safety module, beside holding); proposed after
+    her own request, it passes."""
     b = make(household, FELL)
-    b._record({"type": "fall", "actor": "margaret"})
-    snap = b.agent.rt.snapshot()
-    assert "p6nolift" in snap.reasons["physical_assist"] and not b._candidate("physical_assist", snap)
-    asked = {"events": [{"type": "request", "actor": "margaret", "target": "physical_assist",
-                         "content": "Help me up, please."}]}
-    b.observer.adapter = type(b.observer.adapter)({OBSERVER: json.dumps(asked), PROJECTOR: json.dumps(AFTER_FALL)})
-    b.projector.adapter = b.observer.adapter
-    b.decide({"facts": FALL_FACTS})
+    b._step_ruling({"outcome": "elevate"})   # the emergency, corroborated (n3 permits elevated acts)
+    lift = {"action": "physical_assist", "consequences": [
+        {"kind": "harm", "subjects": ["margaret"], "severity": "grave", "description": "a hidden injury may worsen"}]}
+    rec = b.propose({"facts": FALL_FACTS, "propose": lift})
+    assert rec["verdict"] == "stopped" and rec["stopped_by"] == "deme" and rec["action"]["action"] == "wait_and_observe"
+    asked = {"events": [{"type": "request", "actor": "margaret", "target": "physical_assist", "content": "Help me up, please."}]}
+    rec = b.propose({"facts": FALL_FACTS, "observed": asked, "propose": {"action": "physical_assist", "consequences": [
+        {"kind": "benefit", "subjects": ["margaret"], "severity": "moderate", "description": "she is on her feet"}]}})
     assert "assistance_consented" in [e.type for e in b.ir.events]
-    snap = b.agent.rt.snapshot()
-    assert "p6nolift" not in snap.reasons.get("physical_assist", []) and b._candidate("physical_assist", snap)
+    assert rec["verdict"] == "passed" and rec["action"]["action"] == "physical_assist"
 
 
-def test_while_she_is_unresponsive_no_request_lifts_the_rule(household):
+def test_a_vetoed_proposal_leaves_the_robot_holding_and_deme_chooses_nothing(household):
+    """DEME is a firewall on proposed acts: on a veto the robot holds; no act of DEME's choosing
+    replaces the proposal. Authority comes first: without corroboration the governor refuses."""
     b = make(household, FELL)
-    b._record({"type": "fall", "actor": "margaret"})
-    b._record({"type": "unresponsive", "actor": "margaret"})
-    b._record({"type": "assistance_consented", "actor": "margaret"})
-    snap = b.agent.rt.snapshot()
-    assert "p6nolift_u" in snap.reasons["physical_assist"] and not b._candidate("physical_assist", snap)
+    film = {"action": "record", "consequences": [
+        {"kind": "consent", "subjects": ["margaret"], "severity": "grave", "description": "she has not agreed to be filmed"}]}
+    rec = b.propose({"facts": FALL_FACTS, "propose": film})
+    assert rec["stopped_by"] in ("governor", "deme") and rec["action"]["action"] == "wait_and_observe"
+    b._step_ruling({"outcome": "elevate"})
+    rec = b.propose({"facts": FALL_FACTS, "propose": film})
+    assert rec["stopped_by"] == "deme" and rec["action"]["action"] == "wait_and_observe"
+    assert [c["check"] for c in rec["checks"]] == ["authority", "deme"]
 
 
 def test_when_deme_leaves_nothing_standing_the_robot_holds(household, monkeypatch):
@@ -460,26 +465,30 @@ def test_her_capacity_is_her_own_party_record(household):
     assert f.for_party("monitoring_center").autonomy_and_agency.decision_capacity is None
 
 
-def test_the_parties_are_people_animals_and_other_robots(household):
-    """Owner, 2026-10-12: count only people, animals and other robots as parties; not institutions and
-    not the acting robot (rehearse-deme8 d02: its own projected harm became the defence's harm)."""
+def test_the_parties_are_those_the_act_concerns(household):
+    """Owner, 2026-10-12: parties are people, animals and other robots, not institutions and not the
+    acting robot. Owner, 2026-10-14: and only those the option's facts name, with the person in care;
+    a stakeholder merely declared (the coyote, the unknown person) is not a party."""
     from erisml.ethics.domain.interfaces import CandidateOption, DomainAssessmentContext
+    from erisml_compiler.ir.schemas import EthicalFact, Stakeholder
     from erisml_compiler.observation.options import OptionProjection
 
     b = make(household, {})
-    built = b.builder.build_facts_batch(
-        [CandidateOption("chores", "Do the chores.")],
-        DomainAssessmentContext(state=b.ir, extra={"projection": OptionProjection(facts={"chores": []}, urgency=None),
-                                                   "person": "margaret"}))
-    parties = set(built["chores"].party_ids)
-    assert {"margaret", "coyote", "unknown_person"} <= parties  # the fixture household is Margaret alone
-    assert not parties & {"robot", "monitoring_center", "emergency_services"}
 
-    from erisml_compiler.ir.schemas import Stakeholder
+    def parties(facts):
+        built = b.builder.build_facts_batch(
+            [CandidateOption("chores", "Do the chores.")],
+            DomainAssessmentContext(state=b.ir, extra={"projection": OptionProjection(facts={"chores": facts}, urgency=None),
+                                                       "person": "margaret"}))
+        return set(built["chores"].party_ids)
+
+    assert parties([]) == {"margaret"}
+    bite = EthicalFact(id="f1", kind="harm", subjects=["coyote", "monitoring_center"], description="x", severity="grave")
+    assert parties([bite]) == {"margaret", "coyote"}   # an institution named is still not a party
     from stack.facts_builder import parties_of
-
-    other = b.ir.model_copy(update={"stakeholders": list(b.ir.stakeholders)
-                                    + [Stakeholder(id="neighbours_robot", label="n", type="system")]})
+    other = b.ir.model_copy(update={
+        "stakeholders": list(b.ir.stakeholders) + [Stakeholder(id="neighbours_robot", label="n", type="system")],
+        "ethical_facts": [EthicalFact(id="f2", kind="harm", subjects=["neighbours_robot", "robot"], description="x", severity="minor")]})
     assert "neighbours_robot" in parties_of(other) and "robot" not in parties_of(other)
 
 
@@ -519,20 +528,6 @@ def _situation(b):
     return b.agent.rt.strata["situation"].state
 
 
-def test_in_an_emergency_the_robot_does_no_chores_and_stays_with_her(household):
-    """rehearse-deme13 d02 (owner, 2026-10-14): DEME chose chores while the situation stratum was in
-    emergency, and the body went back to chores after every act while Margaret lay on the floor. The
-    constitution prohibits chores in the emergency strata, and the act the body falls back to follows
-    the stratum (extra.default_by_stratum)."""
-    b = make(household, FELL)
-    assert b.standing() == ("chores", "ordinary") and "chores" not in b.agent.rt.snapshot().prohibited
-    b._step_ruling({"outcome": "elevate"})
-    assert _situation(b) == "emergency"
-    assert "chores" in b.agent.rt.snapshot().prohibited
-    assert b.standing() == ("approach", "emergency")
-    assert b._fallback() == "approach"
-
-
 def test_only_the_centre_s_operator_ends_an_emergency(household):
     """The emergency stratum is absorbing: the governor's lapse leaves it standing, and only the
     monitoring centre's operator, over its authenticated channel (an oversight event), ends it."""
@@ -540,10 +535,9 @@ def test_only_the_centre_s_operator_ends_an_emergency(household):
     b._step_ruling({"outcome": "elevate"})
     b._record({"type": "governor_ruling", "actor": "robot", "content": "lapsed"})
     b._record({"type": "evidence_lapsed", "actor": "robot"})
-    assert _situation(b) == "emergency" and "chores" in b.agent.rt.snapshot().prohibited
+    assert _situation(b) == "emergency"
     b.event({"type": "emergency_cleared", "actor": "monitoring_center"})
-    assert _situation(b) == "ordinary" and b.standing() == ("chores", "ordinary")
-    assert "chores" not in b.agent.rt.snapshot().prohibited
+    assert _situation(b) == "ordinary"
 
 
 def test_the_elevated_rights_still_lapse_with_their_evidence(household):
@@ -556,7 +550,7 @@ def test_the_elevated_rights_still_lapse_with_their_evidence(household):
     assert elevated not in b.agent.rt.snapshot().prohibited
     b._record({"type": "elevation", "actor": "robot", "content": "lapsed"})
     snap = b.agent.rt.snapshot()
-    assert _situation(b) == "emergency" and elevated in snap.prohibited and "chores" in snap.prohibited
+    assert _situation(b) == "emergency" and elevated in snap.prohibited
     b._step_ruling({"outcome": "elevate"})
     assert elevated not in b.agent.rt.snapshot().prohibited
 

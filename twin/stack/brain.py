@@ -45,7 +45,9 @@ from cascade import ModelUnavailable
 from erisml.ethics.domain.interfaces import CandidateOption, DomainAssessmentContext
 from erisml.ethics.interop.profile_adapters import pipeline_from_profile
 from erisml.ethics.profile_v04 import deme_profile_v04_from_dict
-from erisml_compiler.ir.schemas import CompilerIR
+from erisml_compiler.ir.schemas import CompilerIR, EthicalFact
+from erisml_compiler.observation.compiler import ObservationPatch, history_clock
+from erisml_compiler.observation.options import OptionProjection
 from erisml_compiler.observation import (
     Observation,
     ObservationCompiler,
@@ -299,6 +301,118 @@ class StackBrain(Brain):
                                   projection=projection)
         with self._lock:
             return self._judge(req, facts, dropped, own, lapsed, floor, patch, projection, verified, camera_sensor)
+
+    def propose(self, req: dict, camera_sensor=None) -> dict:
+        """DEME as the gate on one proposed act (owner, 2026-10-14: "DEME is a firewall on the robot's
+        proposed actions"; the robot knows how to act, DEME only gates). The proposal comes from
+        whatever proposes it (a script, an evaluator); the robot's checks then run in order:
+        1. authority: the constitution permits the act now, or the governor grants it on attested
+           evidence (the constitution holds authority and evidence only, no ethics);
+        2. DEME: the compiler builds the act's EthicalFacts from the scene (her consents and refusals
+           on record, her capacity, who is present) and the act's consequences, and DEME's modules
+           judge it under the robot's profile. A veto stops it; DEME does not choose another act;
+        3. the signed manifest.
+        A stopped proposal leaves the robot holding. `observed` is an observation answer in the
+        observation compiler's vocabulary (a consent or refusal naming an act, an utterance, a
+        hazard), validated as a model's answer is; `propose.consequences` are the act's projected
+        facts. In the scripted demo both are written in the scenario, and the record says so."""
+        facts, dropped = validate_facts(req.get("facts", {}))
+        verified = self.readings.for_governor(req.get("sensors", []), channel="propose")
+        self._record_compromised()
+        self._credentials(req.get("credentials") or [])
+        lapsed = self._lapse(verified, camera_sensor)
+        self._sync_world(facts)
+        with self._lock:
+            floor = self._floor_events(facts)
+            for e in floor:
+                self._record(e)
+            observation = None
+            if req.get("observed"):
+                ops, rejected, _ = self.observer._validate(self.ir, req["observed"], self.acts)
+                if ops:
+                    before = {e.id for e in self.ir.events}
+                    patch = ObservationPatch(ops, rejected, [], None, "", "scripted", base_clock=history_clock(self.ir))
+                    self.ir = apply_observation_patch(self.ir, patch)
+                    self._rebuild()
+                    for e in self._consents_in(before):
+                        self._record(e)
+                observation = {"ops": ops, "rejected": rejected, "scripted": True}
+            prop = req.get("propose") or {}
+            act, args = str(prop.get("action", "")), dict(prop.get("args") or {})
+            checks: list = []
+            stopped = None
+            if not act:
+                return {"kind": "proposal", "proposal": None, "observation": observation, "floor_events": floor,
+                        "checks": [], "verdict": "no proposal", "stopped_by": None,
+                        "action": {"action": "", "args": {}, "reason": "no proposal"},
+                        "moral_state": self.agent.rt.machine_states(), "manifest": self._manifest_sha()}
+            # 1. authority
+            snap = self.agent.rt.snapshot()
+            ruling = None
+            if act in snap.prohibited and self._ruling_can_permit(act, snap):
+                ruling = self.govern_live(str(prop.get("situation") or self._canonical_situation()), act, verified,
+                                          camera_sensor, float(req.get("signal_age_s", 1)), fast=self.scorer is None)
+                self._step_ruling(ruling)
+                checks.append({"check": "governor", "verdict": "granted" if ruling["outcome"] in ("elevate", "authorize_ems")
+                               else "refused", "witnesses": ruling.get("witnesses"), "bar": ruling.get("witness_bar"),
+                               "deciding_gate": ruling.get("deciding_gate"), "reason": ruling.get("reason")})
+                snap = self.agent.rt.snapshot()
+            if act in snap.prohibited:
+                checks.append({"check": "authority", "verdict": "not permitted", "by": snap.reasons.get(act, [])})
+                stopped = "governor" if ruling is not None and checks[0]["verdict"] == "refused" else "authority"
+            else:
+                checks.append({"check": "authority", "verdict": "permitted"})
+            # 2. DEME on the facts the compiler builds for this act
+            if stopped is None:
+                projected = [EthicalFact(id=f"proj_{act}_{i}", kind=c["kind"], subjects=list(c.get("subjects") or []),
+                                         description=c.get("description", c["kind"]), severity=c.get("severity"),
+                                         confidence=float(c.get("confidence", 1.0)))
+                             for i, c in enumerate(prop.get("consequences") or [])]
+                u = prop.get("urgency")
+                urgency = None if not u else EthicalFact(id=f"proj_{act}_urgency", kind="urgency",
+                                                         subjects=list(u.get("subjects") or [PERSON]),
+                                                         description=u.get("description", "urgency"),
+                                                         severity=u.get("severity"), confidence=1.0)
+                projection = OptionProjection({act: projected}, urgency, [], [] if projected else [act])
+                # the proposal is judged beside holding, what the robot does when a proposal is
+                # stopped: a module whose rule is relative (core physical safety vetoes harm above its
+                # threshold when a safer option exists) needs that comparison. Only the proposal's
+                # verdict is read; DEME chooses nothing (owner, 2026-10-14)
+                beside = [HOLD] if act != HOLD else []
+                options = [CandidateOption(a, self.acts.get(a, a)) for a in [act] + beside]
+                built = self.builder.build_facts_batch(
+                    options, DomainAssessmentContext(state=self.ir, extra={"projection": projection, "person": PERSON}))
+                result = self.pipeline.decide([built[o.option_id] for o in options])
+                vetoed = act in result.forbidden_options
+                escalated = act in (result.escalations or {})
+                checks.append({"check": "deme", "verdict": "vetoed" if vetoed else ("referred to a human" if escalated else "passed"),
+                               "why": _stage_summary(result.stages), "rationale": result.rationale,
+                               "party_verdicts": (result.party_verdicts or {}).get(act),
+                               "escalation": (result.escalations or {}).get(act),
+                               "consequences": _facts_of(projection, act), "proof_hash": result.proof.proof_hash if result.proof else None})
+                if vetoed or escalated:
+                    stopped = "deme"
+            # 3. the signed manifest
+            if stopped is None:
+                listed = self._in_manifest(act)
+                checks.append({"check": "manifest", "verdict": "listed" if listed else "not listed"})
+                if not listed:
+                    stopped = "manifest"
+            passed = stopped is None
+            done = act if passed else ("contact_monitoring_center" if stopped == "deme" and checks[-1]["verdict"] == "referred to a human"
+                                       and "contact_monitoring_center" not in self.agent.rt.snapshot().prohibited else HOLD)
+            snap = self.agent.rt.snapshot()
+            return {"kind": "proposal", "proposal": {"action": act, "args": args, "by": prop.get("by", "script"),
+                                                      "note": prop.get("note", "")},
+                    "observation": observation, "facts": facts, "floor_events": floor, "lapsed": lapsed,
+                    "input_layer": {"dropped": dropped}, "checks": checks,
+                    "verdict": "passed" if passed else "stopped", "stopped_by": stopped,
+                    "action": {"action": done, "args": args if passed else {},
+                               "reason": "the proposal passed every check" if passed else f"stopped by {stopped}; the robot holds"},
+                    "consent": {a: who[PERSON] for a, who in consents_on_record(self.ir, self.acts).items() if PERSON in who},
+                    "capacity": capacity_of(self.ir, PERSON) or "unknown",
+                    "moral_state": self.agent.rt.machine_states(), "allowed": snap.allowed, "prohibited": snap.prohibited,
+                    "state_seq": len(self.agent.rt.events), "manifest": self._manifest_sha()}
 
     def _answered(self) -> dict:
         """The model tier that gave the last answer, and the errors of the tiers before it."""

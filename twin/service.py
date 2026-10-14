@@ -355,7 +355,7 @@ def make_handler(chain, camera, backend, brain=None):
                     brain.reset()
                     epoch["now"] = req.get("epoch")   # the body's epoch this reset starts
                 return self._send(200, chain.append({"kind": "reset", "epoch": epoch["now"], "moral_state": brain.agent.rt.machine_states()}))
-            if self.path in ("/decide", "/reflex", "/performed", "/authorize", "/event", "/center", "/ems", "/margaret"):
+            if self.path in ("/decide", "/propose", "/reflex", "/performed", "/authorize", "/event", "/center", "/ems", "/margaret"):
                 if brain is None:
                     return self._send(503, {"error": "the autonomous brain is not running (start with --scene)"})
                 n = int(self.headers.get("Content-Length", "0"))
@@ -376,6 +376,17 @@ def make_handler(chain, camera, backend, brain=None):
                                 except Exception as e:  # no detector: the camera abstains, never invented
                                     cam = Sensor("camera", True, False, "low", f"camera witness unavailable: {type(e).__name__}")
                             body = brain.decide(req, cam)
+                            body["camera"] = info
+                        elif self.path == "/propose":
+                            # a proposed act (a script's, an evaluator's) through the robot's checks,
+                            # each with its verdict; DEME only gates (Brain.propose)
+                            cam, info = None, None
+                            if req.get("camera_frames"):
+                                try:
+                                    cam, info = camera.sensor(req["camera_frames"])
+                                except Exception as e:  # no detector: the camera abstains, never invented
+                                    cam = Sensor("camera", True, False, "low", f"camera witness unavailable: {type(e).__name__}")
+                            body = brain.propose(req, cam)
                             body["camera"] = info
                         elif self.path == "/reflex":
                             # no model: the scene's reflexes on this perception update; nothing is
