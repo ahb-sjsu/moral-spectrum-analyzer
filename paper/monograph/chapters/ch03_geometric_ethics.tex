@@ -18,6 +18,13 @@ liberty and no-claim are related by a group of four operations. The software car
 assessment as a vector of nine named dimensions. Each idea is stated with its status in the
 sources, since some are proved, some are modeling axioms and some rest on measurement.
 
+The picture of a moral space is Harris's. In \emph{The Moral Landscape}~\cite{harris2010moral} he
+describes a landscape of peaks and valleys, where height is the well-being of conscious creatures
+and the peaks are the best ways to live. That book inspired the programme. Geometric Ethics keeps
+the space and gives up the single height, for the reason Section~\ref{sec:ge-scalar} gives. DEME's
+class for the set of options it compares is still named \code{MoralLandscape}.
+% src: owner 2026-10-14; lib:src/erisml/ethics/moral_landscape.py (class MoralLandscape)
+
 \section{A moral assessment has nine axes}\label{sec:ge-space}
 
 Geometric Ethics models the morally relevant state of a system of agents as a point $p$ in a
@@ -474,8 +481,8 @@ what we know. Figure~\ref{fig:ge-vector} shows the matrix and the tensor ranks b
 \centering
 \input{figures/ch03_moral_vector}
 \caption{The nine dimensions of the moral vector by scope and mode, above the six tensor ranks
-that extend it. Every rank keeps the nine-dimension index $k$ as its first axis. The current
-brain judges at rank two, marked in teal.}
+that extend it. Every rank keeps the nine-dimension index $k$ as its first axis. The gate brain's
+DEME judges a proposal at rank two, marked in teal, for the person in care and those its facts name.}
 \label{fig:ge-vector}
 \end{figure}
 
@@ -535,18 +542,20 @@ rather than a break.
 
 The embodied twin uses three of the chapter's constructs directly. All seven of its
 stratifications are executable stratifications in the sense of Definition~8.14, with 26 strata
-and 34 gates, and the current brain's constitution keeps all of them.
+and 34 gates, and the gate brain's constitution keeps all of them and adds one, the operator's end
+of an emergency.
 % src: C:\source\gtc-prototype\paper\aies2027\kit\FACTS.md:11; twin/stack/constitution.erisml extra.strata (7, 26 states, 34 gates; counted with PyYAML 2026-10-12)
 In the earlier brain, which ran every graded run, an output gate judges every action with DEME's
 moral vector, on facts derived from the moral state. No model writes those facts.
 % src: C:\source\gtc-prototype\twin\output_gate.py module docstring, OutputGate.facts
-In the brain the robot has run since 12 October 2026, DEME selects among the permitted acts with
-the same nine dimensions at rank two. It judges each act per party and scores it by the mean over
-the parties, and a veto for any party vetoes the act.
-% src: erisml-lib feat/deme-rank2 054ed18; gtc twin/stack/brain.py (party_collapse = "mean"), _judge (party_verdicts)
-Its facts come from a model's projection of each act's consequences,
-validated by the compiler and mapped through its bridge. Those facts decide what DEME sees, but
-they never move a stratum, so they grant no authority.
+In the gate brain the robot has run since 14 October 2026, DEME judges one proposed act with
+the same nine dimensions at rank two and passes or vetoes it. It judges the act per party and
+scores it by the mean over the parties, and a veto for any party vetoes the act. In brain8, from 12
+to 14 October, DEME selected among the permitted acts in the same way.
+% src: erisml-lib feat/deme-rank2 054ed18; gtc twin/stack/brain.py (party_collapse = "mean"), _judge (party_verdicts), StackBrain.propose (gtc c278e52)
+Its facts are built by the compiler from the record and from the act's consequences, which a script
+writes in the demonstration and a model projected in brain8, and are mapped through its bridge.
+Those facts decide what DEME sees, but they never move a stratum, so they grant no authority.
 % src: C:\source\gtc-prototype\twin\stack\brain.py StackBrain._judge; stack/facts_builder.py HomeFactsBuilder; erisml-compiler observation/options.py option_ir
 Its governor applies the reversion axiom in both brains, recounting attested witnesses on every
 cycle and recording a lapse when they stay below the bar for the declared interval.

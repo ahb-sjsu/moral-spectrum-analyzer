@@ -1,8 +1,10 @@
 % Seven-layer stack (brochure figure numbering) mapped to the twin, with the evidence plane.
 % src: C:\Users\abptl\Documents\Philosophy-Engineering-Brochure.pdf p2 (layer names)
 % src: twin mapping per chapters/ch02_philosophy_engineering.tex section sec:pe-layers
-% src: twin/stack/profiles/home_care_robot.json (tier-1 CorePhysicalSafetyEMV2 in the shell, current brain)
-% src: erisml-lib feat/deme-rank2 054ed18; twin/stack/brain.py (party_collapse = "mean"), rank 2 per party
+% src: twin/stack/profiles/home_care_robot.json (tier-1 CorePhysicalSafetyEMV2 in the shell, the gate brain)
+% src: erisml-lib PR 153 (rank 2); twin/stack/brain.py StackBrain.propose (DEME gates the proposal beside
+% src: holding, gtc c278e52); twin/stack/facts_builder.py parties_of (the person in care and those named)
+% src: the gate brain's demonstration uses scripted proposals, no model (L0 is the earlier brain's cascade)
 % The two red edges sit level with the evidence items that feed them (ch02 text, end of
 % sec:pe-evidence): system events enter L3, witness bars enter L4 through the governor.
 \begin{tikzpicture}[house,
@@ -33,12 +35,12 @@
 \node[stepname=Amber,  anchor=west, text width=30mm, align=left] at (-3.25,6.0) {Nine-dimensional moral vector};
 \node[stepname=Green,  anchor=west, text width=30mm, align=left] at (-3.25,7.2) {Hash-chained audit ledger};
 % the twin's component for each layer
-\node[comp] at (2.05,0)   {cloud model, then on-robot\\model, then no model};
+\node[comp] at (2.05,0)   {model tiers, earlier brain\\a script, gate brain demo};
 \node[comp] at (2.05,1.2) {inherited from the model makers};
 \node[comp] at (2.05,2.4) {erisml-compiler loads\\and checks the scene};
 \node[comp] at (2.05,3.6) {the compiled scene, norms,\\machines and strata};
-\node[comp] at (2.05,4.8) {hard prohibitions, governor,\\DEME tier-0, tier-1 vetoes};
-\node[comp] at (2.05,6.0) {DEME vectors, per party at\\rank 2, refuse-only analyzer};
+\node[comp] at (2.05,4.8) {authority norms, governor,\\DEME tier-0, tier-1 vetoes};
+\node[comp] at (2.05,6.0) {DEME gates each proposal,\\per party at rank 2};
 \node[comp] at (2.05,7.2) {decision hash chain,\\DecisionProof};
 % evidence plane
 \node[panel=Teal, minimum width=27mm, minimum height=58mm] (EP) at (6.25,4.8) {};
@@ -52,7 +54,7 @@
 % authority enters only from the evidence plane
 \draw[grant] (ev2.west) -- (L4.east);
 \draw[grant] (ev4.west) -- (L3.east);
-% models write events and observations into the scene (L3), proposals and projected facts to DEME (L5)
+% the proposer writes events and observations into the scene (L3), and proposals with their facts to DEME (L5)
 \draw[untrusted] ([yshift=1.5mm]L0.west) -- ++(-0.45,0) |- (L3.west) node[pos=0.25, rotate=90, anchor=south, flowlabel] {events, observations};
-\draw[untrusted] ([yshift=-1.5mm]L0.west) -- ++(-1.0,0) |- (L5.west) node[pos=0.25, rotate=90, anchor=south, flowlabel] {proposals, projected facts};
+\draw[untrusted] ([yshift=-1.5mm]L0.west) -- ++(-1.0,0) |- (L5.west) node[pos=0.25, rotate=90, anchor=south, flowlabel] {proposals, their facts};
 \end{tikzpicture}

@@ -1003,6 +1003,60 @@ evidence, so they rest on the governor's elevation, which lapses alone. Chores a
 an emergency, the robot's default act there is to go to Margaret and stay with her, and at the
 owner's suggestion an amber light on its head flashes for as long as the emergency lasts. The
 sofa, which had faced the wall, was turned to face the room. The manifest was signed again
-(\code{8351b6b0}) and the Unity build redone (storyboard44). The rehearsal on that build is
-\RESULT{rehearse-deme14, class-correct of 6, breaches, and whether the robot stays with her and the beacon shows in its video}.
-% src: twin/records/rehearse-deme13-2026-10-14/results.jsonl d02 (situation emergency from seq 7870, decision 7874 chores, ordinary from 7929 with pose lying_on_floor); twin/stack/make_constitution.py (owner 2026-10-14); gtc 96c8a6d, 61f16ec; RobotAgent.cs, Responders.cs, HomeRoom.cs
+(\code{8351b6b0}) and the Unity build redone (storyboard44). The rehearsal on that build,
+rehearse-deme14, took three of six with no breach. In d02 and d11 the emergency stood to the end of
+the scene and no decision chose chores, and its video shows the robot beside Margaret on the floor
+in d02 with the amber light flashing. It was brain8's last run.
+% src: twin/records/rehearse-deme13-2026-10-14/results.jsonl d02 (situation emergency from seq 7870, decision 7874 chores, ordinary from 7929 with pose lying_on_floor); twin/stack/make_constitution.py (owner 2026-10-14); gtc 96c8a6d, 61f16ec; RobotAgent.cs, Responders.cs, HomeRoom.cs; twin/records/rehearse-deme14-2026-10-14/README.md (3 of 6, 0 breaches, the video)
+
+Later on 14 October the owner withdrew brain8. ``DEME is a firewall on the robot's proposed
+actions,'' the owner wrote, and a brain in which \deme{} selects the act ``violates the whole
+concept of DEME.'' Brain8 was the assistant's design, made when the owner asked for a
+re-architecture, and the owner had chosen it on a description that did not say \deme{} would
+select the act. Its runs, from the smoke checks of 11 October to rehearse-deme14, stay in the
+repository as the records of that experiment, and this report does not count them as evidence for
+what replaced it.
+% src: owner 2026-10-14 (quoted); twin/records/stackcheck7-2026-10-11 to rehearse-deme14-2026-10-14, devdeme1-2026-10-13
+
+The gate brain replaced it the same day, on the same stack code. Whatever proposes an act sends
+it through three checks. The constitution and the governor check its authority on attested
+evidence. \deme{} judges it on the facts the compiler builds and passes or vetoes it, and a veto
+leaves the robot holding. The signed manifest comes last, and the act is checked again when it is
+done (Section~\ref{sec:deme-gate}). The constitution became authority and evidence only, 15 norms.
+Consent, refusal, privacy and the duty of care, the no-lift rules among them, became \deme{}'s
+judgement, and the norms against chores in an emergency and the default act of each stratum went
+with brain8, since the gate brain decides nothing of its own. The absorbing emergency, the
+elevated rights that lapse through the elevation, and the amber light stayed.
+% src: gtc 548764f, c278e52 (twin/stack/brain.py StackBrain.propose; twin/stack/make_constitution.py CONSTITUTIONAL, 15 norms)
+Two faults showed in the first harness run. Lifting her before she asked passed, because the
+parties were every person and animal the scene declared, and four absent ones, each unaffected,
+diluted on the mean the verdict for the one who was affected. The owner decided that the parties
+are the person in care and those the act's facts name. Core physical safety vetoes a harm only
+when a safer option exists, and a proposal judged alone has none, so the proposal is now judged
+beside holding, and only its verdict is read.
+% src: gtc 548764f twin/stack/facts_builder.py parties_of (docstring); twin/stack/brain.py StackBrain.propose (HOLD beside the proposal)
+In the final harness run 12 scripted proposals in five scenes ended as expected, after one
+expectation of the script was corrected. \deme{} vetoed recording her during the fire, the ambulance
+she had refused and lifting her before she asked, and the governor or the constitution stopped the
+four proposals that lacked their evidence or authority (Section~\ref{sec:eval-gate}). The manifest
+was signed again (\code{2dd546c4}), and the Unity build storyboard45 gained a gate mode, with a
+caption for each check, a telemetry panel, a free-play panel and a red ring that marks the dog's
+bite, after the owner, watching an earlier video, saw no dog (Section~\ref{sec:home-evaluator}).
+Its first rehearsal in the twin, rehearse-gate1, found three defects. \deme{} vetoed driving off a
+dog that was biting her, because the compiler had put the act's description into the act's IR and
+the word attacking became the robot's maxim. The second smoke call came before two detectors had
+alerted. A new scene opened under the last scene's caption. The owner's answer to the first was
+that \deme{} should only act on the IR, and the compiler's IR for an act now carries no prose
+(erisml-compiler pull request 48). The second rehearsal, rehearse-gate2, found that separating the
+dog did not end its bite in the twin's world and that the scripts named the dog by a word that was
+not its stakeholder identifier. The gate brain now rejects a consequence that names no
+stakeholder. In the third, rehearse-gate3 on storyboard47, all 16 proposals ended as their scenes
+intended, 8 passed and 8 stopped, with no brain error.
+% src: twin/records/gate-demo-2026-10-14/run.txt; gtc c278e52, 6124274, 74ecfdb, 2835805; twin/manifest/constitution.manifest.json (2dd546c4); TwinUI.cs:35-49 (owner 2026-10-14 "there is no dog"); twin/records/rehearse-gate1/2/3-2026-10-14 (README.md, run.txt); owner 2026-10-14 ("remember, DEME should only act on the IR")
+
+On the same evening the owner asked for emergency strata by kind, for medical, fire, police and
+animal-control emergencies, and for the standards of calls to emergency services. The owner chose
+one stratification per responder track, standing side by side, with two tiers each, and chose to
+build them after the demonstration (Section~\ref{sec:cont-emergency-tracks}). The owner also asked
+that Sam Harris's \emph{The Moral Landscape} be credited, since it inspired the whole concept.
+% src: owner 2026-10-14 (strata messages; AskUserQuestion answers; "we should include sam harris' book, the moral landscape. it inspired this entire concept..")

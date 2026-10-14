@@ -2,7 +2,8 @@
 % src: erisml-lib (origin/main 2d584e8) src/erisml/ethics/layers/pipeline.py:132-322 (proof built in decide, 284-310)
 % src: erisml-lib src/erisml/ethics/layers/tactical.py (TacticalLayerConfig.fail_closed default False)
 % src: gtc-prototype twin/output_gate.py:179-250 (earlier brain: output gate, fail_closed=True in _deme)
-% src: gtc-prototype twin/stack/brain.py (_judge: governor ruling, HOLD; reset sets tactical fail_closed)
+% src: gtc-prototype twin/stack/brain.py StackBrain.propose (the gate brain, gtc c278e52: the proposal judged
+% src: beside holding, only its verdict read; a veto stops it and the robot holds; reset sets fail_closed)
 \begin{tikzpicture}[house,
   pan/.style={minimum width=38mm, minimum height=44mm},
   pan2/.style={minimum width=38mm, minimum height=54mm},
@@ -44,7 +45,7 @@
 \node[stepname=Grey] at ([yshift=-6mm]p6.north) {The twin acts};
 \node[desc, text width=35mm] at ([yshift=-11mm]p6.north) {after decide returns};
 \node[dtl] (e6) at ([yshift=19mm]p6.south) {\textbf{earlier brain}, output gate\\pass if not forbidden, else\\best allowed, else wait\\tragic goes to a human};
-\node[dtl] at ([yshift=2mm]p6.south) {\textbf{re-architected brain}\\the selection, with a\\governor's ruling if needed\\nothing standing, hold};
+\node[dtl] at ([yshift=2mm]p6.south) {\textbf{gate brain}\\one proposal, judged\\next to holding, passes\\unless forbidden, else\\the robot holds};
 % flow
 \draw[flow] (p1.east) -- (p2.west);
 \draw[flow] (p2.east) -- (p3.west);

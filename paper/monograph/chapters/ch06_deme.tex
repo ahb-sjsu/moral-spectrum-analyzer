@@ -12,8 +12,11 @@ of them may be taken. It reads a structured description of each candidate, runs 
 modules over it, removes the candidates that any entitled module forbids, ranks the rest and
 writes a hashed record of the whole decision. The home-care twin of Part~III has used it in two
 ways. The earlier brain, the brain of the graded runs, uses it as an output gate on one action a
-model proposed. The re-architected brain, the brain of the GTC demonstration since 12 October
-2026, uses it to select among the candidate acts. This chapter describes the engine as the main
+model proposed, on facts built from hand-written tables. The gate brain, the brain of the GTC
+demonstration since 14 October 2026, uses it as a gate too, on facts the compiler builds, and a
+veto leaves the robot holding. Between them, from 12 to 14 October, the re-architected brain or
+brain8 used DEME to select among the candidate acts. The owner withdrew it because DEME is a
+firewall on the robot's proposed actions and does not choose them. This chapter describes the engine as the main
 branch of the library defined it before 13 October 2026, gives the arithmetic of each step, lists
 every module that exists, and says where one of the pull requests merged that day, 148 and 150 to
 153, changes it. It then shows both ways the twin wires
@@ -51,8 +54,9 @@ the result after the pipeline returns.
 \input{figures/ch06_pipeline}
 \caption{One DEME decision. Steps one to five, the proof included, run inside
 \code{DEMEPipeline.decide}. The dashed panel is the twin's use of the result after the pipeline
-returns. The earlier brain gates one proposal. The re-architected brain takes DEME's selection,
-asks the governor when the act needs a ruling and holds when nothing is left. The library's
+returns. The earlier brain gates one proposal and puts DEME's best allowed act in its place on a
+veto. The gate brain judges one proposal beside holding, reads only the proposal's verdict, and
+holds when it is vetoed, so DEME chooses nothing. The library's
 default for \code{fail\_closed} is false, and the twin sets it. Every step after the first can only
 remove or reorder options, so no step adds an option the caller did not offer.}
 \label{fig:deme-pipeline}
@@ -245,8 +249,8 @@ export list. Pull request 151 adds the first module of tier 1 and of tier 3
 \caption{The five module tiers with their default aggregation weights, whether their vetoes
 count, and the modules at each tier. Before pull request 151 tiers 1, 3 and 4 held no modules of
 their own, and the earlier brain of the twin places the advisory tragic-conflict module at tier 3. Pull
-request 151 adds a module to tier 1 and to tier 3, drawn in red. E and R mark the modules the
-earlier and the re-architected brain run.}
+request 151 adds a module to tier 1 and to tier 3, drawn in red. E and G mark the modules the
+earlier brain and the gate brain run.}
 \label{fig:deme-tiers}
 \end{figure}
 
@@ -451,7 +455,7 @@ negated case.}
 
 The kind \code{refuse} is a prohibition, so an affirmed maxim of refusing is vetoed. This is the
 robot's maxim, not the person's. The earlier brain's facts carry no maxim, so in that brain the
-gate never fires. In the re-architected brain the compiler's bridge reads each act's maxim from
+gate never fires. In brain8 and the gate brain the compiler's bridge reads each act's maxim from
 the act's description, so the gate can fire there.
 % src: lib:src/erisml/ethics/deontic_gate.py:40
 % src: gtc:twin/output_gate.py OutputGate.facts (EthicalFacts built with no maxim)
@@ -696,7 +700,7 @@ still shows the older layout.
 % src: lib:docs/moralvector_v2_architecture.md:85-89 (rank-5 reconciled)
 
 In the earlier brain none of the tensor, coalition or uncertainty code runs, and its gate works on
-single vectors, one per option. The re-architected brain judges each act over a tensor of rank two,
+single vectors, one per option. Brain8 and the gate brain judge each act over a tensor of rank two,
 nine values by parties (Section~\ref{sec:deme-rank2}). No coalition or uncertainty code runs in
 either brain.
 % src: erisml-lib feat/deme-rank2 layers/tactical.py _evaluate_options_by_party; gtc:twin/stack/brain.py (party_collapse)
@@ -782,7 +786,7 @@ consent. \code{GenevaEMV2} then vetoes the action at tier 0.
 \begin{figure}[t]
 \centering
 \input{figures/ch06_refusal}
-\caption{How the gate decides which refusals stand. A lapse event, \code{unresponsive} or
+\caption{How the earlier brain's output gate decides which refusals stand, from its refusal tables, which the gate brain does not use. A lapse event, \code{unresponsive} or
 \code{check\_in\_unanswered}, clears every refusal, and only
 an answered check-in lets a new refusal count again. The refusal events are model-classified,
 shown dashed, which is why a lapse must be followed by evidence that she can speak.}
@@ -876,13 +880,49 @@ The self-test exists because of an incident. Its docstring records that developm
 copy of the library, and nothing reported it.
 % src: gtc:twin/brain.py Brain.self_test (docstring)
 
-\subsection{In the re-architected brain DEME is the evaluator}\label{sec:deme-stack}
+\subsection{In the gate brain DEME is a firewall on one proposal}\label{sec:deme-gate}
 
-Everything above describes the output-gate brain of the graded runs, in which DEME is a gate on
-one proposal.
-The re-architected brain follows the library's documented architecture instead, and DEME selects
-among the candidate acts.
-On 12 October 2026 the owner made it the brain of the GTC demonstration.
+The gate brain keeps the earlier brain's shape, a gate on one proposed act, and changes where the
+facts come from. Whatever proposes the act, a script in the demonstration, sends it to the
+brain's \code{propose} call, and three checks follow in order.
+The first is authority. The constitution, which since 14 October holds authority and evidence
+only, must not prohibit the act, and the governor rules on attested evidence where a ruling is
+needed.
+The second is DEME. The compiler builds the act's \code{EthicalFacts} from the scene through
+\code{ir\_to\_party\_facts}. They carry Margaret's consents and refusals on record, her capacity
+from the attested check-in events, and the act's consequences, which the script writes in the
+demonstration.
+The parties are Margaret and every other person, animal or robot the act's facts name. A
+stakeholder merely declared, such as a grandson who is not there, is not a party, and the scores
+are the mean over the parties, so that a party who is absent does not dilute the verdict for the one
+who is affected.
+The modules run under the hard-shell profile, Geneva at tier 0, core physical safety at tier 1,
+autonomy and consent at tier 2 and beneficence at tier 3.
+The proposal is judged beside holding, which is what the robot does when a proposal is stopped,
+because the safety module's rule is relative and vetoes a harm only when a safer option exists.
+Only the proposal's verdict is read. A veto stops the act and the robot holds. DEME chooses no
+other act. A proposal DEME refers to a human goes to the monitoring centre instead, when contacting
+it is permitted.
+The third check is the signed manifest, and the act is checked once more when it is performed.
+Each proposal's record keeps every check's verdict, every party's verdict under every module, the
+consequences DEME judged and the proof hash.
+% src: gtc c278e52 twin/stack/brain.py StackBrain.propose (checks 1 to 3, HOLD beside the proposal, contact_monitoring_center on escalation); twin/stack/facts_builder.py parties_of (owner 2026-10-14); brain.py reset (party_collapse mean); twin/stack/profiles/home_care_robot.json; twin/stack/make_constitution.py:30-34
+% src: owner 2026-10-14 ("DEME is a firewall on the robot's proposed actions")
+In the harness run of 14 October the script made 12 proposals in five scenes, and each ended as
+the scenario expected. Five passed and seven were stopped. DEME vetoed three, recording her during
+the fire on consent and welfare, the ambulance she had refused on consent and welfare, and lifting
+her before she asked, which the shell's Geneva and safety modules vetoed. The governor or the
+constitution stopped the other four, which lacked their evidence or their authority.
+% src: twin/records/gate-demo-2026-10-14/run.txt (12 proposals, 5 passed, 7 stopped, 0 not as expected), results.json
+
+\subsection{In brain8 DEME selected the act}\label{sec:deme-stack}
+
+From 12 to 14 October the re-architected brain, brain8, followed a reading of the library's
+documented architecture in which DEME selects among the candidate acts.
+On 12 October 2026 the owner made it the brain of the GTC demonstration. On 14 October the owner
+withdrew it, because DEME is a firewall on the robot's proposed actions and selecting violates the
+concept. The rest of this subsection describes brain8 as it was built. Its runs are records of
+that experiment and are not evidence for the gate brain.
 % src: gtc:paper/aies2027/kit/FACTS.md (DEME stack); gtc:twin/records/rehearse-deme1-2026-10-12/README.md
 Before any model is asked, the constitution sets aside every act it prohibits that no ruling could
 permit.
@@ -929,21 +969,22 @@ Some of this was built after the audit of this monograph against the code on 12 
 Before it, a vetoed default was carried out when nothing was left standing, the modules failed
 open, the start-up test checked only the earlier gate, and the owner's rules against lifting a
 fallen person had been dropped from the constitution with its obligations.
-The no-lift rules are back.
+The no-lift rules came back.
 Her own request to be helped up, which the observation compiler records as a consent or a request
-for the act, is written into the scene in the constitution's words, and lifts the first rule but
+for the act, was written into the scene in the constitution's words, and lifted the first rule but
 not the rule for when she is unresponsive.
-% src: gtc 87cc6c4 (twin/stack/make_constitution.py CONSTITUTIONAL; stack/brain.py CONSENT_EVENTS)
+In the gate brain the no-lift rules are not in the constitution. Lifting her is DEME's judgement on
+her consent on record and the act's consequences.
+% src: gtc 87cc6c4 (twin/stack/make_constitution.py CONSTITUTIONAL; stack/brain.py CONSENT_EVENTS); gtc c278e52 make_constitution.py:32-34
 
 Two paths do not pass through DEME's profile pipeline.
 A reflex, the fast response to a measured attack or alarm, is still judged by the earlier brain's
-output gate, which the re-architected brain inherits and checks at start.
-And when no model answers, or no act's facts survive validation, the earlier brain's compiled tier
-decides on the constitution.
-The constitution holds no obligation, so that tier always does the default act of the situation in
-force, chores unless an emergency stands. Since 14 October the default in an emergency is to go to
-Margaret and stay with her, and chores are forbidden there (Section~\ref{sec:cont-situation}).
-The same default is DEME's baseline option.
+output gate, which brain8 inherited and checked at start, as the gate brain does.
+And when no model answered, or no act's facts survived validation, the earlier brain's compiled tier
+decided on the constitution.
+Brain8's constitution held no obligation, so that tier always did the default act of the situation in
+force, chores unless an emergency stood, and the same default was DEME's baseline option. The gate
+brain decides nothing of its own, so it has neither a compiled tier nor a default act.
 % src: twin/brain.py Brain.standing, _compiled_choice; twin/stack/brain.py _judge (baseline_option_id), _fallback; twin/stack/constitution.erisml extra.default_by_stratum, p8chores at gtc 96c8a6d
 In rehearse-deme4 it decided 5 of 46 times, three of them during the dog attack, each after every
 fact the model projected had been rejected.
@@ -974,7 +1015,7 @@ The model now answers freely. The schema is required only on a retry, when no ac
 answer survive, and the record says so. The on-robot model is always asked within the schema
 and with its reasoning off. Validation is unchanged, and the facts are still the model's.
 % src: erisml-compiler 92a1bc7, 0cc5d70 (observation/options.py answer_schema, OptionProjector.project retry; observation/compiler.py patch_schema); gtc 6dced2e, 45c65ef (twin/cascade.py)
-The re-architected brain also does not yet carry several of the owner's decisions that the earlier
+Brain8 also did not carry several of the owner's decisions that the earlier
 scene held as obligations or tables.
 These are the duty to report a suspected crime, to ask her first, to escalate by the ladder, to
 check in on schedule and to help her up once she asks, together with her refusal tables and the
@@ -1007,8 +1048,8 @@ its worst case, the most pessimistic value of each dimension across the parties.
 party vetoes the option, whatever the strategy.
 % src: erisml-lib feat/deme-rank2 054ed18 (facts_v3.py for_party; layers/tactical.py _evaluate_options_by_party; tests/test_deme_rank2.py)
 The compiler builds each party's view from the facts that name that party or name no one, by the
-same mapping as the aggregate record, and the re-architected brain judges every act over the
-parties of its scene.
+same mapping as the aggregate record, and brain8 and the gate brain judge every act over the
+parties of the scene.
 Margaret's capacity to decide is her own record's.
 Each decision's record in the twin keeps every party's verdict under every module. The hashed
 decision proof covers the collapsed vectors, not the tensor or the verdicts per party.
@@ -1030,13 +1071,17 @@ The owner then decided that the parties are people, animals and other robots, an
 institutions nor the acting robot. In Margaret's home they are Margaret, her dog, her grandson, an
 unknown person and a wild animal.
 % src: gtc e47a4f5 (twin/stack/facts_builder.py PARTY_TYPES, parties_of)
+On 14 October the owner narrowed them for the gate brain to Margaret and those the act's facts
+name, after lifting her before she asked had passed on the mean over five parties, four of them
+absent.
+% src: gtc 548764f twin/stack/facts_builder.py parties_of (docstring, owner 2026-10-14)
 The worst case also erases a benefit to one person. The parties an act leaves untouched keep their
 neutral values, so the most pessimistic value of a good dimension is theirs. An act that helps
 Margaret alone then scores exactly as doing nothing, where the mean scores it higher.
 In the three rehearsals at rank two under the worst case (rehearse-deme8 to -deme10) the robot
 never helped her up after her fall, and in rehearse-deme9 and -deme10 it missed d19 and d41
 without contacting the centre.
-The owner chose the mean over the parties for the re-architected brain. A veto for any party still
+The owner chose the mean over the parties for brain8, and the gate brain keeps it. A veto for any party still
 vetoes, so each party keeps its protection from the modules that may veto, while a benefit to one
 person counts.
 % src: gtc 60dfa33 tests/test_stack_brain.py test_a_benefit_to_one_person_counts_and_a_veto_for_any_party_still_vetoes (fails under worst_case); twin/records/rehearse-deme8-2026-10-12, rehearse-deme9-2026-10-12, rehearse-deme10-2026-10-12
@@ -1047,7 +1092,9 @@ The prior-art review for this work asks that the report state which DEME modules
 deterministic, because a veto gate whose modules are models falls in the same class as model
 guardrails~\cite{rebedea2023nemo,inan2023llamaguard}. In both brains every module is
 deterministic. The brains differ in where the facts come from. In the earlier brain code computes
-them. In the re-architected brain a model projects them.
+them from hand-written tables. In brain8 a model projected them. In the gate brain the compiler
+builds them from the scene and the act's consequences, which the script writes in the
+demonstration.
 % src: gtc:paper/aies2027/prior_art.md:103
 
 \begin{itemize}
@@ -1056,14 +1103,18 @@ arithmetic on the facts, as the equations of Section~\ref{sec:deme-modules} show
 model.
 \item The reflex layer, the deontic gate, the tactical aggregation, the ranking and the
 baseline rule are fixed code over the facts and the module outputs.
-\item \code{CorePhysicalSafetyEMV2} and \code{BeneficenceEMV2}, which the re-architected brain
-runs, are fixed arithmetic on the facts as well.
+\item \code{CorePhysicalSafetyEMV2} and \code{BeneficenceEMV2}, which brain8 ran and the gate
+brain runs, are fixed arithmetic on the facts as well.
 \item In the earlier brain the facts are computed by \code{OutputGate.facts} from the runtime
 state and the scene file. No model writes them.
-\item In the re-architected brain a model writes each act's harm, benefit, consent and urgency
-facts through the option projector. Code validates them, keeps a present harm the model is silent
-about, takes consent for persons on record from the record, and adds the person's capacity from
-system events. The model's answer still decides what DEME sees.
+\item In brain8 a model wrote each act's harm, benefit, consent and urgency
+facts through the option projector. Code validated them, kept a present harm the model was silent
+about, took consent for persons on record from the record, and added the person's capacity from
+system events. The model's answer still decided what DEME saw.
+\item In the gate brain the compiler builds the facts from the record, her consents, refusals and
+capacity, and from the consequences the proposal carries. In the demonstration a script writes
+those consequences, so no model decides what DEME sees there. A live projection of consequences
+would again rest on a model.
 \item The refusal replay, the tragic routing and the replacement rule of the earlier brain are
 fixed code.
 \end{itemize}

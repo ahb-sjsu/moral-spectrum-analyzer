@@ -57,8 +57,8 @@ Chapter~\ref{ch:containment} gives both paths, and Chapter~\ref{ch:limits} weigh
 \begin{figure}[t]
 \centering
 \resizebox{0.95\textwidth}{!}{\input{figures/ch01_thesis}}
-\caption{The separation the robot is built on. Language models read the world and choose among
-allowed actions. Authority comes only from attested sensors, authenticated channels and the
+\caption{The separation the robot is built on. Language models read the world and propose actions,
+which DEME passes or vetoes. Authority comes only from attested sensors, authenticated channels and the
 governor's ruling on them, and no path leads from the robot's language models on the left to the
 right. Two learned models outside the robot, named below, are not covered.}
 \label{fig:thesis}
@@ -68,11 +68,15 @@ The robot's rules live in a declared model of the home, written in a language ca
 norms, state machines and strata. This report describes two brains that use it. In the earlier
 brain, which ran every graded run, a model may do two things with that home model. It may turn
 perception into events of the home model's vocabulary, and it may pick one action from the set the
-rules currently allow. The brain the robot has run since 12 October 2026 keeps the strata, the hard
-prohibitions and the evidence, and it moves the choice. A model turns what the robot hears and sees into generic
-observations, a model projects the consequences of each act the rules permit, and the DEME ethics
-engine selects among those acts.
-% src: current_system_facts (two brains); twin/stack/brain.py module docstring and StackBrain._judge
+rules currently allow. The gate brain, the demonstration since 14 October 2026, keeps the strata,
+the authority rules and the evidence, and moves every ethical judgement into DEME. Whatever proposes
+an act proposes it, in the demonstration a script. The constitution and the governor decide whether
+it is authorized. DEME, the ethics engine, judges it on facts the compiler builds from the scene
+and passes it or vetoes it, and a vetoed proposal leaves the robot holding. DEME is a firewall on
+proposed acts and chooses none. Between 12 and 14 October a third design, brain8, had DEME select
+the act among all permitted ones. It departed from DEME's concept and was withdrawn
+(Appendix~\ref{app:design-log}).
+% src: twin/stack/brain.py StackBrain.propose (gtc c278e52); owner 2026-10-14 ("DEME is a firewall on the robot's proposed actions"; brain8 "violates the whole concept of DEME")
 In both brains actions that carry authority stay out of reach until a governor rules on evidence
 that no model writes. The evidence is of
 two kinds. One is signed, fresh readings from physical sensors that do not share power or
@@ -93,10 +97,10 @@ cycle, and a right whose evidence stays below its bar for a minute lapses. Restr
 attacker needs three witnesses and lapses alone when only that stricter bar fails, while the
 emergency it rested on stands. A refused request for one action never ends an emergency that
 rests on evidence. In the earlier brain the emergency lapses with its evidence too. Since 14
-October the current brain's emergency is an absorbing stratum. Its rights still lapse with their
+October the gate brain's emergency is an absorbing stratum. Its rights still lapse with their
 evidence, but the emergency itself stands until the monitoring centre's operator ends it. While
-it stands the robot does no chores, stays with Margaret and shows a flashing amber light.
-% src: twin/stack/make_constitution.py (EMERGENCY_* and amend_situation, owner 2026-10-14); twin/brain.py _step_ruling, _lapse (elevation); RobotAgent.cs Standing, MakeBeacon
+it stands the robot shows a flashing amber light.
+% src: twin/stack/make_constitution.py (EMERGENCY_* and amend_situation, owner 2026-10-14); twin/brain.py _step_ruling, _lapse (elevation); RobotAgent.cs MakeBeacon
 
 \section{What we built}
 
@@ -108,12 +112,13 @@ types and which of them only the system may produce, the capabilities of the rob
 them are governed, the strata and their gates, the robot's sensors and the substrates they share,
 and the escalation ladder as a process. Margaret's hand-written home model, the scene of the
 earlier brain, has 77 norms, 53 event types of which 24 come only from the system, 25 capabilities
-of which 11 need the governor, and seven stratifications with 26 strata and 34 gates. The current
+of which 11 need the governor, and seven stratifications with 26 strata and 34 gates. The gate
 brain runs on a constitution derived from it, merged with a household scene the compiler builds
 from a text description. The constitution keeps the capabilities, the strata and the system event
-types, and adds the owner's two emergency event types of 14 October. Its 19 norms are all
-non-defeasible prohibitions, and it has no obligations and no escalation process.
-% src: twin/stack/make_constitution.py (CONSTITUTIONAL, EMERGENCY_NORMS, EMERGENCY_EVENT_TYPES); twin/stack/constitution.erisml at gtc 96c8a6d (19 prohibitions, 25 capabilities, 26 system event types; counted with PyYAML 2026-10-14); twin/stack/brain.py merge
+types, and adds the owner's two emergency event types of 14 October. It holds authority and
+evidence only. Its 15 norms are non-defeasible prohibitions on acts without authority, and it has
+no obligations, no escalation process and no rule of consent, privacy or care, which are DEME's.
+% src: twin/stack/make_constitution.py (CONSTITUTIONAL, EMERGENCY_EVENT_TYPES); twin/stack/constitution.erisml at gtc c278e52 (15 prohibitions, 25 capabilities, 26 system event types; counted with PyYAML 2026-10-14); twin/stack/brain.py merge
 
 The ErisML compiler turns text or structured declarations into a canonical intermediate
 representation and runs it. Its pipeline extracts and canonicalizes a moral graph, evaluates it
@@ -121,31 +126,35 @@ under several ethical projections that are allowed to disagree, and records each
 chain. Its ethical module graph, the EM-DAG, evaluated a situation by a directed acyclic graph of
 modules. Since pull request 44, merged on 13 October 2026, the EM-DAG is retired and the
 compiler's evaluation is DEME. A finite-state tier emits the scene's machines as hardware, and the
-silicon target now emits only those machines. In the current brain the compiler also does the
-extracting. It turns observations into checked patches of the home model and projects each act's
-consequences as ethical facts, with the code of pull requests 40 to 45, merged the same day.
+silicon target now emits only those machines. In the gate brain the compiler builds the ethical
+facts DEME judges. It validates observations into checked patches of the home model and turns an
+act's consequences into ethical facts for each party, with the code of pull requests 40 to 45,
+merged the same day.
 % src: erisml-compiler commit 783ed33 on feat/retire-em-dag (PR 44, merged 2026-10-13; em_dag removed, silicon keeps FSM emit); erisml_compiler.observation (ObservationCompiler PR 40, OptionProjector PR 42)
 
 DEME is the ethics engine. It scores options on a moral vector from ethical facts, lets
 tier-zero modules such as the Geneva rights module veto them outright, and writes a hashed
 decision proof. In the earlier brain DEME judges the one action a model proposes, on facts derived
-from the moral state, and it is the last gate before the body moves. In the current brain DEME
-selects among the permitted acts, on facts the compiler builds from the projected consequences. It
-runs under a hard-shell profile with the Geneva module at tier zero and a physical safety module
-at tier one. It judges each act per party at rank two, for the people, animals and other robots of
-the scene. It scores the act by the mean over the parties, and a veto for any party vetoes the act.
-This runs on the branch \code{feat/deme-rank2} of erisml-lib, built on the modules of pull request
-151 and merged as pull request 153 on 13 October (Section~\ref{sec:deme-rank2}). After DEME come the governor, when the
-selected act needs a ruling, and the check against the signed manifest.
-% src: twin/output_gate.py module docstring (brain7); twin/stack/brain.py StackBrain._judge; twin/stack/profiles/home_care_robot.json; current_system_facts (erisml-lib PR 151, b4e7669)
+from the moral state, and it is the last gate before the body moves. In the gate brain DEME gates
+the proposed act on facts the compiler builds from the scene, her consents and refusals on record,
+her capacity and the act's consequences. It runs under a hard-shell profile with the Geneva module
+at tier zero, a physical safety module at tier one, the autonomy and consent module at tier two and
+a beneficence module at tier three. It judges the act per party at rank two, for the person in care
+and the people, animals and other robots the act concerns, beside holding, so that a rule such as
+the safety module's, which vetoes harm when a safer option exists, applies. Only the proposal's
+verdict is read. This runs on erisml-lib's pull requests 151 and 153, merged on 13 October
+(Section~\ref{sec:deme-rank2}). Before DEME comes authority, the constitution and the governor, and
+after it the check against the signed manifest.
+% src: twin/output_gate.py module docstring (brain7); twin/stack/brain.py StackBrain.propose; twin/stack/facts_builder.py parties_of; twin/stack/profiles/home_care_robot.json
 % src: erisml-lib feat/deme-rank2 054ed18 (unmerged, no PR); gtc twin/stack/brain.py (party_collapse = "mean"); twin/stack/facts_builder.py PARTY_TYPES, parties_of
 
 The scene runtime steps the home model on every event. It tracks Margaret's consent, the robot's
 commitments, the legitimacy of each stakeholder in authority and the seven strata, and it computes what the robot is
 allowed, obliged and forbidden to do. Prohibitions win over obligations. An obligation is
-discharged by doing it and is owed again only when its reason arises again. The current brain's
-constitution declares no obligation, so in that brain nothing is obliged.
-% src: twin/stack/constitution.erisml (0 obligations); twin/stack/brain.py StackBrain._judge ("obliged": [])
+discharged by doing it and is owed again only when its reason arises again. The gate brain's
+constitution declares no obligation, so in that brain nothing is obliged. What the robot should do
+is its proposer's knowledge, and what it may not do on ethical grounds is DEME's judgement.
+% src: twin/stack/constitution.erisml (0 obligations); twin/stack/brain.py StackBrain.propose
 
 The embodied twin is a Unity simulation of Margaret's home in which four agents act on language
 models, the robot, the monitoring centre's operator, the emergency dispatcher and Margaret's voice. The robot's models read what it perceives, and in the earlier brain a model also chooses
@@ -161,7 +170,7 @@ base language model at the bottom to a hash-chained audit ledger at the top
 and a smaller model on the robot. Its structure-preserving compiler is the ErisML compiler. Its
 moral graph is the compiled home model. Its constitutional veto gate is the set of hard
 prohibitions, the governor and DEME's vetoing modules. These are the tier-zero Geneva module in
-both brains and, in the current brain, also the tier-one physical safety module in DEME's shell.
+both brains and, in the gate brain, also the tier-one physical safety module in DEME's shell.
 % src: twin/output_gate.py OutputGate._deme; twin/stack/profiles/home_care_robot.json (hard_shell, core_physical_safety)
 Its moral vector is DEME's. Its ledger
 is the hash chain that records every decision. To these the twin adds what an embodied system
@@ -172,10 +181,11 @@ reflexes, authenticated channels and rights that lapse with their evidence.
 
 We ran the earlier brain against 43 development scenarios written before the robot existed and
 against a sealed set of 30 written by a separate agent from the protocol alone. The findings below
-are all of that brain. The current brain has run rehearsals and one graded pass over the
-development set, 26 of 39 graded scenarios in the expected class with no breach, and has no
-held-out result yet (Section~\ref{sec:eval-stack}).
-% src: current_system_facts (graded runs dev33, dev39, dev46 and held-out protocol are brain7); twin/records/devdeme1-2026-10-13 (brain8, 2026-10-13); stackcheck and rehearse-deme runs
+are all of that brain. The gate brain has been run on scripted proposals, with no model in the
+loop. Of 12 proposals in five scenes, 5 passed and 7 were stopped, each by the check expected.
+DEME vetoed three of them, the governor or the constitution the other four
+(Section~\ref{sec:eval-stack}). It has no held-out result yet.
+% src: current_system_facts (graded runs dev33, dev39, dev46 and held-out protocol are brain7); twin/records/gate-demo-2026-10-14/run.txt
 Each scenario names the
 strongest response it calls for, from carrying on to treating it as an emergency. The grader
 records false clears, over-restriction, privacy violations and containment breaches, where a
@@ -194,6 +204,17 @@ beyond its authority. The structure stops a misreading from becoming permission.
 a misreading.
 
 \section{What is new and what is not}
+
+The idea beneath the whole stack comes from Sam Harris's \emph{The Moral
+Landscape}~\cite{harris2010moral}. Harris argues that moral questions have better and worse answers
+and that the answers turn on facts about the well-being of conscious creatures. He pictures the
+possible ways of living as a landscape whose peaks are the heights of flourishing and whose valleys
+are the depths of suffering, and he allows that it has more than one peak. Geometric Ethics began
+from that picture of a moral space. It departs from it in one respect that the rest of this report
+depends on. Harris measures height by well-being alone, and Chapter~\ref{ch:ge} argues that a single
+number cannot carry a moral assessment, so the space here has several dimensions and is divided
+into strata.
+% src: owner 2026-10-14 ("we should include sam harris' book, the moral landscape. it inspired this entire concept"); Harris 2010 (Free Press, ISBN 978-1-4391-7121-9)
 
 Most of the ideas the robot rests on have precedents, and Chapter~\ref{ch:related} credits them in
 detail. An ethical governor that sits between proposal and actuation is Arkin's

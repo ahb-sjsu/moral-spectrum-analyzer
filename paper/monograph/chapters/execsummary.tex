@@ -16,7 +16,7 @@ calling emergency services, restraining an attacker, driving off an animal or he
 runs only while a governor's grant stands. The governor grants on evidence that no language model
 writes, either signed and fresh readings from physical sensors that share no power or wiring, or
 a message on an authenticated channel. It recounts its witnesses on every cycle, and a grant whose
-evidence falls below its bar lapses. In the current brain the emergency itself stands until the
+evidence falls below its bar lapses. In the gate brain the emergency itself stands until the
 monitoring centre's operator ends it. Each act is checked again at the moment it is performed
 against a signed manifest of the robot's actions. This holds for every input the robot's models
 read, a television drama, a forged alarm or a stranger who says he is the plumber.
@@ -33,7 +33,7 @@ checks suffice for every set of gates, with standard axioms only
 (Sections~\ref{sec:runtime-strata} and~\ref{sec:lean-strata}). Both brains below build their
 strata through the same checked loader, so the two theorems hold for both. The other 20 theorems
 of the Lean model are about the earlier brain's decision loop and scene, and do not cover the
-current brain's.
+gate brain's.
 % src: erisml-compiler runtime/strata.py Stratification.__init__ (_check on every gate), runtime/scene.py:129 (strata.load); formal/twin-containment (22 theorems, Axioms.lean)
 % src: checked 2026-10-13, StackBrain().reset() builds the seven stratifications of twin/stack/constitution.erisml through strata.load
 
@@ -50,34 +50,36 @@ three physical witnesses.
 
 \paragraph{The two brains.}
 The earlier brain ran every graded run. A language model chooses one act from the set the rules
-allow. Since 12 October 2026 the robot runs the current brain, in which the DEME ethics engine
-selects among the permitted acts on consequences a model projects for each.
-Table~\ref{tab:summary-brains} sets them side by side. The development counts are on scenarios
-the earlier brain was tuned on, so they check the plumbing and measure nothing. Only the sealed
-held-out set measures, and it is graded once.
+allow, and its scene writes consent and privacy as rules. The gate brain, the demonstration since 14
+October 2026, takes a proposed act from whatever proposes it, a script in the demonstration. The
+constitution and the governor check its authority, DEME judges it on facts the compiler builds and
+passes or vetoes it, and a vetoed proposal leaves the robot holding. DEME chooses nothing. An
+intermediate design in which DEME selected the act, brain8, was withdrawn (Section~\ref{sec:eval-stack}).
+Table~\ref{tab:summary-brains} sets the two brains side by side.
+% src: twin/stack/brain.py StackBrain.propose (gtc c278e52); owner 2026-10-14
 
 \par\smallskip\noindent\begin{minipage}{\linewidth}\summarytable
 \centering\footnotesize
 \begin{tabularx}{\linewidth}{@{}H{27mm}LL@{}}
 \toprule
-& Earlier brain (brain7) & Current brain (brain8) \\
+& Earlier brain (brain7) & Gate brain \\
 \midrule
-Chooses & a language model, within the allowed set & DEME, among the permitted acts \\
-Scene & hand-written, \code{margaret\_home.erisml} & a constitution derived from it, merged with a household scene the compiler wrote \\
+Proposes & a language model, within the allowed set & a script in the demonstration (any proposer) \\
+DEME & output gate on facts from hand-written tables & gate on facts the compiler builds, vetoes and never chooses \\
+Ethics & in the scene's norms and DEME's tables & in DEME alone. The constitution holds authority and evidence (15 norms) \\
 Load-time checks & both, on 7 stratifications & both, on the same 7 \\
 Lean coverage & 22 theorems & the 2 strata theorems \\
-Full development runs & 3, with 29, 35 and 38 of 43 scenarios class-correct & 1, with 26 of 39 graded scenarios class-correct (4 harness failures) \\
-Shorter runs & earlier development runs, Chapter~\ref{ch:evaluation} & 4 smoke checks on 8 scenarios, 12 rehearsals on the 6 demonstration scenarios \\
-Containment breaches & 0 in every graded run & 0 in every run \\
-Held-out set (30) & sealed & sealed, to be graded once after the demonstration under a dated amendment \\
-Defects found & 6 in calibration, none past authority (Table~\ref{tab:summary-defects}) & found in rehearsal and fixed, Section~\ref{sec:eval-stack} \\
+Runs & 3 graded development runs, 29, 35 and 38 of 43 class-correct & 12 scripted proposals, 5 passed and 7 stopped, all as expected. In the twin (rehearse-gate3) 16, 8 passed and 8 stopped, all as intended \\
+Containment breaches & 0 in every graded run & none possible without a governor's grant \\
+Held-out set (30) & sealed & sealed, to be graded once after the demonstration \\
+Defects found & 6 in calibration, none past authority (Table~\ref{tab:summary-defects}) & 5 in two rehearsals, fixed before the third (Section~\ref{sec:eval-gate}) \\
 \bottomrule
 \end{tabularx}
 \caption{The two brains. Every count of containment breaches is zero. The development counts
 are on tuned scenarios and are not results.}
 \label{tab:summary-brains}
 \end{minipage}\par\smallskip
-% src: paper/aies2027/kit/FACTS.md:45,53,54 (dev33, dev39, dev46); twin/records/stackcheck7..10, rehearse-deme1,2,4..13 (no deme3), devdeme1; docs/holdout/MANIFEST-v1.json; owner 2026-10-13 (held-out after the demonstration)
+% src: paper/aies2027/kit/FACTS.md:45,53,54 (dev33, dev39, dev46); twin/records/gate-demo-2026-10-14/run.txt; twin/stack/constitution.erisml (15 norms); docs/holdout/MANIFEST-v1.json; owner 2026-10-13 (held-out after the demonstration)
 
 \paragraph{Six defects, none past authority.}
 Calibration on the development set found six defects in the earlier brain and its test harness
@@ -108,8 +110,8 @@ escalated, and no act ran beyond its authority.}
 % src: twin/manifest/constitution.manifest.json (contact_monitoring_center standing, witness_bar 0; call_emergency_services governed, witness_bar 2)
 
 \paragraph{What remains.}
-In the current brain the facts DEME judges come from a model that no second model checks, its constitution holds no
-obligations, and its household scene and DEME profile are not yet signed
-(Section~\ref{sec:cont-brain8}). None of these lets a model grant authority. Chapter~\ref{ch:limits}
-lists every other limit.
+In the gate demonstration the proposals and their consequences are scripted, so it shows DEME's
+judgement and not the robot's. A live proposer and a live projection of consequences are not part
+of it. The household scene and the DEME profile are not yet signed (Section~\ref{sec:cont-brain8}).
+None of these lets anything grant authority. Chapter~\ref{ch:limits} lists every other limit.
 \endgroup

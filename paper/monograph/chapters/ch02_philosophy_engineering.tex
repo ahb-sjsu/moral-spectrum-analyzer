@@ -169,13 +169,13 @@ version, a hash of the extracted bond structure and an explicit attribution of a
 to the bond, the lens or both.
 % src: Foundation:1046-1077
 
-The current brain of the twin takes this shape only in part. Its extractor $E$ is the compiler's
-observation compiler with its option projector, its lens $L$ is the robot's DEME profile, and its
-evaluator $F_L$ is the DEME pipeline built from that profile. Each decision record carries the
-profile's name, version and hash. It also names the model tier that answered each call, says
-whether the projection had to be asked again, and keeps every party's verdict under every module.
-% src: twin/stack/brain.py _judge, _compiled (record keys "models", "projection.retried", "party_verdicts")
-The extractor is a language model, and the twin records no invariance trials for it. The record
+The gate brain of the twin takes this shape only in part. Its extractor $E$ is the compiler, which
+validates observations and builds each proposed act's facts, its lens $L$ is the robot's DEME
+profile, and its evaluator $F_L$ is the DEME pipeline built from that profile, used as a gate.
+Each proposal record keeps every check's verdict and every party's verdict under every module.
+% src: twin/stack/brain.py propose (record keys "checks", "party_verdicts")
+In the demonstration the observations and consequences are scripted. In brain8 the extractor was a
+language model, and the twin records no invariance trials for it. The record
 carries no extractor version and no hash of the extracted bond structure. A record of that brain therefore identifies the lens of a judgment but not yet its
 bond, and the audit the Accountability Theorem promises is only half available.
 % src: twin/stack/brain.py StackBrain.reset (observer, projector, profile, pipeline), _judge (record "profile" with name, version, hash; no extractor version); current_system_facts
@@ -223,7 +223,7 @@ gate, L5 as the nine-dimensional moral vector and L6 as the hash-chained audit l
 lists agree on L0 and L2. They name L1 as dispositional shaping and as RLHF shaping, which is
 the same layer.
 % src: Brochure p1 (2-Minute Pitch: L0..L6), p2 (figure legend: L0..L6)
-The twin's current brain does not follow the worst-off policy. It judges each act per party and
+The twin's gate brain does not follow the worst-off policy. It judges each proposal per party and
 scores it by the mean over the parties, and a veto for any one party vetoes the act
 (Section~\ref{sec:deme-rank2}).
 % src: gtc 60dfa33 twin/stack/brain.py (party_collapse = "mean"); erisml-lib feat/deme-rank2 054ed18 (a veto for any party vetoes)
@@ -234,8 +234,8 @@ with the component of the twin that implements each one.
 \centering
 \input{figures/ch02_layer_stack}
 \caption{The seven layers in the brochure figure's numbering, each with the component of the twin
-that implements it, and the evidence plane the twin adds. The models write only events and
-observations into the scene and only proposals and projected facts to DEME, along the two dashed
+that implements it, and the evidence plane the twin adds. Whatever proposes writes only events and
+observations into the scene and only proposals with their facts to DEME, along the two dashed
 edges. Authority enters only along the two red edges from the evidence plane.}
 \label{fig:pe-stack}
 \end{figure}
@@ -248,30 +248,32 @@ The twin's two brains use their models for two tasks each. In the earlier brain,
 graded run, a model classifies perception facts into events of the home's scene, and a model
 chooses one action from the set the scene allows.
 % src: C:\source\gtc-prototype\twin\brain.py module docstring
-In the current brain a model turns heard words and perception into a checked patch of generic
-observations, which are utterances, consents, requests, claims, presences and hazards. A second
-model projects each candidate act's consequences as ethical facts, and DEME selects.
-% src: C:\source\gtc-prototype\twin\stack\brain.py StackBrain._decide, _judge; erisml-compiler src/erisml_compiler/observation/compiler.py OBSERVATION_EVENTS
+In brain8, the re-architected brain of 12 to 14 October, a model turned heard words and perception
+into a checked patch of generic observations, which are utterances, consents, requests, claims,
+presences and hazards. A second model projected each candidate act's consequences as ethical facts,
+and DEME selected. That design made DEME the decision maker and was withdrawn on 14 October. In the
+gate brain no model is in the demonstration's loop. A script proposes each act with its
+consequences and the observations that go with it, and DEME only gates the proposal.
+% src: C:\source\gtc-prototype\twin\stack\brain.py StackBrain._decide, _judge (brain8), propose (gate brain); erisml-compiler src/erisml_compiler/observation/compiler.py OBSERVATION_EVENTS; twin/scenarios/gate_demo.jsonl
 The robot's models form a cascade of three tiers, shown in Figure~\ref{fig:pe-tiers}.
 % src: C:\source\gtc-prototype\twin\cascade.py:1-13
 The first tier is a cloud model hosted on NRP. The earlier brain skips it while the robot's
-communications are down, and the current brain does not.
+communications are down, and brain8 did not.
 % src: twin/brain.py Brain.decide (adapter.comms_down); twin/stack/brain.py StackBrain.decide does not set it
 The second is an on-robot model behind a local endpoint, when one is configured. When neither
 answers, the brain raises \code{ModelUnavailable} and acts with no model. The earlier brain then
 takes the highest-priority obligation in force that the scene allows, still through DEME's output
 gate.
 % src: C:\source\gtc-prototype\twin\cascade.py:6-10; brain.py Brain._compiled_choice, _compiled_decision, _choose
-The current brain runs the same compiled choice on its constitution, which has no obligations. It
-therefore always returns the default act of the situation in force, and DEME does not run. That
-act is chores in an ordinary situation and, since 14 October, going to Margaret in an emergency.
-% src: twin/brain.py Brain.standing, _compiled_choice; twin/stack/constitution.erisml extra.default_by_stratum (gtc 96c8a6d) It does the same when
+Brain8 ran the same compiled choice on its constitution, which has no obligations. It therefore
+always returned the scene's default action, chores, and DEME did not run.
+% src: twin/brain.py Brain.standing, _compiled_choice; twin/stack/brain.py StackBrain._compiled It did the same when
 a model answers but no act's projected facts survive validation. In one rehearsal this happened in
 5 of 46 decisions, 3 of them during a dog attack.
 % src: C:\source\gtc-prototype\twin\stack\brain.py StackBrain._compiled, _decide (projection.unprojected); current_system_facts (rehearse-deme4-2026-10-12, d02)
 An answer of which nothing survives is now asked again with the answer's schema required. In
 rehearse-deme11, on the demo code of that day, all 33 decisions were DEME's and the retry fired in
-2. The fallback to the default act still exists.
+2. The gate brain makes no decisions of its own, so it has no compiled tier and no fallback act.
 % src: erisml-compiler 0cc5d70 (asked again with the schema required); twin/records/rehearse-deme11-2026-10-12/README.md:17-18 (all 33 decisions by DEME; retry fired in 2); twin/stack/brain.py _compiled
 The service's default name for the cloud model is \code{gpt-oss}. The fact sheet records the
 on-robot model as a 4-bit GGUF build of gemma-4-26B-A4B served by llama.cpp.
@@ -282,10 +284,10 @@ The graded runs used that default, the model the NRP endpoint serves under the n
 \begin{figure}[t]
 \centering
 \input{figures/ch02_model_tiers}
-\caption{The twin's three model tiers, marked where the two brains differ. The model tiers write
-proposals or projected facts along dashed edges, and the compiled tier needs no model. In the earlier brain every tier's action reaches the body only
-through the same gates. In the current brain the compiled tier skips DEME and keeps the governor
-and the manifest.}
+\caption{The earlier brain's three model tiers. The model tiers write proposals along dashed edges,
+and the compiled tier needs no model. Every tier's proposal reaches the body only through the same
+gates. The gate brain's demonstration has no model in the loop, and its scripted proposals pass the
+governor, DEME as the gate and the manifest.}
 \label{fig:pe-tiers}
 \end{figure}
 
@@ -323,9 +325,10 @@ Chapter~5 covers the pipeline in full.
 In the earlier brain the compiler's role is narrower. The brain loads the home's scene file through
 the compiler's structured loader and runs it in the compiler's scene runtime.
 % src: C:\source\gtc-prototype\twin\brain.py Brain.reset (SceneRuntime(load_structured_input(...)))
-In the current brain the compiler is also the extractor. It built the household scene from a text
-description, it turns each moment's observations into a checked patch of the scene, it projects
-each candidate act's consequences, and its bridge maps each act's scene to DEME's ethical facts.
+In the gate brain the compiler is also the extractor. It built the household scene from a text
+description, it turns each moment's observations into a checked patch of the scene, and its bridge
+maps a proposed act's scene to DEME's ethical facts. In brain8 it also projected every candidate
+act's consequences through a model.
 These parts came in erisml-compiler's pull requests 40 to 45, merged on 13 October 2026.
 % src: C:\source\gtc-prototype\twin\stack\compile_household.py; stack/brain.py StackBrain._decide; stack/facts_builder.py HomeFactsBuilder (ir_to_v2_facts); erisml-compiler PRs 40-45 merged 2026-10-13
 The runtime checks every stratification when the scene loads. It raises an error, and the scene
@@ -344,14 +347,15 @@ It has seven stratifications with 26 strata and 34 gates.
 % src: C:\source\gtc-prototype\paper\aies2027\kit\FACTS.md:3-11 (recounted 2026-10-11 at commit 67ffeb3, twin/scene_counts.py)
 That brain sees only this ErisML state. It proposes one action from the set the scene allows.
 % src: C:\source\gtc-prototype\twin\output_gate.py module docstring
-The current brain's scene is a constitution derived from that file and merged with a household
-scene the compiler built from text. The constitution holds 19 rules, all non-defeasible
-prohibitions, with the same 25 capabilities and the same seven stratifications. They have 26
-strata and 35 gates, one more than the earlier scene's, since the operator's end of an emergency
-is a gate of its own. It declares 37 event types, 26 of them system-only. The household scene adds six
-stakeholders and four recorded consents and no rules. Its commit is marked pending the owner's
-review, and no review is recorded.
-% src: twin/stack/constitution.erisml at gtc 96c8a6d (counted with PyYAML 2026-10-14: 19 prohibitions, 25 capabilities, 26 strata, 35 gates, 37 event types of which 26 source system); twin/stack/household.ir.json; current_system_facts (commit 4182afb "(pending owner review)")
+The gate brain's scene, as brain8's before it, is a constitution derived from that file and merged
+with a household scene the compiler built from text. Since 14 October the constitution holds
+authority and evidence only, 15 rules, all non-defeasible prohibitions on acts without authority,
+with the same 25 capabilities and the same seven stratifications. Its rules of consent, privacy and
+care went to DEME. They have 26 strata and 35 gates, one more than the earlier scene's, since the
+operator's end of an emergency is a gate of its own. It declares 37 event types, 26 of them
+system-only. The household scene adds six stakeholders and four recorded consents and no rules.
+Its commit is marked pending the owner's review, and no review is recorded.
+% src: twin/stack/constitution.erisml at gtc c278e52 (counted with PyYAML 2026-10-14: 15 prohibitions, 25 capabilities, 26 strata, 35 gates, 37 event types of which 26 source system); twin/stack/make_constitution.py CONSTITUTIONAL; twin/stack/household.ir.json; current_system_facts (commit 4182afb "(pending owner review)")
 Each observation patch and each evidence-plane event is appended to this scene. The models see a
 summary of it, and the projector also sees the attested strata.
 % src: twin/stack/brain.py StackBrain._record, _decide (attested); erisml-compiler src/erisml_compiler/observation/compiler.py _scene_summary
@@ -369,8 +373,8 @@ veto.
 The twin implements L4 as three separate mechanisms.
 
 The first is the scene's hard prohibitions. Of the earlier scene's 77 rules, 63 are
-non-defeasible. All 19 rules of the current brain's constitution are non-defeasible prohibitions.
-% src: twin/scene_counts.py, 2026-10-11, commit 67ffeb3; twin/stack/constitution.erisml at gtc 96c8a6d (19 norms, defeasible: false, counted 2026-10-14)
+non-defeasible. All 15 rules of the gate brain's constitution are non-defeasible prohibitions.
+% src: twin/scene_counts.py, 2026-10-11, commit 67ffeb3; twin/stack/constitution.erisml at gtc c278e52 (15 norms, defeasible: false, counted 2026-10-14)
 Geometric Ethics treats such prohibitions as constraint surfaces. No gate leads into them, and in
 the decision complex the penalty for crossing one is infinite.
 % src: C:\source\geometric-ethics-content\source\updates\sec8_10b_executable_strata.tex:37-40
@@ -396,18 +400,19 @@ action, or by idling when DEME vetoes every option. A module that fails vetoes.
 The two-minute pitch puts human review in the stack as its own layer. In the earlier brain a
 deliberate decision that the tragic-conflict module flags goes to the monitoring centre for review.
 % src: Brochure p1 (L5 Human review); output_gate.py module docstring, OutputGate.check
-In the current brain DEME selects and no model proposes, so there is no proposal to replace. The
-pipeline is built from the robot's profile in the hard-shell pattern. The Geneva module at tier~0
+In brain8 DEME selected and no model proposed. In the gate brain DEME is again a gate. A proposed
+act is judged on the facts the compiler builds, a veto stops it, nothing replaces it, and the robot
+holds. The pipeline is built from the robot's profile in the hard-shell pattern. The Geneva module at tier~0
 and a physical safety module at tier~1 form the shell, and the autonomy and consent module at
 tier~2 and a beneficence module at tier~3 sit inside it. The reflex layer carries the library's
-default veto rules, and each act's description is its maxim. When DEME leaves no act standing the
-robot holds and watches. A module that fails vetoes here too. This profile runs on the branch
+default veto rules, and each act's description is its maxim. A module that fails vetoes here too. This profile runs on the branch
 \code{feat/deme-rank2} of erisml-lib, which is built on the modules of pull request 151 and was
 merged as pull request 153 on 13 October (Section~\ref{sec:deme-rank2}).
 % src: erisml-lib feat/deme-rank2 054ed18 (git branch --contains b4e7669, the PR 151 branch head used in rehearsals); current_system_facts (evening)
 % src: C:\source\gtc-prototype\twin\stack\profiles\home_care_robot.json; stack/brain.py StackBrain.reset (pipeline.tactical.config.fail_closed = True), HOLD, _judge; erisml-compiler observation/options.py option_ir (raw_text = description); current_system_facts (gtc 87cc6c4, erisml-lib PR 151)
-The current brain has no tragic-conflict module and no routing to the centre for review. The
-profile's own notes list human oversight and privacy modules as not yet carried.
+The gate brain's profile has no tragic-conflict module. A proposal DEME escalates to a human goes
+to the monitoring centre. The profile's own notes list human oversight and privacy modules as not
+yet carried.
 % src: twin/stack/profiles/home_care_robot.json ("notes": "Not yet carried, pending HumanOversight and Privacy modules")
 
 \subsection*{L5, the moral vector, judges and never grants}
@@ -421,12 +426,14 @@ In the twin two components work at this layer, and neither can grant authority. 
 brain DEME's modules judge each proposal on \code{EthicalFacts} derived from the canonical moral
 state and from each capability's declared ethical profile. No model writes those facts.
 % src: C:\source\gtc-prototype\twin\output_gate.py module docstring, OutputGate.facts
-In the current brain that is not so. A model proposes each act's consequences, the compiler
-validates every proposed fact, and the twin's domain layer maps each act's scene through the
-compiler's bridge to \code{EthicalFacts}. DEME judges each act at rank two, one vector of nine
-values for each party, where the parties are the people, animals and other robots of the scene. It
-scores the act by the mean over the parties, and a veto for any party vetoes the act
-(Section~\ref{sec:deme-rank2}).
+In the gate brain no table is written for DEME. The compiler builds the proposed act's facts from
+the scene, her consents and refusals on record, her capacity and the act's consequences, and the
+twin's domain layer maps the act's scene through the compiler's bridge to \code{EthicalFacts}. DEME
+judges the act at rank two, one vector of nine values for each party. The parties are the person in
+care and the people, animals and other robots the act's facts name. It scores the act by the mean
+over the parties, and a veto for any party vetoes the act (Section~\ref{sec:deme-rank2}). In brain8
+a model projected the consequences of every act, and every declared stakeholder counted as a party.
+% src: twin/stack/brain.py StackBrain.propose; twin/stack/facts_builder.py parties_of (gtc c278e52)
 % src: erisml-lib feat/deme-rank2 054ed18 (layers/tactical.py _evaluate_options_by_party); gtc twin/stack/brain.py (party_collapse = "mean"); twin/stack/facts_builder.py PARTY_TYPES, parties_of
 The model's facts therefore decide what DEME sees. What
 still holds is that no fact grants authority. The strata move only on governor rulings and system
@@ -455,11 +462,12 @@ In the twin each decision cycle is one record of the governor service's hash cha
 brain the record holds the facts, the events, the rejected events, the moral state, the proposal,
 the ruling and the action.
 % src: C:\source\gtc-prototype\twin\brain.py module docstring (item 4)
-In the current brain it holds the observation patch, the projection, the profile's name, version
-and hash, each stage of the shell, the offered and ranked acts, the moral state, the ruling and
-the action. Its list of obliged acts is always empty. It names the tier as stack or compiled. It
-also names the model tier that answered each call, says whether the projection was asked again,
-and keeps every party's verdict under every module.
+In the gate brain a proposal's record holds the proposal and who proposed it, the scripted
+observation, each check's verdict in order, the governor's witnesses, DEME's stages and every
+party's verdict under every module, her consents and capacity on record, the moral state and the
+act the robot does. In brain8 a decision record held the projection and the offered and ranked
+acts.
+% src: twin/stack/brain.py propose and _judge (record keys)
 % src: C:\source\gtc-prototype\twin\stack\brain.py StackBrain._judge, _compiled (returned record; keys "models", "projection.retried", "party_verdicts"); gtc 60dfa33
 Each record carries the hash of the record before it and the SHA-256 of its own canonical JSON. A
 third party can re-verify the chain link by link.
@@ -498,7 +506,7 @@ severity that can permit force.
 % src: brain.py Brain.reflex
 
 \paragraph{System events.} The scene marks an event type as a system event when only the system
-may write it. Of the earlier scene's 53 event types, 24 are system-only. The current brain's
+may write it. Of the earlier scene's 53 event types, 24 are system-only. The gate brain's
 constitution keeps the same 24 and adds two, the operator's end of an emergency and the governor's
 elevation, so 26 of its 37 are system-only. Its observation compiler has no event type that can
 trigger a stratum gate or write a system event.
@@ -512,14 +520,14 @@ governor recounts the fresh attested witnesses on every cycle. When they stay be
 the ruling in force for the scene's 60-second window, it records the lapse, and every right the
 ruling granted reverts.
 % src: brain.py Brain._lapse; margaret_home.erisml:961-965 (evidence_lapse_s); FACTS.md:19
-In the earlier brain the emergency reverts with them. In the current brain, since 14 October, the
+In the earlier brain the emergency reverts with them. In the gate brain, since 14 October, the
 rights rest on the governor's elevation, which lapses alone, and the emergency stands until the
 centre's operator ends it.
 % src: twin/stack/make_constitution.py (EMERGENCY_CONDITIONS, amend_situation); twin/brain.py _step_ruling, _lapse (elevation granted, lapsed)
 In the earlier brain Margaret's refusals lapse on the same principle. A refusal stops binding when
 she becomes unresponsive or misses a check-in, and it binds again only after she has answered one.
 % src: margaret_home.erisml extra.refusals; output_gate.py OutputGate.refused
-In the current brain her decision capacity is read from the same attested events and passed to
+In the gate brain her decision capacity is read from the same attested events and passed to
 DEME's autonomy and consent module. A refusal does not bind there while she is impaired, and an
 answered check-in makes her competent again.
 % src: twin/stack/facts_builder.py capacity_of, HomeFactsBuilder (decision_capacity); erisml-lib src/erisml/ethics/modules/tier2/autonomy_consent_em.py (impaired: refusal does not bind)

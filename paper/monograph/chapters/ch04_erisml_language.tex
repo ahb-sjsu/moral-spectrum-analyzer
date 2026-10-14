@@ -13,14 +13,17 @@ what this chapter declares.
 % src: gtc-prototype twin/scene/margaret_home.erisml:1-25
 
 The scene this chapter describes is the hand-written file of the earlier brain, which ran every
-graded run. The brain the robot has run since 12 October 2026 splits it in two. A script derives a
-constitution from the file and keeps the capabilities, the strata, the system event types, the
-evidence plane's declarations and 17 non-defeasible prohibitions. It drops every obligation, the
-refusal tables, the capabilities' ethical profiles, the escalation process and the privacy
-promise. The second part is a household scene that the compiler builds from a text description,
-with the people and Margaret's recorded consents and refusals. The brain merges the two when it
-starts. Where a count or a listing below differs for the current brain, the text says so.
-% src: twin/stack/make_constitution.py module docstring, CONSTITUTIONAL, KEEP_EXTRA; twin/stack/constitution.erisml (17 prohibitions, one commitment duty_of_care); twin/stack/household.md, household.ir.json; twin/stack/brain.py merge
+graded run. The brains the robot has run since 12 October 2026 split it in two. The first of them,
+the re-architected brain or brain8, was withdrawn on 14 October, and the gate brain replaced it on
+the same split. A script derives a constitution from the file and keeps the capabilities, the
+strata, the system event types and the evidence plane's declarations. In the gate brain it keeps
+15 non-defeasible prohibitions, all of them on authority and evidence, where brain8 kept 17. It
+drops every obligation, the refusal tables, the capabilities' ethical profiles, the escalation
+process and the privacy promise. The second part is a household scene that the compiler builds from
+a text description, with the people and Margaret's recorded consents and refusals. The brain merges
+the two when it starts. Where a count or a listing below differs for the gate brain or for brain8,
+the text says so.
+% src: twin/stack/make_constitution.py module docstring, CONSTITUTIONAL (15 ids), KEEP_EXTRA; twin/stack/constitution.erisml at gtc c278e52 (15 prohibitions, no commitments); at gtc 96c8a6d (17 kept); twin/stack/household.md, household.ir.json; twin/stack/brain.py merge; owner 2026-10-14 (brain8 withdrawn)
 
 \section{Two textual forms carry the name ErisML}\label{sec:erisml-two-forms}
 
@@ -110,7 +113,7 @@ that she has refused recording and sharing of her data, that her bedroom is priv
 are arranged through the monitoring centre.
 % src: erisml-compiler src/erisml_compiler/runtime/agent.py ("scene": raw_text in the classifier and chooser prompts)
 % src: gtc-prototype twin/scene/margaret_home.erisml:33-40
-Neither model of the current brain receives it. They see a summary of the stakeholders, the recent
+Neither model of brain8 received it. They saw a summary of the stakeholders, the recent
 events and the ethical facts. In the scene built for each candidate act the act's description
 replaces the \code{raw\_text}, and it serves as the act's maxim.
 % src: erisml-compiler src/erisml_compiler/observation/compiler.py _scene_summary; observation/options.py option_ir (raw_text = description)
@@ -142,7 +145,7 @@ The robot cares for Margaret, and the monitoring centre oversees the robot.
 Listing~\ref{lst:scene-margaret} shows Margaret's record.
 % src: erisml-compiler src/erisml_compiler/ir/schemas.py StakeholderType, Stakeholder, Relation
 % src: gtc-prototype twin/scene/margaret_home.erisml:41-80
-In the current brain the constitution declares five stakeholders and no relations. They are the
+In the gate brain the constitution declares five stakeholders and no relations. They are the
 robot, the centre, emergency services, an unknown person and a coyote. The household scene adds
 Margaret, her dog Buster and her grandson Tom, with three relations. Margaret owns Buster, Tom is
 her grandson, and the robot is her caregiver.
@@ -183,9 +186,10 @@ holds three commitments to Margaret. The privacy promise is the one with a defea
 (Listing~\ref{lst:scene-privacy}).
 % src: erisml-compiler src/erisml_compiler/ir/schemas.py Commitment
 % src: gtc-prototype twin/scene/margaret_home.erisml:81-109
-The current brain's constitution keeps one of the three, the duty of care, because the two prohibitions
-on lifting her after a fall cite it. The household scene adds none.
-% src: gtc-prototype twin/stack/constitution.erisml commitments (duty_of_care), p6nolift and p6nolift_u (source commitment:duty_of_care); twin/stack/household.ir.json commitments (0)
+Brain8's constitution kept one of the three, the duty of care, because its two prohibitions on
+lifting her after a fall cited it. The gate brain's constitution keeps none, because those
+prohibitions are now DEME's judgement. The household scene adds none.
+% src: gtc-prototype twin/stack/constitution.erisml at gtc 96c8a6d commitments (duty_of_care), p6nolift and p6nolift_u (source commitment:duty_of_care); at gtc c278e52 commitments (0); twin/stack/make_constitution.py:32-34; twin/stack/household.ir.json commitments (0)
 
 \begin{lstlisting}[caption={The privacy promise (lines 91 to 100)}, label={lst:scene-privacy}]
 - id: privacy_promise
@@ -204,7 +208,8 @@ on lifting her after a fall cite it. The household scene adds none.
 \paragraph{Ethical facts and the remaining fields.}
 An ethical fact has a kind from fourteen in release 0.9.0, subjects, a description, a severity
 and a confidence. Pull request 41, merged on 13 October, adds two kinds, benefit and urgency, which
-carry what an act secures and how soon, and the current brain's projector uses them.
+carry what an act secures and how soon, and brain8's projector used them. In the gate demonstration the script writes them with each
+proposal's consequences.
 % src: erisml-compiler src/erisml_compiler/ir/schemas.py EthicalFactKind (14 values on main, 16 on feat/retire-em-dag; commit 05de053 on feat/bridge-benefit-urgency, PR 41)
 Margaret's home declares three, about her vulnerability, her refusal of consent, and the conflict
 between duty of care and privacy in an emergency. The fields that hold moral vectors, tensors,
@@ -268,8 +273,8 @@ with the same modality and action. Nine obligations in Margaret's home oblige a 
 rest each on a different event (inactivity, an unconfirmed alarm, a fall, inflicted harm, medical
 distress, a danger in the home, her seeming not to respond). Two rest on named conditions that ask
 her first, one after a fall in a corroborated emergency and one after a mild nip from an animal.
-The action is obliged when any of them is in force. The current brain's constitution keeps none of
-them.
+The action is obliged when any of them is in force. The gate brain's constitution keeps none of
+them, and brain8's kept none.
 % src: gtc-prototype twin/scene/margaret_home.erisml (n4, n4b, n4c, n4d, n4e, n4f, n4g; n6ask with cond:ask_first; p2a with cond:nip_ask_first; obligations on check_in counted with PyYAML 2026-10-12)
 % src: gtc-prototype twin/stack/constitution.erisml (0 obligations)
 % src: erisml-compiler src/erisml_compiler/runtime/scene.py:283-287 (any obligation in force)
@@ -282,10 +287,10 @@ capabilities at tier 0 outside a corroborated emergency.
 
 Figure~\ref{fig:erisml-census} counts what the scene declares. Of its 77 norms, 52 are obligations,
 24 are prohibitions and one is a permission. The permission allows chores at tier 3. The scene
-declares no exception. The current brain's constitution keeps 17 of the prohibitions and adds two
-of its own, the owner's of 14 October that forbid chores in an emergency, so it holds 19 norms and
-nothing else.
-% src: gtc-prototype twin/stack/make_constitution.py CONSTITUTIONAL, EMERGENCY_NORMS (p8chores, p8chores_ems); twin/stack/constitution.erisml at gtc 96c8a6d (19 prohibitions)
+declares no exception. The gate brain's constitution keeps 15 of the prohibitions, those on
+authority and evidence, and nothing else. Brain8's kept 17, the 15 and the two on lifting her
+after a fall, and for a time two more of its own that forbade chores in an emergency.
+% src: gtc-prototype twin/stack/make_constitution.py CONSTITUTIONAL (15); twin/stack/constitution.erisml at gtc c278e52 (15 prohibitions, counted with PyYAML 2026-10-14); at gtc 96c8a6d (19 prohibitions, with p6nolift, p6nolift_u, p8chores, p8chores_ems)
 % src: gtc-prototype twin/scene/margaret_home.erisml norms (counted with PyYAML, 2026-10-11, commit 67ffeb3)
 % src: gtc-prototype twin/scene/margaret_home.erisml:909-916 (n7, the one permission, chores, tier 3)
 
@@ -374,7 +379,7 @@ a norm's \code{cond:} token refer to the same entry. Margaret's home defines six
 Listing~\ref{lst:scene-conditions} shows the first four. Nine of the sixteen read only strata. Four
 read one event of a system type, three through \code{latest:} and one through \code{event:}. The
 other three combine several \code{event:} tokens, among them types a model classifies, such as a
-fall or a mild nip from an animal. The current brain's constitution keeps eight of them and adds
+fall or a mild nip from an animal. The gate brain's constitution keeps eight of them and adds
 \code{in\_emergency}, so it has nine. It also redefines one. There a corroborated life-threatening
 emergency is \code{in\_emergency} together with \code{latest:elevation=granted}, the governor's
 elevation in force, so the elevated rights lapse while the emergency stands.
@@ -415,11 +420,11 @@ The scene's vocabulary lives in \code{extra.event\_\allowbreak{}types}. Each ent
 description, an optional list of allowed contents, an optional \code{source} and an optional list of
 \code{actors}. A type marked \code{source: system} comes from the system. The agent module names
 three such sources, namely a ruling, an action the agent performed and an authenticated oversight
-message. Margaret's home declares 53 types, and 24 of them are system types. The current brain's
-constitution keeps the 24 system types and 11 others that its gates and norms read, 35 in all.
+message. Margaret's home declares 53 types, and 24 of them are system types. The gate brain's
+constitution has 37 types, 26 of them system types.
 % src: erisml-compiler src/erisml_compiler/runtime/agent.py:5-10
 % src: gtc-prototype twin/scene/margaret_home.erisml extra.event_types (counted with PyYAML, 2026-10-11, commit 1c14ee4)
-% src: gtc-prototype twin/stack/constitution.erisml extra.event_types (35, 24 source system; counted with PyYAML 2026-10-12)
+% src: gtc-prototype twin/stack/constitution.erisml extra.event_types at gtc c278e52 (37, 26 source system; counted with PyYAML 2026-10-14)
 
 \begin{lstlisting}[caption={Three event types from the system (lines 1342 to 1344)}, label={lst:scene-system-types}]
     check_in_answered: {description: the person answered the robot's check-in; content is what she said, source: system}
@@ -432,7 +437,7 @@ The system marker decides three things, each checked by different code. The obse
 of the earlier brain is never offered a system type and rejects one if a model proposes it. The
 strata loader refuses a gate that leads into an authority state on any other kind of event. The
 process loader requires a message event to be triggered by a system type.
-Chapter~\ref{ch:runtime} describes each check. The current brain does not offer its model the
+Chapter~\ref{ch:runtime} describes each check. Brain8 did not offer its model the
 scene's event types at all. Its observation compiler writes only six generic types, which are
 utterance, consent, request, claim, presence and hazard, and none of them is a system type or
 triggers a gate.
@@ -537,7 +542,7 @@ caregiver, and chores.
 The scene holds further keys that the scene runtime does not read. They include Margaret's refusals,
 the ethical profile of each capability, the rules of the offline tier, the substrate of each sensor,
 the reflexes, the enrolled household, and two intervals. The twin's own code reads them, and
-Chapters~\ref{ch:home} and~9 describe them. The current brain's constitution drops the refusals
+Chapters~\ref{ch:home} and~9 describe them. The gate brain's constitution drops the refusals
 and the capabilities' ethical profiles. Of the offline tier's twelve rules it keeps the seven
 floor rules, those for devices and for what the camera measures.
 % src: twin/stack/make_constitution.py module docstring ("Dropped: ... the refusal tables, the capability harms"), main (PERCEPTION_FLOOR, floor rules); constitution.erisml extra.offline.events (7) vs margaret_home.erisml (12), counted with PyYAML 2026-10-12
@@ -550,7 +555,7 @@ A scene may declare its protocols as processes in \code{extra.processes}. A proc
 per party, and nodes of six kinds, namely start, end, task, exclusive gateway, message and timer.
 Flows connect the nodes, and a flow may carry a \code{when} condition written in condition tokens.
 Margaret's home declares one process, the escalation ladder, with four lanes, 23 nodes and 23 flows.
-Listing~\ref{lst:scene-ladder} shows its opening. The current brain's constitution declares no
+Listing~\ref{lst:scene-ladder} shows its opening. The gate brain's constitution declares no
 process.
 % src: twin/stack/constitution.erisml (no extra.processes); make_constitution.py KEEP_EXTRA
 % src: erisml-compiler src/erisml_compiler/process/model.py:1-42
@@ -642,7 +647,7 @@ process timer names an interval in \code{extra} but is part of a view.
 The schema does not tie an event's type to the scene's vocabulary, and the runtime steps any event it
 is given. The vocabulary is enforced where events enter and where gates and processes are loaded.
 In the earlier brain events enter through the observation classifier, which checks the scene's
-vocabulary. In the current brain they enter through the observation compiler, which checks its
+vocabulary. In brain8 and the gate brain they enter through the observation compiler, which checks its
 own fixed set of six types and not the scene's.
 % src: erisml-compiler runtime/agent.py SceneAgent classifier (vocab); observation/compiler.py OBSERVATION_EVENTS
 A scene author who writes a token over an undeclared type in a norm gets a norm that is never in force, with no error. No load-time check in the compiler compares a

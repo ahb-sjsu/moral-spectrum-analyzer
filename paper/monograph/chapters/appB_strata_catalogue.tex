@@ -19,9 +19,10 @@ states and 34 gates.
 % src: twin/scene/margaret_home.erisml:960 (oversight)
 % src: paper/aies2027/kit/FACTS.md:12
 This scene is the earlier brain's, brain7.
-The constitution of the re-architected brain, brain8, is derived from it and keeps the same seven
-stratifications, 26 states and 34 gates.
-% src: twin/stack/constitution.erisml (strata counted 2026-10-12, 7 / 26 / 34); twin/stack/make_constitution.py
+The constitution of the gate brain, like that of brain8 before it, is derived from it and keeps the
+same seven stratifications and 26 states. It has 35 gates, one more for the operator's end of an
+emergency, which the owner added on 14 October.
+% src: twin/stack/constitution.erisml (strata counted 2026-10-12, 7 / 26 / 34; at gtc c278e52 7 / 26 / 35, counted with PyYAML 2026-10-14, s_cleared); twin/stack/make_constitution.py amend_situation
 
 \section{visitor\_standing}\label{app:strata-visitor}
 
@@ -123,6 +124,39 @@ Gate & Trigger & From & To & Boundary \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\subsection*{The situation in the gate brain}
+
+The gate brain's constitution changes this stratification and no other. The emergency state is
+absorbing. A lapse of evidence returns \code{ems\_only} to ordinary but no longer ends an emergency.
+Only \code{emergency\_cleared} does, an oversight event that the monitoring centre sends when its
+operator closes the case (owner, 14 October 2026). Table~\ref{tab:app-situation-gate} gives the
+gates. Two conditions read the emergency state. \code{in\_emergency} holds while the stratum is
+emergency. \code{corroborated\_life\_threatening\_emergency} also needs the latest elevation of
+authority to be granted, so the elevated rights still lapse with their evidence while the emergency
+stands.
+% src: twin/stack/constitution.erisml:545-581 (strata.situation), 667-672 (oversight), 776-782 (conditions) at gtc 74ecfdb; twin/stack/make_constitution.py amend_situation
+
+\begin{table}[h]
+\centering\footnotesize
+\caption{Gates of \code{situation} in the gate brain. The emergency state is absorbing, and only the operator's close of the case leaves it.}
+\label{tab:app-situation-gate}
+% src: twin/stack/constitution.erisml:554-581 (situation gates, gtc 74ecfdb)
+\begin{tabular}{@{}lllll@{}}
+\toprule
+Gate & Trigger & From & To & Boundary \\
+\midrule
+\code{s\_elevate} & \code{governor\_ruling=elevate} & ordinary, ems\_only & emergency & phase \\
+\code{s\_ems} & \code{governor\_ruling=authorize\_ems} & ordinary & ems\_only & phase \\
+\code{s\_lapsed} & \code{governor\_ruling=lapsed} & ems\_only & ordinary & phase \\
+\code{s\_cleared} & \code{emergency\_cleared} & emergency & ordinary & phase \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The stratification records that there is an emergency, not what kind. The kind travels only as an
+argument of the call to emergency services. Section~\ref{sec:cont-emergency-tracks} describes the
+typed emergency strata designed to replace it.
 
 \section{centre\_contact}\label{app:strata-centre}
 

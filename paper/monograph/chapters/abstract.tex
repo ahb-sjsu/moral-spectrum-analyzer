@@ -4,10 +4,12 @@ talked into things. A television drama, a forged alarm and a stranger who says h
 all reach the same models that decide whether to call an ambulance or open the door. This report
 describes a robot in which the models never hold those decisions. In the earlier brain, which ran
 every graded run, models turn what the robot perceives into events of a declared model of the home
-and choose among the actions that model allows. In the brain the robot has run since 12 October
-2026, models turn what it hears and sees into observations and project the consequences of each
-permitted act, and the DEME ethics engine selects.
-% src: current_system_facts (brain7 graded runs; brain8 GTC demo brain from 2026-10-12); twin/stack/brain.py StackBrain._decide, _judge
+and choose among the actions that model allows. In the gate brain the robot demonstrates since 14
+October 2026, whatever proposes an act, a script in the demonstration, passes it through the
+robot's checks. The constitution and a governor decide whether the act is authorized on attested
+evidence, and the DEME ethics engine, judging facts the compiler builds from the scene, passes the
+proposal or vetoes it. DEME is a firewall on proposed acts and chooses none.
+% src: current_system_facts (brain7 graded runs); twin/stack/brain.py StackBrain.propose (gtc c278e52); owner 2026-10-14 ("DEME is a firewall on the robot's proposed actions")
 Every action that carries authority, from calling emergency services to restraining an
 attacker, waits for signed readings from independent physical sensors or for a message on an
 authenticated channel. The home model is written in ErisML as norms, state machines and strata,
@@ -22,7 +24,9 @@ Engineering and the geometry of moral strata through the ErisML language, its co
 ethics engine and the scene runtime, to a Unity simulation of one woman's home in which four
 agents act on language models. It reports the evaluation protocol, a sealed held-out set, and the
 development runs of the earlier brain with six defects that calibration found. Every defect
-changed how far or how fast the robot escalated. None let an action run beyond its authority. The
-current brain has run rehearsals and one pass over the development set, with no breach of
-containment, and has no held-out result yet.
-% src: current_system_facts (records: dev33, dev39, dev46 and the held-out protocol are brain7; brain8 has stackcheck7-10, rehearse-deme1,2,4-13 and devdeme1, 2026-10-13)
+changed how far or how fast the robot escalated. None let an action run beyond its authority. In
+scripted scenes with no model in the loop, the gate brain's DEME vetoes recording her without
+consent, the ambulance she refused and lifting her before she asks, while the governor stops what
+lacks evidence. An intermediate design in which DEME selected the act was withdrawn, and its runs
+are kept as records of that experiment.
+% src: current_system_facts (records: dev33, dev39, dev46 and the held-out protocol are brain7); twin/records/gate-demo-2026-10-14/run.txt (12 proposals, 5 passed, 7 stopped); brain8 records stackcheck7-10, rehearse-deme1,2,4-14, devdeme1

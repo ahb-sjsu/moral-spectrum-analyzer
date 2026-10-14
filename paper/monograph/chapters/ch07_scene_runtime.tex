@@ -9,8 +9,9 @@ two models read and write the runtime, and the processes that present a scene's 
 diagrams. All of it is in the erisml-compiler package, under \code{runtime/}, \code{fsm/} and
 \code{process/}. The twin of Part~III uses it unchanged. Both of the twin's brains run on it. The
 earlier brain, the brain of the graded runs, also uses the scene agent and its two models. The
-re-architected brain, the brain of the GTC demonstration since 12 October 2026, runs the runtime on
-a smaller scene and does not call the agent's models (Section~\ref{sec:home-brain8}).
+gate brain, the brain of the GTC demonstration since 14 October 2026, runs the runtime on
+a smaller scene and does not call the agent's models (Section~\ref{sec:home-gate}). So did brain8,
+the re-architected brain it replaced (Section~\ref{sec:home-brain8}).
 % src: erisml-compiler src/erisml_compiler/runtime/scene.py:1-37
 % src: gtc-prototype twin/brain.py Desk.reset, Brain.reset (SceneAgent, SceneRuntime)
 % src: gtc-prototype twin/stack/brain.py StackBrain._rebuild, StackBrain._decide (no agent.decide call)
@@ -31,10 +32,10 @@ For Margaret's home, in the earlier brain's scene, this gives three commitment m
 legitimacy machines for the robot, the monitoring centre and emergency services, and seven
 stratifications, fourteen state entries in all. None of the four standing events moves any of them.
 The runtime therefore starts with every commitment active, Margaret's consent not obtained, every
-authority fully legitimate and every stratification in its initial state. The re-architected
-brain's constitution declares one commitment, the duty of care, and the same seven
-stratifications.
-% src: gtc-prototype twin/stack/constitution.erisml (commitments: duty_of_care; extra.strata, 7 stratifications)
+authority fully legitimate and every stratification in its initial state. The gate
+brain's constitution declares no commitment and the same seven
+stratifications. Brain8's declared one commitment, the duty of care.
+% src: gtc-prototype twin/stack/constitution.erisml at gtc c278e52 (commitments: none; extra.strata, 7 stratifications); at gtc 96c8a6d (commitments: duty_of_care)
 % src: gtc-prototype twin/scene/margaret_home.erisml stakeholders, commitments, events, extra.strata
 % src: erisml-compiler src/erisml_compiler/runtime/scene.py:48-66 (event types that drive machines; none is a standing event type)
 % src: erisml-compiler src/erisml_compiler/runtime/strata.py:124-144 (no gate fires on consent_refused, role_assigned, authority_delegated or activity_started in this scene)
@@ -135,9 +136,9 @@ types can restore it. The centre's confirmation that privacy is restored and the
 declare no content, so an event of either type that names nothing restores any overridden
 commitment. The clearing of a visitor is declared with the single content \code{visitor}, and the
 clearing of devices with \code{devices}. Neither names a commitment, so neither restores one. The
-scene's comment says the same of the first. The re-architected brain's constitution has no privacy
+scene's comment says the same of the first. The gate brain's constitution has no privacy
 promise, so there no commitment is overridden on privacy and none is restored.
-% src: gtc-prototype twin/stack/constitution.erisml (commitments: duty_of_care only)
+% src: gtc-prototype twin/stack/constitution.erisml at gtc c278e52 (no commitments)
 % src: gtc-prototype twin/scene/margaret_home.erisml privacy_promise, extra.oversight, extra.event_types
 % src: erisml-compiler src/erisml_compiler/runtime/scene.py:224-230
 
@@ -308,11 +309,11 @@ The reporting duty has no authority state, so a perceived suspicion of a crime m
 duty grants nothing. The visitor's hostile state is left only on \code{visitor\_\allowbreak{}cleared}, and a
 compromised device only on \code{device\_\allowbreak{}cleared}, both oversight types.
 % src: gtc-prototype twin/scene/margaret_home.erisml:804, 820-831, 873-880, 893-907, 916-922
-The current brain's constitution adds one more absorbing state. Since 14 October its emergency is
+The gate brain's constitution adds one more absorbing state, as brain8's did from 14 October. Its emergency is
 left only on \code{emergency\_\allowbreak{}cleared}, the monitoring centre operator's end of the case,
 an oversight type. The loader accepts it under the same check, and the governor's lapse now leaves
 only \code{ems\_only}.
-% src: twin/stack/make_constitution.py amend_situation; twin/stack/constitution.erisml (situation, oversight) at gtc 96c8a6d; loaded through erisml-compiler runtime/strata.py load, checked 2026-10-14
+% src: twin/stack/make_constitution.py amend_situation; twin/stack/constitution.erisml (situation, oversight) at gtc 96c8a6d and c278e52 (s_cleared on emergency_cleared, absorbing emergency; read with PyYAML 2026-10-14); loaded through erisml-compiler runtime/strata.py load, checked 2026-10-14
 
 \paragraph{The trigger key.}
 A gate's trigger was first written under the key \code{on}. YAML 1.1 reads a bare \code{on} as the
@@ -398,9 +399,10 @@ for an action on the last snapshot. Events that do not come from perception, suc
 action performed, are stepped through \code{record} and never pass through the classifier. In the
 earlier brain the robot's agent is isolated and uses the compiler's registry canonicalizer. The
 monitoring centre and the dispatcher are agents of their own scenes and run without isolation.
-The re-architected brain never calls \code{decide}. Its heard words and perception go to
-erisml-compiler's observation compiler, and that model reads the raw words
-(Section~\ref{sec:home-brain8}).
+Brain8 and the gate brain never call \code{decide}. In brain8 heard words and perception went to
+erisml-compiler's observation compiler, and that model read the raw words
+(Section~\ref{sec:home-brain8}). In the gate demonstration the script writes the proposal and
+any observation (Section~\ref{sec:home-gate}).
 % src: erisml-compiler src/erisml_compiler/runtime/agent.py:278-309
 % src: gtc-prototype twin/brain.py Desk.reset (SceneAgent without isolation), Brain.__init__ (centre and EMS desks), Brain.reset (robot, isolated=True, RegistryCanonicalizer)
 % src: gtc-prototype twin/stack/brain.py StackBrain._observations, StackBrain._decide
@@ -443,7 +445,7 @@ structural, because the authenticated trigger is the evidence. The escalation la
 earlier brain's scene uses both
 forms. Its start event for a corroborated emergency is triggered by the governor's ruling of elevate
 and flows straight into the call to emergency services. Its gateway after a ruling reaches the same
-call on \code{latest:governor\_\allowbreak{}ruling=authorize\_\allowbreak{}ems}. The re-architected
+call on \code{latest:governor\_\allowbreak{}ruling=authorize\_\allowbreak{}ems}. The gate
 brain's constitution declares no process.
 % src: gtc-prototype twin/stack/constitution.erisml (extra has no processes key)
 % src: erisml-compiler src/erisml_compiler/process/model.py:30-33, 210-219
@@ -501,8 +503,9 @@ does not check that an obliged action is one of the agent's capabilities. It doe
 conflict between an obligation and a prohibition. It reports both, and the chooser resolves it toward
 the prohibition. It does not decide whether an allowed action is wise or safe for Margaret. In the
 earlier brain that judgement belongs to the governor and the \deme{} output gate of Chapters~\ref{ch:deme}
-and~\ref{ch:containment}. In the re-architected brain it belongs to the governor and to \deme{}'s profile pipeline,
-which selects among the candidate acts (Section~\ref{sec:deme-stack}).
+and~\ref{ch:containment}. In the gate brain it belongs to the governor and to \deme{}'s profile pipeline,
+which passes or vetoes the proposed act and chooses none (Section~\ref{sec:deme-gate}). In brain8
+that pipeline selected among the candidate acts (Section~\ref{sec:deme-stack}).
 % src: erisml-compiler src/erisml_compiler/runtime/scene.py:192-238, 282-298
 % src: erisml-compiler src/erisml_compiler/runtime/agent.py:16-18 (authority for elevated actions stays with the caller's gate)
 % src: gtc-prototype twin/output_gate.py:1-5

@@ -28,20 +28,19 @@ There a model chooses one allowed action and DEME judges that one proposal as an
 The model's shape and the static tests that tie it to the code are taken from that brain's
 governor, its output gate and its hand-written scene, \code{margaret\_home.erisml}.
 % src: twin/brain.py; twin/output_gate.py; twin/scene/margaret_home.erisml; tests/test_twin_ladder.py
-Since 12 October 2026 the demonstration runs the re-architected brain, brain8
-(Section~\ref{sec:deme-stack}).
-It decides by a different loop, over candidate acts that include acts forbidden now that a ruling
-could permit.
-It decides on a different scene, a constitution derived from the earlier scene and merged with a
+Since 14 October 2026 the demonstration runs the gate brain (Section~\ref{sec:deme-gate}), which
+replaced brain8, the re-architected brain of 12 to 14 October (Section~\ref{sec:deme-stack}).
+It decides nothing of its own. It passes or stops a proposed act by its own checks.
+It runs on a different scene, a constitution derived from the earlier scene and merged with a
 household scene the compiler wrote.
 Neither the Lean model of the decision loop nor the static tests cover that loop or that scene.
-Brain8 keeps the governor, the witness bars, the strata that move only on rulings and system
-events, and the check at the act. Of the theorems here only the two strata theorems of
-Section~\ref{sec:lean-strata} hold for brain8. They hold for every scene the loader accepts, and
-brain8 builds its seven stratifications through the same checked loader. Since 14 October its
+The gate brain, like brain8, keeps the governor, the witness bars, the strata that move only on
+rulings and system events, and the check at the act. Of the theorems here only the two strata
+theorems of Section~\ref{sec:lean-strata} hold for it. They hold for every scene the loader accepts,
+and it builds its seven stratifications through the same checked loader. Its
 emergency is one of the absorbing states, so \code{absorbing\_stays} says of it that no trace
 without the centre operator's \code{emergency\_\allowbreak{}cleared} ends an emergency.
-% src: twin/stack/constitution.erisml extra.strata.situation (absorbing emergency, s_cleared) and extra.oversight at gtc 96c8a6d; loaded through runtime/strata.py load, checked 2026-10-14
+% src: twin/stack/constitution.erisml extra.strata.situation (absorbing emergency, s_cleared) and extra.oversight at gtc 96c8a6d (loaded through runtime/strata.py load, checked 2026-10-14) and c278e52 (read with PyYAML 2026-10-14)
 % src: erisml-compiler runtime/scene.py:129 (strata.load), runtime/strata.py Stratification.__init__ (_check per gate); checked 2026-10-13, StackBrain().reset() loads the seven stratifications of twin/stack/constitution.erisml
 % src: twin/stack/brain.py (_decide, _judge, merge); twin/stack/constitution.erisml; twin/stack/household.ir.json
 
@@ -533,7 +532,7 @@ Figure~\ref{fig:lean-strata} sets the hypotheses beside the checks.
   \caption{The two strata theorems on a generic stratification, with their hypotheses beside
   the loader checks that establish them. The only edge into the authority state carries a system
   event, and the only edge out of the absorbing state carries an oversight event. Since 14 October
-  2026 the current brain's emergency is such an absorbing state, left only on the centre operator's
+  2026 the gate brain's emergency is such an absorbing state, left only on the centre operator's
   word.}
   \label{fig:lean-strata}
 \end{figure}
@@ -550,10 +549,10 @@ moves him out.
 % src: twin/scene/margaret_home.erisml:802-804
 % src: tests/test_twin_ladder.py:1497 (test_what_a_visitor_says_about_himself_moves_nothing)
 % src: tests/test_twin_ladder.py:1508 (test_a_visitor_who_attacked_stays_hostile_until_the_centre_clears_him)
-The current brain's \code{situation} is another.
+The gate brain's \code{situation} is another, as brain8's was from 14 October.
 Its emergency is entered only on the governor's ruling, a system event, and left only on the
 centre operator's \code{emergency\_\allowbreak{}cleared}, an oversight event.
-% src: twin/stack/constitution.erisml extra.strata.situation at gtc 96c8a6d; tests/test_stack_brain.py::test_only_the_centre_s_operator_ends_an_emergency
+% src: twin/stack/constitution.erisml extra.strata.situation at gtc 96c8a6d and c278e52; tests/test_stack_brain.py::test_only_the_centre_s_operator_ends_an_emergency
 The theorems say more than the tests do.
 The tests try particular traces.
 The theorems cover every trace.

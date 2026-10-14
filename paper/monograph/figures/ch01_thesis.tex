@@ -1,6 +1,6 @@
 % Chapter 1 thesis figure: what models may do, and where authority comes from.
-% Items 1-2 cover both brains: twin/brain.py (classify facts into events, choose an allowed action);
-% twin/stack/brain.py StackBrain._decide, _judge (observations, projected consequences, DEME selects).
+% Items 1-2: twin/brain.py (classify facts into events, choose an allowed action); the gate brain,
+% twin/stack/brain.py StackBrain.propose (a proposed act, which DEME passes or vetoes; DEME chooses nothing).
 \begin{tikzpicture}[house, node distance=5mm and 7mm]
 % left column: what models do
 \node[panel=Blue, minimum width=52mm, minimum height=58mm] (mdl) {};
@@ -9,7 +9,7 @@
 \node[step=Blue] (m1) at ($(mdl.north west)+(7mm,-19mm)$) {1};
 \node[detail, right=2mm of m1, text width=36mm] (d1) {read what is heard and seen\\as events or observations};
 \node[step=Blue] (m2) at ($(m1)+(0,-12mm)$) {2};
-\node[detail, right=2mm of m2, text width=36mm] (d2) {pick an allowed action, or\\project each act's outcome\\for DEME to select};
+\node[detail, right=2mm of m2, text width=36mm] (d2) {propose an action, which\\DEME passes or vetoes};
 \node[step=Blue] (m3) at ($(m2)+(0,-13mm)$) {3};
 \node[detail, right=2mm of m3, text width=36mm] (d3) {speak for the centre, the dispatcher and Margaret};
 % right column: what grants

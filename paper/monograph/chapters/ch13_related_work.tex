@@ -90,11 +90,12 @@ Dalrymple and colleagues frame safe AI as a world model, a specification and a v
 gatekeeper~\cite{dalrymple2024guaranteed}.
 
 The earlier brain, brain7, uses both shield positions. Letting the model choose only among allowed
-actions is a preemptive shield, and its DEME output gate is a post-posed one. The re-architected
-brain, brain8, keeps the output gate only for its reflexes. For its decisions a constraint gate
-fixes the candidates before any model is asked, DEME selects among them, and a selected act the constitution forbids now goes to the
-governor before it can be done.
-% src: twin/brain.py, twin/output_gate.py (brain7); twin/stack/brain.py (_decide, constraint gate) (brain8)
+actions is a preemptive shield, and its DEME output gate is a post-posed one. The gate brain is a
+post-posed shield alone. Whatever proposes an act, the constitution and the governor check its
+authority, DEME passes or vetoes it, and the signed manifest is checked last, so a stopped act
+leaves the robot holding. Brain8, the re-architected brain it replaced, fixed candidates with a
+constraint gate and let DEME select among them.
+% src: twin/brain.py, twin/output_gate.py (brain7); twin/stack/brain.py StackBrain.propose (gate brain, gtc c278e52), _decide, constraint gate (brain8)
 The guarantee differs in kind. It is not that the chosen action is safe in the state space. It is
 that no input a model wrote can make a governed action allowed. The Lean proof of that guarantee
 covers brain7 (Chapter~\ref{ch:lean}).

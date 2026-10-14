@@ -28,6 +28,6 @@
 \draw[flow] (P3.south) -- ++(0,-6mm) -| node[flowlabel, below, pos=0.25]{the hash is pinned into the game's build} (P5.south);
 % the models only propose
 \node[panel=Grey, minimum width=46mm, text width=44mm] (M) at (93mm,34mm)
-  {\textcolor{hsGreyLine}{\bfseries one proposed action}\\[1pt]{\scriptsize\color{hsTextMid}a model's choice (earlier brain)\\or \deme{}'s selection}};
+  {\textcolor{hsGreyLine}{\bfseries one proposed action}\\[1pt]{\scriptsize\color{hsTextMid}a model's choice (earlier brain)\\or a script's, passed by \deme{} (gate brain)}};
 \draw[untrusted] (M.south) -- node[flowlabel, right]{a proposal} (P4.north);
 \end{tikzpicture}
