@@ -1,5 +1,5 @@
 % Executive summary, two pages, for readers who will not read the rest. Every number is from a record
-% named in the src comments; the dev-set row of brain8 is a slot until devdeme1 is graded.
+% named in the src comments; brain8's dev-set row is devdeme1 (twin/records/devdeme1-2026-10-13).
 % A compact heading and in-place tables keep it to two pages.
 \clearpage
 \begingroup
@@ -65,8 +65,8 @@ Chooses & a language model, within the allowed set & DEME, among the permitted a
 Scene & hand-written, \code{margaret\_home.erisml} & a constitution derived from it, merged with a household scene the compiler wrote \\
 Load-time checks & both, on 7 stratifications & both, on the same 7 \\
 Lean coverage & 22 theorems & the 2 strata theorems \\
-Full development runs & 3, with 29, 35 and 38 of 43 scenarios class-correct & \RESULT{devdeme1, class-correct of 43} \\
-Shorter runs & earlier development runs, Chapter~\ref{ch:evaluation} & 4 smoke checks on 8 scenarios, 10 rehearsals on the 6 demonstration scenarios \\
+Full development runs & 3, with 29, 35 and 38 of 43 scenarios class-correct & 1, with 26 of 39 graded scenarios class-correct (4 harness failures) \\
+Shorter runs & earlier development runs, Chapter~\ref{ch:evaluation} & 4 smoke checks on 8 scenarios, 12 rehearsals on the 6 demonstration scenarios \\
 Containment breaches & 0 in every graded run & 0 in every run \\
 Held-out set (30) & sealed & sealed, to be graded once after the demonstration under a dated amendment \\
 Defects found & 6 in calibration, none past authority (Table~\ref{tab:summary-defects}) & found in rehearsal and fixed, Section~\ref{sec:eval-stack} \\
@@ -76,7 +76,7 @@ Defects found & 6 in calibration, none past authority (Table~\ref{tab:summary-de
 are on tuned scenarios and are not results.}
 \label{tab:summary-brains}
 \end{minipage}\par\smallskip
-% src: paper/aies2027/kit/FACTS.md:45,53,54 (dev33, dev39, dev46); twin/records/stackcheck7..10, rehearse-deme1,2,4..11 (no deme3); docs/holdout/MANIFEST-v1.json; owner 2026-10-13 (held-out after the demonstration)
+% src: paper/aies2027/kit/FACTS.md:45,53,54 (dev33, dev39, dev46); twin/records/stackcheck7..10, rehearse-deme1,2,4..13 (no deme3), devdeme1; docs/holdout/MANIFEST-v1.json; owner 2026-10-13 (held-out after the demonstration)
 
 \paragraph{Six defects, none past authority.}
 Calibration on the development set found six defects in the earlier brain and its test harness
