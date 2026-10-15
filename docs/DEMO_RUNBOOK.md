@@ -43,7 +43,10 @@ model is in the loop: the demonstration shows the gate, not the robot's intellig
    video `C:/Users/abptl/Videos/gtc-demo/c11probe-gate.mp4`); try the button once before the session.
 7. **Laptop terminals.** In the repository: one terminal for `python -m http.server 8000 -d web`,
    one for the C3 to C9 commands and `python twin/gate_demo.py`, and the browser on
-   `http://localhost:8000`.
+   `http://localhost:8000`. In the second terminal set UTF-8 output first, or
+   `measure_theta_d_atscale.py` stops with a `UnicodeEncodeError` when it prints "Δ" to a Windows
+   console: `$env:PYTHONIOENCODING = "utf-8"` in PowerShell, `export PYTHONIOENCODING=utf-8` in
+   Git Bash.
 8. **Fallbacks at hand.** The video of the gate rehearsal (rehearse-gate3, 14 min 33 s,
    `/archive/unity/out/rehearse-gate3/run.mp4`, copied to the laptop at
    `C:/Users/abptl/Videos/gtc-demo/rehearse-gate3.mp4`, sha256 0ac7ab68…1416) and the committed
@@ -56,7 +59,7 @@ model is in the loop: the demonstration shows the gate, not the robot's intellig
 | 0-2 | What it is | all | spoken | The stack in one sentence each: compiler, DEME as the gate, ErisML constitution, governor, signed manifest. |
 | 2-6 | Moderation with receipts | C3 C4 C5 | browser `localhost:8000` | A removed record, an escalated one, the known false positive; each proof re-verified in the page; a tampered copy failing. Pasting new text: the page refuses it. |
 | 6-7 | The independent verifier | C5 | `cd web && node test_verify.mjs` | `ALL PASS. The browser verifier agrees with Python and rejects tampering.` |
-| 7-9 | Rewording and translation | C6 C7 | `python scripts/measure_theta_d_atscale.py`, `python scripts/measure_xling_atscale.py` | θ_d and the cross-lingual indices recomputed from committed files. |
+| 7-9 | Rewording and translation | C6 C7 | `python scripts/measure_theta_d_atscale.py`, `python scripts/measure_xling_atscale.py` (with `PYTHONIOENCODING=utf-8`, pre-flight 7) | θ_d and the cross-lingual indices recomputed from committed files. |
 | 9-12 | The governor | C8 C9 | `python twin/run_twin.py --backend cached`, then `--backend stub`, then `python twin/frontier.py --backend cached` | Every ruling and the gate that made it; identical grants with the stub; the error rates moving with the threshold. |
 | 12-19 | The gate, live | C10 | on Atlas: `bash /archive/unity/tools/demo_live_gate.sh` (scenes g_fall, g_smoke by default) | **The fall** (g_fall): lifting her before she asks, vetoed by DEME's shell (Geneva, safety); the ambulance she refused, vetoed by DEME's consent stage; helping her up after she asks, passed. **The smoke** (g_smoke): the call before the detectors alert, refused by the governor (0 of 2 witnesses); the call at 75 s once they alert, passed; recording her "for the insurer", vetoed by DEME; guiding her out, passed. The caption gives each check's verdict (a DEME veto names the stage or gate that made it) and what the robot does or that it holds; the telemetry panel shows the strata, the signed sensors, the governor's last ruling and DEME's verdict per party. In rehearse-gate3 all seven proposals of these two scenes went exactly so. |
 | 19-21 | Your proposal | C10 | press **F** in the twin | The evaluator names an act; the presenter proposes it from the free-play panel and the gate judges it on the scene as it stands. |
