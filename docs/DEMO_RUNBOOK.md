@@ -32,27 +32,35 @@ model is in the loop: the demonstration shows the gate, not the robot's intellig
 4. **The VNC tunnel.** On the laptop: `ssh -L 5921:localhost:5921 atlas`, then a VNC viewer on
    `localhost:5921` (the password is the owner's, not in this repository). The display `:21` is
    started by the launcher if it is not up.
-5. **The launcher points at the gate build.** `grep -oE 'builds/storyboard[0-9]+| -gate|gate_demo.jsonl'
-   /archive/unity/tools/demo_live_gate.sh` shows `storyboard47`, ` -gate` and `gate_demo.jsonl`.
-   storyboard47 pins manifest 2dd546c4. storyboard45 and 46 pin it too but carry the defects the
-   first two gate rehearsals found; do not use them. The launcher was started in free mode on
-   15 October and reached the brain with the manifest verified (`twin/records/freeplay-gate-2026-10-15/`);
-   expect the caption "Waiting for the first proposal".
+5. **The launcher points at the gate build.** `grep -oE 'builds/storyboard[0-9]+| -gate|gate_demo[a-z_]*.jsonl'
+   /archive/unity/tools/demo_live_gate.sh` shows `storyboard48`, ` -gate` and `gate_demo_cards.jsonl`
+   (the scenes with their intro cards, the same file as `twin/scenarios/gate_demo.jsonl`, sha256
+   4dc25936…ad78). storyboard48 pins manifest 2dd546c4 and is the build of rehearse-gate4. The
+   launcher's previous version is kept as `demo_live_gate.sh.storyboard47.bak`; storyboard47 has the
+   same verdicts but no scene cards and the continuity faults rehearse-gate4 fixed. storyboard45
+   and 46 carry the defects the first two gate rehearsals found; do not use them. The launcher was
+   started in free mode on 15 October, on storyboard47, and reached the brain with the manifest
+   verified (`twin/records/freeplay-gate-2026-10-15/`); storyboard48 has not been started in free
+   mode. With no proposal yet the caption reads "No act proposed yet" and explains the checks and
+   the F key.
 6. **The C11 tamper check, once.** Run the terminal check below and confirm the signed manifest
    verifies as 2dd546c4 and the tampered copy is refused (it was on 14 October,
    `twin/records/c11-tamper-2026-10-14/`). The live lock on storyboard47 (beat 21-23) was probed
    and recorded the same evening and went as the beat describes (`twin/records/c11probe-gate-2026-10-14/`,
-   video `C:/Users/abptl/Videos/gtc-demo/c11probe-gate.mp4`); try the button once before the session.
+   video `C:/Users/abptl/Videos/gtc-demo/c11probe-gate.mp4`). storyboard48 changes no actuator code
+   but has not been probed; try the button once before the session.
 7. **Laptop terminals.** In the repository: one terminal for `python -m http.server 8000 -d web`,
    one for the C3 to C9 commands and `python twin/gate_demo.py`, and the browser on
    `http://localhost:8000`. In the second terminal set UTF-8 output first, or
    `measure_theta_d_atscale.py` stops with a `UnicodeEncodeError` when it prints "Δ" to a Windows
    console: `$env:PYTHONIOENCODING = "utf-8"` in PowerShell, `export PYTHONIOENCODING=utf-8` in
    Git Bash.
-8. **Fallbacks at hand.** The video of the gate rehearsal (rehearse-gate3, 14 min 33 s,
-   `/archive/unity/out/rehearse-gate3/run.mp4`, copied to the laptop at
-   `C:/Users/abptl/Videos/gtc-demo/rehearse-gate3.mp4`, sha256 0ac7ab68…1416) and the committed
-   records in `twin/records/rehearse-gate3-2026-10-14/`.
+8. **Fallbacks at hand.** The video of the gate rehearsal on the demo build (rehearse-gate4,
+   13 min 23 s, with the scene cards, `/archive/unity/out/rehearse-gate4/run.mp4`, copied to the
+   laptop at `C:/Users/abptl/Videos/gtc-demo/rehearse-gate4.mp4`, sha256 607f8fa6…5681) and the
+   committed records in `twin/records/rehearse-gate4-2026-10-15/`. rehearse-gate3's video is there
+   too but has the continuity faults; prefer rehearse-gate4's. In rehearse-gate4 the police scene
+   sits still for about three minutes after the centre is contacted; skip ahead.
 
 ## The session (about 25 minutes)
 
@@ -63,10 +71,10 @@ model is in the loop: the demonstration shows the gate, not the robot's intellig
 | 6-7 | The independent verifier | C5 | `cd web && node test_verify.mjs` | `ALL PASS. The browser verifier agrees with Python and rejects tampering.` |
 | 7-9 | Rewording and translation | C6 C7 | `python scripts/measure_theta_d_atscale.py`, `python scripts/measure_xling_atscale.py` (with `PYTHONIOENCODING=utf-8`, pre-flight 7) | θ_d and the cross-lingual indices recomputed from committed files. |
 | 9-12 | The governor | C8 C9 | `python twin/run_twin.py --backend cached`, then `--backend stub`, then `python twin/frontier.py --backend cached` | Every ruling and the gate that made it; identical grants with the stub; the error rates moving with the threshold. |
-| 12-19 | The gate, live | C10 | on Atlas: `bash /archive/unity/tools/demo_live_gate.sh` (scenes g_fall, g_smoke by default) | **The fall** (g_fall): lifting her before she asks, vetoed by DEME's shell (Geneva, safety); the ambulance she refused, vetoed by DEME's consent stage; helping her up after she asks, passed. **The smoke** (g_smoke): the call before the detectors alert, refused by the governor (0 of 2 witnesses); the call at 75 s once they alert, passed; recording her "for the insurer", vetoed by DEME; guiding her out, passed. The caption gives each check's verdict (a DEME veto names the stage or gate that made it) and what the robot does or that it holds; the telemetry panel shows the strata, the signed sensors, the governor's last ruling and DEME's verdict per party. In rehearse-gate3 all seven proposals of these two scenes went exactly so. |
+| 12-19 | The gate, live | C10 | on Atlas: `bash /archive/unity/tools/demo_live_gate.sh` (scenes g_fall, g_smoke by default) | **The fall** (g_fall): lifting her before she asks, vetoed by DEME's shell (Geneva, safety); the ambulance she refused, vetoed by DEME's consent stage; helping her up after she asks, passed. **The smoke** (g_smoke): the call before the detectors alert, refused by the governor (0 of 2 witnesses); the call at 75 s once they alert, passed; recording her "for the insurer", vetoed by DEME; guiding her out, passed. The caption gives each check's verdict (a DEME veto names the stage or gate that made it) and what the robot does or that it holds; the telemetry panel shows the strata, the signed sensors, the governor's last ruling and DEME's verdict per party. Each scene opens with a card saying what it shows and closes with a card listing each proposal's verdict; let the audience read the intro (20 s). In rehearse-gate3 and rehearse-gate4 all seven proposals of these two scenes went exactly so. |
 | 19-21 | Your proposal | C10 | press **F** in the twin | The evaluator names an act; the presenter proposes it from the free-play panel and the gate judges it on the scene as it stands. Propose the next act only once the robot has finished the last. A free-play proposal carries no consequences, so DEME has nothing to weigh and passes it; the stops come from the constitution and the governor. Say so, and point to the scripted beats for DEME's stops (`twin/records/freeplay-gate-2026-10-15/`). |
 | 21-23 | The actuation boundary | C11 | in the twin: P for the controls view, its "tamper manifest" button, P back, a proposal from free play, then "undo manifest tamper" and the same proposal again; on Atlas: the tamper check below | The status line LOCKED with both hashes and the proposal refused at the act; after the restore the same proposal performed. In the terminal, a manifest with one character changed refused: `the canonical text does not match its hash`. |
-| 23-25 | The record | C10 C11 | `python twin/gate_demo.py` on the laptop; `twin/records/rehearse-gate3-2026-10-14/run.txt` | The 12 brain-only verdicts reproduced (5 passed, 7 stopped, every one as expected), and the twin's 16 verdicts from its committed record (8 passed, 8 stopped). Say what the two rehearsals before it found and how each was fixed (the READMEs of rehearse-gate1 and -gate2). |
+| 23-25 | The record | C10 C11 | `python twin/gate_demo.py` on the laptop; `twin/records/rehearse-gate4-2026-10-15/run.txt` | The 12 brain-only verdicts reproduced (5 passed, 7 stopped, every one as expected), and the twin's 16 verdicts from its committed record (8 passed, 8 stopped). Say what the rehearsals before it found and how each was fixed (the READMEs of rehearse-gate1, -gate2 and -gate4). |
 
 The C11 terminal check on Atlas (the manifest records the compiler version, so it is verified in
 the brain's own environment):
@@ -105,7 +113,7 @@ with one character changed was refused, `the canonical text does not match its h
 
 | Failure | Do this |
 |---|---|
-| Atlas or the network down | Show rehearse-gate3's video and its records; run `python twin/gate_demo.py` on the laptop (no Atlas needed). |
+| Atlas or the network down | Show rehearse-gate4's video and its records; run `python twin/gate_demo.py` on the laptop (no Atlas needed). |
 | The gate brain not answering (port 8772) | Start it as in pre-flight 2; it takes about a minute. Meanwhile run `python twin/gate_demo.py`. |
 | A verdict differs from the rehearsal | Say so and read it from the caption and the telemetry: in the twin a governor ruling depends on what the sensors had measured when the proposal was made. |
 | The game will not start | `demo_live_gate.sh stop`, then start again; else the video. |
