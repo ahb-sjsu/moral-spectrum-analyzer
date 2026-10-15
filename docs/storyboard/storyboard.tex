@@ -1,0 +1,149 @@
+\documentclass[11pt]{article}
+\usepackage[letterpaper,margin=0.75in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{graphicx}
+\usepackage[table]{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
+\usepackage[hidelinks]{hyperref}
+\definecolor{okgreen}{HTML}{16A34A}
+\definecolor{stopred}{HTML}{DC2626}
+\setlength{\parskip}{0.5em}
+\setlength{\parindent}{0pt}
+
+\title{The gate on proposed acts, in the live twin\\[0.3em]\large A storyboard of every scenario, with the telemetry that shows each check at work\\[0.2em]\normalsize Evidence for claims C10 and C11, Global Trust Challenge verification}
+\author{Andrew Bond}
+\date{15 October 2026}
+
+\begin{document}
+\maketitle
+
+\section*{What this document shows}
+
+A simulated home-care robot lives with Margaret, an elderly woman, in a 3D digital twin of her
+home. Every act the robot might take is first proposed, and a proposal moves the robot only if it
+passes every check in turn (Figure~\ref{fig:gate}). The first check is authority. The compiled
+ErisML constitution holds the norms, and the governor grants elevated authority only when attested
+physical sensors corroborate an emergency. The second is DEME, which judges the act for every party
+named in its consequences, under the robot's ethical profile, and can veto it. The third is the
+signed capability manifest, which lists the only acts the body can perform. Last, the body checks
+the act again at the moment it acts. A stopped proposal is never performed and the robot holds.
+DEME never chooses an act. It only lets one through or stops it.
+
+This storyboard walks through the five scenes of the gate demonstration, the actuation lock (C11)
+and free play. For each proposal it shows the frame the audience saw, with the parts that matter
+circled and numbered, and beside it the telemetry from that proposal's record: the checks and their
+reasons, DEME's verdict per module and party, the strata, every signed sensor reading, and what the
+record holds about Margaret's consent. The lines that decided the verdict are highlighted.
+
+The proposals are scripted, and no language model is in the loop. What is shown is the gate, not a
+robot's judgement. The claim is that each check gives the right verdict on the scene as it stands,
+that a stopped act is never performed, and that every verdict is recorded and can be checked.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=0.45cm, every node/.style={font=\small},
+  box/.style={draw, rounded corners, align=center, minimum height=1.1cm, text width=2.2cm, fill=gray!8},
+  arr/.style={-{Stealth[length=2.5mm]}, thick}]
+\node[box] (p) {Proposed act\\(scripted, or\\from free play)};
+\node[box, right=of p] (a) {Authority\\constitution\\+ governor};
+\node[box, right=of a] (d) {DEME\\per party,\\can veto};
+\node[box, right=of d] (m) {Signed\\manifest};
+\node[box, right=of m] (b) {Act-time\\check, then\\the body acts};
+\draw[arr] (p) -- (a); \draw[arr] (a) -- (d); \draw[arr] (d) -- (m); \draw[arr] (m) -- (b);
+\node[below=1.0cm of d, text=stopred, align=center, text width=9cm, draw=stopred, rounded corners, inner sep=4pt] (h) {any check stops it: the robot holds, and the record says which check and why};
+\draw[arr, stopred] (a.south) -- (a.south |- h.north);
+\draw[arr, stopred] (d.south) -- (h.north);
+\draw[arr, stopred] (m.south) -- (m.south |- h.north);
+\end{tikzpicture}
+\caption{The checks every proposed act passes. They are applied in this order, and each one is recorded.}
+\label{fig:gate}
+\end{figure}
+
+\subsection*{The sixteen proposals of the five scenes}
+
+All sixteen verdicts are from the rehearsal recorded on the demonstration build, rehearse-gate4.
+Eight passed and eight were stopped: by DEME four times, by the governor twice and by the
+constitution twice. Each was the verdict its scene was written to show. The same sixteen verdicts
+came out of the rehearsal the day before, rehearse-gate3.
+
+\input{summary.tex}
+
+\clearpage
+\section*{How to read a frame}
+
+\begin{center}\includegraphics[width=\linewidth]{figs/legend.jpg}\end{center}
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+\item The status line: the clock, what the robot is doing, and the actuator. The actuator reads
+  ``manifest 2dd546c47a3c\ldots{} verified, 25 actions'' while the body's manifest matches the hash
+  pinned into its build, and LOCKED when it does not. During a bite it also shows the measured force.
+\item The scene banner.
+\item What people say. Margaret's words, a visitor's, the dispatcher's and the robot's show for a
+  few seconds.
+\item The robot's head camera.
+\item The strata: the standing of visitors, responders and animals, the situation (ordinary or
+  emergency), contact with the monitoring centre, and the amber beacon.
+\item The signed sensor readings. The panel scrolls, so in a frame only the first few sensors are
+  visible. The panel beside each frame in this document lists every one, from the record.
+\item The caption: the proposed act and its plain meaning, each check's verdict, and what the robot
+  does, or that it holds and which check stopped it.
+\end{enumerate}
+
+\textbf{Reading DEME's verdicts.} DEME runs several modules, and each returns a verdict for each
+party: strongly prefer, prefer, neutral, avoid, or veto. A veto from any module stops the act. The
+others are weighed. In these runs the constitutional (Geneva) module returns ``avoid'' for Margaret
+on every act, including the acts that pass. That is not a veto, and it is shown as recorded.
+
+\input{scenes.tex}
+
+\clearpage
+\section{Limits and disclosures}
+
+\begin{itemize}[leftmargin=*,itemsep=3pt]
+\item The proposals and their consequences are scripted. The claim is the gate's verdict, not
+  that a robot would propose well. The twin is a simulation, and only its camera reads rendered
+  video. The other sensors are simulated readings, signed by the twin.
+\item In the dog scene the robot's own reflex for a severe animal attack started the drive-off one
+  second before the scripted proposal. The act-time check allowed it before the body moved. The
+  record shows both.
+\item Some things are still wrong on screen in this build, and are disclosed in the rehearsal's
+  record. No figure is drawn for the man at the door. Tom stands apart from Margaret, facing away.
+  The smoke is faint. When she is helped up she snaps back about 0.7 m to where she stood. The
+  strata panel can lag the action by a moment. The status line can show the next proposal before
+  the caption does (Proposal 3.2). The police scene sits still for about three minutes while the
+  monitoring centre's call runs.
+\item A review of the rehearsal before this one found continuity faults that this build fixes: her
+  words stayed on screen after the dog was back in its bed, the bite knocked her away from the dog,
+  the robot walked onto her after she fell, and she ended up inside the robot at the door. Those
+  faults are listed in \url{twin/records/rehearse-gate4-2026-10-15/README.md}.
+\item The actuation lock and free play were recorded on storyboard47, the build before the scene
+  cards. storyboard48 changes no actuator code.
+\item In free play DEME passed every act it saw, because a free-play proposal carries no
+  consequences for it to weigh. Its stops are shown by the scripted proposals.
+\end{itemize}
+
+\section{Provenance}
+
+\begin{itemize}[leftmargin=*,itemsep=3pt]
+\item Code: gtc-prototype commit 24d26ae (the gate brain's Python unchanged since 2835805),
+  erisml-compiler d606f44, erisml-lib 054ed18, signed manifest 2dd546c4 (Ed25519, 25 actions).
+\item The five scenes: \url{twin/records/rehearse-gate4-2026-10-15/}, Unity build
+  storyboard48, 15 October 2026. Game exit 0, 0 brain errors. Video 13 min 23 s, sha256
+  607f8fa6\ldots5681. The scene file is \url{twin/scenarios/gate_demo.jsonl}.
+\item The actuation lock: \url{twin/records/c11probe-gate-2026-10-14/}, storyboard47. Video
+  sha256 7f7708d7\ldots0d75.
+\item Free play: \url{twin/records/freeplay-gate-2026-10-15/}, storyboard47. Video sha256
+  7b57ad45\ldots c887.
+\item Each record is hash-chained: every record carries its sequence number and the hash of the one
+  before it. The panels in this document show each proposal's sequence number and the first digits
+  of the manifest hash it was judged under.
+\item This document is built by \url{docs/storyboard/build_storyboard.py} from those records.
+  The script checks each proposal's act and verdict against its record before drawing it, and the
+  totals (8 passed and 8 stopped in the scenes, 5 and 7 in free play) before writing the document.
+\end{itemize}
+
+\end{document}
