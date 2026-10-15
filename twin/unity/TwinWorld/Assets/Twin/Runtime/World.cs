@@ -24,6 +24,21 @@ public class World : MonoBehaviour
 
     // ---- Margaret's state, as a character simulation
     public string activity = "reading", posture = "sit", spoken = "";
+    // when she last spoke: the caption shows her words for a few seconds, not until the next scene
+    // (owner, 2026-10-15: "Help! Get it off me!" stayed on screen after the dog was back in its bed)
+    public float spokenAt = -100f;
+    public bool SpeakingNow => spoken != "" && Time.time - spokenAt < 7f;
+    public string otherSaid = "", otherWho = ""; public float otherAt = -100f;
+    public bool OtherSpeakingNow => otherSaid != "" && Time.time - otherAt < 7f;
+    // where her body is drawn: after a fall the ragdoll lies away from her root transform, and the
+    // robot walked to the root, onto her (rehearse-gate3, the dog and fall scenes)
+    public Vector3 HerBody()
+    {
+        var an = margaret.GetComponent<Animator>();
+        var h = an ? an.GetBoneTransform(HumanBodyBones.Hips) : null;
+        var p = h ? h.position : margaret.transform.position;
+        return new Vector3(p.x, 0f, p.z);
+    }
     public float heartRate = 72f, poseSince, injury;   // injury 0..1
     public bool responsive = true, conscious = true, scripted;
     public readonly List<(float t, string who, string kind, string text)> heard = new List<(float, string, string, string)>();
@@ -123,7 +138,7 @@ public class World : MonoBehaviour
         if (rag != null) { rag.Remove(); rag = null; }
         margaret.SetActive(true); margaret.transform.SetPositionAndRotation(mStart, mStartRot);
         if (robotBody) robotBody.position = new Vector3(robotDock.x, robotBody.position.y, robotDock.z);
-        heartRate = 72; injury = 0; responsive = conscious = true; scripted = false; heard.Clear(); spoken = ""; margaretStance = "";
+        heartRate = 72; injury = 0; responsive = conscious = true; scripted = false; heard.Clear(); spoken = ""; otherSaid = ""; margaretStance = "";
         tvContent = networkMessage = ""; smokeOn = strangerInside = false; smokeSince = -1f; biteForce = 0; lastImpactG = 0;
         if (tvScreen) tvScreen.gameObject.SetActive(false);
         if (smoke) smoke.gameObject.SetActive(false);
@@ -263,7 +278,14 @@ public class World : MonoBehaviour
     public void Say(string who, string kind, string text)
     {
         heard.Add((simMinutes, who, kind, text));
-        if (who == "margaret") spoken = text;
+        if (who == "margaret") { spoken = text; spokenAt = Time.time; }
+        // anyone else's words, for the caption (rehearse-gate3: the man at the door and Tom were never heard)
+        else if (who != "robot" && text != "" && (kind == "speech" || kind == "phone" || kind == "cry"))
+        {
+            otherSaid = text; otherAt = Time.time;
+            otherWho = who == "stranger" ? (strangerState == "away" ? "At the door" : strangerKnownAs != "" ? "Visitor (" + strangerKnownAs + ")" : "Visitor")
+                     : who == "monitoring_center" ? "Monitoring centre (phone)" : char.ToUpper(who[0]) + who.Substring(1).Replace("_", " ");
+        }
         OnSaid?.Invoke(who, text);
     }
 
@@ -305,7 +327,24 @@ public class World : MonoBehaviour
         if (severity > 0.6f && rag == null) { rag = Ragdoll.Build(margaret); rag.Release("buckle", Body.Facing(margaret)); posture = "fallen"; poseSince = simMinutes; }
         // a nip is over in a moment; an attack goes on until the dog is stopped
         if (severity <= 0.4f) { yield return new WaitForSeconds(1.5f); dogState = "play"; }
-        while (dogState == "biting") { heartRate = Mathf.Max(heartRate, 120f); yield return new WaitForSeconds(1.5f); if ((float)rng.NextDouble() < 0.4f) Say("margaret", "cry", severity > 0.6f ? "Please help!" : "Stop it!"); }
+        // the dog keeps hold of her: a severe bite knocks her down and the ragdoll carries her arm away,
+        // so the dog follows the hand while it bites (owner, 2026-10-15: "when margaret is complaining
+        // the dog is biting her, the dog is on the other side of the room")
+        while (dogState == "biting")
+        {
+            heartRate = Mathf.Max(heartRate, 120f);
+            for (float until = Time.time + 1.5f; Time.time < until && dogState == "biting"; )
+            {
+                var d = Hand() - dog.transform.position; d.y = 0;
+                if (d.magnitude > 0.35f)
+                {
+                    dog.transform.rotation = Quaternion.LookRotation(d.normalized, Vector3.up);
+                    dog.transform.position += d.normalized * Mathf.Min(d.magnitude - 0.35f, 2.5f * Time.deltaTime);
+                }
+                yield return null;
+            }
+            if (dogState == "biting" && (float)rng.NextDouble() < 0.4f) Say("margaret", "cry", severity > 0.6f ? "Please help!" : "Stop it!");
+        }
         EndBite();
     }
 

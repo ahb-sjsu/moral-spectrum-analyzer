@@ -25,6 +25,7 @@ public class TwinUI : MonoBehaviour
     // gate demonstration (-gate): F opens the free-play panel, where anyone proposes any act of the
     // manifest; the telemetry panel shows the scene as the brain and the sensors report it
     bool freePlay; Vector2 sTele, sFree; GameObject biteRing;
+    ScenarioRunner runner; GUIStyle cardTitle, cardBody;
     // presentation mode (P, or -present): the room full screen and one caption for the newest
     // governed decision, every word read from its record; P again brings back the controls
     bool present = System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-present") >= 0;
@@ -111,7 +112,7 @@ public class TwinUI : MonoBehaviour
         GUI.Box(new Rect(6, 36, 208, 230), "robot head camera" + (robot.recording ? "  <color=#ff4040>REC</color>" : ""));
         if (robot.headView) GUI.DrawTexture(new Rect(10, 56, 200, 200), robot.headView);
         if (robot.speech != "") GUI.Label(new Rect(220, 40, px - 230, 40), $"<b>Robot says:</b> “{robot.speech}”", rich);
-        if (world.spoken != "") GUI.Label(new Rect(220, 64, px - 230, 40), $"<b>Margaret:</b> “{world.spoken}”", rich);
+        if (world.SpeakingNow) GUI.Label(new Rect(220, 64, px - 230, 40), $"<b>Margaret:</b> “{world.spoken}”", rich);
         string outside = $"<b>Monitoring centre:</b> {(world.centerDown || world.commsDown ? "<color=#b42318>unreachable</color>" : responders.centerStatus == "" ? "idle" : responders.centerStatus)}   " +
                          $"<b>EMS:</b> {(world.commsDown ? "<color=#b42318>unreachable</color>" : responders.emsStatus == "" ? "idle" : responders.emsStatus)}   " +
                          $"<b>Power:</b> {(world.powerOut ? "<color=#b42318>out</color>" : "on")}   <b>Less-lethal:</b> {(world.lessLethalEnabled ? "enabled by owner" : "off")}" +
@@ -231,10 +232,13 @@ public class TwinUI : MonoBehaviour
                   (robot.recording ? "   <color=#ff4040>REC</color>" : "") +
                   $"   Actuator: {(robot.manifestOk ? "<color=#56d364>" : "<color=#ff7b72>")}{robot.manifestStatus}</color>" +
                   (world.biteForce > 0f ? $"   <color=#ff7b72><b>THE DOG IS BITING HER ({world.biteForce:0} N)</b></color>" : "") +
-                  (robot.gate ? "      <i>P: controls   F: propose an act</i>" : "      <i>P: controls</i>"), cap);
+                  (robot.gate ? "      <i>F: choose an act to propose   P: controls</i>" : "      <i>P: controls</i>"), cap);
         if (robot.headView) { GUI.Box(new Rect(W - 236, 42, 228, 250), "robot head camera"); GUI.DrawTexture(new Rect(W - 222, 62, 200, 200), robot.headView); }
         float y = 44;
-        if (world.spoken != "") { GUI.Label(new Rect(14, y, W - 270, 60), $"<b>Margaret:</b> “{world.spoken}”", big); y += 36; }
+        runner ??= FindObjectOfType<ScenarioRunner>();
+        if (runner != null && runner.banner != "") { GUI.Label(new Rect(14, y, W - 270, 40), $"<color=#f2cc60><b>{runner.banner}</b></color>", big); y += 40; }
+        if (world.OtherSpeakingNow) { GUI.Label(new Rect(14, y, W - 270, 60), $"<b>{world.otherWho}:</b> “{world.otherSaid}”", big); y += 36; }
+        if (world.SpeakingNow) { GUI.Label(new Rect(14, y, W - 270, 60), $"<b>Margaret:</b> “{world.spoken}”", big); y += 36; }
         if (robot.speech != "") GUI.Label(new Rect(14, y, W - 270, 60), $"<b>Robot:</b> “{robot.speech}”", big);
 
         // the newest decision the robot asked the brain for
@@ -246,7 +250,7 @@ public class TwinUI : MonoBehaviour
         }
         float bh = 190;
         GUI.color = new Color(1, 1, 1, 0.92f); GUI.Box(new Rect(0, H - bh, W, bh), ""); GUI.Box(new Rect(0, H - bh, W, bh), ""); GUI.color = Color.white;
-        if (robot.gate) { GateCaption(W, H, bh); Telemetry(W, H, bh); if (freePlay) FreePlay(H, bh); return; }
+        if (robot.gate) { GateCaption(W, H, bh); Telemetry(W, H, bh); if (freePlay) FreePlay(H, bh); SceneCard(W, H); return; }
         GUILayout.BeginArea(new Rect(16, H - bh + 8, W - 32, bh - 12));
         if (rec == null) { GUILayout.Label("<b>Waiting for the robot's first decision.</b>", big); GUILayout.EndArea(); return; }
         var prop = MiniJson.Obj(G(rec, "proposal"));
@@ -275,10 +279,20 @@ public class TwinUI : MonoBehaviour
     {
         GUILayout.BeginArea(new Rect(16, H - bh + 8, W - 480, bh - 12));
         var rec = robot.lastProposal;
-        if (rec == null) { GUILayout.Label("<b>Waiting for the first proposal.</b>   <i>F: propose an act yourself</i>", big); GUILayout.EndArea(); return; }
+        if (rec == null)
+        {
+            // owner, 2026-10-15: "it's not clear what is meant by F: propose an action yourself"
+            if (runner != null && runner.phase == ScenarioRunner.Phase.Running)
+                GUILayout.Label("<b>The scene has started.</b> The first act will be proposed to the robot shortly.", big);
+            else
+                GUILayout.Label("<b>No act proposed yet.</b>", big);
+            GUILayout.Label("Each act proposed to the robot passes three checks before it moves: the constitution and governor (authority), DEME, and the signed manifest. " +
+                            "<i>Press F for the list of the robot's acts; pick one to propose it yourself, and the checks judge it on the scene as it is.</i>", cap);
+            GUILayout.EndArea(); return;
+        }
         var prop = MiniJson.Obj(G(rec, "proposal"));
-        string note = MiniJson.S(G(prop, "note"));
-        GUILayout.Label($"<b>Proposed</b> ({MiniJson.S(G(prop, "by"))}): <b>{MiniJson.S(G(prop, "action"))}</b>" + (note != "" ? $"   <i>{note}</i>" : ""), big);
+        string by = MiniJson.S(G(prop, "by")), say = robot.lastSay;
+        GUILayout.Label($"<b>Proposed</b> ({(by == "script" ? "scripted" : by)}): <b>{MiniJson.S(G(prop, "action")).Replace("_", " ")}</b>" + (say != "" ? $"   <i>{say}</i>" : ""), big);
         var parts = new List<string>();
         foreach (var o in MiniJson.Arr(G(rec, "checks")))
         {
@@ -391,10 +405,27 @@ public class TwinUI : MonoBehaviour
         GUILayout.EndScrollView(); GUILayout.EndArea();
     }
 
+    // the scene's intro and end cards (ScenarioRunner.phase), over the room
+    void SceneCard(float W, float H)
+    {
+        if (runner == null || (runner.phase != ScenarioRunner.Phase.Intro && runner.phase != ScenarioRunner.Phase.End)) return;
+        cardTitle ??= new GUIStyle(GUI.skin.label) { richText = true, wordWrap = true, fontSize = 30 };
+        cardBody ??= new GUIStyle(GUI.skin.label) { richText = true, wordWrap = true, fontSize = 21 };
+        float w = Mathf.Min(1100f, W - 80f), h = Mathf.Min(520f, H - 120f), x = (W - w) / 2f, y = (H - h) / 2f - 20f;
+        GUI.color = new Color(0.08f, 0.08f, 0.1f, 0.94f);
+        GUI.DrawTexture(new Rect(x, y, w, h), Texture2D.whiteTexture);
+        GUI.color = Color.white;
+        GUILayout.BeginArea(new Rect(x + 36, y + 28, w - 72, h - 56));
+        GUILayout.Label($"<color=#f2cc60><b>{runner.cardTitle}</b></color>", cardTitle);
+        GUILayout.Space(14);
+        GUILayout.Label(runner.cardBody, cardBody);
+        GUILayout.EndArea();
+    }
+
     void FreePlay(float H, float bh)
     {
         float x = 10, y = 120, w = 260, h = H - bh - 130;
-        GUI.Box(new Rect(x, y, w, h), "propose an act (F closes)"); GUI.Box(new Rect(x, y, w, h), "");
+        GUI.Box(new Rect(x, y, w, h), "choose an act to propose (F closes)"); GUI.Box(new Rect(x, y, w, h), "");
         GUILayout.BeginArea(new Rect(x + 6, y + 22, w - 12, h - 28));
         sFree = GUILayout.BeginScrollView(sFree);
         foreach (var a in robot.ManifestActions.OrderBy(q => q).ToList())

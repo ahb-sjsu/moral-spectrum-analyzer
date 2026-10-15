@@ -34,11 +34,13 @@ public class RobotAgent : MonoBehaviour
     // proposals it stands still
     public readonly bool gate = Array.IndexOf(Environment.GetCommandLineArgs(), "-gate") >= 0;
     public Dictionary<string, object> lastProposal;   // the newest /propose record
+    // the audience's line for it, from the scenario's "say"; shown on screen, never sent to the brain
+    public string lastSay = "";
     string lastPassed = "";
     public int sceneStart;   // the first record of the current scene; the panels show nothing older
     // a new scene starts with no proposal and no record on screen (rehearse-gate1: the fall scene opened
     // under the dog scene's caption and strata until its first proposal returned)
-    public void NewScene() { lastProposal = null; lastPassed = ""; sceneStart = cycles.Count; }
+    public void NewScene() { lastProposal = null; lastSay = ""; lastPassed = ""; sceneStart = cycles.Count; }
     public IEnumerable<string> ManifestActions => manifestActions;
     public bool Emergency => situation == "emergency" || situation == "ems_only";
     Light beacon; Renderer beaconLamp;
@@ -82,7 +84,7 @@ public class RobotAgent : MonoBehaviour
             standingAct = "chores"; situation = "ordinary";   // a reset starts the scene again
             // in gate mode the robot does nothing of its own until a proposal passes (rehearse-gate2:
             // the fall scene opened with the robot wiping the table)
-            lastPassed = ""; lastProposal = null;
+            lastPassed = ""; lastProposal = null; lastSay = "";
             StartMotor(gate ? Standing() : Chore());
             performing = recording = false; speech = ""; owed = false; owedRun = 0;
             Debug.Log("BRAIN_RESET epoch " + epoch);
@@ -180,7 +182,8 @@ public class RobotAgent : MonoBehaviour
         while (busy) yield return null;
         busy = true; status = "proposing: " + MiniJson.S(p.TryGetValue("action", out var pa) ? pa : "");
         var propose = new Dictionary<string, object>(p);
-        propose.Remove("observed"); propose.Remove("t");
+        string say = p.TryGetValue("say", out var sv) ? MiniJson.S(sv) : "";
+        propose.Remove("observed"); propose.Remove("t"); propose.Remove("say");
         var body = new Dictionary<string, object>
         {
             ["facts"] = perception.Facts(out _, peek: true), ["sensors"] = perception.GovernorSensors(),
@@ -197,7 +200,7 @@ public class RobotAgent : MonoBehaviour
         cycles.Add(rec);
         if (sent != epoch) yield break;
         var c = MiniJson.Obj(rec["record"]);
-        lastProposal = c;
+        lastProposal = c; lastSay = say;
         var act = MiniJson.Obj(c["action"]);
         string action = MiniJson.S(act["action"]);
         bool passed = MiniJson.S(c["verdict"]) == "passed";
@@ -476,10 +479,10 @@ public class RobotAgent : MonoBehaviour
         if (!actAllowed) { recording = false; performing = false; yield return Standing(); yield break; }
         switch (action)
         {
-            case "approach": yield return GoTo(Near(world.margaret.transform.position, 0.8f)); rig.Pose("hold"); break;
+            case "approach": yield return GoTo(Beside(world.HerBody(), 0.8f)); rig.Pose("hold"); break;
             case "speak": yield return SayAloud(text != "" ? text : "Margaret, I'm here."); break;
             case "check_in":
-                yield return GoTo(Near(world.margaret.transform.position, 0.9f));
+                yield return GoTo(Beside(world.HerBody(), 0.9f));
                 int heard0 = responders.MargaretSaid();
                 yield return SayAloud(text != "" ? text : "Margaret, are you alright?");
                 // her answer comes from her own voice, when she can give one
@@ -512,9 +515,9 @@ public class RobotAgent : MonoBehaviour
             case "guide_to_safety":
                 string where = args.TryGetValue("where", out var w) ? MiniJson.S(w) : "outside";
                 yield return SayAloud(where == "bedroom" ? "Margaret, come with me to the bedroom." : "Margaret, come with me. We need to get out of the house.");
-                world.GuideToSafety(where); yield return GoTo(where == "bedroom" ? Near(world.Spot("nap"), 1.5f) : World.Door); break;
+                world.GuideToSafety(where); yield return GoTo(where == "bedroom" ? Near(world.Spot("nap"), 1.5f) : World.Door + new Vector3(0.9f, 0f, 0.1f)); break;   // beside the door, not where she stops (rehearse-gate3: she ended inside the robot)
             case "drive_off_animal":
-                yield return GoTo(Near(Threat(), 0.5f)); yield return Authorize(action); if (!actAllowed) break; rig.Pose("reach"); world.DriveOffAnimal(); yield return new WaitForSeconds(1f); break;
+                yield return GoTo(Away(Threat(), world.HerBody(), 0.6f)); yield return Authorize(action); if (!actAllowed) break; rig.Pose("reach"); world.DriveOffAnimal(); yield return new WaitForSeconds(1f); break;
             case "restrain_person":
                 yield return GoTo(Near(Threat(), 0.5f)); yield return Authorize(action); if (!actAllowed) break; rig.Pose("reach"); world.RestrainPerson(); break;
             case "deploy_stun":
@@ -523,7 +526,7 @@ public class RobotAgent : MonoBehaviour
                 Face(Threat()); rig.Pose("reach"); world.Spray(); yield return new WaitForSeconds(1f); break;
             case "admit_responders":
                 yield return GoTo(World.Door + new Vector3(0.6f, 0, 0.4f)); yield return Authorize(action); if (!actAllowed) break; world.UnlockDoor(); break;
-            case "physical_assist": yield return GoTo(Near(world.margaret.transform.position, 0.6f)); yield return Authorize(action); if (!actAllowed) break; rig.Pose("reach"); yield return new WaitForSeconds(2f);
+            case "physical_assist": yield return GoTo(Beside(world.HerBody(), 0.6f)); yield return Authorize(action); if (!actAllowed) break; rig.Pose("reach"); yield return new WaitForSeconds(2f);
                 world.Call("margaret.helped_up", new Dictionary<string, object>()); world.Say("robot", "action", "helped Margaret up"); break;   // the act's effect: she is on her feet
             case "separate_dog":
                 yield return GoTo(Near(world.dog.transform.position, 0.5f)); yield return Authorize(action); if (!actAllowed) break; rig.Pose("reach");
@@ -576,6 +579,20 @@ public class RobotAgent : MonoBehaviour
     }
 
     static Vector3 Near(Vector3 target, float dist) => target + new Vector3(-0.5f, 0, -0.85f).normalized * dist;
+    // a point dist from target on the robot's side of it, so the robot stops short of her body instead
+    // of walking through it to a fixed bearing (rehearse-gate3: it stood on her after the fall)
+    Vector3 Beside(Vector3 target, float dist)
+    {
+        var d = transform.position - target; d.y = 0;
+        return d.magnitude < 0.05f ? Near(target, dist) : target + d.normalized * dist;
+    }
+    // a point dist beyond the threat on the side away from her, to face it off from her (rehearse-gate3:
+    // the robot drove off the dog from her head, a metre from the dog)
+    static Vector3 Away(Vector3 threat, Vector3 her, float dist)
+    {
+        var d = threat - her; d.y = 0;
+        return d.magnitude < 0.05f ? Near(threat, dist) : threat + d.normalized * dist;
+    }
 
     // what the robot puts itself between Margaret and: the wild animal, else the stranger, else her dog
     Vector3 Threat()
