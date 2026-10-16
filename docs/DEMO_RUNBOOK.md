@@ -101,7 +101,9 @@ with one character changed was refused, `the canonical text does not match its h
 
 ## Say before the live gate
 
-- The proposals are scripted, and some are wrong on purpose. What is shown is the gate: the
+- The proposals are fixed in advance with the verdicts they are written to show, so every run is
+  repeatable,
+  and some are wrong on purpose. What is tested is the gate: the
   constitution and the governor decide whether an act is authorized on evidence, and DEME decides
   whether it is right, on the facts the compiler builds from the scene. DEME passes or vetoes; it
   never picks an act. A stopped proposal leaves the robot holding.

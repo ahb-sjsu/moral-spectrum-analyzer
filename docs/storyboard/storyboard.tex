@@ -40,9 +40,13 @@ circled and numbered, and beside it the telemetry from that proposal's record: t
 reasons, DEME's verdict per module and party, the strata, every signed sensor reading, and what the
 record holds about Margaret's consent. The lines that decided the verdict are highlighted.
 
-The proposals are scripted, and no language model is in the loop. What is shown is the gate, not a
-robot's judgement. The claim is that each check gives the right verdict on the scene as it stands,
-that a stopped act is never performed, and that every verdict is recorded and can be checked.
+The proposals are fixed in advance. Each scene's proposals and their consequences are written in
+a scene file, together with the outcome the scene is written to show, so every run can be repeated
+and compared with it. Two rehearsals on different builds gave the same sixteen verdicts. Some proposals are
+wrong on purpose, to show the checks stopping them. What is tested is the gate. The claim is that
+each check gives the right verdict on the scene as it stands, that a stopped act is never
+performed, and that every verdict is recorded and can be checked. Because a script proposes, no
+language model is in the loop, and how well a robot would choose its own acts is outside this test.
 
 \begin{figure}[h]
 \centering
@@ -104,8 +108,9 @@ on every act, including the acts that pass. That is not a veto, and it is shown 
 \section{Limits and disclosures}
 
 \begin{itemize}[leftmargin=*,itemsep=3pt]
-\item The proposals and their consequences are scripted. The claim is the gate's verdict, not
-  that a robot would propose well. The twin is a simulation, and only its camera reads rendered
+\item The proposals and their consequences are fixed in advance, so the test is repeatable. DEME
+  judges the consequences each proposal carries. A live proposer that describes them badly is a
+  separate question. The twin is a simulation, and only its camera reads rendered
   video. The other sensors are simulated readings, signed by the twin.
 \item In the dog scene the robot's own reflex for a severe animal attack asked for the drive-off one
   second before the scripted proposal. In gate mode a reflex is recorded and moves nothing, so the
