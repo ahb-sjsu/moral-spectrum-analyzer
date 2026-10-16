@@ -938,6 +938,12 @@ parts of the boundary, the lock, the refusal and the robot acting again once the
 whole. In gate mode the proposals are scripted, so the run does not depend on what a brain chooses
 after the restore, which is why it shows the third part where the probe on brain8's build did not.
 % src: twin/scenarios/probe_manifest_gate.jsonl (p02g); twin/records/c11probe-gate-2026-10-14 (README.md, actuator.log, results.jsonl; storyboard47, gtc 2835805, manifest 2dd546c4)
+The probe was run again on 15 October on storyboard48, the demonstration build with the scene
+cards, whose changes touch no actuator code. The actuator lines and the brain's records were the
+same, the lock with both hashes, the refusal at the act, the manifest verified again and the act
+performed. In both runs the script changed the manifest. The tamper button of the controls view
+reaches the same switch and has not itself been clicked in a recorded run.
+% src: twin/records/check48-2026-10-15 (README.md, run.txt, results.jsonl; storyboard48, gtc 24d26ae, manifest 2dd546c4); TwinUI.cs:104-106 (tamper button) and World.cs:762-763 (the script's call), both set manifestTampered and call CheckManifest
 
 \section{What the gate brain keeps}\label{sec:cont-brain8}
 

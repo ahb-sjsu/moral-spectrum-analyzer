@@ -39,16 +39,21 @@ model is in the loop: the demonstration shows the gate, not the robot's intellig
    launcher's previous version is kept as `demo_live_gate.sh.storyboard47.bak`; storyboard47 has the
    same verdicts but no scene cards and the continuity faults rehearse-gate4 fixed. storyboard45
    and 46 carry the defects the first two gate rehearsals found; do not use them. The launcher was
-   started in free mode on 15 October, on storyboard47, and reached the brain with the manifest
-   verified (`twin/records/freeplay-gate-2026-10-15/`); storyboard48 has not been started in free
-   mode. With no proposal yet the caption reads "No act proposed yet" and explains the checks and
-   the F key.
+   started in free mode on storyboard48 on 15 October and ran with the manifest verified and 0
+   brain errors (`twin/records/check48-2026-10-15/`). With no proposal yet the caption reads "No act
+   proposed yet" and explains the checks and the F key. **In free mode, reset the scene first.**
+   That check found the game did not reset the brain at start (no `BRAIN_RESET` in the log), so the
+   brain kept what the last run left in it. After `demo_live_gate.sh free`, press P, click "Reset
+   scene", press P again. The scenes (beat 12-19) are not affected, because each scene resets the
+   brain, so free play after the scenes judges acts on the last scene as it stands.
 6. **The C11 tamper check, once.** Run the terminal check below and confirm the signed manifest
    verifies as 2dd546c4 and the tampered copy is refused (it was on 14 October,
    `twin/records/c11-tamper-2026-10-14/`). The live lock on storyboard47 (beat 21-23) was probed
    and recorded the same evening and went as the beat describes (`twin/records/c11probe-gate-2026-10-14/`,
-   video `C:/Users/abptl/Videos/gtc-demo/c11probe-gate.mp4`). storyboard48 changes no actuator code
-   but has not been probed; try the button once before the session.
+   video `C:/Users/abptl/Videos/gtc-demo/c11probe-gate.mp4`). The same probe on storyboard48 went
+   the same way (`twin/records/check48-2026-10-15/`). Both probes changed the manifest from a
+   script, and the on-screen button has not been clicked on either build; try it once over VNC
+   before the session.
 7. **Laptop terminals.** In the repository: one terminal for `python -m http.server 8000 -d web`,
    one for the C3 to C9 commands and `python twin/gate_demo.py`, and the browser on
    `http://localhost:8000`. In the second terminal set UTF-8 output first, or

@@ -1,0 +1,50 @@
+== A. live launcher (free), storyboard48
+started (free); records in <unity>/out/live-gate-20261015-203833
+launcher: game running on :21
+launcher log: 311 lines, brain errors 0, resets 0
+ACTUATOR manifest 2dd546c47a3c… verified, 25 actions
+screenshot <unity>/out/check48/vnc21.png
+game closed
+== B. tamper probe p02g, storyboard48
+    "memorysetup-bucket-allocator-granularity=16"
+    "memorysetup-bucket-allocator-bucket-count=8"
+    "memorysetup-bucket-allocator-block-size=4194304"
+    "memorysetup-bucket-allocator-block-count=1"
+    "memorysetup-main-allocator-block-size=16777216"
+    "memorysetup-thread-allocator-block-size=16777216"
+    "memorysetup-gfx-main-allocator-block-size=16777216"
+    "memorysetup-gfx-thread-allocator-block-size=16777216"
+    "memorysetup-cache-allocator-block-size=4194304"
+    "memorysetup-typetree-allocator-block-size=2097152"
+    "memorysetup-profiler-bucket-allocator-granularity=16"
+    "memorysetup-profiler-bucket-allocator-bucket-count=8"
+    "memorysetup-profiler-bucket-allocator-block-size=4194304"
+    "memorysetup-profiler-bucket-allocator-block-count=1"
+    "memorysetup-profiler-allocator-block-size=16777216"
+    "memorysetup-profiler-editor-allocator-block-size=1048576"
+    "memorysetup-temp-allocator-size-main=4194304"
+    "memorysetup-job-temp-allocator-block-size=2097152"
+    "memorysetup-job-temp-allocator-block-size-background=1048576"
+    "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+    "memorysetup-allocator-temp-initial-block-size-main=262144"
+    "memorysetup-allocator-temp-initial-block-size-worker=262144"
+    "memorysetup-temp-allocator-size-background-worker=32768"
+    "memorysetup-temp-allocator-size-job-worker=262144"
+    "memorysetup-temp-allocator-size-preload-manager=262144"
+    "memorysetup-temp-allocator-size-nav-mesh-worker=65536"
+    "memorysetup-temp-allocator-size-audio-worker=65536"
+    "memorysetup-temp-allocator-size-cloud-worker=32768"
+    "memorysetup-temp-allocator-size-gfx=262144"
+check48 probe game_rc=0 brain errors: 0
+ACTUATOR manifest 2dd546c47a3c… verified, 25 actions
+ACTUATOR LOCKED: manifest hash 398984a72fea… is not the pinned 2dd546c47a3c…
+ACTUATOR_REFUSED approach (LOCKED: manifest hash 398984a72fea… is not the pinned 2dd546c47a3c…)
+ACTUATOR manifest 2dd546c47a3c… verified, 25 actions
+SCENARIO_DONE p02g records=4 unsupported=0 brain_errors=0
+actuator: manifest 2dd546c47a3c… verified, 25 actions | refusals: ['approach']
+20:39:54 proposal approach passed -> approach | authority permitted | deme passed | manifest listed | manifest 2dd546c4
+20:40:24 proposal approach passed -> approach | authority permitted | deme passed | manifest listed | manifest 2dd546c4
+20:40:24 authorize approach allowed
+20:40:27 performed approach 
+video: 77.500000 s
+CHECK_DONE

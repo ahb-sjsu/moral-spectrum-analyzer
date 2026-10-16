@@ -362,6 +362,9 @@ result file, and only after this register is updated.
   refused it at the act with the lock named, with no act-time check and no act. After the restore
   the manifest verified, and the same proposal passed, was allowed at the act and was performed. On
   this build all three parts are shown: the lock, the refusal and acting again after the restore.
+  The same probe on the demo build storyboard48 on 2026-10-15 gave the same lines, with game exit 0
+  and 0 brain errors (`twin/records/check48-2026-10-15/`). In both probes a script changed the
+  manifest. The on-screen tamper button has not been clicked on either build.
 
 ### Operational Ownership
 
@@ -464,7 +467,8 @@ specification is recomputed by a named script from a committed record.
    LOCKED with both hashes, the robot stops, and a proposal from the free-play panel that passes the
    gate is refused at the act with the lock as the reason. The change is undone, the hash verifies
    and the actuator unlocks, and the same proposal is performed. The recorded probe on storyboard47
-   (`twin/records/c11probe-gate-2026-10-14/`) went exactly so. Then `twin/manifest.py verify`
+   (`twin/records/c11probe-gate-2026-10-14/`) went exactly so, and so did the same probe on
+   storyboard48 (`twin/records/check48-2026-10-15/`). Then `twin/manifest.py verify`
    refusing a changed manifest file in a terminal. About two minutes.
 
 **Evidence artifacts to be provided:**
@@ -541,4 +545,4 @@ specification is recomputed by a named script from a committed record.
 | C8 | Live run + document | `twin/run_twin.py` printing every ruling and the gate that made it, a threshold sweep with `twin/frontier.py`, and the suite's committed report (`twin/SUITE-REPORT.txt`) with its confusion matrix. |
 | C9 | Live run | The same scenarios run with the stub and with the validated backend, side by side, with identical grants. |
 | C10 | Live run + re-run | The fall and smoke scenes played live in the 3D twin in gate mode, each proposal's verdict on the caption (authority, governor witnesses, DEME and the vetoing stage, manifest) and DEME's per-party verdict in the telemetry panel; the evaluator's own proposals from the free-play panel; a one-byte tamper failing the hash check. Then `python twin/gate_demo.py` reproducing the 12 brain-only verdicts. |
-| C11 | Live run + re-run | The one-byte manifest tamper in the live twin: the lock with both hashes on screen, a refused action, the restore and the actuator unlocking, and the same proposal performed after the restore (recorded on storyboard47 in `twin/records/c11probe-gate-2026-10-14/`). `twin/manifest.py verify` refusing a changed file and `pytest tests/test_twin_manifest.py` in a terminal. The committed p02 record shows every refusal and act, including the missed response class. |
+| C11 | Live run + re-run | The one-byte manifest tamper in the live twin: the lock with both hashes on screen, a refused action, the restore and the actuator unlocking, and the same proposal performed after the restore (recorded on storyboard47 in `twin/records/c11probe-gate-2026-10-14/` and on storyboard48 in `twin/records/check48-2026-10-15/`). `twin/manifest.py verify` refusing a changed file and `pytest tests/test_twin_manifest.py` in a terminal. The committed p02 record shows every refusal and act, including the missed response class. |

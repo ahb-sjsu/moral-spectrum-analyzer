@@ -107,9 +107,9 @@ on every act, including the acts that pass. That is not a veto, and it is shown 
 \item The proposals and their consequences are scripted. The claim is the gate's verdict, not
   that a robot would propose well. The twin is a simulation, and only its camera reads rendered
   video. The other sensors are simulated readings, signed by the twin.
-\item In the dog scene the robot's own reflex for a severe animal attack started the drive-off one
-  second before the scripted proposal. The act-time check allowed it before the body moved. The
-  record shows both.
+\item In the dog scene the robot's own reflex for a severe animal attack asked for the drive-off one
+  second before the scripted proposal. In gate mode a reflex is recorded and moves nothing, so the
+  robot acted on the proposal, which passed every check. The record shows both.
 \item Some things are still wrong on screen in this build, and are disclosed in the rehearsal's
   record. No figure is drawn for the man at the door. Tom stands apart from Margaret, facing away.
   The smoke is faint. When she is helped up she snaps back about 0.7 m to where she stood. The
@@ -120,8 +120,10 @@ on every act, including the acts that pass. That is not a veto, and it is shown 
   words stayed on screen after the dog was back in its bed, the bite knocked her away from the dog,
   the robot walked onto her after she fell, and she ended up inside the robot at the door. Those
   faults are listed in \url{twin/records/rehearse-gate4-2026-10-15/README.md}.
-\item The actuation lock and free play were recorded on storyboard47, the build before the scene
-  cards. storyboard48 changes no actuator code.
+\item The actuation lock and free play shown here were recorded on storyboard47, the build before
+  the scene cards. The same lock probe on storyboard48 went the same way. That check also found
+  that the live game started in free mode does not reset the brain at start (Unity's start order),
+  so live the presenter resets the scene before free play. The free-play scenes here reset each scene.
 \item In free play DEME passed every act it saw, because a free-play proposal carries no
   consequences for it to weigh. Its stops are shown by the scripted proposals.
 \end{itemize}
@@ -134,10 +136,12 @@ on every act, including the acts that pass. That is not a veto, and it is shown 
 \item The five scenes: \url{twin/records/rehearse-gate4-2026-10-15/}, Unity build
   storyboard48, 15 October 2026. Game exit 0, 0 brain errors. Video 13 min 23 s, sha256
   607f8fa6\ldots5681. The scene file is \url{twin/scenarios/gate_demo.jsonl}.
-\item The actuation lock: \url{twin/records/c11probe-gate-2026-10-14/}, storyboard47. Video
-  sha256 7f7708d7\ldots0d75.
-\item Free play: \url{twin/records/freeplay-gate-2026-10-15/}, storyboard47. Video sha256
-  7b57ad45\ldots c887.
+\item The actuation lock, on storyboard47: \url{twin/records/c11probe-gate-2026-10-14/}.\\
+  Video sha256 7f7708d7\ldots0d75.
+\item The same lock probe on storyboard48: \url{twin/records/check48-2026-10-15/}.\\
+  Video sha256 11ef0520\ldots9dd8.
+\item Free play: \url{twin/records/freeplay-gate-2026-10-15/}, storyboard47.\\
+  Video sha256 7b57ad45\ldots c887.
 \item Each record is hash-chained: every record carries its sequence number and the hash of the one
   before it. The panels in this document show each proposal's sequence number and the first digits
   of the manifest hash it was judged under.

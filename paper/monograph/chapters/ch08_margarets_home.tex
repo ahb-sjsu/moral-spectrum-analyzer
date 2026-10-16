@@ -615,21 +615,37 @@ actuator's state reads \code{manifest} with the first twelve characters of its h
 the number of actions, or it begins with LOCKED. While the dog bites Margaret the bar adds THE DOG
 IS BITING HER with the bite's force in newtons, and a red ring lies on the floor round the dog. The
 ring was added on 14 October, because the beagle is small in the room camera and the owner did not
-see it. In gate mode the bar ends with the key hints, P for the controls and F to propose an act.
-Under the bar Margaret's last words and the robot's are written out, and at the top right the
-robot's head camera shows what the robot sees.
-% src: TwinUI.cs:35-49 (bite ring, red, shown while world.biteForce > 0; owner 2026-10-14 "there is no dog"), 229-235 (top bar, bite banner, key hints, head camera), 237-238 (speech); RobotAgent.cs:438-440 (manifest status strings)
+see it. In gate mode the bar ends with the key hints, F to choose an act to propose and P for the
+controls. Under the bar a gold line names the scene while it runs. Below it come the words of
+whoever last spoke. A visitor's words are labelled with who is at the door or by the name the
+visitor gave, and the centre's with the phone, and Margaret's follow. Each line stays for seven
+seconds after it is spoken and then goes, so words do not outlast the moment they belong to. The
+robot's words come last. At the top right the robot's head camera shows what the robot sees.
+% src: gtc 24d26ae TwinUI.cs:35-49 (bite ring, red, shown while world.biteForce > 0; owner 2026-10-14 "there is no dog"), 230-236 (top bar, bite banner, key hints, head camera), 239-242 (banner, other speaker, Margaret, robot); World.cs:30-32 (seven seconds), 286-287 (speaker labels); owner 2026-10-15 ("when margaret is complaining the dog is biting her, the dog is on the other side of the room")
 
 \paragraph{The caption.}
 A dark band across the bottom carries the newest proposal. Its first line names the act, who
-proposed it, the script or the presenter, and the script's note. The second line gives each check
+proposed it, the script or the presenter, and a plain sentence for the audience that the scene
+file gives with each scripted proposal. That sentence is shown and is never sent to the brain. The
+second line gives each check
 in order with its verdict, green when the act may go on and red when it is stopped. The governor's
 entry adds how many witnesses it counted of how many its bar requires. A stopped authority check
 adds the norms that forbid the act, and a DEME veto adds which modules vetoed it. The third line
 says what the body does. It reads Robot does with the act when the proposal passed, and otherwise
 Robot holds with the act the body takes instead and the check that stopped it. Before the first
-proposal the band says it is waiting.
-% src: TwinUI.cs:249 (gate: caption, telemetry, free play), 274-301 (GateCaption)
+proposal the band says that no act has been proposed yet, names the three checks every proposed
+act passes, and says that F lists the robot's acts so that the presenter can propose one.
+% src: gtc 24d26ae TwinUI.cs:253 (gate: caption, telemetry, free play, scene card), 278-300 (GateCaption, the waiting text, say); RobotAgent.cs:203 (lastSay set in Propose, say stripped before the brain); owner 2026-10-15 ("it's not clear what is meant by F: propose an action yourself")
+
+\paragraph{The scene cards.}
+The owner watched the recorded scenes on 15 October and could not tell what each was meant to show.
+Each scene now opens with a card over the room, after the world is reset and before the scene's
+clock starts. The card gives the scene's number and title, what will happen and what the scene
+demonstrates, and it stays for twenty seconds so the audience can read it. Each scene closes with a
+card that lists every proposal of the scene with what the checks did, read from its record, either
+passed all checks and the robot went ahead or stopped by the named check and the robot held. It
+names the next scene, or says the scenes are over, and stays for twelve seconds.
+% src: gtc 24d26ae ScenarioRunner.cs:29-32 (Phase, card, banner), 67-85 (Scene k of n, intro card after the reset, intro_s), 136-147 (end card from the records, Next, 12 s); TwinUI.cs:409-420 (SceneCard); twin/scenarios/gate_demo.jsonl (intro, intro_s 20, say); owner 2026-10-15 ("Each scene should have a clear beginning and end, and an intro explaining what it is demonstrating")
 
 \paragraph{The telemetry panel.}
 A panel on the right, under the head camera, lists the scene as the brain and the sensors report
@@ -655,8 +671,8 @@ and the dispatcher, and the actuator's state with the manifest's hash.
 % src: TwinUI.cs:303-309 (Verdict), 313-330 (LastGovernor), 342-388 (Telemetry)
 
 \paragraph{Free play.}
-The key F opens a panel on the left with one button for each action of the verified manifest, in
-alphabetical order. A click proposes that act through the same checks, with the presenter as its
+The key F opens a panel on the left, headed choose an act to propose, with one button for each
+action of the verified manifest, in alphabetical order. A click proposes that act through the same checks, with the presenter as its
 proposer, unless the robot is still busy. Such a proposal carries the act and its proposer only,
 with no arguments, no consequences and no observation, so \deme{} judges it on the facts the
 compiler builds from the record alone. A scripted proposal's consequences must name stakeholders of
@@ -669,10 +685,14 @@ and a reflex that fires is recorded and shown in its status as measured, and the
 on it. After a proposal the body performs the act the record returns, the proposal when it passed
 and otherwise the act the brain holds with, and its status reads doing or holding with the check
 that stopped it. A scene starts with the robot holding. Between proposals it stands in a holding
-pose, and it carries on with chores only when chores was the last act proposed and passed. An amber lamp on its head flashes about once a
+pose, and it carries on with chores only when chores was the last act proposed and passed. When it
+goes to Margaret it walks to where her body is drawn, which after a fall is not where her feet
+were, and stops on its own side of her. It drives off a threat from the threat's far side, and when
+it guides her out it stands beside the door, not in it. An amber lamp on its head flashes about once a
 second while the situation the brain last reported is \code{emergency} or \code{ems\_only}. The
 brain reports the situation with every answer, so the lamp stops when the centre's operator ends
 the emergency, when an \code{ems\_only} situation lapses, or when the scene is reset.
+% src: gtc 24d26ae RobotAgent.cs:482, 485, 529 (Beside her body), 520 (Away from the threat), 584-596 (Beside, Away), guide_to_safety (beside the door); World.cs HerBody (the hips bone); twin/records/rehearse-gate4-2026-10-15/README.md (continuity fixes)
 % src: RobotAgent.cs:31-35 (gate), 115 (reflex recorded, not acted on), 157 (no decision in gate mode), 171-201 (Propose: StartMotor Perform of the returned act, status), 286-294 (Standing in gate mode), 274-277 (NoteStanding, situation), 39 (Emergency), 310-332 (beacon, 0.8 s period); twin/service.py:416-419 (standing and situation in every answer); RobotAgent.cs:78 (reset to ordinary)
 
 \paragraph{The controls view.}
@@ -697,8 +717,9 @@ tamper button changes one byte of the local copy to show the check fail.
 Each gate scenario lists its world calls and its proposals with a time in seconds from the scene's
 start, and the runner plays them as one timeline. A proposal waits until the robot is free and then
 until the brain answers, so a slow answer delays the rest of the scene. After the last entry the
-runner lets the robot act for at least a minute and at most five, ending once the robot has been
-idle for sixty seconds. The five scenes of the demonstration make 16 proposals. In
+runner lets the robot act for at most five minutes, ending once the robot has been idle for sixty
+seconds. In gate mode the robot acts only on proposals, so fifteen idle seconds end the scene, and
+the times are counted from the end of the intro card. The five scenes of the demonstration make 16 proposals. In
 \code{g\_smoke} smoke starts at 8 seconds and the script proposes at 10, 75, 85 and 95 seconds. In
 \code{g\_dog} the bite comes at 8 seconds and the proposals at 10, 20, 50 and 60. In \code{g\_fall}
 she falls at 30 seconds and speaks at 50, with proposals at 34, 55 and 60. In \code{g\_police} the
@@ -706,9 +727,11 @@ doorbell rings at 20 seconds and the proposals come at 30 and 40. In \code{g\_to
 at 8 seconds and she speaks at 20, with proposals at 12, 26 and 32.
 The second smoke call was first proposed at 60 seconds. In the first rehearsal only one detector
 had alerted by then and the governor refused it, one witness of two, while four had alerted by 75
-seconds, so the call moved to 75. In rehearse-gate3 every one of the 16 proposals ended as its
-scene intended, 8 passed and 8 stopped, and the record lists each with its checks
-(Section~\ref{sec:eval-gate}). How long the brain took to answer each proposal was not measured.
+seconds, so the call moved to 75. In rehearse-gate3, and again in rehearse-gate4 on the build with
+the scene cards, every one of the 16 proposals ended as its scene intended, 8 passed and 8 stopped,
+and the record lists each with its checks (Section~\ref{sec:eval-gate}). How long the brain took to
+answer each proposal was not measured.
+% src: gtc 24d26ae ScenarioRunner.cs:85 (t0 after the intro card), 104-113 (settle, 15 s idle in gate mode); twin/records/rehearse-gate4-2026-10-15/run.txt
 % src: ScenarioRunner.cs:57-85 (one timeline, proposals marked propose, by script), 86-94 (settle); RobotAgent.cs:173 (Propose waits while busy); twin/scenarios/gate_demo.jsonl at gtc 74ecfdb (5 scenes, 16 proposals, smoke at 10, 75, 85, 95); twin/records/rehearse-gate1-2026-10-14 (results.jsonl, smoke alerts at 60 and 75 s), rehearse-gate3-2026-10-14/run.txt
 
 \begin{figure}[t]
@@ -727,7 +750,7 @@ scene intended, 8 passed and 8 stopped, and the record lists each with its check
 \node[panel=Grey, minimum width=152mm, minimum height=2.7mm, inner sep=0pt, anchor=north west] at (0,90) {};
 \node[desc, anchor=west] at (2,88.6) {time, robot status, REC, actuator state, bite banner, key hints};
 % speech
-\node[desc, anchor=north west, align=left] at (1.5,85.5) {Margaret's and the robot's last words};
+\node[desc, anchor=north west, align=left] at (1.5,85.5) {scene banner, then who is speaking};
 % head camera
 \node[panel=Blue, minimum width=18mm, minimum height=19.8mm, anchor=north west] at (140.3,86.5) {};
 \node[lbl=16mm] at (149.8,76.6) {head\\camera};
@@ -747,7 +770,8 @@ scene intended, 8 passed and 8 stopped, and the record lists each with its check
 \end{tikzpicture}
 \caption{Schematic of the presentation view in gate mode, drawn from the panel positions in the
 twin's code for a window of 1920 by 1080 pixels. It is not a screenshot. The ring and the lamp are
-placed only to show what they look like.}
+placed only to show what they look like. The scene cards, drawn over the room before and after
+each scene, are not shown.}
 \label{fig:home-gate-screen}
 \end{figure}
 % src: TwinUI.cs:229 (top bar 34 px), 235 (head camera W-236, 42, 228 by 250), 247-248 (band 190 px), 345 (telemetry W-460, 300, 452 by H-bh-308), 392 (free play 10, 120, 260 by H-bh-130); RobotAgent.cs:310-332 (beacon)
