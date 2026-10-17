@@ -1172,10 +1172,10 @@ model's answer.
 recorded probe on storyboard47 the body locked when one byte of its copy changed, refused at the
 act a proposal that had passed the gate, and performed the same proposal once the byte was
 restored (Section~\ref{sec:cont-manifest}). The game exited cleanly with no brain error. The same
-probe on storyboard48 on 15 October gave the same lock, refusal and restore, again with no brain
-error. In both probes a script changed the manifest, and the tamper button of the controls view
-has not been clicked on either build.
-% src: twin/records/c11-tamper-2026-10-14, c11probe-gate-2026-10-14, check48-2026-10-15 (README.md, run.txt, results.jsonl)
+probe on storyboard48 on 15 October and on storyboard49 on 17 October gave the same lock, refusal
+and restore, again with no brain error. In every probe a script changed the manifest, and the
+tamper button of the controls view has not been clicked on any build.
+% src: twin/records/c11-tamper-2026-10-14, c11probe-gate-2026-10-14, check48-2026-10-15, check49-2026-10-17 (README.md, run.txt, results.jsonl)
 
 The same check started the live launcher in free mode on storyboard48. The game reached the brain
 with the manifest verified and no brain error, but it never reset the brain. The world resets
@@ -1183,10 +1183,16 @@ itself when it starts, and the robot passes a reset on to the brain only once it
 the world's reset, which it does when it starts. Unity does not fix which of the two starts first,
 and on this run the world started first. On storyboard47 the same launcher had reset the brain. A
 game started in free mode can therefore judge its first proposals against what the last run left
-in the brain. The scripted scenes are not affected, because the runner resets the world at each
-scene, and each rehearsal logged one reset for each scene. Until the robot sends its own reset at
-start, the presenter resets the scene from the controls view before free play.
-% src: twin/records/check48-2026-10-15/README.md and run.txt ("resets 0"); twin/records/freeplay-gate-2026-10-15/README.md (BRAIN_RESET epoch 1 on storyboard47); gtc 24d26ae World.cs:123-133 (Start calls ResetWorld), RobotAgent.cs:75-91 (OnReset subscribed in Start, BRAIN_RESET, /reset), TwinUI.cs:102 (Reset scene); present at 08fe375 too
+in the brain. The scripted scenes were not affected, because the runner resets the world at each
+scene. The rehearsals logged five or six resets for five scenes, the sixth being the reset at
+start when the robot happened to start first.
+% src: twin/records/check48-2026-10-15/README.md and run.txt ("resets 0"); twin/records/freeplay-gate-2026-10-15/README.md (BRAIN_RESET epoch 1 on storyboard47); twin/records/rehearse-gate1..4/run.txt (6, 5, 6, 5 resets for 5 scenarios); gtc 24d26ae World.cs:123-133 (Start calls ResetWorld), RobotAgent.cs:75-91 (OnReset subscribed in Start, BRAIN_RESET, /reset); present at 08fe375 too
+World now counts its resets, and the robot, once it has subscribed, passes on a reset it missed.
+Storyboard49 is storyboard48 with that fix and nothing else. Started three times in free mode, and
+once through the live launcher, it reset the brain once at each start. In the probe of one scene it
+reset the brain twice, at start and for the scene, so a run now logs one more reset than it has
+scenes.
+% src: gtc 70dd556 (World.resets; RobotAgent.WorldReset, called once from Start when world.resets > 0); twin/records/check49-2026-10-17 (README.md, run.txt, results.jsonl)
 
 \section{Held-out results}\label{sec:eval-heldout}
 

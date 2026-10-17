@@ -1,0 +1,29 @@
+the other runtime files match gtc HEAD
+build rc=0 errors: 0
+storyboard49 built
+== A. free mode, three starts
+start 1: BRAIN_RESET lines 1 [BRAIN_RESET epoch 1 ] brain errors 0 | ACTUATOR manifest 2dd546c47a3c… verified, 25 actions
+start 2: BRAIN_RESET lines 1 [BRAIN_RESET epoch 1 ] brain errors 0 | ACTUATOR manifest 2dd546c47a3c… verified, 25 actions
+start 3: BRAIN_RESET lines 1 [BRAIN_RESET epoch 1 ] brain errors 0 | ACTUATOR manifest 2dd546c47a3c… verified, 25 actions
+== B. probe p02g
+check49 probe game_rc=0 brain errors: 0 resets: 2 for 1 scene
+BRAIN_RESET epoch 1
+ACTUATOR manifest 2dd546c47a3c… verified, 25 actions
+BRAIN_RESET epoch 2
+ACTUATOR LOCKED: manifest hash 398984a72fea… is not the pinned 2dd546c47a3c…
+ACTUATOR_REFUSED approach (LOCKED: manifest hash 398984a72fea… is not the pinned 2dd546c47a3c…)
+ACTUATOR manifest 2dd546c47a3c… verified, 25 actions
+SCENARIO_DONE p02g records=4 unsupported=0 brain_errors=0
+actuator: manifest 2dd546c47a3c… verified, 25 actions | refusals: ['approach']
+02:29:21 proposal approach passed -> approach | authority permitted | deme passed | manifest listed | manifest 2dd546c4
+02:30:02 proposal approach passed -> approach | authority permitted | deme passed | manifest listed | manifest 2dd546c4
+02:30:02 authorize approach allowed
+02:30:06 performed approach 
+video: 32.666667 s
+DEPLOY_DONE
+== C. the live launcher, free mode, storyboard49 (2026-10-17)
+started (free); records in <unity>/out/live-gate-20261017-130446
+game running on :21
+BRAIN_RESET epoch 1
+ACTUATOR manifest 2dd546c47a3c… verified, 25 actions
+game closed

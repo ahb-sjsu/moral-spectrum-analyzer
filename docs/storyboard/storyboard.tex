@@ -126,9 +126,9 @@ on every act, including the acts that pass. That is not a veto, and it is shown 
   the robot walked onto her after she fell, and she ended up inside the robot at the door. Those
   faults are listed in \url{twin/records/rehearse-gate4-2026-10-15/README.md}.
 \item The actuation lock and free play shown here were recorded on storyboard47, the build before
-  the scene cards. The same lock probe on storyboard48 went the same way. That check also found
-  that the live game started in free mode does not reset the brain at start (Unity's start order),
-  so live the presenter resets the scene before free play. The free-play scenes here reset each scene.
+  the scene cards. The same lock probe on storyboard48 and storyboard49 went the same way. The
+  storyboard48 check found that the game started in free mode could skip resetting the brain at
+  start (Unity's start order). storyboard49, the live build, fixes that. The scenes here reset each scene.
 \item In free play DEME passed every act it saw, because a free-play proposal carries no
   consequences for it to weigh. Its stops are shown by the scripted proposals.
 \end{itemize}
@@ -143,8 +143,8 @@ on every act, including the acts that pass. That is not a veto, and it is shown 
   607f8fa6\ldots5681. The scene file is \url{twin/scenarios/gate_demo.jsonl}.
 \item The actuation lock, on storyboard47: \url{twin/records/c11probe-gate-2026-10-14/}.\\
   Video sha256 7f7708d7\ldots0d75.
-\item The same lock probe on storyboard48: \url{twin/records/check48-2026-10-15/}.\\
-  Video sha256 11ef0520\ldots9dd8.
+\item The same lock probe on storyboard48 and 49: \url{twin/records/check48-2026-10-15/},
+  \url{twin/records/check49-2026-10-17/}.
 \item Free play: \url{twin/records/freeplay-gate-2026-10-15/}, storyboard47.\\
   Video sha256 7b57ad45\ldots c887.
 \item Each record is hash-chained: every record carries its sequence number and the hash of the one
