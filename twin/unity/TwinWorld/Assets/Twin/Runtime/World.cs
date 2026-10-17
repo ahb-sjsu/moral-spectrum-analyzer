@@ -103,6 +103,7 @@ public class World : MonoBehaviour
     System.Random rng = new System.Random(20261001);
     public readonly List<string> unsupported = new List<string>();
     public event Action OnReset;          // the robot resets the brain's moral state with the world
+    public int resets;                    // how many resets have run, so a late subscriber can tell it missed the first
     float impactLatchUntil = -1f;         // impact detectors latch an alert, as real ones do
     // messages over authenticated channels (the caregiver's app), delivered to the brain as system
     // events, never through perception: hearing someone say "privacy restored" restores nothing
@@ -151,6 +152,7 @@ public class World : MonoBehaviour
         DoActivity("reading", instant: true);
         impactLatchUntil = -1f;
         life = StartCoroutine(Life());
+        resets++;
         OnReset?.Invoke();
     }
 

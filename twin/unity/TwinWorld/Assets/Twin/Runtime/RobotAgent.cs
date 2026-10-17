@@ -72,26 +72,33 @@ public class RobotAgent : MonoBehaviour
         roomCam.targetTexture = roomRT; roomCam.enabled = false;
         StartCoroutine(RoomBuffer());
         MakeBeacon();
-        world.OnReset += () =>
-        {
-            // a reset stops whatever the robot was doing; nothing from before is reported after it,
-            // and nothing decided before it is done after it: a decision still in flight at the reset
-            // used to come back and be carried out in the next scenario (storyboard7: d30's "she is
-            // hurting" referral reached the centre at the start of d41, and Margaret's voice answered it)
-            epoch++;
-            world.systemEvents.Clear();
-            withheldOnce.Clear(); decidedAtHer = -1; decisionSeq = "";
-            standingAct = "chores"; situation = "ordinary";   // a reset starts the scene again
-            // in gate mode the robot does nothing of its own until a proposal passes (rehearse-gate2:
-            // the fall scene opened with the robot wiping the table)
-            lastPassed = ""; lastProposal = null; lastSay = "";
-            StartMotor(gate ? Standing() : Chore());
-            performing = recording = false; speech = ""; owed = false; owedRun = 0;
-            Debug.Log("BRAIN_RESET epoch " + epoch);
-            StartCoroutine(Post("/reset", "{}", r => { if (r != null) cycles.Add(r); }));
-        };
+        world.OnReset += WorldReset;
+        // Unity does not fix whether World.Start or this Start runs first. World.Start resets the
+        // world, and if that ran before the line above, the robot missed it and the brain kept what
+        // the last run left in it (check48: storyboard48 in free mode logged no BRAIN_RESET), so
+        // pass that first reset on now
+        if (world.resets > 0) WorldReset();
         StartCoroutine(Loop());
         StartCoroutine(ReflexLoop());
+    }
+
+    void WorldReset()
+    {
+        // a reset stops whatever the robot was doing; nothing from before is reported after it,
+        // and nothing decided before it is done after it: a decision still in flight at the reset
+        // used to come back and be carried out in the next scenario (storyboard7: d30's "she is
+        // hurting" referral reached the centre at the start of d41, and Margaret's voice answered it)
+        epoch++;
+        world.systemEvents.Clear();
+        withheldOnce.Clear(); decidedAtHer = -1; decisionSeq = "";
+        standingAct = "chores"; situation = "ordinary";   // a reset starts the scene again
+        // in gate mode the robot does nothing of its own until a proposal passes (rehearse-gate2:
+        // the fall scene opened with the robot wiping the table)
+        lastPassed = ""; lastProposal = null; lastSay = "";
+        StartMotor(gate ? Standing() : Chore());
+        performing = recording = false; speech = ""; owed = false; owedRun = 0;
+        Debug.Log("BRAIN_RESET epoch " + epoch);
+        StartCoroutine(Post("/reset", "{}", r => { if (r != null) cycles.Add(r); }));
     }
 
     // the scene's reflexes (docs/AUTONOMY_PLAN.md, section 3d): while anything is in contact with
