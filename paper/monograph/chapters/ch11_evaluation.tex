@@ -1152,6 +1152,26 @@ and the governor, and \deme{}'s stops are shown by the scripted proposals, which
 consequences. The game exited cleanly with no brain error and no refusal at the act.
 % src: twin/scenarios/probe_freeplay_gate.jsonl (p03f, p04f); twin/records/freeplay-gate-2026-10-15 (README.md with its correction, run.txt, results.jsonl: 12 proposals, 5 passed, 7 stopped, governor 5, authority 2, DEME aggregate 0.856 on every proposal it saw)
 
+\paragraph{One input changed.} On 17 October nine pairs of proposals ran through the gate brain
+without Unity, on the demonstration's compiler and library. The two proposals of a pair differ in
+exactly one input the brain reads, one sensor, one signature, one sentence of hers or one report
+from an authenticated channel, and the script that runs them refuses a pair that differs in more.
+The six pairs of the first run and their predicted verdicts were committed before it ran. Two more
+pairs, and then one, were written after it to test its surprises, each committed before its own run.
+In the first run 4 of the 6 verdicts changed with the one input, and 3 predictions were wrong. One
+detector fewer stopped the fire call, and so did one detector's reading signed with a key that was
+not its own, since the governor counted 1 witness of 2 in both. With her refusal of an ambulance
+heard \deme{} vetoed the call, and without it the call passed. A report of police at the door did
+not open it, because the responder standing reaches at the door only from expected, which a
+dispatch sets. With a unit dispatched on both sides, the report alone opened it. After the dog's
+attack was reported ended, driving it off was stopped by \code{p4p}, as in the twin, and not by the
+governor as predicted. Filming her during the fire was vetoed with no consequences declared, on
+her standing refusal. Lifting her after a fall passed with her request and without it, whether or
+not the fall was heard, when the proposal declared no harm. The brain recorded the difference in
+her consent, and \deme{} scored the lift 0.872 on both sides. This gap is open
+(Chapter~\ref{ch:limits}).
+% src: twin/counterfactual.py; twin/scenarios/counterfactual.json, counterfactual_followup.json, counterfactual_c.json (gtc e0ac662, 62d30f9, 318c6b9); twin/records/counterfactual-2026-10-17 (README.md, run.txt, results.json, results_followup.json, results_c.json); erisml-compiler d606f44, erisml-lib 054ed18
+
 The two rehearsals before it are kept with their defects. In rehearse-gate1 \deme{} vetoed driving
 the dog off while it bit her, and the veto showed no reason. The compiler had put the act's
 description into the IR it built for the act, and the bridge to \deme{} read a maxim from its words.
