@@ -7,7 +7,10 @@ observation patch and every evidence-plane event. For each decision the builder
 
 1. asks erisml-compiler's OptionProjector once for every candidate act's consequences;
 2. builds one IR per act (``option_ir``: the act's projected outcome, the standing facts, the
-   situation's urgency, consent from the record, the act's description as its maxim);
+   situation's urgency, consent from the record, the act's description as its maxim), and adds
+   the facts of the scene's consent rules in force, which the caller passes as
+   ``context.extra["required"]`` (p6nolift: after a fall, no lift until she asks, a consent fact;
+   p6nolift_u: none once she stops answering, a harm fact);
 3. maps it through the compiler's bridge (``ir_to_party_facts``) to EthicalFactsV3: the option as
    each party of the scene bears it, so that DEME judges it per party (rank 2: each module's
    judgement a 9 x parties MoralTensor); ``rank=1`` gives the one aggregate V2 record of before
@@ -84,8 +87,14 @@ class HomeFactsBuilder:
         person = extra.get("person", "margaret")
         capacity = capacity_of(ir, person)
         out: dict = {}
+        required = extra.get("required") or {}
         for opt in options:
             scene = option_ir(ir, projection, opt.option_id, str(opt.payload))
+            # the facts of the scene's consent rules in force (StackBrain._consent_required),
+            # after option_ir, so that a rule holding despite consent on record (p6nolift_u: she
+            # asked, then stopped answering) is not overridden by the record
+            if required.get(opt.option_id):
+                scene.ethical_facts = list(scene.ethical_facts) + list(required[opt.option_id])
             if self.rank >= 2:
                 facts = ir_to_party_facts(scene, option_id=opt.option_id, parties=parties_of(scene, person))
                 aa = facts.autonomy_and_agency

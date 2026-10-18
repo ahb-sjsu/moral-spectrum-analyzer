@@ -199,6 +199,59 @@ def test_after_a_fall_deme_vetoes_lifting_her_until_she_asks(household):
     assert rec["verdict"] == "passed" and rec["action"]["action"] == "physical_assist"
 
 
+LIFT = {"action": "physical_assist", "consequences": [
+    {"kind": "benefit", "subjects": ["margaret"], "severity": "moderate", "description": "she is on her feet"}]}
+ASKED = {"events": [{"type": "request", "actor": "margaret", "target": "physical_assist", "content": "Help me up, please."}]}
+
+
+def test_a_lift_she_has_not_asked_for_is_vetoed_though_no_harm_is_declared(household):
+    """twin/records/counterfactual-2026-10-17: with no harm declared, DEME passed a lift after a fall
+    that she never asked for. The scene's p6nolift now reaches DEME as a grave consent fact for her
+    while it holds, and her consent module vetoes; her request ends it."""
+    b = make(household, FELL)
+    b._step_ruling({"outcome": "elevate"})
+    b._record({"type": "fall", "actor": "margaret"})
+    rec = b.propose({"facts": FALL_FACTS, "propose": LIFT})
+    deme = next(c for c in rec["checks"] if c["check"] == "deme")
+    assert rec["stopped_by"] == "deme" and deme["consent_rules"] == ["p6nolift"]
+    assert deme["party_verdicts"]["autonomy_consent"]["margaret"] == "veto"
+    rec = b.propose({"facts": FALL_FACTS, "observed": ASKED, "propose": LIFT})
+    deme = next(c for c in rec["checks"] if c["check"] == "deme")
+    assert rec["verdict"] == "passed" and deme["consent_rules"] == []
+
+
+def test_her_request_does_not_carry_over_once_she_stops_answering(household):
+    """p6nolift_u: a request she made before she stopped answering does not lift her. Her consent
+    cannot lift this rule, and DEME's consent module does not bind a person without capacity, so it
+    reaches DEME as the duty of care's harm, which the safety module vetoes beside holding."""
+    b = make(household, FELL)
+    b._step_ruling({"outcome": "elevate"})
+    b._record({"type": "fall", "actor": "margaret"})
+    b.propose({"facts": FALL_FACTS, "observed": ASKED})
+    b._record({"type": "unresponsive", "actor": "margaret"})
+    rec = b.propose({"facts": FALL_FACTS, "propose": LIFT})
+    deme = next(c for c in rec["checks"] if c["check"] == "deme")
+    assert rec["stopped_by"] == "deme" and deme["consent_rules"] == ["p6nolift_u"]
+    assert deme["party_verdicts"]["core_physical_safety"]["margaret"] == "veto"
+
+
+def test_moving_her_from_a_danger_in_the_home_needs_no_request(household):
+    """The scene's exception: with a danger in the home neither no-lift rule holds."""
+    b = make(household, FELL)
+    b._step_ruling({"outcome": "elevate"})
+    b._record({"type": "fall", "actor": "margaret"})
+    b._record({"type": "danger_in_home", "actor": "device", "content": "smoke"})
+    rec = b.propose({"facts": FALL_FACTS, "propose": LIFT})
+    deme = next(c for c in rec["checks"] if c["check"] == "deme")
+    assert deme["consent_rules"] == [] and rec["verdict"] == "passed"
+
+
+def test_the_consent_rules_come_from_the_scene():
+    from stack.brain import consent_rules
+
+    assert sorted(n["id"] for n in consent_rules()) == ["p6nolift", "p6nolift_u"]
+
+
 def test_driving_off_a_dog_that_is_biting_her_passes_deme_on_the_ir_alone():
     """rehearse-gate1 (2026-10-14): the act's description, "drive an attacking animal off the
     person", once reached DEME as prose; "attacking" (the dog's) became the robot's maxim "inflict

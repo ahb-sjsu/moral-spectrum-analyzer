@@ -40,6 +40,8 @@ import json
 import os
 import threading
 
+import yaml
+
 from brain import EMS, Brain, validate_facts, without_own_sounds
 from cascade import ModelUnavailable
 from erisml.ethics.domain.interfaces import CandidateOption, DomainAssessmentContext
@@ -78,6 +80,19 @@ HOLD = "wait_and_observe"
 # own words now (an observation, not her standing agreement): p6nolift lifts on her request to be
 # helped up (owner, 2026-10-10)
 CONSENT_EVENTS = {"physical_assist": "assistance_consented"}
+# the scene's duty-of-care prohibitions on an act that needs her consent: p6nolift (after a fall, no
+# lift until she asks) and p6nolift_u (none once she has stopped answering). They are DEME's, not the
+# constitution's (make_constitution.py), and reach DEME as the consent fact a refusal on record becomes
+# (option_ir): grave, for her. Without them DEME passed a lift she never asked for whenever the
+# proposal declared no harm (twin/records/counterfactual-2026-10-17)
+SCENE = os.path.join(HERE, "..", "scene", "margaret_home.erisml")
+
+
+def consent_rules(path: str = SCENE) -> list[dict]:
+    """The scene's prohibitions, from a commitment, on an act that needs her consent (CONSENT_EVENTS)."""
+    src = yaml.safe_load(open(path, encoding="utf-8"))
+    return [n for n in src["norms"] if n.get("modality") == "prohibition" and n.get("action") in CONSENT_EVENTS
+            and str(n.get("source", "")).startswith("commitment:")]
 # the event types a governor's ruling writes besides moving strata (Brain._step_ruling)
 RULING_TYPES = {"restraint_authorized"}
 
@@ -156,6 +171,9 @@ class StackBrain(Brain):
         self.observer = ObservationCompiler(self.adapter)
         self.projector = OptionProjector(self.adapter, max_tokens=PROJECTION_MAX_TOKENS)
         self.builder = HomeFactsBuilder()
+        self.consent_rules = consent_rules()
+        if not self.consent_rules:  # fail closed: a scene that lost them would let DEME pass any lift
+            raise RuntimeError(f"no consent rules for {sorted(CONSENT_EVENTS)} in {SCENE}")
         self.profile = deme_profile_v04_from_dict(json.load(open(self.profile_path, encoding="utf-8")))
         self.pipeline = pipeline_from_profile(self.profile)
         # a module that fails vetoes the option it could not judge, as the earlier gate did
@@ -228,6 +246,24 @@ class StackBrain(Brain):
                 continue
             if (e.type == "consent" and e.content == "consented") or e.type == "request":
                 out.append({"type": CONSENT_EVENTS[e.target], "actor": PERSON, "content": e.id})
+        return out
+
+    def _consent_required(self, acts) -> dict:
+        """Per act, the facts of the scene's consent rules in force now, read with the runtime's own
+        condition tokens, for the person the rule protects. A rule her consent lifts (its conditions
+        read "not:event:" her consent, p6nolift) is a grave consent fact. A rule her consent cannot
+        lift (p6nolift_u, once she has stopped answering) is the duty of care's own ground, a grave
+        harm to her: DEME's consent module does not bind a person without capacity, and its safety
+        module weighs the harm beside holding."""
+        out: dict = {}
+        for n in self.consent_rules:
+            if n["action"] in acts and all(self.agent.rt.holds(t) for t in n.get("conditions") or []):
+                who = n.get("target") or PERSON
+                liftable = f"not:event:{CONSENT_EVENTS[n['action']]}" in (n.get("conditions") or [])
+                out.setdefault(n["action"], []).append(EthicalFact(
+                    id=f"rule_{n['id']}", kind="consent" if liftable else "harm", subjects=[who], severity="grave",
+                    description=(f"{who} has not consented to this act ({n['id']})" if liftable
+                                 else f"the duty of care forbids this act to {who} now ({n['id']})")))
         return out
 
     def _record(self, event: dict):
@@ -403,8 +439,10 @@ class StackBrain(Brain):
                 # verdict is read; DEME chooses nothing (owner, 2026-10-14)
                 beside = [HOLD] if act != HOLD else []
                 options = [CandidateOption(a, self.acts.get(a, a)) for a in [act] + beside]
+                required = self._consent_required([act])
                 built = self.builder.build_facts_batch(
-                    options, DomainAssessmentContext(state=self.ir, extra={"projection": projection, "person": PERSON}))
+                    options, DomainAssessmentContext(state=self.ir, extra={"projection": projection, "person": PERSON,
+                                                                           "required": required}))
                 result = self.pipeline.decide([built[o.option_id] for o in options])
                 vetoed = act in result.forbidden_options
                 escalated = act in (result.escalations or {})
@@ -413,6 +451,7 @@ class StackBrain(Brain):
                                "party_verdicts": (result.party_verdicts or {}).get(act),
                                "escalation": (result.escalations or {}).get(act),
                                "consequences": _facts_of(projection, act),
+                               "consent_rules": [f.id[len("rule_"):] for f in required.get(act, [])],
                                "rejected_consequences": [dict(c, reason="names no stakeholder of the scene: "
                                                               + ", ".join(sorted(set(c.get("subjects") or []) - known)))
                                                          for c in unknown],
@@ -513,7 +552,8 @@ class StackBrain(Brain):
         offered = [a for a in self.acts if self._candidate(a, snap) and a not in projection.unprojected]
         built = self.builder.build_facts_batch(
             [CandidateOption(a, self.acts[a]) for a in offered],
-            DomainAssessmentContext(state=self.ir, extra={"projection": projection, "person": PERSON}))
+            DomainAssessmentContext(state=self.ir, extra={"projection": projection, "person": PERSON,
+                                                          "required": self._consent_required(offered)}))
         excluded: list = []
         rulings: list = []
         while True:
