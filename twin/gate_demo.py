@@ -32,13 +32,14 @@ from stack.brain import StackBrain  # noqa: E402
 _counter = [0]
 
 
-def signed(name: str, alert: bool = True, note: str = "gate demo") -> dict:
-    """A reading signed the way the simulated device signs it (Perception.GovernorSensors)."""
+def signed(name: str, alert: bool = True, note: str = "gate demo", forged: bool = False) -> dict:
+    """A reading signed the way the simulated device signs it (Perception.GovernorSensors).
+    forged: signed with a key that is not the device's, as an attacker without the key would sign it."""
     _counter[0] += 1
     payload = f"{name}|1.0|{1 if alert else 0}|{note}"
     sha = hashlib.sha256(payload.encode()).hexdigest()
     at = datetime.now(timezone.utc).isoformat()
-    key = hashlib.sha256(f"gtc-twin-device-key|{name}".encode()).digest()
+    key = hashlib.sha256(f"{'not-the-device-key' if forged else 'gtc-twin-device-key'}|{name}".encode()).digest()
     sig = hmac.new(key, f"{sha}|{_counter[0]}|{at}".encode(), hashlib.sha256).hexdigest()
     return {"name": name, "physical": True, "attested": True, "alert": alert, "payload": payload,
             "attestation": {"device_id": name, "key_id": name, "algorithm": "hmac-sha256", "counter": _counter[0],
@@ -58,7 +59,8 @@ def run_scene(scene: dict) -> dict:
     for m in scene["moments"]:
         alerting = m.get("sensors", [])
         facts = facts_with_sensors(m.get("facts", {}), alerting)
-        req = {"facts": facts, "sensors": [signed(n) for n in alerting], "signal_age_s": 1}
+        forged = set(m.get("forged", []))
+        req = {"facts": facts, "sensors": [signed(n, forged=n in forged) for n in alerting], "signal_age_s": 1}
         rec = {"say": m.get("say", "")}
         if m.get("contact"):
             c = m["contact"]
