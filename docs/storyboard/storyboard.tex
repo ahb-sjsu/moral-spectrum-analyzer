@@ -17,7 +17,7 @@
 
 \title{The gate on proposed acts, in the live twin\\[0.3em]\large A storyboard of every scenario, with the telemetry that shows each check at work\\[0.2em]\normalsize Evidence for claims C10 and C11, Global Trust Challenge verification}
 \author{Andrew Bond}
-\date{15 October 2026, revised 17 October 2026}
+\date{15 October 2026, revised 18 October 2026}
 
 \begin{document}
 \maketitle
@@ -47,10 +47,10 @@ do. Every act is proposed first, and four checks stand between a proposal and th
 \item \textbf{Her words change verdicts.} With her refusal of an ambulance heard, the call is
   stopped. Without it, the same call passes (page~\pageref{sec:cf}).
 \item \textbf{What this does not show.} The proposals and their consequences are fixed in advance,
-  and no language model proposes. DEME weighs her standing consents and refusals and the
-  consequences a proposal declares. It does not weigh the absence of a request she would have to
-  make in the moment, so lifting her after a fall without her asking passes when the proposal
-  declares no harm (page~\pageref{sec:cf}). This gap is open. Free play is a boundary condition, not
+  and no language model proposes. The one-input cases found that DEME did not weigh the absence of
+  a request she would have to make in the moment: lifting her after a fall without her asking
+  passed when the proposal declared no harm. That was fixed on 18 October and the cases were run
+  again (page~\pageref{sec:cf}). Free play is a boundary condition, not
   evidence of DEME's judgment (page~\pageref{sec:freeplay}).
 \end{enumerate}
 
@@ -201,9 +201,11 @@ on every act, including the acts that pass. That is not a veto, and it is shown 
 \item In free play DEME passed every act it saw. A free-play proposal carries no consequences, and
   no act that reached DEME touched her standing consents or refusals. Free play is a boundary
   condition. DEME's stops are shown by the scripted proposals and the counterfactual cases.
-\item DEME does not weigh the absence of a request she would have to make in the moment. Lifting
-  her after a fall without her asking passed in the counterfactual cases whenever the proposal
-  declared no harm. The rule against it is DEME's by design, and this build does not enforce it.
+\item Before 18 October DEME did not weigh the absence of a request she would have to make in the
+  moment. Lifting her after a fall without her asking passed in the counterfactual cases whenever
+  the proposal declared no harm. The fix gives DEME the scene's no-lift rules as facts. The five
+  scenes shown here were recorded before the fix. Proposal 3.1 was stopped then on the hidden
+  injury it declares.
 \item The counterfactual cases run the brain without Unity, on the demonstration's code. Three of
   the first six predictions were wrong. Each is explained in the record.
 \end{itemize}
@@ -224,7 +226,8 @@ on every act, including the acts that pass. That is not a veto, and it is shown 
   Video sha256 7b57ad45\ldots c887.
 \item One input changed, brain only: \url{twin/records/counterfactual-2026-10-17/}.\\
   Cases in \url{twin/scenarios/counterfactual.json} and two follow-up files,\\
-  run by \url{twin/counterfactual.py}.
+  run by \url{twin/counterfactual.py}. After the lift fix (gtc 2f29942):\\
+  \url{twin/records/counterfactual-2026-10-18/}.
 \item Each record is hash-chained: every record carries its sequence number and the hash of the one
   before it. The panels in this document show each proposal's sequence number and the first digits
   of the manifest hash it was judged under.

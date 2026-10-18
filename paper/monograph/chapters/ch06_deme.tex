@@ -976,10 +976,17 @@ not the rule for when she is unresponsive.
 In the gate brain the no-lift rules are not in the constitution. Lifting her is DEME's judgement on
 her consent on record and the act's consequences.
 Her standing refusals reach that judgement. A proposal to film her during the fire was vetoed on her
-refusal to be filmed with no consequences declared. A request she has not made does not reach it.
-Lifting her after a fall without her asking passed whenever the proposal declared no harm, in pairs
-of proposals that differed only in her request (Section~\ref{sec:eval-gate}).
+refusal to be filmed with no consequences declared. A request she had not made did not reach it at
+first. Lifting her after a fall without her asking passed whenever the proposal declared no harm, in
+pairs of proposals that differed only in her request (Section~\ref{sec:eval-gate}).
+The gate brain now reads the scene's two no-lift rules and checks their conditions with the scene
+runtime. For each rule in force it gives \deme{} one grave fact. For \code{p6nolift} it is a consent
+fact, which the consent module vetoes. For \code{p6nolift\_u} it is a harm fact, which the safety
+module vetoes, because a person who does not answer does not bind by refusal. The rules stay
+\deme{}'s and the constitution is unchanged. Run again, the same pairs stop the lift she has not
+asked for and pass it once she asks.
 % src: twin/records/counterfactual-2026-10-17 (README.md; request, request-fall, film-undeclared)
+% src: gtc 2f29942 (twin/stack/brain.py consent_rules, _consent_required; twin/stack/facts_builder.py); twin/records/counterfactual-2026-10-18 (README.md)
 % src: gtc 87cc6c4 (twin/stack/make_constitution.py CONSTITUTIONAL; stack/brain.py CONSENT_EVENTS); gtc c278e52 make_constitution.py:32-34
 
 Two paths do not pass through DEME's profile pipeline.

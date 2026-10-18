@@ -1093,6 +1093,16 @@ predicted verdict committed before its run. They found that \deme{} does not wei
 has not made, so that lifting her after a fall without her asking passes when the proposal declares
 no harm, while her standing refusals still reach it (Section~\ref{sec:eval-gate}). The storyboard
 gained the front section, the plain account of the four checks, one name for the constitution's
-check and the counterfactual cases, and the gap is disclosed there and in the verification
+check and the counterfactual cases, and the finding is disclosed there and in the verification
 specification.
 % src: owner 2026-10-17 ("yes, do 1 and 2 together"); gtc e0ac662, 62d30f9, 318c6b9, 7eb5b59; twin/records/counterfactual-2026-10-17 (README.md); docs/storyboard/storyboard.tex
+
+On 18 October the owner asked for the finding to be fixed in \deme{}. The no-lift rules stayed out
+of the constitution, so the signed manifest did not change. The gate brain reads them from the
+scene, checks their conditions with the scene runtime, and gives \deme{} a grave fact for each rule
+in force, a consent fact for \code{p6nolift} and a harm fact for \code{p6nolift\_u}. The first
+version gave both as consent facts, and a unit test showed the consent module stays neutral for a
+person who does not answer, since such a person does not bind by refusal. The rule for that case
+became a harm fact, which the safety module vetoes. The nine pairs ran again unchanged and the two
+lifts without her request were stopped, with every other check as before.
+% src: owner 2026-10-18 ("fix the lift gap in DEME"; "yes, do all four"); gtc 2f29942, 8073212; twin/records/counterfactual-2026-10-18 (README.md); tests/test_stack_brain.py

@@ -98,9 +98,12 @@ proposer supplies.
 The trade has a measured cost. In pairs of proposals that differed only in her request, \deme{}
 passed lifting her after a fall without her asking whenever the proposal declared no harm, with the
 fall heard and without it. Her standing refusals do reach it, since filming her in the fire was
-vetoed with no consequences declared. In the gate brain nothing enforces the no-lift rule by itself,
-and the demonstration build does not fix this (Section~\ref{sec:eval-gate}).
-% src: twin/records/counterfactual-2026-10-17 (README.md; request, request-fall, film-undeclared)
+vetoed with no consequences declared. The fix gives \deme{} the scene's no-lift rules as facts,
+and the same pairs then stop the lift she has not asked for (Section~\ref{sec:eval-gate}).
+The cost is narrower but remains. Only rules the gate brain knows to read reach \deme{} this way,
+the rule against lifting her once she stops answering is checked by a unit test and not by a
+recorded case, and the five scenes recorded in the twin ran before the fix.
+% src: twin/records/counterfactual-2026-10-17 (README.md; request, request-fall, film-undeclared); gtc 2f29942 (brain.py consent_rules reads prohibitions on CONSENT_EVENTS acts only); twin/records/counterfactual-2026-10-18 (README.md); tests/test_stack_brain.py
 % src: twin/stack/constitution.erisml at gtc c278e52 (15 norms, no p6nolift); at gtc 87cc6c4 to 96c8a6d (p6nolift, p6nolift_u); twin/stack/make_constitution.py:32-34; twin/scene/margaret_home.erisml (p6help, p5r)
 The police rule belongs to the dispatcher's scene, not to the robot's.
 % src: twin/scene/ems_dispatch.erisml (d4p)
