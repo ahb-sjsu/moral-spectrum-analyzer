@@ -12,6 +12,11 @@ import sys
 
 import pytest
 
+if os.environ.get("TWIN_TESTS_REQUIRED"):
+    import erisml.ethics.facts_v3  # noqa: F401  (the twin CI job: missing is a failure)
+else:
+    pytest.importorskip("erisml.ethics.facts_v3")
+
 TWIN = os.path.join(os.path.dirname(__file__), "..", "twin")
 sys.path.insert(0, TWIN)
 
