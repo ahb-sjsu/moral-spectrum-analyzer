@@ -545,7 +545,9 @@ specification is recomputed by a named script from a committed record.
 
 **Evidence artifacts to be provided:**
 
-- Code: `github.com/ahb-sjsu/moral-spectrum-analyzer` at a tagged commit, with packages on PyPI.
+- Code: `github.com/ahb-sjsu/moral-spectrum-analyzer` at tag `gtc-verification-2026-10-27.2`
+  (commit 8a6d626, CI green), with packages on PyPI. The tag holds every file and record named
+  below.
 - Result records:
   - `docs/REGATE.md` and `docs/IDENTITY_ATTACK.md` (C1, C2)
   - `data/contraction/toxicity_contraction.json` (C3)
