@@ -38,3 +38,6 @@ Thumbs.db
 .coverage
 .coverage.*
 htmlcov/
+
+# AIES 2027 draft: kept local, out of the public repo (owner, 2026-10-27)
+paper/aies2027/
