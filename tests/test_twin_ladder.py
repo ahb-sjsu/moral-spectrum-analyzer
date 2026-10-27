@@ -201,7 +201,11 @@ def test_after_a_fall_she_may_answer_the_robot_asks_her_first():
     s = run(ev("fall"), ruling("elevate"), ev("check_in_answered", "I'm fine", actor="system"))
     assert "contact_monitoring_center" not in s.prohibited
     # she answers: the call is owed again (her refusal, if she made one, is the gate's to honour)
-    s = run(ev("fall"), ruling("elevate"), ev("check_in_answered", "I'm fine, no ambulance", actor="system"))
+    s = run(
+        ev("fall"),
+        ruling("elevate"),
+        ev("check_in_answered", "I'm fine, no ambulance", actor="system"),
+    )
     assert EMS in s.obliged and EMS not in s.prohibited
     # no answer, or she is unresponsive: at once, as before
     s = run(ev("fall"), ruling("elevate"), ev("check_in_unanswered", actor="system"))
@@ -470,7 +474,6 @@ def test_a_reflex_fires_once_for_the_same_attacker(brain):
     assert b.reflex(contact("animal", "coyote", 278)) is None
 
 
-
 def test_restraint_is_asked_again_when_more_witnesses_corroborate(brain):
     """gatecheck16 d17: at the first contact one witness of three, so the reflex shielded; the
     attack went on, three witnesses agreed, and restraint was never asked again."""
@@ -493,6 +496,7 @@ def test_a_reflex_without_reask_still_fires_once_per_attacker(brain):
     assert b.reflex(req)["action"]["action"] == "interpose"
     req["sensors"] = readings(3)
     assert b.reflex(req) is None  # x_animal declares no reask
+
 
 # ---------------------------------------------------------------- the less-lethal option (owner opt-in)
 
@@ -616,8 +620,23 @@ def test_a_scenario_can_name_what_else_satisfies_a_required_action():
     sys.path.insert(0, TWIN)
     from grade_scenarios import grade_one
 
-    sc = {"id": "t", "response_class": "R1", "required_actions": ["approach"], "forbidden_actions": []}
-    res = {"records": [{"record": {"kind": "performed", "action": "interpose", "time": "2026-10-11T00:00:00+00:00"}}]}
+    sc = {
+        "id": "t",
+        "response_class": "R1",
+        "required_actions": ["approach"],
+        "forbidden_actions": [],
+    }
+    res = {
+        "records": [
+            {
+                "record": {
+                    "kind": "performed",
+                    "action": "interpose",
+                    "time": "2026-10-11T00:00:00+00:00",
+                }
+            }
+        ]
+    }
     assert grade_one(sc, res)["required_missing"] == ["approach"]
     sc["satisfied_by"] = {"approach": ["drive_off_animal", "interpose", "physical_assist"]}
     assert grade_one(sc, res)["required_missing"] == []
@@ -985,7 +1004,9 @@ def test_the_input_layer_keeps_how_she_came_down_and_drops_other_values():
     sys.path.insert(0, TWIN)
     from input_layer import validate_facts
 
-    clean, _ = validate_facts({"margaret": {"pose": "lying_on_floor", "came_down": "under_her_own_control"}})
+    clean, _ = validate_facts(
+        {"margaret": {"pose": "lying_on_floor", "came_down": "under_her_own_control"}}
+    )
     assert clean["margaret"]["came_down"] == "under_her_own_control"
     clean, dropped = validate_facts({"margaret": {"pose": "lying_on_floor", "came_down": "pushed"}})
     assert "came_down" not in clean["margaret"] and any("came_down" in d for d in dropped)
@@ -996,8 +1017,10 @@ def test_the_robot_does_not_hear_its_own_alarm_as_news():
     sys.path.insert(0, TWIN)
     from brain import without_own_sounds
 
-    heard = [{"source": "robot", "kind": "alarm", "words": "lights on, alarm sounding"},
-             {"source": "margaret", "kind": "speech", "words": "Oh good, the nurse is here."}]
+    heard = [
+        {"source": "robot", "kind": "alarm", "words": "lights on, alarm sounding"},
+        {"source": "margaret", "kind": "speech", "words": "Oh good, the nurse is here."},
+    ]
     facts, own = without_own_sounds({"heard": heard, "smoke": False})
     assert facts["heard"] == [heard[1]] and own == [heard[0]] and facts["smoke"] is False
     assert without_own_sounds({"heard": [heard[1]]}) == ({"heard": [heard[1]]}, [])
@@ -1138,22 +1161,38 @@ def test_no_expert_answering_raises_model_unavailable(monkeypatch):
 def test_a_lost_cloud_connection_is_tried_once_more_before_the_robots_own_model(monkeypatch):
     """rehearse-deme4/5: cloud failures fell through to an on-robot answer that was unusable."""
     pytest.importorskip("agi.primer.vmoe")
-    _, c, calls = _cascade(monkeypatch, {"cloud": (None, [(False, ""), (True, "cloud")], "APIConnectionError: Connection error."),
-                                         "onboard": (True, "onboard")})
+    _, c, calls = _cascade(
+        monkeypatch,
+        {
+            "cloud": (
+                None,
+                [(False, ""), (True, "cloud")],
+                "APIConnectionError: Connection error.",
+            ),
+            "onboard": (True, "onboard"),
+        },
+    )
     assert c.call("s", "u") == "cloud" and calls == ["cloud", "cloud"]
 
 
 def test_a_cloud_timeout_is_not_retried(monkeypatch):
     """The game waits 600 s for a decision; a second 120 s timeout per call would exceed it."""
     pytest.importorskip("agi.primer.vmoe")
-    _, c, calls = _cascade(monkeypatch, {"cloud": (False, "", "timeout after 120.0s"), "onboard": (True, "onboard")})
+    _, c, calls = _cascade(
+        monkeypatch, {"cloud": (False, "", "timeout after 120.0s"), "onboard": (True, "onboard")}
+    )
     assert c.call("s", "u") == "onboard" and calls == ["cloud", "onboard"]
 
 
 def test_a_cloud_refusal_is_not_retried(monkeypatch):
     pytest.importorskip("agi.primer.vmoe")
-    _, c, calls = _cascade(monkeypatch, {"cloud": (False, "", "PermissionDeniedError: Error code: 403"),
-                                         "onboard": (True, "onboard")})
+    _, c, calls = _cascade(
+        monkeypatch,
+        {
+            "cloud": (False, "", "PermissionDeniedError: Error code: 403"),
+            "onboard": (True, "onboard"),
+        },
+    )
     assert c.call("s", "u") == "onboard" and calls == ["cloud", "onboard"]
 
 
@@ -1166,11 +1205,19 @@ def test_a_required_schema_goes_to_every_expert(monkeypatch):
 
     def structured(e, messages, max_tokens, schema):
         seen.append((e.name, schema))
-        return ("", "APIConnectionError: Connection error.") if e.name == "cloud" else ('{"options": {}}', None)
+        return (
+            ("", "APIConnectionError: Connection error.")
+            if e.name == "cloud"
+            else ('{"options": {}}', None)
+        )
 
     monkeypatch.setattr(c, "_structured", structured)
     out = c.call("s", "u", json_schema={"type": "object"}, schema_required=True, max_tokens=16000)
-    assert out == '{"options": {}}' and [n for n, _ in seen] == ["cloud", "cloud", "onboard"] and calls == []
+    assert (
+        out == '{"options": {}}'
+        and [n for n, _ in seen] == ["cloud", "cloud", "onboard"]
+        and calls == []
+    )
     assert all(sc == {"type": "object"} for _, sc in seen) and c.last_tier == "onboard"
 
 
@@ -1178,9 +1225,13 @@ def test_an_offered_schema_is_enforced_on_the_robots_own_model_only(monkeypatch)
     """rehearse-deme7: enforced on every call, the cloud model's answers lost their depth; the cloud
     model answers freely, the on-robot model always within the schema."""
     pytest.importorskip("agi.primer.vmoe")
-    mod, c, calls = _cascade(monkeypatch, {"cloud": (False, "", "PermissionDeniedError: 403"), "onboard": (True, "x")})
+    mod, c, calls = _cascade(
+        monkeypatch, {"cloud": (False, "", "PermissionDeniedError: 403"), "onboard": (True, "x")}
+    )
     seen = []
-    monkeypatch.setattr(c, "_structured", lambda e, m, t, s: (seen.append(e.name), ('{"o": 1}', None))[1])
+    monkeypatch.setattr(
+        c, "_structured", lambda e, m, t, s: (seen.append(e.name), ('{"o": 1}', None))[1]
+    )
     assert c.call("s", "u", json_schema={"type": "object"}, schema_required=False) == '{"o": 1}'
     assert calls == ["cloud"] and seen == ["onboard"]
 
@@ -1274,11 +1325,18 @@ def test_nobody_is_asked_for_authority_to_do_what_she_refused(brain, monkeypatch
     asked = []
     monkeypatch.setattr(b, "govern_live", lambda *a, **k: asked.append(a) or {"outcome": "refuse"})
     snap = b.agent.rt.snapshot().as_dict()
-    monkeypatch.setattr(b.agent, "decide", lambda facts: Decision(
-        [], [], snap, "request_authority", {"action": EMS}, "ask for the ambulance", None, False))
+    monkeypatch.setattr(
+        b.agent,
+        "decide",
+        lambda facts: Decision(
+            [], [], snap, "request_authority", {"action": EMS}, "ask for the ambulance", None, False
+        ),
+    )
     cycle = b.decide({"facts": {"margaret": {"pose": "lying_on_floor"}}})
     assert not asked
-    assert cycle["ruling"]["outcome"] == "not_requested" and cycle["ruling"]["requested_action"] == EMS
+    assert (
+        cycle["ruling"]["outcome"] == "not_requested" and cycle["ruling"]["requested_action"] == EMS
+    )
     assert cycle["action"]["action"] not in ("request_authority", EMS)
 
 
@@ -1304,12 +1362,12 @@ def test_an_attested_fall_is_recorded_whatever_the_model_reads(brain):
     b, _ = brain
     floor = b._floor_events(FALL_FACTS)
     assert [e["type"] for e in floor] == ["fall"]
-    assert b._floor_events(FALL_FACTS) == []   # edge-triggered
+    assert b._floor_events(FALL_FACTS) == []  # edge-triggered
     b.offline_active.clear()
     spoofed = json.loads(json.dumps(FALL_FACTS))
     for r in spoofed["sensors"]:
         r["attested"] = False
-    assert b._floor_events(spoofed) == []      # an unattested device is not a measurement
+    assert b._floor_events(spoofed) == []  # an unattested device is not a measurement
 
 
 # ---------------------------------------------------------------- her refusals, tragic conflicts, fail-closed DEME
@@ -1325,7 +1383,9 @@ def _corroborated_fall(b):
 def test_against_her_refusal_an_ems_call_is_a_tragic_conflict_for_a_human(brain):
     b, _ = brain
     _corroborated_fall(b)
-    b.agent.record(ev("check_in_answered", "No ambulance", actor="system"))  # asked first (ask_first)
+    b.agent.record(
+        ev("check_in_answered", "No ambulance", actor="system")
+    )  # asked first (ask_first)
     b.agent.record(REFUSE_EMS)
     snap = b.agent.rt.snapshot()
     assert EMS in snap.obliged  # the scene alone would call
@@ -1603,7 +1663,10 @@ def test_her_refusal_of_an_ambulance_binds_the_centre():
     rt.step({"type": "referral_received", "content": "help_requested"})
     rt.step({"type": "client_refuses_ambulance", "actor": "margaret", "content": "no ambulance"})
     snap = rt.step({"type": "client_needs_help", "actor": "margaret", "content": "I'm hurting"})
-    assert "send_emergency_services" in snap.prohibited and "send_emergency_services" not in snap.allowed
+    assert (
+        "send_emergency_services" in snap.prohibited
+        and "send_emergency_services" not in snap.allowed
+    )
     assert "talk_to_client" in snap.allowed
 
 
@@ -1613,11 +1676,24 @@ def test_she_can_withdraw_her_refusal_by_asking_for_emergency_services():
     many words withdraws the refusal, and a refusal after that stands again."""
     rt = _desk("monitoring_center.erisml")
     rt.step({"type": "referral_received", "content": "unexpected_visitor"})
-    rt.step({"type": "client_refuses_ambulance", "actor": "margaret", "content": "I don't need any assistance"})
+    rt.step(
+        {
+            "type": "client_refuses_ambulance",
+            "actor": "margaret",
+            "content": "I don't need any assistance",
+        }
+    )
     rt.step({"type": "client_stance", "actor": "margaret", "content": "refuses_ambulance"})
-    rt.step({"type": "client_needs_help", "actor": "margaret", "content": "call the police right now"})
-    snap = rt.step({"type": "client_stance", "actor": "margaret", "content": "asks_for_emergency_services"})
-    assert "send_emergency_services" in snap.obliged and "send_emergency_services" not in snap.prohibited
+    rt.step(
+        {"type": "client_needs_help", "actor": "margaret", "content": "call the police right now"}
+    )
+    snap = rt.step(
+        {"type": "client_stance", "actor": "margaret", "content": "asks_for_emergency_services"}
+    )
+    assert (
+        "send_emergency_services" in snap.obliged
+        and "send_emergency_services" not in snap.prohibited
+    )
     snap = rt.step({"type": "client_stance", "actor": "margaret", "content": "refuses_ambulance"})
     assert "send_emergency_services" in snap.prohibited
 
@@ -1632,13 +1708,20 @@ def test_her_words_record_where_she_stands_now():
         {
             "You turn the observations of": _json.dumps([]),
             "You read only what Margaret herself said": _json.dumps(
-                {"needs_help": True, "says_fine": False, "refuses_ambulance": False, "asks_for_emergency_services": True}
+                {
+                    "needs_help": True,
+                    "says_fine": False,
+                    "refuses_ambulance": False,
+                    "asks_for_emergency_services": True,
+                }
             ),
             "You choose the next action": _json.dumps({"action": "stay_on_the_line"}),
         }
     )
     inventory = load_structured_input(SCENE).extra["sensor_substrates"]
-    d = Desk("center", os.path.join(TWIN, "scene", "monitoring_center.erisml"), mock, inventory=inventory)
+    d = Desk(
+        "center", os.path.join(TWIN, "scene", "monitoring_center.erisml"), mock, inventory=inventory
+    )
     r = d.decide({"telemetry": [], "speaker_line": ["Margaret: Call the police now, please."]})
     stance = [e["content"] for e in r["structural_events"] if e["type"] == "client_stance"]
     assert stance == ["asks_for_emergency_services"]
@@ -1719,7 +1802,13 @@ def test_a_measured_attack_is_suspicion_and_a_stranger_alone_is_not():
 
 def test_no_refusal_of_hers_waives_the_report(brain):
     b, _ = brain
-    for kind in ("data_sharing", "recording", "emergency_services", "physical_help", "monitoring_center"):
+    for kind in (
+        "data_sharing",
+        "recording",
+        "emergency_services",
+        "physical_help",
+        "monitoring_center",
+    ):
         b.agent.record(ev("refusal_made", kind))
     snap = b.agent.record(ev("crime_suspected", "fraud", actor="unknown_person"))
     assert "contact_monitoring_center" in snap.obliged
@@ -1758,12 +1847,13 @@ def test_her_refusal_of_the_centre_does_not_reach_a_stranger_in_the_home(brain):
 
 def test_after_a_fall_her_saying_she_is_alright_declines_an_ambulance(brain):
     """Owner 2026-10-10 (d23): declined_help counts as a refusal of emergency services
-    (extra.refusal_events); the refused call is routed to the centre, and it lapses as refusals do."""
+    (extra.refusal_events); the refused call is routed to the centre, and it lapses as refusals do.
+    """
     b, _ = brain
     _corroborated_fall(b)
     b.agent.record(ev("check_in_answered", "I'm alright, just shaken", actor="system"))
     snap = b.agent.record(ev("declined_help", "I'm alright, just shaken"))
-    assert EMS in snap.obliged   # the scene alone would call
+    assert EMS in snap.obliged  # the scene alone would call
     action, args, gate = b.gate.check(EMS, {}, snap)
     assert action == "contact_monitoring_center" and gate["routed_to_human"]
     snap = b.agent.record(ev("unresponsive"))
@@ -1790,7 +1880,10 @@ def test_she_may_ask_to_be_helped_up_and_lifting_stays_on_the_governors_ruling()
     assert "physical_assist" not in s.prohibited
     # owed, not merely allowed (p6help), and helping her up discharges it
     assert "physical_assist" in s.obliged
-    assert "physical_assist" not in run(ev("fall"), asked, ruling("elevate"), performed("physical_assist")).obliged
+    assert (
+        "physical_assist"
+        not in run(ev("fall"), asked, ruling("elevate"), performed("physical_assist")).obliged
+    )
     # no ruling, no lift: her words never stand in for the governor (n3)
     s = run(ev("fall"), asked)
     assert "physical_assist" in s.prohibited
@@ -1843,10 +1936,13 @@ def test_what_a_visitor_says_about_himself_moves_nothing(brain):
 def test_going_out_into_a_hazard_she_was_warned_of_is_met_with_advice_not_confinement():
     """d32 (p11): the centre warns of ice, she says she is going to Harold's grave. The robot owes
     her a word; confining her stays refused once she has refused staying inside."""
-    s = run(ev("outside_hazard", "ice on the paths", actor="monitoring_center"), ev("leaving_home", "Harold's grave"))
+    s = run(
+        ev("outside_hazard", "ice on the paths", actor="monitoring_center"),
+        ev("leaving_home", "Harold's grave"),
+    )
     assert "speak" in s.obliged and "secure_room" not in s.obliged
     s = run(ev("leaving_home", "the garden"))
-    assert "speak" not in s.obliged   # going out is hers; only a warned hazard calls for a word
+    assert "speak" not in s.obliged  # going out is hers; only a warned hazard calls for a word
 
 
 def test_a_visitor_the_household_or_the_centre_vouches_for_is_never_deterred(brain):
@@ -2161,7 +2257,12 @@ def test_a_refusal_answers_one_request_and_ends_no_emergency():
     restraint (or the reflex asking for a device first) ended it, and with it the EMS duty."""
     rt = SceneRuntime(load_structured_input(SCENE))
     # the check-in went unanswered, so ask_first is over and the call is owed
-    for e in (ev("fall"), ruling("elevate"), ev("check_in_unanswered", actor="system"), ruling("refuse")):
+    for e in (
+        ev("fall"),
+        ruling("elevate"),
+        ev("check_in_unanswered", actor="system"),
+        ruling("refuse"),
+    ):
         snap = rt.step(e)
     assert _situation(rt) == "emergency" and rt.holds(
         "cond:corroborated_life_threatening_emergency"
@@ -2420,7 +2521,9 @@ def test_permission_is_rechecked_when_the_body_acts(brain):
 def _camera():
     from scenarios import Sensor
 
-    return Sensor(name="camera", physical=True, corroborates_emergency=True, note="on_floor, rapid_descent")
+    return Sensor(
+        name="camera", physical=True, corroborates_emergency=True, note="on_floor, rapid_descent"
+    )
 
 
 def test_a_microphone_and_the_camera_do_not_measure_an_emergency(brain):
@@ -2428,7 +2531,9 @@ def test_a_microphone_and_the_camera_do_not_measure_an_emergency(brain):
     with her dog) were two witnesses, and the call to emergency services was granted."""
     b, _ = brain
     b.agent.record(ev("distress_vocalized", "Ow"))
-    r = b.govern_live("test", EMS, b.readings.for_governor([signed("robot_microphone")]), _camera(), 1.0)
+    r = b.govern_live(
+        "test", EMS, b.readings.for_governor([signed("robot_microphone")]), _camera(), 1.0
+    )
     assert r["witnesses"] == 2
     assert r["outcome"] == "refuse_human_review" and r["deciding_gate"] == "measure"
 
@@ -2438,7 +2543,9 @@ def test_a_claimed_attack_is_measured_by_its_contact_force(brain):
     b.agent.record(ev("attack_by_animal", "moderate", actor="dog"))  # what the model said it saw
     witnesses = b.readings.for_governor([signed("robot_microphone")])
     assert b.govern_live("test", EMS, witnesses, _camera(), 1.0)["deciding_gate"] == "measure"
-    b.agent.record(ev("animal_attack_measured", "moderate", actor="reflex"))  # force bands, no model
+    b.agent.record(
+        ev("animal_attack_measured", "moderate", actor="reflex")
+    )  # force bands, no model
     witnesses = b.readings.for_governor([signed("robot_microphone")])
     assert b.govern_live("test", EMS, witnesses, _camera(), 1.0)["outcome"] == "elevate"
 
@@ -2453,9 +2560,17 @@ def test_a_claimed_fall_is_measured_by_the_fall_sensor(brain):
 def test_a_claimed_fire_is_not_measured_by_body_sensors(brain):
     b, _ = brain
     b.agent.record(ev("danger_in_home", "smoke"))
-    r = b.govern_live("test", EMS, b.readings.for_governor([signed("wearable"), signed("fall_sensor")]), None, 1.0)
+    r = b.govern_live(
+        "test", EMS, b.readings.for_governor([signed("wearable"), signed("fall_sensor")]), None, 1.0
+    )
     assert r["witnesses"] == 2 and r["deciding_gate"] == "measure"
-    r = b.govern_live("test", EMS, b.readings.for_governor([signed("wearable"), signed("smoke_detector")]), None, 1.0)
+    r = b.govern_live(
+        "test",
+        EMS,
+        b.readings.for_governor([signed("wearable"), signed("smoke_detector")]),
+        None,
+        1.0,
+    )
     assert r["outcome"] == "elevate"
 
 
@@ -2500,7 +2615,13 @@ def test_her_stance_reaches_her_voice_and_only_when_given():
             return '{"say": "No ambulance."}'
 
     v = MargaretVoice(Capture())
-    req = {"speaker": "your home-care robot", "said": "Shall I call an ambulance?", "condition": "hurt", "perceives": [], "conversation": []}
+    req = {
+        "speaker": "your home-care robot",
+        "said": "Shall I call an ambulance?",
+        "condition": "hurt",
+        "perceives": [],
+        "conversation": [],
+    }
     v.reply(dict(req, stance="You refuse an ambulance."))
     v.reply(req)
     assert "You refuse an ambulance." in seen[0][1] and "stance" in seen[0][0]
@@ -2518,14 +2639,16 @@ def test_a_request_sent_before_the_latest_reset_never_reaches_the_brain():
 
     assert stale({"epoch": 4}, 5)
     assert not stale({"epoch": 5}, 5)
-    assert not stale({}, 5)              # an untagged request (a tool, an old body) is not judged
+    assert not stale({}, 5)  # an untagged request (a tool, an old body) is not judged
     assert not stale({"epoch": 4}, None)  # before any reset names an epoch, nothing is stale
-    assert not stale({"epoch": 6}, 5)     # a newer request arriving just before its reset is kept
+    assert not stale({"epoch": 6}, 5)  # a newer request arriving just before its reset is kept
 
 
 def test_a_reset_waits_for_a_request_already_inside_the_brain():
     """check44 d03: the server is threaded, and a reflex in flight wrote into the reset's new state."""
-    import threading, time
+    import threading
+    import time
+
     sys.path.insert(0, TWIN)
     from service import ResetLock
 
@@ -2554,15 +2677,23 @@ def test_a_nip_she_shrugs_off_obliges_no_interposing_and_no_request():
     nip = ev("attack_by_animal", "mild", actor="dog")
     # asked first (p2a): no duty to interpose or ask until she has answered
     s = run(nip)
-    assert "check_in" in s.obliged and "interpose" not in s.obliged and "request_authority" not in s.obliged
+    assert (
+        "check_in" in s.obliged
+        and "interpose" not in s.obliged
+        and "request_authority" not in s.obliged
+    )
     # she answers without declining: the duties hold
     s = run(nip, ev("check_in_answered", "it bit me", actor="system"))
     assert "interpose" in s.obliged and "request_authority" in s.obliged
     s = run(nip, ev("declined_help", "Ow, silly dog. I'm alright."))
     assert "interpose" not in s.obliged and "request_authority" not in s.obliged
-    assert "speak" in s.obliged   # but a word to her (p2w)
+    assert "speak" in s.obliged  # but a word to her (p2w)
     # measured by the reflex, or worse than mild: the duties stand
-    s = run(nip, ev("animal_attack_measured", "mild", actor="reflex"), ev("declined_help", "I'm alright"))
+    s = run(
+        nip,
+        ev("animal_attack_measured", "mild", actor="reflex"),
+        ev("declined_help", "I'm alright"),
+    )
     assert "interpose" in s.obliged
     s = run(ev("attack_by_animal", "severe", actor="dog"), ev("declined_help", "I'm alright"))
     assert "interpose" in s.obliged

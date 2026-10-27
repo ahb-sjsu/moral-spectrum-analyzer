@@ -28,10 +28,25 @@ PROJECTOR = "You project the consequences"
 def household(tmp_path):
     ir = CompilerIR(
         document=Document(doc_id="household", raw_text="Margaret, 84, lives alone with her dog."),
-        stakeholders=[Stakeholder(id="margaret", label="Margaret", type="individual", roles=["patient"],
-                                  vulnerability="elderly")],
-        events=[Event(id="agreement", time_index=0, type="consent", actor="margaret",
-                      target="contact_monitoring_center", content="consented")],
+        stakeholders=[
+            Stakeholder(
+                id="margaret",
+                label="Margaret",
+                type="individual",
+                roles=["patient"],
+                vulnerability="elderly",
+            )
+        ],
+        events=[
+            Event(
+                id="agreement",
+                time_index=0,
+                type="consent",
+                actor="margaret",
+                target="contact_monitoring_center",
+                content="consented",
+            )
+        ],
     )
     p = tmp_path / "household.ir.json"
     p.write_text(ir.model_dump_json(), encoding="utf-8")
@@ -39,8 +54,13 @@ def household(tmp_path):
 
 
 def f(kind, severity, confidence=1.0):
-    return {"kind": kind, "subjects": ["margaret"], "description": kind, "severity": severity,
-            "confidence": confidence}
+    return {
+        "kind": kind,
+        "subjects": ["margaret"],
+        "description": kind,
+        "severity": severity,
+        "confidence": confidence,
+    }
 
 
 def projection(urgency=None, **acts):
@@ -51,15 +71,28 @@ ORDINARY = projection(chores=[f("benefit", "minor")], wait_and_observe=[f("benef
 
 
 def make(household, observed, projected=ORDINARY):
-    return StackBrain(adapter=MockLLMAdapter({OBSERVER: json.dumps(observed), PROJECTOR: json.dumps(projected)}),
-                      household_path=household)
+    return StackBrain(
+        adapter=MockLLMAdapter({OBSERVER: json.dumps(observed), PROJECTOR: json.dumps(projected)}),
+        household_path=household,
+    )
 
 
-FALL_FACTS = {"margaret": {"pose": "lying_on_floor", "room": "living area"},
-              "heard": [{"source": "margaret", "kind": "cry", "words": "Ow, I fell."}]}
-FELL = {"events": [{"type": "hazard", "target": "margaret", "content": "emerging"}],
-        "ethical_facts": [{"kind": "harm", "subjects": ["margaret"], "description": "she fell",
-                           "severity": "moderate", "confidence": 0.9}]}
+FALL_FACTS = {
+    "margaret": {"pose": "lying_on_floor", "room": "living area"},
+    "heard": [{"source": "margaret", "kind": "cry", "words": "Ow, I fell."}],
+}
+FELL = {
+    "events": [{"type": "hazard", "target": "margaret", "content": "emerging"}],
+    "ethical_facts": [
+        {
+            "kind": "harm",
+            "subjects": ["margaret"],
+            "description": "she fell",
+            "severity": "moderate",
+            "confidence": 0.9,
+        }
+    ],
+}
 AFTER_FALL = projection(
     "moderate",
     chores=[f("harm", "grave")],  # she stays on the floor
@@ -85,7 +118,10 @@ def test_after_a_fall_it_asks_her_first_and_records_the_dag_and_the_proof(househ
     stages = {s["stage"]: s["vetoed"] for s in cycle["stages"]}
     assert stages["shell"] == ["chores"]  # a safer option exists
     assert stages["inner"] == ["call_emergency_services"]  # no consent, and she can be asked
-    assert cycle["profile"]["name"] == "home_care_robot" and cycle["profile"]["composition"] == "hard_shell"
+    assert (
+        cycle["profile"]["name"] == "home_care_robot"
+        and cycle["profile"]["composition"] == "hard_shell"
+    )
     assert len(cycle["profile"]["hash"]) == 64 and cycle["proof_hash"]
     assert cycle["observation_patch"]["rejected"] == [] and cycle["projection"]["rejected"] == []
     types = [e.type for e in b.ir.events]
@@ -109,28 +145,61 @@ def test_every_event_lives_in_the_scene_ir(household):
 
 
 def test_her_refusal_reaches_the_judgement_through_the_compiled_consent(household):
-    refused = {"events": FELL["events"] + [
-        {"type": "consent", "actor": "margaret", "target": "call_emergency_services", "content": "refused"},
-        {"type": "consent", "actor": "margaret", "target": "contact_monitoring_center", "content": "refused"}],
-        "ethical_facts": FELL["ethical_facts"]}
-    projected = projection("moderate", check_in=[f("benefit", "minor")],
-                           contact_monitoring_center=[f("benefit", "grave")],
-                           call_emergency_services=[f("benefit", "grave")])
+    refused = {
+        "events": FELL["events"]
+        + [
+            {
+                "type": "consent",
+                "actor": "margaret",
+                "target": "call_emergency_services",
+                "content": "refused",
+            },
+            {
+                "type": "consent",
+                "actor": "margaret",
+                "target": "contact_monitoring_center",
+                "content": "refused",
+            },
+        ],
+        "ethical_facts": FELL["ethical_facts"],
+    }
+    projected = projection(
+        "moderate",
+        check_in=[f("benefit", "minor")],
+        contact_monitoring_center=[f("benefit", "grave")],
+        call_emergency_services=[f("benefit", "grave")],
+    )
     b = make(household, refused, projected)
-    b._record({"type": "check_in_answered", "actor": "margaret", "content": "I'm alright, don't call anyone."})
+    b._record(
+        {
+            "type": "check_in_answered",
+            "actor": "margaret",
+            "content": "I'm alright, don't call anyone.",
+        }
+    )
     cycle = b.decide({"facts": FALL_FACTS})
     assert cycle["consent"]["call_emergency_services"] == "refused"
-    assert cycle["consent"]["contact_monitoring_center"] == "refused"  # her latest word revokes the agreement
+    assert (
+        cycle["consent"]["contact_monitoring_center"] == "refused"
+    )  # her latest word revokes the agreement
     assert cycle["capacity"] == "competent"
     assert {"call_emergency_services", "contact_monitoring_center"} <= set(cycle["vetoed"])
     assert cycle["action"]["action"] == "check_in"
 
 
 def test_an_elevated_act_goes_to_the_governor_and_a_refusal_sets_it_aside(household, monkeypatch):
-    b = make(household, {"events": [{"type": "hazard", "target": "margaret", "content": "imminent"}],
-                         "ethical_facts": [dict(FELL["ethical_facts"][0], severity="grave")]}, UNRESPONSIVE)
+    b = make(
+        household,
+        {
+            "events": [{"type": "hazard", "target": "margaret", "content": "imminent"}],
+            "ethical_facts": [dict(FELL["ethical_facts"][0], severity="grave")],
+        },
+        UNRESPONSIVE,
+    )
     b._record({"type": "unresponsive", "actor": "margaret"})
-    b._record({"type": "monitoring_center_reply", "actor": "monitoring_center", "content": "unavailable"})
+    b._record(
+        {"type": "monitoring_center_reply", "actor": "monitoring_center", "content": "unavailable"}
+    )
     asked = []
 
     def refuse(situation, action, verified, camera, age, fast=False):
@@ -145,12 +214,29 @@ def test_an_elevated_act_goes_to_the_governor_and_a_refusal_sets_it_aside(househ
 
 
 def test_with_the_governor_elevating_the_call_goes_out(household, monkeypatch):
-    b = make(household, {"events": [{"type": "hazard", "target": "margaret", "content": "imminent"}],
-                         "ethical_facts": [dict(FELL["ethical_facts"][0], severity="grave")]}, UNRESPONSIVE)
+    b = make(
+        household,
+        {
+            "events": [{"type": "hazard", "target": "margaret", "content": "imminent"}],
+            "ethical_facts": [dict(FELL["ethical_facts"][0], severity="grave")],
+        },
+        UNRESPONSIVE,
+    )
     b._record({"type": "unresponsive", "actor": "margaret"})
-    b._record({"type": "monitoring_center_reply", "actor": "monitoring_center", "content": "unavailable"})
-    monkeypatch.setattr(b, "govern_live", lambda *a, **k: {"outcome": "elevate", "reason": "test", "gate": "elevate",
-                                                           "bar": 2, "witnesses": 2})
+    b._record(
+        {"type": "monitoring_center_reply", "actor": "monitoring_center", "content": "unavailable"}
+    )
+    monkeypatch.setattr(
+        b,
+        "govern_live",
+        lambda *a, **k: {
+            "outcome": "elevate",
+            "reason": "test",
+            "gate": "elevate",
+            "bar": 2,
+            "witnesses": 2,
+        },
+    )
     cycle = b.decide({"facts": FALL_FACTS})
     assert cycle["action"]["action"] == "call_emergency_services"
     assert cycle["action"]["args"] == {"nature": "medical"}
@@ -187,21 +273,76 @@ def test_after_a_fall_deme_vetoes_lifting_her_until_she_asks(household):
     projected, the lift is vetoed by DEME's shell (the safety module, beside holding); proposed after
     her own request, it passes."""
     b = make(household, FELL)
-    b._step_ruling({"outcome": "elevate"})   # the emergency, corroborated (n3 permits elevated acts)
-    lift = {"action": "physical_assist", "consequences": [
-        {"kind": "harm", "subjects": ["margaret"], "severity": "grave", "description": "a hidden injury may worsen"}]}
+    b._step_ruling({"outcome": "elevate"})  # the emergency, corroborated (n3 permits elevated acts)
+    lift = {
+        "action": "physical_assist",
+        "consequences": [
+            {
+                "kind": "harm",
+                "subjects": ["margaret"],
+                "severity": "grave",
+                "description": "a hidden injury may worsen",
+            }
+        ],
+    }
     rec = b.propose({"facts": FALL_FACTS, "propose": lift})
-    assert rec["verdict"] == "stopped" and rec["stopped_by"] == "deme" and rec["action"]["action"] == "wait_and_observe"
-    asked = {"events": [{"type": "request", "actor": "margaret", "target": "physical_assist", "content": "Help me up, please."}]}
-    rec = b.propose({"facts": FALL_FACTS, "observed": asked, "propose": {"action": "physical_assist", "consequences": [
-        {"kind": "benefit", "subjects": ["margaret"], "severity": "moderate", "description": "she is on her feet"}]}})
+    assert (
+        rec["verdict"] == "stopped"
+        and rec["stopped_by"] == "deme"
+        and rec["action"]["action"] == "wait_and_observe"
+    )
+    asked = {
+        "events": [
+            {
+                "type": "request",
+                "actor": "margaret",
+                "target": "physical_assist",
+                "content": "Help me up, please.",
+            }
+        ]
+    }
+    rec = b.propose(
+        {
+            "facts": FALL_FACTS,
+            "observed": asked,
+            "propose": {
+                "action": "physical_assist",
+                "consequences": [
+                    {
+                        "kind": "benefit",
+                        "subjects": ["margaret"],
+                        "severity": "moderate",
+                        "description": "she is on her feet",
+                    }
+                ],
+            },
+        }
+    )
     assert "assistance_consented" in [e.type for e in b.ir.events]
     assert rec["verdict"] == "passed" and rec["action"]["action"] == "physical_assist"
 
 
-LIFT = {"action": "physical_assist", "consequences": [
-    {"kind": "benefit", "subjects": ["margaret"], "severity": "moderate", "description": "she is on her feet"}]}
-ASKED = {"events": [{"type": "request", "actor": "margaret", "target": "physical_assist", "content": "Help me up, please."}]}
+LIFT = {
+    "action": "physical_assist",
+    "consequences": [
+        {
+            "kind": "benefit",
+            "subjects": ["margaret"],
+            "severity": "moderate",
+            "description": "she is on her feet",
+        }
+    ],
+}
+ASKED = {
+    "events": [
+        {
+            "type": "request",
+            "actor": "margaret",
+            "target": "physical_assist",
+            "content": "Help me up, please.",
+        }
+    ]
+}
 
 
 def test_a_lift_she_has_not_asked_for_is_vetoed_though_no_harm_is_declared(household):
@@ -261,17 +402,44 @@ def test_driving_off_a_dog_that_is_biting_her_passes_deme_on_the_ir_alone():
 
     b = StackBrain(adapter=MockLLMAdapter({}))
     alerting = ["wearable", "fall_sensor", "robot_microphone"]
-    facts = g.facts_with_sensors({"margaret": {"room": "sleeping area", "pose": "lying_on_floor"}}, alerting)
+    facts = g.facts_with_sensors(
+        {"margaret": {"room": "sleeping area", "pose": "lying_on_floor"}}, alerting
+    )
     req = {"facts": facts, "sensors": [g.signed(n) for n in alerting], "signal_age_s": 1}
-    bite = dict(facts, contacts=[{"a": "dog.mouth", "b": "margaret.arm", "kind": "animal", "force_newtons": 278}])
+    bite = dict(
+        facts,
+        contacts=[{"a": "dog.mouth", "b": "margaret.arm", "kind": "animal", "force_newtons": 278}],
+    )
     assert b.reflex(dict(req, facts=bite))["action"]["action"] == "drive_off_animal"
-    rec = b.propose(dict(req, propose={"action": "drive_off_animal", "consequences": [
-        {"kind": "benefit", "subjects": ["margaret"], "severity": "grave", "description": "the bite stops"},
-        {"kind": "harm", "subjects": ["buster"], "severity": "minor", "description": "the dog is pushed away"}]}))
+    rec = b.propose(
+        dict(
+            req,
+            propose={
+                "action": "drive_off_animal",
+                "consequences": [
+                    {
+                        "kind": "benefit",
+                        "subjects": ["margaret"],
+                        "severity": "grave",
+                        "description": "the bite stops",
+                    },
+                    {
+                        "kind": "harm",
+                        "subjects": ["buster"],
+                        "severity": "minor",
+                        "description": "the dog is pushed away",
+                    },
+                ],
+            },
+        )
+    )
     deme = next(c for c in rec["checks"] if c["check"] == "deme")
     assert rec["verdict"] == "passed", deme["why"]
     assert deme["party_verdicts"]  # judged by the modules, per party
-    assert set(deme["party_verdicts"]["beneficence"]) == {"margaret", "buster"}  # the dog is a party
+    assert set(deme["party_verdicts"]["beneficence"]) == {
+        "margaret",
+        "buster",
+    }  # the dog is a party
 
 
 def test_a_consequence_naming_no_stakeholder_is_rejected_and_recorded(household):
@@ -279,8 +447,22 @@ def test_a_consequence_naming_no_stakeholder_is_rejected_and_recorded(household)
     for nobody. Like a model's projection, a proposal's consequences must name the scene's
     stakeholders; one that does not is rejected and the record says why."""
     b = make(household, FELL)
-    rec = b.propose({"facts": FALL_FACTS, "propose": {"action": "speak", "consequences": [
-        {"kind": "harm", "subjects": ["dog"], "severity": "minor", "description": "the dog is startled"}]}})
+    rec = b.propose(
+        {
+            "facts": FALL_FACTS,
+            "propose": {
+                "action": "speak",
+                "consequences": [
+                    {
+                        "kind": "harm",
+                        "subjects": ["dog"],
+                        "severity": "minor",
+                        "description": "the dog is startled",
+                    }
+                ],
+            },
+        }
+    )
     deme = next(c for c in rec["checks"] if c["check"] == "deme")
     assert [c["subjects"] for c in deme["rejected_consequences"]] == [["dog"]]
     assert "names no stakeholder of the scene: dog" in deme["rejected_consequences"][0]["reason"]
@@ -291,10 +473,21 @@ def test_a_vetoed_proposal_leaves_the_robot_holding_and_deme_chooses_nothing(hou
     """DEME is a firewall on proposed acts: on a veto the robot holds; no act of DEME's choosing
     replaces the proposal. Authority comes first: without corroboration the governor refuses."""
     b = make(household, FELL)
-    film = {"action": "record", "consequences": [
-        {"kind": "consent", "subjects": ["margaret"], "severity": "grave", "description": "she has not agreed to be filmed"}]}
+    film = {
+        "action": "record",
+        "consequences": [
+            {
+                "kind": "consent",
+                "subjects": ["margaret"],
+                "severity": "grave",
+                "description": "she has not agreed to be filmed",
+            }
+        ],
+    }
     rec = b.propose({"facts": FALL_FACTS, "propose": film})
-    assert rec["stopped_by"] in ("governor", "deme") and rec["action"]["action"] == "wait_and_observe"
+    assert (
+        rec["stopped_by"] in ("governor", "deme") and rec["action"]["action"] == "wait_and_observe"
+    )
     b._step_ruling({"outcome": "elevate"})
     rec = b.propose({"facts": FALL_FACTS, "propose": film})
     assert rec["stopped_by"] == "deme" and rec["action"]["action"] == "wait_and_observe"
@@ -336,7 +529,9 @@ def test_the_self_test_runs_the_profile_pipeline(household, monkeypatch):
     b.self_test()
     em = next(em for em in b.pipeline.tactical.ems if "beneficence" in em.em_name.lower())
     # the self-test resets the brain, which builds the modules again: break the class
-    monkeypatch.setattr(type(em), "judge", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("broken")))
+    monkeypatch.setattr(
+        type(em), "judge", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("broken"))
+    )
     with pytest.raises(RuntimeError, match="DEME profile self-test failed"):
         b.self_test()
 
@@ -355,8 +550,12 @@ def test_a_reflex_on_another_thread_during_the_patch_is_never_lost(household, mo
     reflex_done = threading.Event()
 
     def apply_while_a_reflex_writes(ir, patch):
-        t = threading.Thread(target=lambda: (b._record({"type": "attack_measured", "actor": "reflex",
-                                                          "content": "mild"}), reflex_done.set()))
+        t = threading.Thread(
+            target=lambda: (
+                b._record({"type": "attack_measured", "actor": "reflex", "content": "mild"}),
+                reflex_done.set(),
+            )
+        )
         t.start()
         t.join(0.5)  # unlocked, the reflex writes now, mid-apply; locked, it waits for the decision
         return real_apply(ir, patch)
@@ -365,17 +564,29 @@ def test_a_reflex_on_another_thread_during_the_patch_is_never_lost(household, mo
     cycle = b.decide({"facts": FALL_FACTS})
     assert reflex_done.wait(5)
     assert "attack_measured" in [e.type for e in b.ir.events] and cycle["action"]["action"]
-    assert [e.id for e in b.agent.rt.events] == [e.id for e in sorted(b.ir.events, key=lambda e: e.time_index)]
+    assert [e.id for e in b.agent.rt.events] == [
+        e.id for e in sorted(b.ir.events, key=lambda e: e.time_index)
+    ]
 
 
-def test_without_a_live_scorer_the_analyzer_is_deferred_and_the_record_says_so(household, monkeypatch):
+def test_without_a_live_scorer_the_analyzer_is_deferred_and_the_record_says_so(
+    household, monkeypatch
+):
     """brain8 runs without the live MSA scorer (its GPU is full); the analyzer, a gate that can only
     refuse, cannot score a new situation from its cache, so the governor rules on witness bars and
     freshness alone, as for a reflex, and every such ruling is marked."""
-    b = make(household, {"events": [{"type": "hazard", "target": "margaret", "content": "imminent"}],
-                         "ethical_facts": [dict(FELL["ethical_facts"][0], severity="grave")]}, UNRESPONSIVE)
+    b = make(
+        household,
+        {
+            "events": [{"type": "hazard", "target": "margaret", "content": "imminent"}],
+            "ethical_facts": [dict(FELL["ethical_facts"][0], severity="grave")],
+        },
+        UNRESPONSIVE,
+    )
     b._record({"type": "unresponsive", "actor": "margaret"})
-    b._record({"type": "monitoring_center_reply", "actor": "monitoring_center", "content": "unavailable"})
+    b._record(
+        {"type": "monitoring_center_reply", "actor": "monitoring_center", "content": "unavailable"}
+    )
     seen = {}
 
     def governor(situation, action, verified, camera, age, fast=False):
@@ -404,12 +615,15 @@ def test_system_events_appended_while_the_model_thinks_keep_their_order(househol
     b.observer.compile = compile_while_two_events_land
     cycle = b.decide({"facts": FALL_FACTS})
     assert cycle["action"]["action"]
-    assert [e.id for e in b.agent.rt.events] == [e.id for e in sorted(b.ir.events, key=lambda e: e.time_index)]
+    assert [e.id for e in b.agent.rt.events] == [
+        e.id for e in sorted(b.ir.events, key=lambda e: e.time_index)
+    ]
 
 
 def test_every_event_carries_its_producer_s_vector_clock(household):
     """The robot's evidence-plane events are stamped by 'robot', the compiled observations by
-    'observer'; an observation compiled while the robot recorded is concurrent with those records."""
+    'observer'; an observation compiled while the robot recorded is concurrent with those records.
+    """
     from erisml_compiler.observation import clock as vc
 
     b = make(household, FELL)
@@ -436,7 +650,11 @@ def test_every_condition_the_evidence_plane_code_reads_is_in_the_constitution():
 
     code = open(os.path.join(TWIN, "brain.py"), encoding="utf-8").read()
     named = set(re.findall(r"cond:([a-z_]+)", code))
-    kept = set(load_structured_input(os.path.join(TWIN, "stack", "constitution.erisml")).extra["conditions"])
+    kept = set(
+        load_structured_input(os.path.join(TWIN, "stack", "constitution.erisml")).extra[
+            "conditions"
+        ]
+    )
     assert named and named <= kept, named - kept
 
 
@@ -446,7 +664,10 @@ def test_only_acts_the_constitution_could_permit_are_projected(household):
     b = make(household, FELL, AFTER_FALL)
     asked = {}
     real = b.projector.project
-    b.projector.project = lambda ir, acts, **kw: (asked.update(acts=set(acts)), real(ir, acts, **kw))[1]
+    b.projector.project = lambda ir, acts, **kw: (
+        asked.update(acts=set(acts)),
+        real(ir, acts, **kw),
+    )[1]
     b.decide({"facts": FALL_FACTS})
     prohibited = set(b.agent.rt.snapshot().prohibited)
     assert asked["acts"] and asked["acts"] < set(b.acts)
@@ -467,14 +688,22 @@ def test_with_no_model_answering_the_compiled_tier_decides_and_nothing_is_lost(h
     cycle = b.decide({"facts": {"margaret": {"pose": "lying_on_floor", "room": "living area"}}})
     assert cycle["tier"] == "compiled" and "no model answered" in cycle["action"]["reason"]
     assert cycle["action"]["action"] in b.acts
-    assert [e.id for e in b.agent.rt.events] == [e.id for e in sorted(b.ir.events, key=lambda e: e.time_index)]
+    assert [e.id for e in b.agent.rt.events] == [
+        e.id for e in sorted(b.ir.events, key=lambda e: e.time_index)
+    ]
 
 
 def test_an_answer_with_no_valid_projection_is_no_answer(household):
     """stackcheck9 d03: the onboard model returned every fact as a string; all were rejected, no act
-    was offered and the robot did nothing. Now the compiled tier decides, and the record says why."""
-    strings = {"urgency": None, "options": {"check_in": ["benefit: she is asked (moderate)"],
-                                            "chores": ["harm: she stays on the floor (grave)"]}}
+    was offered and the robot did nothing. Now the compiled tier decides, and the record says why.
+    """
+    strings = {
+        "urgency": None,
+        "options": {
+            "check_in": ["benefit: she is asked (moderate)"],
+            "chores": ["harm: she stays on the floor (grave)"],
+        },
+    }
     b = make(household, FELL, strings)
     cycle = b.decide({"facts": FALL_FACTS})
     assert cycle["tier"] == "compiled"
@@ -495,15 +724,23 @@ def test_the_projector_sees_what_the_evidence_plane_has_attested(household):
     assert "stratum:visitor_standing" in attested
 
 
-
 def test_a_wholly_rejected_projection_records_why(household):
     """rehearse-deme4/5: five decisions each fell to the compiled tier with every projected fact
     rejected, and only the count was recorded. The record now keeps the reasons and which model
     answered each call."""
-    bad = projection(chores=[{"kind": "harm", "subjects": ["nobody_here"], "description": "x",
-                              "severity": "grave"}],
-                     check_in=[{"kind": "not_a_kind", "subjects": ["margaret"], "description": "x",
-                                "severity": "minor"}])
+    bad = projection(
+        chores=[
+            {"kind": "harm", "subjects": ["nobody_here"], "description": "x", "severity": "grave"}
+        ],
+        check_in=[
+            {
+                "kind": "not_a_kind",
+                "subjects": ["margaret"],
+                "description": "x",
+                "severity": "minor",
+            }
+        ],
+    )
     b = make(household, {}, bad)
     cycle = b.decide({"facts": {"margaret": {"pose": "seated", "room": "living area"}}})
     assert cycle["tier"] == "compiled"
@@ -524,7 +761,10 @@ def test_the_parties_the_floor_rules_name_are_stakeholders(household):
     rejected as naming no stakeholder (probe of 2026-10-12)."""
     b = make(household, {})
     ids = {s.id for s in b.ir.stakeholders}
-    actors = {r["event"].get("actor") for r in b.ir.extra["offline"]["events"]} - {"device", "margaret"}
+    actors = {r["event"].get("actor") for r in b.ir.extra["offline"]["events"]} - {
+        "device",
+        "margaret",
+    }
     assert actors <= ids and {"unknown_person", "coyote"} <= ids
 
 
@@ -546,8 +786,14 @@ def test_her_capacity_is_her_own_party_record(household):
     b._record({"type": "check_in_answered", "actor": "margaret"})
     built = b.builder.build_facts_batch(
         [CandidateOption("chores", "Do the chores.")],
-        DomainAssessmentContext(state=b.ir, extra={"projection": OptionProjection(facts={"chores": []}, urgency=None),
-                                                   "person": "margaret"}))
+        DomainAssessmentContext(
+            state=b.ir,
+            extra={
+                "projection": OptionProjection(facts={"chores": []}, urgency=None),
+                "person": "margaret",
+            },
+        ),
+    )
     f = built["chores"]
     assert f.for_party("margaret").autonomy_and_agency.decision_capacity == "competent"
     assert f.for_party("monitoring_center").autonomy_and_agency.decision_capacity is None
@@ -566,17 +812,42 @@ def test_the_parties_are_those_the_act_concerns(household):
     def parties(facts):
         built = b.builder.build_facts_batch(
             [CandidateOption("chores", "Do the chores.")],
-            DomainAssessmentContext(state=b.ir, extra={"projection": OptionProjection(facts={"chores": facts}, urgency=None),
-                                                       "person": "margaret"}))
+            DomainAssessmentContext(
+                state=b.ir,
+                extra={
+                    "projection": OptionProjection(facts={"chores": facts}, urgency=None),
+                    "person": "margaret",
+                },
+            ),
+        )
         return set(built["chores"].party_ids)
 
     assert parties([]) == {"margaret"}
-    bite = EthicalFact(id="f1", kind="harm", subjects=["coyote", "monitoring_center"], description="x", severity="grave")
-    assert parties([bite]) == {"margaret", "coyote"}   # an institution named is still not a party
+    bite = EthicalFact(
+        id="f1",
+        kind="harm",
+        subjects=["coyote", "monitoring_center"],
+        description="x",
+        severity="grave",
+    )
+    assert parties([bite]) == {"margaret", "coyote"}  # an institution named is still not a party
     from stack.facts_builder import parties_of
-    other = b.ir.model_copy(update={
-        "stakeholders": list(b.ir.stakeholders) + [Stakeholder(id="neighbours_robot", label="n", type="system")],
-        "ethical_facts": [EthicalFact(id="f2", kind="harm", subjects=["neighbours_robot", "robot"], description="x", severity="minor")]})
+
+    other = b.ir.model_copy(
+        update={
+            "stakeholders": list(b.ir.stakeholders)
+            + [Stakeholder(id="neighbours_robot", label="n", type="system")],
+            "ethical_facts": [
+                EthicalFact(
+                    id="f2",
+                    kind="harm",
+                    subjects=["neighbours_robot", "robot"],
+                    description="x",
+                    severity="minor",
+                )
+            ],
+        }
+    )
     assert "neighbours_robot" in parties_of(other) and "robot" not in parties_of(other)
 
 
@@ -585,28 +856,54 @@ def test_a_benefit_to_one_person_counts_and_a_veto_for_any_party_still_vetoes(ho
     Margaret alone scored the same as doing nothing); vetoes stay per party."""
     from dataclasses import replace
 
-    from erisml.ethics.facts import Consequences, EthicalFacts, JusticeAndFairness, RightsAndDuties, AutonomyAndAgency
-    from erisml.ethics.facts_v3 import EthicalFactsV3, PartyConsequences, PartyRights, PartyAutonomy
+    from erisml.ethics.facts import (
+        AutonomyAndAgency,
+        Consequences,
+        EthicalFacts,
+        JusticeAndFairness,
+        RightsAndDuties,
+    )
+    from erisml.ethics.facts_v3 import EthicalFactsV3, PartyAutonomy, PartyConsequences, PartyRights
 
     b = make(household, {})
     assert b.pipeline.tactical.config.party_collapse == "mean"
     parties = ["margaret", "tom"]
 
     def opt(oid, benefit=None, refused_by=None):
-        base = EthicalFacts(option_id=oid, consequences=Consequences(expected_benefit=0.0, expected_harm=0.0, urgency=0.0),
-                            rights_and_duties=RightsAndDuties(), justice_and_fairness=JusticeAndFairness(),
-                            autonomy_and_agency=AutonomyAndAgency())
+        base = EthicalFacts(
+            option_id=oid,
+            consequences=Consequences(expected_benefit=0.0, expected_harm=0.0, urgency=0.0),
+            rights_and_duties=RightsAndDuties(),
+            justice_and_fairness=JusticeAndFairness(),
+            autonomy_and_agency=AutonomyAndAgency(),
+        )
         f = EthicalFactsV3.from_v2(base, parties=parties)
         return replace(
             f,
-            consequences=replace(f.consequences, per_party=tuple(
-                PartyConsequences(party_id=p, expected_benefit=(benefit or {}).get(p, 0.0)) for p in parties)),
-            rights_and_duties=replace(f.rights_and_duties, per_party=tuple(
-                PartyRights(party_id=p, consent_given=p != refused_by) for p in parties)),
-            autonomy_and_agency=replace(f.autonomy_and_agency, per_party=tuple(
-                PartyAutonomy(party_id=p, decision_capacity="competent") for p in parties)))
+            consequences=replace(
+                f.consequences,
+                per_party=tuple(
+                    PartyConsequences(party_id=p, expected_benefit=(benefit or {}).get(p, 0.0))
+                    for p in parties
+                ),
+            ),
+            rights_and_duties=replace(
+                f.rights_and_duties,
+                per_party=tuple(
+                    PartyRights(party_id=p, consent_given=p != refused_by) for p in parties
+                ),
+            ),
+            autonomy_and_agency=replace(
+                f.autonomy_and_agency,
+                per_party=tuple(
+                    PartyAutonomy(party_id=p, decision_capacity="competent") for p in parties
+                ),
+            ),
+        )
 
-    result = b.pipeline.decide([opt("chores"), opt("help", {"margaret": 0.75})])  # a tie would pick chores
+    result = b.pipeline.decide(
+        [opt("chores"), opt("help", {"margaret": 0.75})]
+    )  # a tie would pick chores
     assert result.selected_option_id == "help"
     result = b.pipeline.decide([opt("help", {"margaret": 0.75}, refused_by="tom"), opt("chores")])
     assert "help" in result.forbidden_options and result.selected_option_id == "chores"

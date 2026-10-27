@@ -56,10 +56,15 @@ def test_one_changed_byte_fails_the_signature():
 
 
 def test_another_key_does_not_verify():
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
     from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-    other = Ed25519PrivateKey.generate().public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw).hex()
+    other = (
+        Ed25519PrivateKey.generate()
+        .public_key()
+        .public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
+        .hex()
+    )
     ok, _ = mf.verify_signature(_signed(), other)
     assert not ok
 
@@ -86,9 +91,8 @@ def test_every_capability_is_typed_and_governed_ones_carry_their_gates():
 
 def test_the_brain_refuses_an_action_the_manifest_does_not_list(monkeypatch):
     sys.path.insert(0, TWIN)
-    from erisml_compiler.annotation.llm_extractor import MockLLMAdapter
-
     import brain as brain_mod
+    from erisml_compiler.annotation.llm_extractor import MockLLMAdapter
 
     b = brain_mod.Brain(SCENE, MockLLMAdapter())
     b.manifest = mf.load_verified(SIGNED, SCENE)
