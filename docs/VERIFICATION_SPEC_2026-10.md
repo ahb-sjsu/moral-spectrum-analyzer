@@ -19,7 +19,7 @@ expected verdict) and `twin/scenarios/gate_demo.jsonl` (the 3D twin, with the ou
 is written to show), so every run can be replayed and checked, and some proposals are wrong on
 purpose. What is tested is the gate; no language model
 proposes, so the robot's own choice of acts is outside the test. Demo
-code: gtc 70dd556 (the gate brain's Python unchanged since 2835805), erisml-lib 054ed18,
+code: gtc 8073212 (the gate brain with the lift fix of 18 October, 2f29942; owner, 2026-10-27), erisml-lib 054ed18,
 erisml-compiler d606f44 (the fix of upstream PR 48 on ca7c9e3), manifest 2dd546c4, Unity build
 storyboard49 in gate mode, which opens each scene with a card saying what it shows and closes it
 with each proposal's verdict. storyboard49 is storyboard48, the build of rehearse-gate4, plus the
@@ -524,15 +524,22 @@ specification is recomputed by a named script from a committed record.
    the same run with the unvalidated stub evaluator, with identical grants.
 4. *The gate, live (C10).* The 3D twin, screen-shared, in gate mode, playing two scripted scenes
    whose proposals reach the gate brain as they come. The fall with a refused ambulance (g_fall):
-   lifting her before she asks is vetoed by DEME's shell; the ambulance she refused is vetoed by
+   lifting her before she asks is vetoed by DEME's consent module under the scene's rule p6nolift
+   (after a fall, no lift until she asks), which reaches DEME as a fact on this brain whatever the
+   proposal declares, so the same holds for a lift proposed from the free-play panel; the ambulance she refused is vetoed by
    DEME's consent stage; helping her up after she asks passes. The smoke (g_smoke): the call before
    the detectors alert is refused by the governor (0 of 2 witnesses); the call once they alert
    passes; recording her "for the insurer" is vetoed by DEME. Each verdict is on the caption, with
    DEME's verdict per party in the telemetry panel. Then the evaluator proposes acts of their own
    from the free-play panel and watches the gate judge them. Then the hash chain with a one-byte
    tamper. In the twin the world runs in real time, so a proposal's governor ruling depends on what
-   the sensors have measured by then; the expected verdicts come from rehearse-gate3 and
-   rehearse-gate4, where the seven proposals of these two scenes went as described.
+   the sensors have measured by then; the expected verdicts come from the four rehearsals on this
+   brain (rehearse-gate5, -6, -7 and -9, `twin/records/rehearse-lift-2026-10-18/`). The smoke
+   scene's three proposals went as described in all four. In the fall scene the refused ambulance
+   was vetoed by DEME and the lift after her request passed in all four; the lift before she asked
+   was stopped by DEME under p6nolift in three and by the governor (1 of 2 witnesses) in the
+   fourth, the run started at low load. Under host load the twin's sensor readings can reach the
+   governor stale, which stops acts that would otherwise pass (see Completeness).
 5. *The actuation boundary (C11).* During the live home, one byte of the body's manifest is
    changed with the "tamper manifest" button of the controls view (key P). The status line turns to
    LOCKED with both hashes, the robot stops, and a proposal from the free-play panel that passes the
