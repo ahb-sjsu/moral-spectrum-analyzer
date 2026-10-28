@@ -550,7 +550,7 @@ specification is recomputed by a named script from a committed record.
 
 **Evidence artifacts to be provided:**
 
-- Code: `github.com/ahb-sjsu/moral-spectrum-analyzer` at tag `gtc-verification-2026-10-27.3`
+- Code: `github.com/ahb-sjsu/moral-spectrum-analyzer` at tag `gtc-verification-2026-10-27.4`
   (CI green), with packages on PyPI. The tag holds every file and record named below, and the
   monograph's PDF (`paper/monograph/main.pdf`, a draft whose unrun results are marked RESULT).
 - Result records:
