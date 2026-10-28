@@ -43,7 +43,7 @@ the gate. The earlier brain's numbers (11 runs, rehearsal records of 2026-10-08)
 Evidence quality as its record. The numbers for C11 come from the two rehearsal records committed on 2026-10-10 under
 `twin/records/rehearsal-2026-10-10/` (`rehearse21`, `rehearse22`).
 
-**Owner decisions before submitting** (defaults chosen, change if needed):
+**Owner decisions before submitting** (the owner kept all four defaults, 2026-10-27):
 
 1. **Core category: 3, Enterprise & Agentic AI Governance, Audit & Control.** The analyzer is a
    runtime guardrail with decision traceability and audit, and the embodied governor is an
