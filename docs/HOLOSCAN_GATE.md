@@ -41,7 +41,38 @@ To run it (Atlas venv `/archive/unity/holoscan46/venv`, with the erisml librarie
     ulimit -s 32768   # Holoscan warns below 32 MB of stack
     python twin/holoscan/gate_pipeline.py --out DIR
 
-## What this does not show
+## The continuous sensor stream (step 1, 2026-10-29)
+
+`twin/holoscan/gate_stream.py`: the devices sign on their own clock (4 Hz) and send to the gate's
+readings port, which holds one message and drops the older when a newer arrives (queue size 1,
+policy POP). The gate wakes on either port; a request waits for a measurement taken in its own
+moment and is checked on the newest one. Each moment lasts 3 s; while it has a contact on
+Margaret, a reflex request comes four times a second, as the game's reflex loop sends them. Each
+record also has the age that readings carried in the request would have had, which is how the
+game sends them today.
+
+`twin/holoscan/contention_sweep.sh` runs it with N busy loops pinned to the pipeline's own two cores
+(Atlas cores 14-15), so the pipeline competes for its CPU without loading the rest of the machine.
+One run per level, 24 requests each (11 reflex), 18 of them with readings:
+
+| Busy loops on the 2 cores | Verdicts as expected | Age of readings used, max | Age had they been carried, max | Gate time, max |
+|---|---|---|---|---|
+| 0 | 12 of 12 | 501 ms | 500 ms | 621 ms |
+| 2 | 12 of 12 | 666 ms | 666 ms | 705 ms |
+| 4 | 12 of 12 | 250 ms | 1044 ms | 1296 ms |
+| 8 | 12 of 12 | 27 ms | 1755 ms | 2470 ms |
+| 16 | 12 of 12 | 135 ms | 3286 ms | 3870 ms |
+
+At the dog's bite the reflex was granted on 3 witnesses at every level. As contention grew, the
+age of carried readings grew with the time requests waited behind the gate (up to 3.3 s), and the
+age of the readings the gate used stayed under 0.7 s: one to three ticks of the devices' clock.
+
+What this does not show: one run per level and 18 readings a run is a small sample; the heaviest
+contention here (16 loops on 2 cores) made requests wait 3.3 s, not the 30 s seen live, so the
+October delay is still not reproduced; the "carried" ages are computed in the same run, not
+measured through the game's HTTP path.
+
+## What the first pipeline does not show
 
 - It does not reproduce the live path. The stale readings of October came from the Unity game
   and its HTTP requests to the gate brain; this pipeline signs and checks in one process. A first
@@ -60,9 +91,7 @@ NVIDIA's 4.x to 5.x migration guide.
 
 ## Next
 
-1. A continuous sensor stream: devices signing at their own rate (the reflex channel reads four
-   times a second), the gate taking only the newest reading per device, and the age at the check
-   recorded for every decision.
-2. The same pipeline under the load of the October runs, against the current request path, to
+1. Done: the continuous sensor stream, above.
+2. The stream pipeline under the load of the October runs, against the current request path, to
    find where the delay arises and whether a scheduled pipeline bounds it.
 3. On a Thor: Holoscan 5.0, the same scenes, the same records.
