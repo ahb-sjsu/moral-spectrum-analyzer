@@ -398,6 +398,17 @@ def test_the_consent_rules_come_from_the_scene():
     assert sorted(n["id"] for n in consent_rules()) == ["p6nolift", "p6nolift_u"]
 
 
+def test_the_gate_demo_scenes_give_their_expected_verdicts():
+    """The scripted scenes of twin/gate_demo.py (claim C10), through run_moment, the step the
+    Holoscan pipeline (twin/holoscan/gate_pipeline.py) shares with the harness."""
+    import gate_demo as g
+
+    scenes = json.load(open(os.path.join(TWIN, "scenarios", "gate_demo.json"), encoding="utf-8"))
+    props = [m for s in scenes for m in g.run_scene(s)["moments"] if "proposal" in m]
+    assert len(props) == 12
+    assert [m["expected"] for m in props if not m["as_expected"]] == []
+
+
 def test_driving_off_a_dog_that_is_biting_her_passes_deme_on_the_ir_alone():
     """rehearse-gate1 (2026-10-14): the act's description, "drive an attacking animal off the
     person", once reached DEME as prose; "attacking" (the dog's) became the robot's maxim "inflict

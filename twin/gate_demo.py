@@ -53,35 +53,43 @@ def facts_with_sensors(facts: dict, alerting: list) -> dict:
     return out
 
 
+def sign_moment(m: dict) -> list:
+    """The moment's alerting sensors, each reading signed now (forged ones with the wrong key)."""
+    forged = set(m.get("forged", []))
+    return [signed(n, forged=n in forged) for n in m.get("sensors", [])]
+
+
+def run_moment(b: StackBrain, m: dict, readings: list) -> dict:
+    """One moment through the brain, with its readings already signed (twin/holoscan signs them
+    in a separate operator, as a device would)."""
+    facts = facts_with_sensors(m.get("facts", {}), m.get("sensors", []))
+    req = {"facts": facts, "sensors": readings, "signal_age_s": 1}
+    rec = {"say": m.get("say", "")}
+    if m.get("contact"):
+        c = m["contact"]
+        rfacts = dict(facts, contacts=[{"a": c["a"], "b": c["b"], "kind": c["kind"], "force_newtons": c["force"]}])
+        r = b.reflex(dict(req, facts=rfacts))
+        rec["reflex"] = None if r is None else {"reflex": r["reflex"], "event": r["event"], "action": r["action"]["action"],
+                                              "rulings": [{"outcome": q["outcome"], "witnesses": q.get("witnesses")} for q in r["rulings"]]}
+    for ev in m.get("system", []):   # what an authenticated channel reports (the centre, dispatch)
+        b.event(ev)
+    if m.get("observed") and not m.get("propose"):
+        b.propose(dict(req, observed=m["observed"], propose={}))
+    if m.get("propose"):
+        p = b.propose(dict(req, observed=m.get("observed"), propose=m["propose"]))
+        rec["proposal"] = p["proposal"]
+        rec["verdict"], rec["stopped_by"], rec["checks"], rec["robot_does"] = (
+            p["verdict"], p["stopped_by"], p["checks"], p["action"]["action"])
+        exp = m.get("expect")
+        if exp:
+            got = p["verdict"] if p["verdict"] == "passed" else f"stopped:{p['stopped_by']}"
+            rec["expected"], rec["as_expected"] = exp, got == exp
+    return rec
+
+
 def run_scene(scene: dict) -> dict:
     b = StackBrain(adapter=MockLLMAdapter({}))
-    moments = []
-    for m in scene["moments"]:
-        alerting = m.get("sensors", [])
-        facts = facts_with_sensors(m.get("facts", {}), alerting)
-        forged = set(m.get("forged", []))
-        req = {"facts": facts, "sensors": [signed(n, forged=n in forged) for n in alerting], "signal_age_s": 1}
-        rec = {"say": m.get("say", "")}
-        if m.get("contact"):
-            c = m["contact"]
-            rfacts = dict(facts, contacts=[{"a": c["a"], "b": c["b"], "kind": c["kind"], "force_newtons": c["force"]}])
-            r = b.reflex(dict(req, facts=rfacts))
-            rec["reflex"] = None if r is None else {"reflex": r["reflex"], "event": r["event"], "action": r["action"]["action"],
-                                                  "rulings": [{"outcome": q["outcome"], "witnesses": q.get("witnesses")} for q in r["rulings"]]}
-        for ev in m.get("system", []):   # what an authenticated channel reports (the centre, dispatch)
-            b.event(ev)
-        if m.get("observed") and not m.get("propose"):
-            b.propose(dict(req, observed=m["observed"], propose={}))
-        if m.get("propose"):
-            p = b.propose(dict(req, observed=m.get("observed"), propose=m["propose"]))
-            rec["proposal"] = p["proposal"]
-            rec["verdict"], rec["stopped_by"], rec["checks"], rec["robot_does"] = (
-                p["verdict"], p["stopped_by"], p["checks"], p["action"]["action"])
-            exp = m.get("expect")
-            if exp:
-                got = p["verdict"] if p["verdict"] == "passed" else f"stopped:{p['stopped_by']}"
-                rec["expected"], rec["as_expected"] = exp, got == exp
-        moments.append(rec)
+    moments = [run_moment(b, m, sign_moment(m)) for m in scene["moments"]]
     return {"id": scene["id"], "title": scene["title"], "moments": moments}
 
 
