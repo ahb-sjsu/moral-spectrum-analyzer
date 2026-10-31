@@ -102,6 +102,48 @@ What it does not show: the 30 s delay of October is not reproduced, so where it 
 not known. Each run has 2 reflex requests, which is too few to bound their timing. The
 language-model service was slow in both runs and its own load was not measured. One run per level.
 
+## The desks' model calls (2026-10-30 and 31)
+
+The centre, the dispatcher and Margaret's voice call NRP's hosted model service (`gpt-oss`, served
+as `openai/gpt-oss-120b`) through erisml-compiler's `NRPOpenAIAdapter`. Each try times out at 60 s
+(`ERISML_LLM_TIMEOUT_S`); the adapter retries twice and the OpenAI client inside it retries a timed-out
+request twice more on its own, so a call that needs more than 60 s fails after 9 tries, about 540 s.
+That is the centre's 545 s failure above.
+
+`twin/holoscan/desk_probe.py` replays a run's desk calls through the brain's own `Desk` and
+`MargaretVoice` on the recorded facts, one try per model call with a 600 s ceiling, and times each.
+On the 16 desk turns of the 8-loop run (2026-10-30, 02:07 to 02:27 Atlas time), all 27 model calls
+returned:
+
+| Desk | Model calls | Latency, median (max) | Over 60 s | Output tokens, median (max) |
+|---|---|---|---|---|
+| Margaret | 10 | 24 s (47 s) | 0 | 193 (340) |
+| Dispatcher | 8 | 56 s (80 s) | 2 | 356 (770) |
+| Centre | 9 | 31 s (128 s) | 3 | 280 (793) |
+
+The service produced about 10 output tokens a second, most of them the model's hidden reasoning
+(up to 686 of about 790), so an answer of more than about 600 tokens takes longer than 60 s.
+
+`twin/holoscan/desk_client.py` runs the brain with the OpenAI client's own retries set, without
+changing the brain; `live_path_run.sh` takes `DESK_TIMEOUT_S` and `DESK_CLIENT_RETRIES` for it.
+One run of the game path with no busy loops (2026-10-31, load 19.0 mean), tries of 180 s, no client
+retries, the adapter's 2 retries kept:
+
+| Desk settings | Centre turns | Dispatcher turns | Margaret, max | Brain errors |
+|---|---|---|---|---|
+| 60 s, 9 tries (2026-10-29, no loops) | 545 s (failed) | 99, 364 s | 87 s | 1 |
+| 60 s, 9 tries (2026-10-29, 8 loops) | 59, 78, 145 s | 138, 416 s | 29 s | 0 |
+| 180 s, 3 tries (2026-10-31, no loops) | 90, 105, 114, 124, 134, 135, 164 s | 208, 227 s | 26 s | 0 |
+
+All 16 verdicts were as in rehearse-gate4; proposals took at most 4.6 s and reflexes 4.1 s, and no
+answer called a reading stale.
+
+What this shows: with tries of 180 s no desk turn failed and none took more than 227 s. What it
+does not show: one run, against a service whose speed changes from hour to hour, does not establish
+that the settings caused it; a service that stops answering still takes 3 tries of 180 s to fail;
+centre and dispatcher turns of 1.5 to 4 minutes remain. Why this run had 7 centre turns, against 1
+and 3 before, was not examined. The live gate brain (port 8772) runs the old settings.
+
 ## What the first pipeline does not show
 
 - It does not reproduce the live path. The stale readings of October came from the Unity game
@@ -125,3 +167,5 @@ NVIDIA's 4.x to 5.x migration guide.
 2. In part: the current request path under load, above. The October delay did not recur, so the
    comparison with a scheduled pipeline waits on a run that reproduces it.
 3. On a Thor: Holoscan 5.0, the same scenes, the same records.
+4. The desks' wait: less hidden reasoning for the desk models, another model, or a model on Atlas,
+   each to be replayed with `desk_probe.py` before the live session. The owner decides.

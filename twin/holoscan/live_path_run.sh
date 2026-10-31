@@ -4,6 +4,10 @@
 #
 #   twin/holoscan/live_path_run.sh OUT_DIR N_BUSY_LOOPS [CORES]
 #
+# Optional, for the desks' model calls (centre, dispatcher, Margaret): DESK_TIMEOUT_S sets each
+# try's timeout (ERISML_LLM_TIMEOUT_S, default 60) and DESK_CLIENT_RETRIES the OpenAI client's own
+# retries (default 2, through twin/holoscan/desk_client.py). Unset, the brain runs as gate-brain.sh.
+#
 # Starts its own gate brain (gtc 8073212, port 8774, its own logs) and the timing proxy (port
 # 8773), runs the game headless on the scene file of the October rehearsals against the proxy, and
 # pins all three, with N busy loops, to CORES (default 12-15). Everything it starts it stops. It
@@ -28,9 +32,13 @@ trap stop_all EXIT
 # the second gate brain, as screen gatebrain runs the first (tools/gate-brain.sh), on 8774. Its
 # camera models go on GPU 0: the live brain holds most of GPU 1, and a second copy there ran out of
 # memory (owner, 2026-10-29: "use GPU 0 for the second brain"). The game still renders on GPU 1.
+launch=(twin/service.py)
+[ -n "${DESK_CLIENT_RETRIES:-}" ] && launch=("$HERE/desk_client.py" twin/service.py)
 ( cd $R && export PYTHONPATH=$L/erisml-lib/src:$L/erisml-compiler/src:$U/pylib CUDA_VISIBLE_DEVICES=0 \
     ERISML_LLM_API_KEY="$(cat ~/.llmtoken)" && \
-  exec taskset -c "$CORES" $PY -u twin/service.py --stack --port 8774 --log "$OUT/brain/session.jsonl" \
+  { [ -z "${DESK_TIMEOUT_S:-}" ] || export ERISML_LLM_TIMEOUT_S=$DESK_TIMEOUT_S; } && \
+  { [ -z "${DESK_CLIENT_RETRIES:-}" ] || export DESK_CLIENT_RETRIES; } && \
+  exec taskset -c "$CORES" $PY -u "${launch[@]}" --stack --port 8774 --log "$OUT/brain/session.jsonl" \
     --frames-dir "$OUT/brain/frames" --live "$OUT/brain/live_cache.jsonl" --scene twin/stack/constitution.erisml \
     --manifest twin/manifest/constitution.manifest.json --onboard-url http://127.0.0.1:8096/v1 \
     --onboard-model gemma-4-26B-A4B-it-UD-Q4_K_XL.gguf ) > "$OUT/brain.log" 2>&1 &
@@ -38,6 +46,8 @@ pids+=($!)
 for _ in $(seq 1 300); do ss -ltn | grep -q "127.0.0.1:8774 " && break; sleep 1; done
 ss -ltn | grep -q "127.0.0.1:8774 " || fail "the second brain did not start (see $OUT/brain.log)"
 grep -a "^manifest:" "$OUT/brain.log" | tail -1 | grep -q 2dd546c4 || fail "the second brain is not on manifest 2dd546c4"
+[ -z "${DESK_CLIENT_RETRIES:-}" ] || grep -aq "^desk client: .* client retries $DESK_CLIENT_RETRIES," "$OUT/brain.log" \
+  || fail "the desks' client retries were not set (see $OUT/brain.log)"
 
 taskset -c "$CORES" $PY "$HERE/timing_proxy.py" --listen 8773 --brain http://127.0.0.1:8774 --log "$OUT/proxy.jsonl" > "$OUT/proxy.log" 2>&1 &
 pids+=($!)
@@ -46,6 +56,7 @@ for _ in $(seq 1 20); do ss -ltn | grep -q "127.0.0.1:8773 " && break; sleep 0.5
 for _ in $(seq 1 "$N"); do taskset -c "$CORES" python3 -c 'while True: pass' & pids+=($!); done
 ( while sleep 20; do echo "$(date +%T) $(cut -d' ' -f1 /proc/loadavg)"; done > "$OUT/load.txt" ) &
 pids+=($!)
+echo "desks: timeout ${DESK_TIMEOUT_S:-60 (default)} s, client retries ${DESK_CLIENT_RETRIES:-2 (default)}; $(grep -a '^desk client:' "$OUT/brain.log" | tail -1)"
 echo "second brain 8073212 on 8774, proxy on 8773, $N busy loops on $CORES, load $(cut -d' ' -f1 /proc/loadavg) at $(date +%T)"
 
 cd $B
