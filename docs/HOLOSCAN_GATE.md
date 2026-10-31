@@ -72,6 +72,36 @@ contention here (16 loops on 2 cores) made requests wait 3.3 s, not the 30 s see
 October delay is still not reproduced; the "carried" ages are computed in the same run, not
 measured through the game's HTTP path.
 
+## The game's request path under load (step 2, 2026-10-29)
+
+`twin/holoscan/live_path_run.sh` measures the path the October readings took: the Unity game, its
+HTTP requests, the gate brain. It starts a second gate brain on the demonstration code (gtc
+8073212, manifest 2dd546c4) on port 8774, with its camera models on GPU 0, and puts
+`twin/holoscan/timing_proxy.py` between it and the game. The proxy forwards each request unchanged
+and records the age of every attested reading when the request arrives and the time the brain
+took to answer. The game runs headless on the demonstration build (storyboard48) with the scene
+file of rehearse-gate4. Brain, proxy, game and N busy loops are pinned to Atlas cores 12-15. The
+live gate brain (port 8772) was not touched.
+
+| Busy loops on the 4 cores | Atlas load, mean (max) | Verdicts as in rehearse-gate4 | Oldest reading at arrival, max | Gate brain time, median (max) | Longest model call (centre, dispatcher, Margaret) | Answers saying stale |
+|---|---|---|---|---|---|---|
+| 0 | 16.1 (20.2) | 16 of 16 | 0.3 s | 3.8 s (5.7 s) | 545 s, 364 s, 87 s | 0 |
+| 8 | 31.2 (38.2) | 16 of 16 | 0.9 s | 5.9 s (10.0 s) | 145 s, 416 s, 29 s | 0 |
+
+Gate brain time is over the 18 gate requests of each run (16 proposals, 2 reflex). At the dog's
+bite the reflex was corroborated by 4 physical sensors in the first run and 3 in the second. The
+centre's call that took 545 s ended in a model timeout, which the game logged as its one brain
+error; the second run had none.
+
+What this shows: on this path, at loads up to 38, readings reached the brain under 1 s old and no
+answer called them stale. Calls to the language models took up to 9 minutes, but they did not
+hold up the gate: 9 and 7 gate requests ran while one was in flight and took 3.3 to 7.4 s, as the
+others did.
+
+What it does not show: the 30 s delay of October is not reproduced, so where it arose is still
+not known. Each run has 2 reflex requests, which is too few to bound their timing. The
+language-model service was slow in both runs and its own load was not measured. One run per level.
+
 ## What the first pipeline does not show
 
 - It does not reproduce the live path. The stale readings of October came from the Unity game
@@ -92,6 +122,6 @@ NVIDIA's 4.x to 5.x migration guide.
 ## Next
 
 1. Done: the continuous sensor stream, above.
-2. The stream pipeline under the load of the October runs, against the current request path, to
-   find where the delay arises and whether a scheduled pipeline bounds it.
+2. In part: the current request path under load, above. The October delay did not recur, so the
+   comparison with a scheduled pipeline waits on a run that reproduces it.
 3. On a Thor: Holoscan 5.0, the same scenes, the same records.
