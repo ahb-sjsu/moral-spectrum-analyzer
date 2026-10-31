@@ -6,7 +6,8 @@
 #
 # Optional, for the desks' model calls (centre, dispatcher, Margaret): DESK_TIMEOUT_S sets each
 # try's timeout (ERISML_LLM_TIMEOUT_S, default 60) and DESK_CLIENT_RETRIES the OpenAI client's own
-# retries (default 2, through twin/holoscan/desk_client.py). Unset, the brain runs as gate-brain.sh.
+# retries (default 2, through twin/holoscan/desk_client.py), and DESK_REASONING_EFFORT, with
+# DESK_CLIENT_RETRIES, the reasoning effort the desks ask for. Unset, the brain runs as gate-brain.sh.
 #
 # Starts its own gate brain (gtc 8073212, port 8774, its own logs) and the timing proxy (port
 # 8773), runs the game headless on the scene file of the October rehearsals against the proxy, and
@@ -48,6 +49,8 @@ ss -ltn | grep -q "127.0.0.1:8774 " || fail "the second brain did not start (see
 grep -a "^manifest:" "$OUT/brain.log" | tail -1 | grep -q 2dd546c4 || fail "the second brain is not on manifest 2dd546c4"
 [ -z "${DESK_CLIENT_RETRIES:-}" ] || grep -aq "^desk client: .* client retries $DESK_CLIENT_RETRIES," "$OUT/brain.log" \
   || fail "the desks' client retries were not set (see $OUT/brain.log)"
+[ -z "${DESK_REASONING_EFFORT:-}" ] || grep -aq "^desk client: .* reasoning effort $DESK_REASONING_EFFORT$" "$OUT/brain.log" \
+  || fail "the desks' reasoning effort was not set (see $OUT/brain.log)"
 
 taskset -c "$CORES" $PY "$HERE/timing_proxy.py" --listen 8773 --brain http://127.0.0.1:8774 --log "$OUT/proxy.jsonl" > "$OUT/proxy.log" 2>&1 &
 pids+=($!)

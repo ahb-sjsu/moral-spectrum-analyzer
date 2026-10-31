@@ -144,6 +144,48 @@ that the settings caused it; a service that stops answering still takes 3 tries 
 centre and dispatcher turns of 1.5 to 4 minutes remain. Why this run had 7 centre turns, against 1
 and 3 before, was not examined. The live gate brain (port 8772) runs the old settings.
 
+### Less hidden reasoning (2026-10-31)
+
+The NRP gateway honours `reasoning_effort`, which the brain does not send; `desk_client.py` adds it
+from `DESK_REASONING_EFFORT`, for every desk or per desk (`center=low,margaret=low`), and in the
+per-desk form logs each model call's desk and effort. `desk_probe.py --reasoning-effort` replays
+with it. A replay of the 8-loop run's desk turns at default and at `low` (08:47 Atlas time):
+
+| Desk | Default, median (max) | `low`, median (max) |
+|---|---|---|
+| Centre | 38 s (169 s) | 12 s (45 s) |
+| Dispatcher | 49 s (88 s) | 26 s (65 s) |
+| Margaret | 18 s (600 s, failed) | 6 s (22 s) |
+
+At `low` the dispatcher ended the call (`close_call`) in 3 of 4 turns, with reasons that misread
+the scene; at default it gave instructions in 8 of 8. Two runs of the game path followed, tries of
+180 s and no client retries as above:
+
+| Reasoning effort | Centre turns | Dispatcher turns | Margaret, max | Run | Dispatcher gave instructions |
+|---|---|---|---|---|---|
+| Not sent (the run above) | 90 to 164 s | 208, 227 s | 26 s | 31 min | 2 of 2 |
+| `low` for every desk | 32, 32, 33, 34, 41, 54, 57, 75 s | 76, 96 s | 48 s | 17.5 min | 0 of 2 |
+| `low` for centre and Margaret | 16, 19, 32, 43, 56, 58, 90 s | 160, 182 s | 43 s | 20.7 min | 2 of 2 |
+
+In the per-desk run the log shows 16 centre and 12 Margaret calls at `low` and 8 dispatcher calls
+with none sent. Both runs: 16 of 16 verdicts as in rehearse-gate4, no brain errors, no answer
+calling a reading stale.
+
+What this shows: `low` cut the centre's turns by about half; Margaret's longest turn did not fall
+in the game runs (26 s at default, 48 and 43 s at `low`), though the replay cut her median; the
+dispatcher's choices held only at default. What it does not show: one
+run per setting against a service whose speed changes; the centre's choices vary at about a third
+of turns even at default, so a few turns cannot show that `low` leaves them unchanged. The
+dispatcher's turns of about 3 minutes remain.
+
+In the per-desk run the robot's reflex at the dog's bite proposed `interpose` on 0 witnesses: the
+readings were 0.2 s old, but no sensor was alerting (fall sensor "no impact", microphone "no
+distress heard", heart rate 72) at a recorded force of 278 N, so the brain saw an ordinary
+situation and did not elevate. The same record appears in rehearse-gate5, 7, 8 and 9, and not in
+rehearse-gate3 or 4 or this week's other runs. It is a second way the reflex can fail, apart from
+stale readings: the reflex fires before the game's sensors alert. Its cause is not established, and
+one run cannot rule out the desk settings, since the dog scene includes a dispatcher turn.
+
 ## What the first pipeline does not show
 
 - It does not reproduce the live path. The stale readings of October came from the Unity game
@@ -168,4 +210,7 @@ NVIDIA's 4.x to 5.x migration guide.
    comparison with a scheduled pipeline waits on a run that reproduces it.
 3. On a Thor: Holoscan 5.0, the same scenes, the same records.
 4. The desks' wait: less hidden reasoning for the desk models, another model, or a model on Atlas,
-   each to be replayed with `desk_probe.py` before the live session. The owner decides.
+   each to be replayed with `desk_probe.py` before the live session. In part: `low` for the centre
+   and Margaret, above; the dispatcher's wait remains. The owner decides what the live brain runs.
+5. The reflex before the sensors alert, above: the game's sensor timing at the dog's bite in the
+   rehearse-gate5 to 9 records and this run.
