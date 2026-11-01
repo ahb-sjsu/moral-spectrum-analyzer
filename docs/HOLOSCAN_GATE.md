@@ -178,13 +178,54 @@ run per setting against a service whose speed changes; the centre's choices vary
 of turns even at default, so a few turns cannot show that `low` leaves them unchanged. The
 dispatcher's turns of about 3 minutes remain.
 
-In the per-desk run the robot's reflex at the dog's bite proposed `interpose` on 0 witnesses: the
-readings were 0.2 s old, but no sensor was alerting (fall sensor "no impact", microphone "no
-distress heard", heart rate 72) at a recorded force of 278 N, so the brain saw an ordinary
-situation and did not elevate. The same record appears in rehearse-gate5, 7, 8 and 9, and not in
-rehearse-gate3 or 4 or this week's other runs. It is a second way the reflex can fail, apart from
-stale readings: the reflex fires before the game's sensors alert. Its cause is not established, and
-one run cannot rule out the desk settings, since the dog scene includes a dispatcher turn.
+In the per-desk run the robot's reflex at the dog's bite proposed `interpose` on 0 witnesses; the
+next section gives the cause, which is in the game.
+
+## The reflex before the sensors alert (2026-10-31)
+
+At the dog's bite the reflex sometimes reports the bite with the sensor readings from before it.
+`World.Bite` (`World.cs`) sets the bite force (278 N at severity 0.9), Margaret's heart rate (145),
+an impact of 3.5 g and her scream in one step of a coroutine. The robot's reflex loop
+(`RobotAgent.ReflexLoop`, every 0.25 s) reads the contacts live from the world
+(`Perception.Facts`), but the devices are read into `world.sensors` only in `World.Update`, once a
+frame. When the reflex loop runs in the same frame as the bite, after it, it posts 278 N with heart
+rate 72, no impact and no scream: the brain counts 0 witnesses, sees an ordinary situation and
+proposes `interpose`. Which of the two coroutines Unity runs first in a frame is not something the
+code controls, so the race comes and goes.
+
+The first reflex of every run since rehearse-gate3 (records under `/archive/unity/out`):
+
+| Runs | Heart rate the reflex saw | Witnesses | Reflex |
+|---|---|---|---|
+| rehearse-gate3, 4; burn0, burn8, desk180, desklow | 143 to 145 | 3 or 4 | `drive_off_animal` |
+| rehearse-gate6 | 143 | 0 | `interpose` |
+| rehearse-gate5, 7, 8, 9; deskmix | 72 | 0 | `interpose` |
+
+Heart rate 72 is the value a scene starts with; after the bite step the wearable cannot read it, so
+those five reflexes read the devices before the bite. The desk settings are not the cause: four of
+the five are rehearsals of 2026-10-18 and 19, before those settings existed. The dog's reflex (`x_animal` in
+`twin/scene/margaret_home.erisml`) has no `reask: on_new_witness`, so after a refusal it is not
+asked again for 20 s (`REFLEX_HOLD_S`) although the sensors alert a frame later; in rehearse-gate5
+to 7 a later reflex drove the dog off.
+
+Rehearse-gate6's first reflex and the later reflexes of rehearse-gate6 to 9 are a different
+failure: the readings in the facts alert, but the governor counted 0 or 1 witnesses, so the signed
+readings themselves were refused. That matches the stale readings of October; it was not
+re-examined here, and none of this week's runs show it.
+
+**The fix in the game [committed, not built]:** the reflex loop, on finding a contact, waits one
+frame (`yield return null`) and asks on that frame's facts. Unity runs `Update` before it resumes
+coroutines, so `World.Update` has read the devices after the bite by then; the reflex is asked at
+most one frame later. The brain, the scene and its manifest (2dd546c4) are unchanged.
+The build, storyboard50 (storyboard49 plus this change, by `/archive/unity/tools/build_gate7.sh`,
+which checks every other runtime and editor file against gtc HEAD), did not run: the Unity
+Personal licence of Atlas user `claude` (issued 2026-10-01) no longer holds a valid entitlement
+and its renewal needs a Unity account sign-in. The project on Atlas was put back as it was. Once
+the licence is renewed: build, then run the dog scene several times on the second brain
+(`GAME_BUILD=storyboard50 SCENES=<dog-only scene file> live_path_run.sh`), where every first
+reflex should read a heart rate near 145. A pass in a few runs bounds the race only loosely: it
+hit 5 of 11 runs before. The live launcher (`demo_live_gate.sh`, storyboard49) and the live brain
+stay as they are until the owner moves them.
 
 ## What the first pipeline does not show
 
@@ -212,5 +253,6 @@ NVIDIA's 4.x to 5.x migration guide.
 4. The desks' wait: less hidden reasoning for the desk models, another model, or a model on Atlas,
    each to be replayed with `desk_probe.py` before the live session. In part: `low` for the centre
    and Margaret, above; the dispatcher's wait remains. The owner decides what the live brain runs.
-5. The reflex before the sensors alert, above: the game's sensor timing at the dog's bite in the
-   rehearse-gate5 to 9 records and this run.
+5. The reflex before the sensors alert, above: cause found in the game, fix committed; build and
+   check it once the Unity licence on Atlas is renewed. Adding `reask: on_new_witness` to the dog's
+   reflex would also let the brain recover from it, at the cost of a scene and manifest change.

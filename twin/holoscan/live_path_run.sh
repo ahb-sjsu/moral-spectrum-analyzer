@@ -8,6 +8,8 @@
 # try's timeout (ERISML_LLM_TIMEOUT_S, default 60) and DESK_CLIENT_RETRIES the OpenAI client's own
 # retries (default 2, through twin/holoscan/desk_client.py), and DESK_REASONING_EFFORT, with
 # DESK_CLIENT_RETRIES, the reasoning effort the desks ask for. Unset, the brain runs as gate-brain.sh.
+# GAME_BUILD names the game build (default storyboard48, rehearse-gate4's) and SCENES another scene
+# file; with SCENES the verdicts are not compared with rehearse-gate4's.
 #
 # Starts its own gate brain (gtc 8073212, port 8774, its own logs) and the timing proxy (port
 # 8773), runs the game headless on the scene file of the October rehearsals against the proxy, and
@@ -16,7 +18,8 @@
 # game is running, so it cannot collide with the live demo.
 set -u
 OUT=$1; N=$2; CORES=${3:-12-15}
-U=/archive/unity; L=$U/out/stack2/libs; B=$U/builds/storyboard48
+U=/archive/unity; L=$U/out/stack2/libs; B=$U/builds/${GAME_BUILD:-storyboard48}
+SC=${SCENES:-$U/tools/gate_demo_cards.jsonl}
 HG=$U/out/holoscan-gate; R=$HG/brain-8073212; HERE=$(cd "$(dirname "$0")" && pwd)
 PY=~/env/bin/python
 fail() { echo "FAIL: $1"; echo RUN_DONE; exit 1; }
@@ -24,7 +27,8 @@ pgrep -x TwinGame.x86_64 >/dev/null && fail "a game is running"
 ss -ltn | grep -qE ":877[34] " && fail "port 8773 or 8774 is in use"
 [ -d "$OUT" ] && fail "$OUT exists already"
 [ "$(git -C $R rev-parse --short=7 HEAD)" = 8073212 ] || fail "the second brain's checkout is not 8073212"
-[ "$(tr -d '\r' < $U/tools/gate_demo_cards.jsonl | sha256sum | cut -c1-16)" = 4dc25936a0d41670 ] || fail "scene file is not rehearse-gate4's"
+[ -x "$B/TwinGame.x86_64" ] || fail "no game build at $B"
+[ -n "${SCENES:-}" ] || [ "$(tr -d '\r' < "$SC" | sha256sum | cut -c1-16)" = 4dc25936a0d41670 ] || fail "scene file is not rehearse-gate4's"
 mkdir -p "$OUT/brain/frames"
 pids=()
 stop_all() { [ ${#pids[@]} -gt 0 ] && kill "${pids[@]}" 2>/dev/null; wait 2>/dev/null; }
@@ -61,16 +65,17 @@ for _ in $(seq 1 "$N"); do taskset -c "$CORES" python3 -c 'while True: pass' & p
 pids+=($!)
 echo "desks: timeout ${DESK_TIMEOUT_S:-60 (default)} s, client retries ${DESK_CLIENT_RETRIES:-2 (default)}; $(grep -a '^desk client:' "$OUT/brain.log" | tail -1)"
 echo "second brain 8073212 on 8774, proxy on 8773, $N busy loops on $CORES, load $(cut -d' ' -f1 /proc/loadavg) at $(date +%T)"
+echo "game $B, scenes $SC"
 
 cd $B
 timeout 7200 xvfb-run -a -s "-screen 0 1600x900x24" taskset -c "$CORES" $U/tools/record_run.sh "$OUT/run.mp4" \
   ./TwinGame.x86_64 -force-vulkan -force-device-index 1 -screen-width 1600 -screen-height 900 \
-  -service http://127.0.0.1:8773 -present -gate -scenarios $U/tools/gate_demo_cards.jsonl \
+  -service http://127.0.0.1:8773 -present -gate -scenarios "$SC" \
   -results "$OUT/results.jsonl" -storyboard "$OUT/frames" -shots "$OUT/shots" -logFile "$OUT/game.log"
 echo "game_rc=$? brain errors: $(grep -c BRAIN_ERROR "$OUT/game.log")"
 stop_all; trap - EXIT
 
-$PY - $U/out/rehearse-gate4/results.jsonl "$OUT/results.jsonl" "$OUT/proxy.jsonl" <<'PYEOF'
+$PY - $U/out/rehearse-gate4/results.jsonl "$OUT/results.jsonl" "$OUT/proxy.jsonl" "${SCENES:-}" <<'PYEOF'
 import json, sys
 def rows(path):
     out = []
@@ -83,14 +88,15 @@ def rows(path):
     return out
 a, b = rows(sys.argv[1]), rows(sys.argv[2])
 same = sum(i < len(a) and a[i] == y for i, y in enumerate(b))
-print(f"{same} of {len(b)} verdicts as in rehearse-gate4")
+print(f"{same} of {len(b)} verdicts as in rehearse-gate4" if not sys.argv[4] else f"{len(b)} verdicts (scenes {sys.argv[4]})")
 for line in open(sys.argv[2], encoding="utf-8"):
     s = json.loads(line)
     for r in s["records"]:
         rec = r["record"]
         if rec.get("kind") == "reflex":
             for q in rec.get("rulings") or []:
-                print("reflex", s["id"], rec["action"]["action"], "witnesses", q.get("witnesses"), (q.get("reason") or "")[:80])
+                hr = [x["reading"] for x in (rec.get("facts") or {}).get("sensors", []) if x.get("name") == "wearable"]
+                print("reflex", s["id"], rec["action"]["action"], "witnesses", q.get("witnesses"), "|", *hr, "|", (q.get("reason") or "")[:60])
 p = [json.loads(l) for l in open(sys.argv[3], encoding="utf-8")]
 for path in sorted({x["path"] for x in p}):
     xs = [x for x in p if x["path"] == path]

@@ -112,6 +112,15 @@ public class RobotAgent : MonoBehaviour
             if (paused || reflexBusy) continue;
             var facts = perception.Facts(out _, peek: true);
             if (MiniJson.Arr(facts["contacts"]).Count == 0) continue;
+            // the contacts are read live but the devices only in World.Update, so a contact a coroutine
+            // set this frame came with the devices' readings from before it: World.Bite sets the force,
+            // her heart rate and the impact at once, and a reflex asked in that frame saw 278 N with
+            // heart rate 72 and no impact, 0 witnesses (rehearse-gate5, 7, 8, 9 and livepath-deskmix).
+            // Wait one frame, so World.Update has read the devices, and ask on that frame's facts
+            yield return null;
+            if (paused || reflexBusy) continue;
+            facts = perception.Facts(out _, peek: true);
+            if (MiniJson.Arr(facts["contacts"]).Count == 0) continue;
             reflexBusy = true;
             var body = new Dictionary<string, object>
             {
