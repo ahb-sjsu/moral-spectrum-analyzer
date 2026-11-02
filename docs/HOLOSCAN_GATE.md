@@ -213,19 +213,30 @@ failure: the readings in the facts alert, but the governor counted 0 or 1 witnes
 readings themselves were refused. That matches the stale readings of October; it was not
 re-examined here, and none of this week's runs show it.
 
-**The fix in the game [committed, not built]:** the reflex loop, on finding a contact, waits one
+**The fix in the game [demonstrated, 6 of 6 passes on the second brain]:** the reflex loop, on finding a contact, waits one
 frame (`yield return null`) and asks on that frame's facts. Unity runs `Update` before it resumes
 coroutines, so `World.Update` has read the devices after the bite by then; the reflex is asked at
 most one frame later. The brain, the scene and its manifest (2dd546c4) are unchanged.
-The build, storyboard50 (storyboard49 plus this change, by `/archive/unity/tools/build_gate7.sh`,
-which checks every other runtime and editor file against gtc HEAD), did not run: the Unity
-Personal licence of Atlas user `claude` (issued 2026-10-01) no longer holds a valid entitlement
-and its renewal needs a Unity account sign-in. The project on Atlas was put back as it was. Once
-the licence is renewed: build, then run the dog scene several times on the second brain
-(`GAME_BUILD=storyboard50 SCENES=<dog-only scene file> live_path_run.sh`), where every first
-reflex should read a heart rate near 145. A pass in a few runs bounds the race only loosely: it
-hit 5 of 11 runs before. The live launcher (`demo_live_gate.sh`, storyboard49) and the live brain
-stay as they are until the owner moves them.
+The build is storyboard50: storyboard49 plus this change, made by
+`/archive/unity/tools/build_gate7.sh`, which checks every other runtime and editor file against
+gtc HEAD (0 compile errors). Atlas user `claude`'s Unity Personal licence had lapsed on
+2026-10-31; it now runs on the owner's Unity Educator seat, activated manually (licence request
+file, license.unity3d.com/manual, `-manualLicenseFile`) on 2026-11-02. A manually activated
+licence cannot be returned except through Unity support.
+
+The check (2026-11-02, `livepath-dog50`): the dog scene 6 times on storyboard50 through the second
+brain and the timing proxy, desks as in the per-desk run, no busy loops, load 13.5 mean.
+
+| Pass | First reflex | Heart rate it saw | Witnesses | Proposal verdicts |
+|---|---|---|---|---|
+| 1 to 6 | `drive_off_animal` | 144, impact latched | 3 | the 4 of rehearse-gate4's dog scene |
+
+No brain errors, readings at most 0.2 s old, the dispatcher's turns 31 to 89 s. What this shows:
+in 6 passes every first reflex read the devices after the bite. What it does not show: the race
+hit 5 of 11 runs before, so 6 clean passes would also happen by chance about 3 times in 100
+(0.55^6); it says nothing about the separate refusals of rehearse-gate6 to 9. The live launcher
+(`demo_live_gate.sh`, storyboard49) and the live brain are unchanged; moving the demo to
+storyboard50 is the owner's call.
 
 ## What the first pipeline does not show
 
@@ -253,6 +264,6 @@ NVIDIA's 4.x to 5.x migration guide.
 4. The desks' wait: less hidden reasoning for the desk models, another model, or a model on Atlas,
    each to be replayed with `desk_probe.py` before the live session. In part: `low` for the centre
    and Margaret, above; the dispatcher's wait remains. The owner decides what the live brain runs.
-5. The reflex before the sensors alert, above: cause found in the game, fix committed; build and
-   check it once the Unity licence on Atlas is renewed. Adding `reask: on_new_witness` to the dog's
+5. The reflex before the sensors alert, above: cause found in the game, fixed in storyboard50 and
+   checked in 6 passes; the live demo still runs storyboard49 (owner's call). Adding `reask: on_new_witness` to the dog's
    reflex would also let the brain recover from it, at the cost of a scene and manifest change.
