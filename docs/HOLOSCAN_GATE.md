@@ -234,9 +234,10 @@ brain and the timing proxy, desks as in the per-desk run, no busy loops, load 13
 No brain errors, readings at most 0.2 s old, the dispatcher's turns 31 to 89 s. What this shows:
 in 6 passes every first reflex read the devices after the bite. What it does not show: the race
 hit 5 of 11 runs before, so 6 clean passes would also happen by chance about 3 times in 100
-(0.55^6); it says nothing about the separate refusals of rehearse-gate6 to 9. The live launcher
-(`demo_live_gate.sh`, storyboard49) and the live brain are unchanged; moving the demo to
-storyboard50 is the owner's call.
+(0.55^6); it says nothing about the separate refusals of rehearse-gate6 to 9. On the owner's
+decision (2026-11-02) the live launcher `demo_live_gate.sh` now runs storyboard50 (backup
+`demo_live_gate.sh.storyboard49.bak`); the live gate brain was not restarted, since the brain,
+the scene and the manifest are unchanged.
 
 ## What the first pipeline does not show
 
@@ -265,5 +266,5 @@ NVIDIA's 4.x to 5.x migration guide.
    each to be replayed with `desk_probe.py` before the live session. In part: `low` for the centre
    and Margaret, above; the dispatcher's wait remains. The owner decides what the live brain runs.
 5. The reflex before the sensors alert, above: cause found in the game, fixed in storyboard50 and
-   checked in 6 passes; the live demo still runs storyboard49 (owner's call). Adding `reask: on_new_witness` to the dog's
+   checked in 6 passes; the live demo launcher runs storyboard50 since 2026-11-02. Adding `reask: on_new_witness` to the dog's
    reflex would also let the brain recover from it, at the cost of a scene and manifest change.
