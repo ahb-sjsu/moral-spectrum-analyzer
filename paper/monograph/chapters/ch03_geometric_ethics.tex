@@ -458,6 +458,11 @@ parameter $\tau>0$,
 \label{eq:ge-bondindex}
 \end{equation}
 A value of zero means perfect correlative symmetry.
+This is the library's Bond Index with Hohfeldian positions as the output and the correlative
+swap as the declared re-description. Since erisml-lib 3.2 the index has one definition: the mean
+deviation of an evaluation under declared re-descriptions, over a tolerance, where the deviation is
+zero or one for a position or a verdict and a distance under a stated metric for a vector.
+% src: erisml-lib docs/BOND_INDEX.md and src/erisml/ethics/bond_index.py (a240442, 2026-11-25)
 % src: C:\source\erisml-lib\src\erisml\ethics\hohfeld.py compute_bond_index (line 256 at df00fc5 and after)
 Its Wilson observable multiplies the operations along a path, applies the product to the starting
 position, and checks the prediction against the position observed.
